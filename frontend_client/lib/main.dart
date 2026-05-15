@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
 import 'models/models.dart';
 import 'services/api_service.dart';
+import 'screens/wizard_screen.dart';
 
 void main() {
   runApp(const ClientApp());
@@ -141,13 +142,18 @@ class _SelectionScreenState extends State<SelectionScreen> {
                             height: 56,
                             child: FilledButton.icon(
                               onPressed: (_selectedPatientId != null && _selectedScaleId != null) 
-                                ? () {
-                                    // Naviga al WizardScreen passando gli ID
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Navigazione verso il wizard...')),
-                                    );
-                                  } 
-                                : null,
+                                  ? () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => WizardScreen(
+                                            patientId: _selectedPatientId!,
+                                            scaleId: _selectedScaleId!,
+                                          ),
+                                        ),
+                                      );
+                                    } 
+                                  : null,
                               icon: const Icon(Icons.play_circle_outline, size: 24),
                               label: const Text(
                                 'Inizia Compilazione',

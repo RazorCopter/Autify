@@ -179,6 +179,14 @@ async def get_scales():
     scales = await cursor.to_list(length=100)
     return scales
 
+@client_router.get("/scales/{scale_id}", response_model=Scale, tags=["Client - Scales"])
+async def get_scale_by_id(scale_id: str):
+    """Restituisce i dettagli completi di una singola scala"""
+    scale = await scales_collection.find_one({"id": scale_id})
+    if not scale:
+        raise HTTPException(status_code=404, detail="Scala non trovata")
+    return scale
+
 @client_router.post("/evaluations", response_model=Evaluation, status_code=status.HTTP_201_CREATED, tags=["Client - Evaluations"])
 async def create_evaluation(evaluation: Evaluation):
     """Salva una nuova valutazione compilata nel database"""

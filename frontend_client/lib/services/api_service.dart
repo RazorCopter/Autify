@@ -32,4 +32,31 @@ class ApiService {
       return [];
     }
   }
+
+  Future<ScaleModel?> getScaleById(String scaleId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/scales/$scaleId'));
+      if (response.statusCode == 200) {
+        return ScaleModel.fromJson(jsonDecode(response.body));
+      }
+      return null;
+    } catch (e) {
+      print('Errore caricamento dettagli scala: $e');
+      return null;
+    }
+  }
+
+  Future<bool> saveEvaluation(EvaluationModel evaluation) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/evaluations'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(evaluation.toJson()),
+      );
+      return response.statusCode == 201;
+    } catch (e) {
+      print('Errore salvataggio valutazione: $e');
+      return false;
+    }
+  }
 }
