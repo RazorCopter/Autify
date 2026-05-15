@@ -71,12 +71,25 @@ goto menu
 
 :git_push
 echo.
-set /p commit_msg="Inserisci il messaggio di commit: "
-if "%commit_msg%"=="" set commit_msg="Update"
+:: 1. Pulisco la variabile per evitare memorie da esecuzioni precedenti
+set "commit_msg=" 
+
+:: 2. Chiedo l'input all'utente in modo sicuro
+set /p "commit_msg=Inserisci il messaggio di commit (invio per default): "
+
+:: 3. Se l'utente preme solo invio, assegno "Update" senza usare doppie virgolette problematiche
+if not defined commit_msg set "commit_msg=Update"
+
+echo.
+echo Preparazione del commit...
 git add .
 git commit -m "%commit_msg%"
-git push
-echo Push completato.
+
+:: 4. Il parametro -u (upstream) crea e mantiene automaticamente il ponte verso GitHub
+git push -u origin main
+
+echo.
+echo Push completato con successo!
 pause
 goto menu
 
