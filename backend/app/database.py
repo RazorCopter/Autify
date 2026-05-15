@@ -9,3 +9,7 @@ database = client.autanalysis
 # Collezioni
 evaluations_collection = database.get_collection("evaluations")
 patients_collection = database.get_collection("patients")
+users_collection = database.get_collection("users")
+scales_collection = database.get_collection("scales")
+settings_collection = database.get_collection("settings")
+

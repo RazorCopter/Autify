@@ -3,6 +3,22 @@ from typing import List, Optional
 from datetime import datetime
 import uuid
 
+# --- MODELLI ANAGRAFICA (User Models) ---
+
+class User(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    nome: str
+    cognome: str
+    data_nascita: str
+    codice_fiscale: str
+    note: Optional[str] = None
+
+# --- MODELLI SETTINGS (Config Models) ---
+
+class AppSettings(BaseModel):
+    id: str = "global_settings"
+    gemini_api_key: Optional[str] = None
+
 # --- MODELLI SCALA (Scale Models) ---
 
 class Question(BaseModel):

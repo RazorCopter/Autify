@@ -1,23 +1,25 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import router
+from .routes import admin_router, client_router
 
 app = FastAPI(
     title="AutAnalysis API",
-    description="API per la piattaforma Client/Server di Valutazione Clinica.",
-    version="1.0.0"
+    description="API per la piattaforma Multi-Frontend (Admin/Client) di Valutazione Clinica.",
+    version="2.0.0"
 )
 
-# Configurazione CORS per permettere le chiamate dal frontend Flutter (PWA)
+# Configurazione CORS per permettere le chiamate dai frontend (Admin e Client)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Modificare in prod inserendo i domini specifici
+    allow_origins=["*"],  # Modificare in prod inserendo i domini specifici come https://aut.ghome.it
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(router)
+# Inclusione dei router separati
+app.include_router(admin_router, prefix="/api/admin")
+app.include_router(client_router, prefix="/api/client")
 
 @app.get("/", tags=["Health"])
 async def health_check():

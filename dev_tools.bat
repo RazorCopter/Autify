@@ -55,16 +55,16 @@ goto menu
 :start_flutter
 echo Avvio del frontend su Chrome...
 cd frontend
-flutter run -d chrome
+:: Uso il percorso assoluto che mi hai fornito
+"C:\Users\gianvito.bleve\OneDrive - Banca Mediolanum SPA\Documenti\Programmi\flutter\bin\flutter.bat" run -d chrome
 cd ..
 pause
 goto menu
 
 :build_apk
-echo Generazione dell'APK Flutter...
+echo Generazione APK in corso...
 cd frontend
-flutter build apk
-explorer "build\app\outputs\flutter-apk\"
+"C:\Users\gianvito.bleve\OneDrive - Banca Mediolanum SPA\Documenti\Programmi\flutter\bin\flutter.bat" build apk
 cd ..
 pause
 goto menu

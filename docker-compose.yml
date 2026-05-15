@@ -4,13 +4,22 @@ services:
   backend:
     build: ./backend
     ports:
-      - "8000:8000"
+      - "8000:8000" # Manteniamo esposta la porta per il development e per il frontend_client
     environment:
       - MONGODB_URL=mongodb://mongodb:27017
     volumes:
       - ./backend/app:/app/app
     depends_on:
       - mongodb
+
+  frontend_admin:
+    build: 
+      context: ./frontend_admin
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
 
   mongodb:
     image: mongo:latest
