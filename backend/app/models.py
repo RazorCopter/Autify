@@ -5,12 +5,12 @@ import uuid
 
 # --- MODELLI ANAGRAFICA (User Models) ---
 
-class User(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+class Patient(BaseModel):
+    id: str = Field(default_factory=lambda: f"pat_{uuid.uuid4().hex[:8]}")
     nome: str
     cognome: str
-    data_nascita: str
-    codice_fiscale: str
+    altezza: Optional[int] = None
+    peso: Optional[float] = None
     note: Optional[str] = None
 
 # --- MODELLI SETTINGS (Config Models) ---

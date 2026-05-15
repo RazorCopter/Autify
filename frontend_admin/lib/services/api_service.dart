@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
 import '../models/scale_model.dart';
+import '../models/patient_model.dart';
 
 class ApiService {
   // Dato che questo frontend è servito da Nginx sulla stessa origine e proxy verso backend,
@@ -99,6 +100,60 @@ class ApiService {
       );
       return response.statusCode == 200;
     } catch (e) {
+      return false;
+    }
+  }
+
+  // --- ANAGRAFICA (PATIENTS) ---
+
+  Future<List<PatientModel>> getPatients() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/patients'));
+      if (response.statusCode == 200) {
+        final List<dynamic> body = jsonDecode(response.body);
+        return body.map((json) => PatientModel.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      print('Errore caricamento pazienti: $e');
+      return [];
+    }
+  }
+
+  Future<bool> createPatient(PatientModel patient) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/patients'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(patient.toJson()),
+      );
+      return response.statusCode == 201;
+    } catch (e) {
+      print('Errore creazione paziente: $e');
+      return false;
+    }
+  }
+
+  Future<bool> updatePatient(PatientModel patient) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/patients/${patient.id}'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(patient.toJson()),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Errore aggiornamento paziente: $e');
+      return false;
+    }
+  }
+
+  Future<bool> deletePatient(String id) async {
+    try {
+      final response = await http.delete(Uri.parse('$baseUrl/patients/$id'));
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Errore eliminazione paziente: $e');
       return false;
     }
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/settings_screen.dart';
 import 'screens/protocols_screen.dart';
+import 'screens/anagrafica_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -164,6 +165,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 250),
       child: switch (_selectedIndex) {
+        1 => const AnagraficaScreen(),
         2 => const ProtocolsScreen(),
         3 => const SettingsScreen(),
         _ => _buildPlaceholder(),

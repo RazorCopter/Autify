@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
+import 'models/models.dart';
+import 'services/api_service.dart';
 
 void main() {
   runApp(const ClientApp());
@@ -19,8 +21,43 @@ class ClientApp extends StatelessWidget {
   }
 }
 
-class SelectionScreen extends StatelessWidget {
+class SelectionScreen extends StatefulWidget {
   const SelectionScreen({super.key});
+
+  @override
+  State<SelectionScreen> createState() => _SelectionScreenState();
+}
+
+class _SelectionScreenState extends State<SelectionScreen> {
+  final ApiService _apiService = ApiService();
+  
+  bool _isLoading = true;
+  List<PatientModel> _patients = [];
+  List<ScaleModel> _scales = [];
+
+  String? _selectedPatientId;
+  String? _selectedScaleId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    
+    final results = await Future.wait([
+      _apiService.getPatients(),
+      _apiService.getScales(),
+    ]);
+
+    setState(() {
+      _patients = results[0] as List<PatientModel>;
+      _scales = results[1] as List<ScaleModel>;
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,80 +70,176 @@ class SelectionScreen extends StatelessWidget {
             _buildHeader(context),
             // Corpo principale
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Logo bradipo decorativo
-                    _buildSlothLogo(),
-                    const SizedBox(height: 32),
-                    const Text(
-                      'Nuova Valutazione',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: AppTheme.textPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Seleziona il paziente e la scala\ndi valutazione da compilare',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppTheme.textSecondary,
-                        height: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 48),
-                    // Card di selezione paziente
-                    _buildSelectionCard(
-                      icon: Icons.person_outline,
-                      label: 'Paziente',
-                      placeholder: 'Seleziona paziente...',
-                      color: AppTheme.primaryColor,
-                    ),
-                    const SizedBox(height: 16),
-                    // Card di selezione scala
-                    _buildSelectionCard(
-                      icon: Icons.library_books_outlined,
-                      label: 'Scala di Valutazione',
-                      placeholder: 'Seleziona protocollo...',
-                      color: AppTheme.secondaryColor,
-                    ),
-                    const SizedBox(height: 40),
-                    // Pulsante avvia
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: FilledButton.icon(
-                        onPressed: () {
-                          // Naviga al WizardScreen (da migrare dal frontend_legacy)
-                        },
-                        icon: const Icon(Icons.play_circle_outline, size: 24),
-                        label: const Text(
-                          'Inizia Compilazione',
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-                        ),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppTheme.primaryColor,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
+              child: _isLoading 
+                ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+                : Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(height: 24),
+                          // Logo bradipo decorativo
+                          _buildSlothLogo(),
+                          const SizedBox(height: 32),
+                          const Text(
+                            'Nuova Valutazione',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.textPrimary,
+                              letterSpacing: -0.5,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Seleziona il paziente e la scala\ndi valutazione da compilare',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: AppTheme.textSecondary,
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 48),
+                          
+                          // Dropdown Paziente
+                          _buildDropdownCard<String>(
+                            icon: Icons.person_outline,
+                            label: 'Paziente',
+                            hint: 'Seleziona paziente...',
+                            color: AppTheme.primaryColor,
+                            value: _selectedPatientId,
+                            items: _patients.map((p) => DropdownMenuItem(
+                              value: p.id,
+                              child: Text('${p.nome} ${p.cognome}', style: const TextStyle(fontSize: 15, color: AppTheme.textPrimary)),
+                            )).toList(),
+                            onChanged: (val) => setState(() => _selectedPatientId = val),
+                          ),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // Dropdown Scala
+                          _buildDropdownCard<String>(
+                            icon: Icons.library_books_outlined,
+                            label: 'Scala di Valutazione',
+                            hint: 'Seleziona protocollo...',
+                            color: AppTheme.secondaryColor,
+                            value: _selectedScaleId,
+                            items: _scales.map((s) => DropdownMenuItem(
+                              value: s.id,
+                              child: Text(s.nome, style: const TextStyle(fontSize: 15, color: AppTheme.textPrimary)),
+                            )).toList(),
+                            onChanged: (val) => setState(() => _selectedScaleId = val),
+                          ),
+                          
+                          const SizedBox(height: 40),
+                          
+                          // Pulsante avvia
+                          SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: FilledButton.icon(
+                              onPressed: (_selectedPatientId != null && _selectedScaleId != null) 
+                                ? () {
+                                    // Naviga al WizardScreen passando gli ID
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Navigazione verso il wizard...')),
+                                    );
+                                  } 
+                                : null,
+                              icon: const Icon(Icons.play_circle_outline, size: 24),
+                              label: const Text(
+                                'Inizia Compilazione',
+                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                              ),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppTheme.primaryColor,
+                                disabledBackgroundColor: AppTheme.textSecondary.withValues(alpha: 0.3),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  ),
             ),
             // Footer puzzle decoration
             _buildPuzzleFooter(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownCard<T>({
+    required IconData icon,
+    required String label,
+    required String hint,
+    required Color color,
+    required T? value,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE8EEF8)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textSecondary,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                DropdownButtonHideUnderline(
+                  child: DropdownButton<T>(
+                    isExpanded: true,
+                    value: value,
+                    hint: Text(hint, style: const TextStyle(fontSize: 15, color: AppTheme.textSecondary)),
+                    icon: const Icon(Icons.expand_more, color: AppTheme.textSecondary),
+                    items: items,
+                    onChanged: onChanged,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -173,7 +306,6 @@ class SelectionScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Puzzle pieces decorative layout
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -205,67 +337,6 @@ class SelectionScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Icon(Icons.extension, size: 16, color: Colors.white.withValues(alpha: 0.9)),
-    );
-  }
-
-  Widget _buildSelectionCard({
-    required IconData icon,
-    required String label,
-    required String placeholder,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE8EEF8)),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 22),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textSecondary,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  placeholder,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
-        ],
-      ),
     );
   }
 

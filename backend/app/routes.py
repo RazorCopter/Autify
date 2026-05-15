@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
 from typing import List
-from .models import Scale, Evaluation, User, AppSettings, Section, Question
-from .database import evaluations_collection, database, users_collection, settings_collection
+from .models import Scale, Evaluation, Patient, AppSettings, Section, Question
+from .database import evaluations_collection, database, settings_collection
 from datetime import datetime
 import csv
 import uuid
@@ -10,16 +10,17 @@ admin_router = APIRouter()
 client_router = APIRouter()
 
 scales_collection = database.get_collection("scales")
+patients_collection = database.get_collection("patients")
 
 # ==========================================
 # ADMIN ROUTER (/api/admin)
 # ==========================================
 
-@admin_router.get("/users", response_model=List[User], tags=["Admin - Users"])
-async def get_users():
-    cursor = users_collection.find({})
-    users = await cursor.to_list(length=1000)
-    return users
+@admin_router.get("/patients", response_model=List[Patient], tags=["Admin - Patients"])
+async def get_patients():
+    cursor = patients_collection.find({})
+    patients = await cursor.to_list(length=1000)
+    return patients
 
 @admin_router.get("/scales", response_model=List[Scale], tags=["Admin - Configuration"])
 async def get_admin_scales():
@@ -28,26 +29,26 @@ async def get_admin_scales():
     scales = await cursor.to_list(length=100)
     return scales
 
-@admin_router.post("/users", response_model=User, status_code=status.HTTP_201_CREATED, tags=["Admin - Users"])
-async def create_user(user: User):
-    user_dict = user.model_dump()
-    await users_collection.insert_one(user_dict)
-    return user
+@admin_router.post("/patients", response_model=Patient, status_code=status.HTTP_201_CREATED, tags=["Admin - Patients"])
+async def create_patient(patient: Patient):
+    patient_dict = patient.model_dump()
+    await patients_collection.insert_one(patient_dict)
+    return patient
 
-@admin_router.put("/users/{id}", response_model=User, tags=["Admin - Users"])
-async def update_user(id: str, user: User):
-    user_dict = user.model_dump()
-    result = await users_collection.replace_one({"id": id}, user_dict)
+@admin_router.put("/patients/{id}", response_model=Patient, tags=["Admin - Patients"])
+async def update_patient(id: str, patient: Patient):
+    patient_dict = patient.model_dump()
+    result = await patients_collection.replace_one({"id": id}, patient_dict)
     if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Utente non trovato")
-    return user
+        raise HTTPException(status_code=404, detail="Paziente non trovato")
+    return patient
 
-@admin_router.delete("/users/{id}", tags=["Admin - Users"])
-async def delete_user(id: str):
-    result = await users_collection.delete_one({"id": id})
+@admin_router.delete("/patients/{id}", tags=["Admin - Patients"])
+async def delete_patient(id: str):
+    result = await patients_collection.delete_one({"id": id})
     if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Utente non trovato")
-    return {"message": "Utente eliminato con successo"}
+        raise HTTPException(status_code=404, detail="Paziente non trovato")
+    return {"message": "Paziente eliminato con successo"}
 
 @admin_router.get("/evaluations/{id_patient}", response_model=List[Evaluation], tags=["Admin - Evaluations"])
 async def get_evaluations(id_patient: str):
@@ -189,9 +190,10 @@ async def create_evaluation(evaluation: Evaluation):
         
     return evaluation
 
-@client_router.get("/users", response_model=List[User], tags=["Client - Users"])
-async def get_client_users():
-    """Recupero utenti per la selezione prima del wizard"""
-    cursor = users_collection.find({})
-    users = await cursor.to_list(length=1000)
-    return users
+@client_router.get("/patients", response_model=List[Patient], tags=["Client - Patients"])
+async def get_client_patients():
+    """Recupero pazienti per la selezione prima del wizard"""
+    cursor = patients_collection.find({})
+    patients = await cursor.to_list(length=1000)
+    # The frontend only needs id, nome, cognome. Patient model has them.
+    return patients
