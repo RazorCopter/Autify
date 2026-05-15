@@ -1,32 +1,49 @@
 version: '3.8'
 
 services:
-  autanalysis_api:
-    build: ./backend
-    ports:
-      - "8000:8000" # Manteniamo esposta la porta per il development e per il frontend_client
+  # BACKEND API
+  autanalysis-api:
+    build:
+      context: https://github.com/RazorCopter/AutAnalysis.git#main:backend
+    container_name: AutAnalysis-API
     environment:
-      - MONGODB_URL=mongodb://autanalysis_mongodb:27017
-    volumes:
-      - ./backend/app:/app/app
+      - MONGODB_URL=mongodb://autanalysis-db:27017
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - TZ=Europe/Rome
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
     depends_on:
-      - autanalysis_mongodb
+      - autanalysis-db
+    restart: unless-stopped
 
-  autanalysis_admin_web:
-    build: 
-      context: ./frontend_admin
-      dockerfile: Dockerfile
+  # FRONTEND ADMIN (porta 8090)
+  autanalysis-admin:
+    build:
+      context: https://github.com/RazorCopter/AutAnalysis.git#main:frontend_admin
+    container_name: AutAnalysis-Admin
     ports:
-      - "80:80"
+      - "8090:80"
     depends_on:
-      - autanalysis_api
+      - autanalysis-api
+    restart: unless-stopped
 
-  autanalysis_mongodb:
+  # FRONTEND CLIENT (porta 8091)
+  autanalysis-client:
+    build:
+      context: https://github.com/RazorCopter/AutAnalysis.git#main:frontend_client
+    container_name: AutAnalysis-Client
+    ports:
+      - "8091:80"
+    depends_on:
+      - autanalysis-api
+    restart: unless-stopped
+
+  # DATABASE
+  autanalysis-db:
     image: mongo:latest
-    ports:
-      - "27017:27017"
+    container_name: AutAnalysis_MongoDB
+    restart: unless-stopped
     volumes:
-      - mongodb_data:/data/db
+      - autanalysis_data:/data/db
 
 volumes:
-  mongodb_data:
+  autanalysis_data:
