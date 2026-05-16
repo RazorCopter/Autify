@@ -60,6 +60,7 @@ class Evaluation(BaseModel):
     id_scala: str
     data_compilazione: datetime = Field(default_factory=datetime.utcnow)
     nome_operatore: str
+    nome_intervistato: Optional[str] = None
     risposte: List[Answer]
 
 # --- MODELLI AGGREGAZIONE E PDF ---
@@ -88,6 +89,7 @@ class AggregatedEvaluation(BaseModel):
     anno: int
     data_compilazione: datetime
     nome_operatore: str
+    nome_intervistato: Optional[str] = None
     domini: List[DomainScore]
     risposte: List[Answer]
 

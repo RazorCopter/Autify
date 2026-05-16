@@ -161,19 +161,20 @@ class ApiService {
 
   // --- VALUTAZIONI AGGREGATE ---
 
-  Future<AggregatedEvaluation?> getAggregatedEvaluation(
+  Future<List<AggregatedEvaluation>> getAggregatedEvaluationHistory(
       String patientId, String scaleId) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/evaluations/$patientId/$scaleId'),
       );
       if (response.statusCode == 200) {
-        return AggregatedEvaluation.fromJson(jsonDecode(response.body));
+        final List<dynamic> body = jsonDecode(response.body);
+        return body.map((json) => AggregatedEvaluation.fromJson(json)).toList();
       }
-      return null;
+      return [];
     } catch (e) {
-      print('Errore caricamento valutazione aggregata: $e');
-      return null;
+      print('Errore caricamento storico valutazioni: $e');
+      return [];
     }
   }
 

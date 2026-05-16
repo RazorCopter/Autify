@@ -224,7 +224,8 @@ def generate_evaluation_pdf(
     meta_data = [
         ["Paziente:", nome_paziente,     "Data:",      data_str],
         ["Scala:",    scale.get("nome", ""), "Operatore:", evaluation.get("nome_operatore", "-")],
-        ["Anno:",     str(evaluation.get("anno", "-")), "ID Valutazione:", evaluation.get("id_valutazione", "-")[:8] + "…"],
+        ["Intervistato/a:", evaluation.get("nome_intervistato", "-"), "Anno:", str(evaluation.get("anno", "-"))],
+        ["ID Valutazione:", evaluation.get("id_valutazione", "-")[:8] + "…", "", ""],
     ]
     meta_table = Table(meta_data, colWidths=[2.8*cm, 7*cm, 2.8*cm, 7*cm])
     meta_table.setStyle(TableStyle([

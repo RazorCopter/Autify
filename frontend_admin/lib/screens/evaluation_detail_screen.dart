@@ -27,6 +27,7 @@ class EvaluationDetailScreen extends StatefulWidget {
 class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
   final ApiService _api = ApiService();
 
+  List<AggregatedEvaluation> _history = [];
   AggregatedEvaluation? _eval;
   bool _isLoading = true;
   bool _isSaving = false;
@@ -50,20 +51,14 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    final result = await _api.getAggregatedEvaluation(
+    final history = await _api.getAggregatedEvaluationHistory(
       widget.patient.id,
       widget.scale.id,
     );
-    if (result != null && mounted) {
+    if (history.isNotEmpty && mounted) {
       setState(() {
-        _eval = result;
-        _editableAnswers = result.risposte
-            .map((r) => AnswerModel(
-                  codiceDomanda: r.codiceDomanda,
-                  punteggio: r.punteggio,
-                  nota: r.nota,
-                ))
-            .toList();
+        _history = history;
+        _selectEvaluation(history.first);
         _isLoading = false;
       });
     } else {
@@ -76,6 +71,17 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     }
   }
 
+  void _selectEvaluation(AggregatedEvaluation evaluation) {
+    _eval = evaluation;
+    _editableAnswers = evaluation.risposte
+        .map((r) => AnswerModel(
+              codiceDomanda: r.codiceDomanda,
+              punteggio: r.punteggio,
+              nota: r.nota,
+            ))
+        .toList();
+  }
+
   Future<void> _saveChanges() async {
     if (_eval == null) return;
     setState(() => _isSaving = true);
@@ -85,7 +91,11 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     );
     if (updated != null && mounted) {
       setState(() {
-        _eval = updated;
+        final idx = _history.indexWhere((e) => e.idValutazione == updated.idValutazione);
+        if (idx != -1) {
+          _history[idx] = updated;
+        }
+        _selectEvaluation(updated);
         _isSaving = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -140,6 +150,18 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               ? _buildEmptyState()
               : _buildContent(),
     );
+  }
+
+  String _formatEvaluationDate(String rawDate) {
+    final parsed = DateTime.tryParse(rawDate);
+    if (parsed == null) return rawDate;
+    final local = parsed.toLocal();
+    final day = local.day.toString().padLeft(2, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    final year = local.year.toString();
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '$day/$month/$year $hour:$minute';
   }
 
   AppBar _buildAppBar() {
@@ -223,6 +245,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              _buildHistoryCard(),
+              const SizedBox(height: 20),
               _buildMetaCard(),
               const SizedBox(height: 20),
               _buildChartCard(),
@@ -232,6 +256,39 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               _buildAnswersList(),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryCard() {
+    final selectedId = _eval?.idValutazione;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Storico Valutazioni',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: _history.map((evaluation) {
+                final isSelected = evaluation.idValutazione == selectedId;
+                return ChoiceChip(
+                  selected: isSelected,
+                  label: Text('Valutazione del ${_formatEvaluationDate(evaluation.dataCompilazione)}'),
+                  onSelected: (_) {
+                    setState(() => _selectEvaluation(evaluation));
+                  },
+                );
+              }).toList(),
+            ),
+          ],
         ),
       ),
     );
@@ -249,10 +306,12 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
           children: [
             _metaItem('Paziente', '${widget.patient.nome} ${widget.patient.cognome}'),
             _metaItem('Scala', widget.scale.nome),
-            _metaItem('Data', e.dataCompilazione),
+            _metaItem('Data', _formatEvaluationDate(e.dataCompilazione)),
             _metaItem('Anno', e.anno.toString()),
             _metaItem('Operatore', e.nomeOperatore),
-            _metaItem('ID', e.idValutazione.substring(0, 8) + '…'),
+            if (e.nomeIntervistato != null && e.nomeIntervistato!.isNotEmpty)
+              _metaItem('Intervistato/a', e.nomeIntervistato!),
+            _metaItem('ID', e.idValutazione.length > 8 ? '${e.idValutazione.substring(0, 8)}…' : e.idValutazione),
           ],
         ),
       ),

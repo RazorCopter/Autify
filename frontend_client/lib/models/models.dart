@@ -103,6 +103,8 @@ class EvaluationModel {
   final String idScala;
   final int anno;
   final String nomeOperatore;
+  final String? nomeIntervistato;
+  final String? dataCompilazione;
   final List<AnswerModel> risposte;
 
   EvaluationModel({
@@ -110,6 +112,8 @@ class EvaluationModel {
     required this.idScala,
     required this.anno,
     required this.nomeOperatore,
+    this.nomeIntervistato,
+    this.dataCompilazione,
     required this.risposte,
   });
 
@@ -119,6 +123,8 @@ class EvaluationModel {
       'id_scala': idScala,
       'anno': anno,
       'nome_operatore': nomeOperatore,
+      if (nomeIntervistato != null) 'nome_intervistato': nomeIntervistato,
+      if (dataCompilazione != null) 'data_compilazione': dataCompilazione,
       'risposte': risposte.map((e) => e.toJson()).toList(),
     };
   }

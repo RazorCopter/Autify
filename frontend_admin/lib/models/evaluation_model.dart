@@ -54,6 +54,7 @@ class AggregatedEvaluation {
   final int anno;
   final String dataCompilazione;
   final String nomeOperatore;
+  final String? nomeIntervistato;
   final List<DomainScore> domini;
   final List<AnswerModel> risposte;
 
@@ -64,6 +65,7 @@ class AggregatedEvaluation {
     required this.anno,
     required this.dataCompilazione,
     required this.nomeOperatore,
+    this.nomeIntervistato,
     required this.domini,
     required this.risposte,
   });
@@ -74,8 +76,9 @@ class AggregatedEvaluation {
       idPaziente: json['id_paziente'] ?? '',
       idScala: json['id_scala'] ?? '',
       anno: json['anno'] ?? 0,
-      dataCompilazione: json['data_compilazione']?.toString().substring(0, 10) ?? '',
+      dataCompilazione: json['data_compilazione']?.toString() ?? '',
       nomeOperatore: json['nome_operatore'] ?? '',
+      nomeIntervistato: json['nome_intervistato'],
       domini: (json['domini'] as List?)
               ?.map((e) => DomainScore.fromJson(e))
               .toList() ??

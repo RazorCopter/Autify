@@ -34,7 +34,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   static const _navItems = [
     (icon: Icons.dashboard_outlined, active: Icons.dashboard, label: 'Dashboard'),
-    (icon: Icons.people_outline, active: Icons.people, label: 'Anagrafica'),
+    (icon: Icons.people_outline, active: Icons.people, label: 'Utenza'),
     (icon: Icons.library_books_outlined, active: Icons.library_books, label: 'Protocolli'),
     (icon: Icons.settings_outlined, active: Icons.settings, label: 'Impostazioni'),
   ];
@@ -194,7 +194,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
           const SizedBox(height: 24),
           Text(
-            isHome ? 'Dashboard Analitica' : 'Gestione Anagrafica',
+            isHome ? 'Dashboard Analitica' : 'Gestione Utenza',
             style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w800,

@@ -275,7 +275,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Anagrafica Pazienti',
+                        Text('Utenza',
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w800,

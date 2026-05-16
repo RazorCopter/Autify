@@ -40,9 +40,16 @@ class _WizardScreenState extends State<WizardScreen>
   int _currentIndex = 0;
   int _prevIndex = 0; // Per direzione animazione
 
+  bool _preliminaryDone = false;
+  final TextEditingController _dataController = TextEditingController();
+  final TextEditingController _operatoreController = TextEditingController();
+  final TextEditingController _intervistatoController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    _dataController.text = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     _loadScale();
   }
 
@@ -50,6 +57,9 @@ class _WizardScreenState extends State<WizardScreen>
   void dispose() {
     _noteController.dispose();
     _pageController.dispose();
+    _dataController.dispose();
+    _operatoreController.dispose();
+    _intervistatoController.dispose();
     super.dispose();
   }
 
@@ -127,7 +137,15 @@ class _WizardScreenState extends State<WizardScreen>
       idPaziente: widget.patientId,
       idScala: widget.scaleId,
       anno: DateTime.now().year,
-      nomeOperatore: 'Operatore',
+      nomeOperatore: _operatoreController.text.isNotEmpty
+          ? _operatoreController.text
+          : 'Operatore',
+      nomeIntervistato: _intervistatoController.text.isNotEmpty
+          ? _intervistatoController.text
+          : null,
+      dataCompilazione: _dataController.text.isNotEmpty
+          ? _dataController.text
+          : null,
       risposte: answersList,
     );
 
@@ -196,6 +214,22 @@ class _WizardScreenState extends State<WizardScreen>
       );
     }
 
+    if (!_preliminaryDone) {
+      return Scaffold(
+        body: Container(
+          decoration: _gradientDecoration(),
+          child: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: _buildPreliminaryCard(),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     if (_questions.isEmpty) {
       return Scaffold(
         body: Container(
@@ -260,6 +294,148 @@ class _WizardScreenState extends State<WizardScreen>
                 ),
               );
             },
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── Scheda preliminare ─────────────────────────────────────────────────
+  Widget _buildPreliminaryCard() {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 500),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.72),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.9), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                  blurRadius: 32,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Icon(Icons.assignment_ind_outlined, size: 48, color: AppTheme.primaryColor),
+                const SizedBox(height: 16),
+                const Text(
+                  'Dati Valutazione',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Compila i dati generali prima di iniziare',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+                ),
+                const SizedBox(height: 28),
+                // Data compilazione
+                TextField(
+                  controller: _dataController,
+                  readOnly: true,
+                  decoration: InputDecoration(
+                    labelText: 'Data compilazione',
+                    prefixIcon: const Icon(Icons.calendar_today, color: AppTheme.primaryColor),
+                    filled: true,
+                    fillColor: const Color(0xFFF3F8FF),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE8EEF8)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE8EEF8)),
+                    ),
+                  ),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.tryParse(_dataController.text) ?? DateTime.now(),
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                      helpText: 'Seleziona data compilazione',
+                    );
+                    if (picked != null) {
+                      _dataController.text = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                // Nome Operatore
+                TextField(
+                  controller: _operatoreController,
+                  decoration: InputDecoration(
+                    labelText: 'Nome Operatore',
+                    hintText: 'Inserisci il tuo nome',
+                    prefixIcon: const Icon(Icons.badge_outlined, color: AppTheme.primaryColor),
+                    filled: true,
+                    fillColor: const Color(0xFFF3F8FF),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE8EEF8)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE8EEF8)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Nome Intervistata/o
+                TextField(
+                  controller: _intervistatoController,
+                  decoration: InputDecoration(
+                    labelText: 'Nome Intervistata/o',
+                    hintText: 'Nome della persona intervistata',
+                    prefixIcon: const Icon(Icons.person_outline, color: AppTheme.primaryColor),
+                    filled: true,
+                    fillColor: const Color(0xFFF3F8FF),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE8EEF8)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE8EEF8)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  height: 52,
+                  child: FilledButton.icon(
+                    onPressed: () => setState(() => _preliminaryDone = true),
+                    icon: const Icon(Icons.play_circle_outline, size: 22),
+                    label: const Text(
+                      'Inizia Compilazione',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

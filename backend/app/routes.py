@@ -5,7 +5,7 @@ from bson import ObjectId
 from .models import Scale, Evaluation, Patient, AppSettings, Section, Question, Option, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest
 from .database import evaluations_collection, database, settings_collection
 from .pdf_generator import generate_evaluation_pdf, aggregate_domains
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import uuid
 import io
@@ -247,28 +247,34 @@ async def download_evaluation_pdf(
 
 
 @admin_router.get("/evaluations/{patient_id}/{scale_id}",
-                  response_model=AggregatedEvaluation,
+                  response_model=List[AggregatedEvaluation],
                   tags=["Admin - Evaluations"])
 async def get_aggregated_evaluation(patient_id: str, scale_id: str):
-    """Recupera l'ultima valutazione per paziente+scala con aggregazione per dominio."""
-    eval_doc = await evaluations_collection.find_one(
-        {"id_paziente": patient_id, "id_scala": scale_id},
-        sort=[("data_compilazione", -1)]
-    )
-    if not eval_doc:
+    """Recupera lo storico valutazioni per paziente+scala ordinato per data decrescente."""
+    cursor = evaluations_collection.find(
+        {"id_paziente": patient_id, "id_scala": scale_id}
+    ).sort("data_compilazione", -1)
+    eval_docs = await cursor.to_list(length=1000)
+    if not eval_docs:
         raise HTTPException(status_code=404, detail="Nessuna valutazione trovata")
 
-    domains = aggregate_domains(eval_doc.get("risposte", []), DOMINI_POS)
-    return AggregatedEvaluation(
-        id_valutazione=eval_doc["id_valutazione"],
-        id_paziente=eval_doc["id_paziente"],
-        id_scala=eval_doc["id_scala"],
-        anno=eval_doc["anno"],
-        data_compilazione=eval_doc["data_compilazione"],
-        nome_operatore=eval_doc["nome_operatore"],
-        domini=domains,
-        risposte=eval_doc.get("risposte", []),
-    )
+    history = []
+    for eval_doc in eval_docs:
+        domains = aggregate_domains(eval_doc.get("risposte", []), DOMINI_POS)
+        history.append(
+            AggregatedEvaluation(
+                id_valutazione=eval_doc["id_valutazione"],
+                id_paziente=eval_doc["id_paziente"],
+                id_scala=eval_doc["id_scala"],
+                anno=eval_doc["anno"],
+                data_compilazione=eval_doc["data_compilazione"],
+                nome_operatore=eval_doc["nome_operatore"],
+                nome_intervistato=eval_doc.get("nome_intervistato"),
+                domini=domains,
+                risposte=eval_doc.get("risposte", []),
+            )
+        )
+    return history
 
 
 @admin_router.put("/evaluations/{evaluation_id}",
@@ -294,6 +300,7 @@ async def update_evaluation(evaluation_id: str, payload: EvaluationUpdateRequest
         anno=existing["anno"],
         data_compilazione=existing["data_compilazione"],
         nome_operatore=existing["nome_operatore"],
+        nome_intervistato=existing.get("nome_intervistato"),
         domini=domains,
         risposte=new_risposte,
     )
@@ -346,6 +353,9 @@ async def get_scale_by_id(scale_id: str):
 async def create_evaluation(evaluation: Evaluation):
     """Salva una nuova valutazione compilata nel database"""
     eval_dict = evaluation.model_dump()
+    if not eval_dict.get("data_compilazione"):
+        eval_dict["data_compilazione"] = datetime.now(timezone.utc)
+    evaluation = Evaluation(**eval_dict)
     result = await evaluations_collection.insert_one(eval_dict)
     
     if not result.inserted_id:
