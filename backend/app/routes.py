@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query, status, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from typing import List, Literal
-from .models import Scale, Evaluation, Patient, AppSettings, Section, Question, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest
+from .models import Scale, Evaluation, Patient, AppSettings, Section, Question, Option, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest
 from .database import evaluations_collection, database, settings_collection
 from .pdf_generator import generate_evaluation_pdf, aggregate_domains
 from datetime import datetime
@@ -277,6 +277,13 @@ async def download_evaluation_pdf(
 @admin_router.post("/settings", tags=["Admin - Configuration"])
 async def update_settings(settings: AppSettings):
     settings_dict = settings.model_dump()
+    
+    # Se il frontend invia la chiave mascherata, recuperiamo quella vera dal DB
+    if settings_dict.get("gemini_api_key") == "***-HIDDEN":
+        existing = await settings_collection.find_one({"id": settings.id})
+        if existing:
+            settings_dict["gemini_api_key"] = existing.get("gemini_api_key")
+            
     await settings_collection.replace_one({"id": settings.id}, settings_dict, upsert=True)
     return {"message": "Impostazioni salvate con successo"}
 
@@ -284,7 +291,10 @@ async def update_settings(settings: AppSettings):
 async def get_settings():
     doc = await settings_collection.find_one({"id": "global_settings"})
     if doc:
-        return AppSettings(**doc)
+        settings = AppSettings(**doc)
+        if settings.gemini_api_key:
+            settings.gemini_api_key = "***-HIDDEN"
+        return settings
     return AppSettings()
 
 

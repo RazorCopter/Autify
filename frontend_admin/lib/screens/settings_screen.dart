@@ -40,10 +40,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _pickAndUploadCSV() async {
+  Future<void> _pickAndUploadJSON() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['csv'],
+      allowedExtensions: ['json'],
       withData: true, // Fondamentale per il Web
     );
 
@@ -53,9 +53,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _uploadStatus = 'Caricamento in corso...';
       });
 
-      final success = await _apiService.uploadProtocolCSV(
+      final success = await _apiService.uploadProtocolJSON(
         result.files.single,
-        scaleType: _selectedScaleType,
       );
 
       setState(() {
@@ -100,7 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   const Text('Protocolli Clinici', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  const Text('Importa le scale di valutazione da file CSV. Scegli il profilo di importazione corretto prima di caricare il file.'),
+                  const Text('Importa le scale di valutazione da file JSON.'),
                   const SizedBox(height: 16),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -127,9 +126,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       SizedBox(
                         height: 56, // Match DropdownButtonFormField height roughly
                         child: ElevatedButton.icon(
-                          onPressed: _isLoading ? null : _pickAndUploadCSV,
+                          onPressed: _isLoading ? null : _pickAndUploadJSON,
                           icon: const Icon(Icons.upload_file),
-                          label: const Text('Carica Protocollo CSV'),
+                          label: const Text('Carica Protocollo JSON'),
                         ),
                       ),
                     ],

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/patient_model.dart';
+import '../models/scale_model.dart';
+import 'evaluation_detail_screen.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 
@@ -13,6 +15,7 @@ class AnagraficaScreen extends StatefulWidget {
 class _AnagraficaScreenState extends State<AnagraficaScreen> {
   final ApiService _apiService = ApiService();
   late Future<List<PatientModel>> _patientsFuture;
+  List<ScaleModel> _availableScales = [];
   bool _isLoading = false;
 
   @override
@@ -25,6 +28,14 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
     setState(() {
       _patientsFuture = _apiService.getPatients();
     });
+    _loadScales();
+  }
+
+  Future<void> _loadScales() async {
+    final scales = await _apiService.getScales();
+    if (mounted) {
+      setState(() => _availableScales = scales);
+    }
   }
 
   Future<void> _showPatientDialog({PatientModel? patient}) async {
@@ -417,6 +428,57 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                IconButton(
+                  icon: const Icon(Icons.analytics_outlined, size: 20, color: AppTheme.accentColor),
+                  onPressed: () {
+                    if (_availableScales.isEmpty) {
+                      _showSnack('Nessun protocollo disponibile', isError: true);
+                      return;
+                    }
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        title: const Text('Scegli Protocollo', style: TextStyle(fontWeight: FontWeight.bold)),
+                        content: SizedBox(
+                          width: double.maxFinite,
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _availableScales.length,
+                            itemBuilder: (context, index) {
+                              final scale = _availableScales[index];
+                              return ListTile(
+                                leading: const Icon(Icons.description_outlined, color: AppTheme.primaryColor),
+                                title: Text(scale.nome, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                subtitle: Text(scale.id, style: const TextStyle(fontSize: 12)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                onTap: () {
+                                  Navigator.pop(ctx);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => EvaluationDetailScreen(
+                                        patient: patient,
+                                        scale: scale,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('Annulla'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  tooltip: 'Analisi Valutazione',
+                ),
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, size: 20, color: AppTheme.primaryColor),
                   onPressed: () => _showPatientDialog(patient: patient),
