@@ -212,6 +212,40 @@ async def delete_scale(id: str):
     return {"message": "Protocollo eliminato con successo"}
 
 
+@admin_router.get("/evaluations/{evaluation_id}/pdf", tags=["Admin - Evaluations"])
+async def download_evaluation_pdf(
+    evaluation_id: str,
+    chart_type: Literal["linear", "bars"] = Query("bars", description="Tipo di grafico: linear | bars"),
+):
+    """Genera e scarica il PDF della valutazione con il grafico selezionato."""
+    eval_doc = await _find_evaluation_document(evaluation_id)
+    if not eval_doc:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Valutazione non trovata per id '{evaluation_id}'",
+        )
+
+    patient_doc = await patients_collection.find_one({"id": eval_doc["id_paziente"]})
+    scale_doc   = await scales_collection.find_one({"id": eval_doc["id_scala"]})
+
+    domains = aggregate_domains(eval_doc.get("risposte", []), DOMINI_POS)
+
+    pdf_bytes = generate_evaluation_pdf(
+        evaluation=eval_doc,
+        patient=patient_doc or {},
+        scale=scale_doc or {},
+        domains=domains,
+        chart_type=chart_type,
+    )
+
+    filename = f"valutazione_{evaluation_id[:8]}_{chart_type}.pdf"
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @admin_router.get("/evaluations/{patient_id}/{scale_id}",
                   response_model=AggregatedEvaluation,
                   tags=["Admin - Evaluations"])
@@ -262,40 +296,6 @@ async def update_evaluation(evaluation_id: str, payload: EvaluationUpdateRequest
         nome_operatore=existing["nome_operatore"],
         domini=domains,
         risposte=new_risposte,
-    )
-
-
-@admin_router.get("/evaluations/{evaluation_id}/pdf", tags=["Admin - Evaluations"])
-async def download_evaluation_pdf(
-    evaluation_id: str,
-    chart_type: Literal["linear", "bars"] = Query("bars", description="Tipo di grafico: linear | bars"),
-):
-    """Genera e scarica il PDF della valutazione con il grafico selezionato."""
-    eval_doc = await _find_evaluation_document(evaluation_id)
-    if not eval_doc:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Valutazione non trovata per id '{evaluation_id}'",
-        )
-
-    patient_doc = await patients_collection.find_one({"id": eval_doc["id_paziente"]})
-    scale_doc   = await scales_collection.find_one({"id": eval_doc["id_scala"]})
-
-    domains = aggregate_domains(eval_doc.get("risposte", []), DOMINI_POS)
-
-    pdf_bytes = generate_evaluation_pdf(
-        evaluation=eval_doc,
-        patient=patient_doc or {},
-        scale=scale_doc or {},
-        domains=domains,
-        chart_type=chart_type,
-    )
-
-    filename = f"valutazione_{evaluation_id[:8]}_{chart_type}.pdf"
-    return StreamingResponse(
-        io.BytesIO(pdf_bytes),
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 @admin_router.post("/settings", tags=["Admin - Configuration"])
