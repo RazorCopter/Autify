@@ -35,6 +35,10 @@ async def get_admin_scales():
 @admin_router.post("/patients", response_model=Patient, status_code=status.HTTP_201_CREATED, tags=["Admin - Patients"])
 async def create_patient(patient: Patient):
     patient_dict = patient.model_dump()
+    if not patient_dict.get("id"):
+        patient_dict.pop("id", None)
+        patient = Patient(**patient_dict)
+        patient_dict = patient.model_dump()
     await patients_collection.insert_one(patient_dict)
     return patient
 

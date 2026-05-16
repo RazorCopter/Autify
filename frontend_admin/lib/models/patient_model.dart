@@ -28,7 +28,7 @@ class PatientModel {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      if (id.isNotEmpty) 'id': id,
       'nome': nome,
       'cognome': cognome,
       'altezza': altezza,

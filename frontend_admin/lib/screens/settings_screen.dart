@@ -15,15 +15,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   
   bool _isLoading = false;
   String? _uploadStatus;
-  String _selectedScaleType = 'POS';
-
-  final List<String> _scaleTypes = [
-    'POS',
-    'San Martin',
-    'Griglia Autonomia ODFLAB',
-    'ABS',
-    'Scala Osservativa ODFLAB'
-  ];
 
   @override
   void initState() {
@@ -101,37 +92,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 8),
                   const Text('Importa le scale di valutazione da file JSON.'),
                   const SizedBox(height: 16),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          decoration: const InputDecoration(
-                            labelText: 'Profilo di Importazione',
-                            border: OutlineInputBorder(),
-                          ),
-                          initialValue: _selectedScaleType,
-                          items: _scaleTypes.map((type) => DropdownMenuItem(
-                            value: type,
-                            child: Text(type),
-                          )).toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() => _selectedScaleType = val);
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      SizedBox(
-                        height: 56, // Match DropdownButtonFormField height roughly
-                        child: ElevatedButton.icon(
-                          onPressed: _isLoading ? null : _pickAndUploadJSON,
-                          icon: const Icon(Icons.upload_file),
-                          label: const Text('Carica Protocollo JSON'),
-                        ),
-                      ),
-                    ],
+                  SizedBox(
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: _isLoading ? null : _pickAndUploadJSON,
+                      icon: const Icon(Icons.upload_file),
+                      label: const Text('Carica Protocollo JSON'),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Row(
