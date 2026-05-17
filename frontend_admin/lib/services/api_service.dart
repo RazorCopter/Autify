@@ -213,6 +213,23 @@ class ApiService {
     }
   }
 
+  // --- ANALISI PSICOMETRICA ---
+
+  Future<PsychometricAnalysis?> getEvaluationAnalysis(String evaluationId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/evaluations/$evaluationId/analysis'),
+      );
+      if (response.statusCode == 200) {
+        return PsychometricAnalysis.fromJson(jsonDecode(response.body));
+      }
+      return null;
+    } catch (e) {
+      print('Errore caricamento analisi: $e');
+      return null;
+    }
+  }
+
   // --- DATABASE EXPORT / IMPORT ---
 
   Future<List<int>?> exportDatabase() async {

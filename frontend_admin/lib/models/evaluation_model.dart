@@ -47,6 +47,67 @@ class DomainScore {
   }
 }
 
+class DomainAnalysis {
+  final String codice;
+  final String etichetta;
+  final int punteggioDiretto;
+  final int? punteggioStandard;
+  final int numDomande;
+
+  DomainAnalysis({
+    required this.codice,
+    required this.etichetta,
+    required this.punteggioDiretto,
+    this.punteggioStandard,
+    required this.numDomande,
+  });
+
+  factory DomainAnalysis.fromJson(Map<String, dynamic> json) {
+    return DomainAnalysis(
+      codice: json['codice'] ?? '',
+      etichetta: json['etichetta'] ?? '',
+      punteggioDiretto: json['punteggio_diretto'] ?? 0,
+      punteggioStandard: json['punteggio_standard'],
+      numDomande: json['num_domande'] ?? 0,
+    );
+  }
+}
+
+class PsychometricAnalysis {
+  final String idValutazione;
+  final String idPaziente;
+  final String idScala;
+  final String scalaNome;
+  final List<DomainAnalysis> domini;
+  final int? indiceQv;
+  final int? percentile;
+
+  PsychometricAnalysis({
+    required this.idValutazione,
+    required this.idPaziente,
+    required this.idScala,
+    required this.scalaNome,
+    required this.domini,
+    this.indiceQv,
+    this.percentile,
+  });
+
+  factory PsychometricAnalysis.fromJson(Map<String, dynamic> json) {
+    return PsychometricAnalysis(
+      idValutazione: json['id_valutazione'] ?? '',
+      idPaziente: json['id_paziente'] ?? '',
+      idScala: json['id_scala'] ?? '',
+      scalaNome: json['scala_nome'] ?? '',
+      indiceQv: json['indice_qv'],
+      percentile: json['percentile'],
+      domini: (json['domini'] as List?)
+              ?.map((e) => DomainAnalysis.fromJson(e))
+              .toList() ??
+          [],
+    );
+  }
+}
+
 class AggregatedEvaluation {
   final String idValutazione;
   final String idPaziente;

@@ -29,9 +29,11 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
 
   List<AggregatedEvaluation> _history = [];
   AggregatedEvaluation? _eval;
+  PsychometricAnalysis? _analysis;
   bool _isLoading = true;
   bool _isSaving = false;
   bool _isDownloading = false;
+  bool _isLoadingAnalysis = false;
 
   // Teniamo una copia mutabile delle risposte per l'editing inline
   List<AnswerModel> _editableAnswers = [];
@@ -78,6 +80,19 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               nota: r.nota,
             ))
         .toList();
+    _loadAnalysis();
+  }
+
+  Future<void> _loadAnalysis() async {
+    if (_eval == null) return;
+    setState(() => _isLoadingAnalysis = true);
+    final analysis = await _api.getEvaluationAnalysis(_eval!.idValutazione);
+    if (mounted) {
+      setState(() {
+        _analysis = analysis;
+        _isLoadingAnalysis = false;
+      });
+    }
   }
 
   Future<void> _saveChanges() async {
@@ -153,7 +168,9 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     final day = local.day.toString().padLeft(2, '0');
     final month = local.month.toString().padLeft(2, '0');
     final year = local.year.toString();
-    return '$day/$month/$year';
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '$day/$month/$year $hour:$minute';
   }
 
   AppBar _buildAppBar() {
@@ -241,6 +258,10 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               const SizedBox(height: 20),
               _buildMetaCard(),
               const SizedBox(height: 20),
+              if (_analysis != null && _analysis!.indiceQv != null)
+                _buildQvSummaryCard(),
+              if (_analysis != null && _analysis!.indiceQv != null)
+                const SizedBox(height: 20),
               _buildChartCard(),
               const SizedBox(height: 20),
               _buildDomainTable(),
@@ -299,6 +320,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
             _metaItem('Paziente', '${widget.patient.nome} ${widget.patient.cognome}'),
             _metaItem('Scala', widget.scale.nome),
             _metaItem('Data', _formatEvaluationDate(e.dataCompilazione)),
+            _metaItem('Anno', e.anno.toString()),
             _metaItem('Operatore', e.nomeOperatore),
             if (e.nomeIntervistato != null && e.nomeIntervistato!.isNotEmpty)
               _metaItem('Intervistato/a', e.nomeIntervistato!),
@@ -321,6 +343,81 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     );
   }
 
+  // ─── Card Riepilogo QV ──────────────────────────────────────────────────────
+  Widget _buildQvSummaryCard() {
+    final a = _analysis!;
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1A237E), Color(0xFF3949AB)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 32),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Indice di Qualità della Vita',
+                      style: TextStyle(fontSize: 14, color: Colors.white70)),
+                  const SizedBox(height: 6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(a.indiceQv?.toString() ?? '—',
+                          style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white)),
+                      const SizedBox(width: 8),
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 8),
+                        child: Text('/ 132',
+                            style: TextStyle(fontSize: 16, color: Colors.white54)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              width: 2, height: 60,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(1),
+              ),
+            ),
+            const SizedBox(width: 32),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text('Percentile',
+                    style: TextStyle(fontSize: 14, color: Colors.white70)),
+                const SizedBox(height: 4),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(a.percentile?.toString() ?? '—',
+                        style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Color(0xFFAED581))),
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 6),
+                      child: Text('°',
+                          style: TextStyle(fontSize: 22, color: Color(0xFFAED581))),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ─── Card Grafico ──────────────────────────────────────────────────────────
   Widget _buildChartCard() {
     return Card(
@@ -329,13 +426,22 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Profilo Punteggi per Dominio',
+            const Text('Profilo Punteggi Standard per Dominio',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+            const SizedBox(height: 4),
+            const Text('Scala 1–20 · Media=10 · DS=3',
+                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
             const SizedBox(height: 24),
-            SizedBox(
-              height: 300,
-              child: _buildBarChart(),
-            ),
+            if (_isLoadingAnalysis)
+              const SizedBox(
+                height: 300,
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else
+              SizedBox(
+                height: 300,
+                child: _buildBarChart(),
+              ),
           ],
         ),
       ),
@@ -344,16 +450,26 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
 
   // ─── Istogramma Barre ──────────────────────────────────────────────────────
   Widget _buildBarChart() {
-    final domains = _eval!.domini;
+    final hasAnalysis = _analysis != null && _analysis!.domini.isNotEmpty;
+    final items = hasAnalysis ? _analysis!.domini : _eval!.domini;
+    final useStandard = hasAnalysis && _analysis!.indiceQv != null;
+    final maxY = useStandard ? 20.0 : 18.0;
+
     return BarChart(
       BarChartData(
+        maxY: maxY,
         alignment: BarChartAlignment.spaceAround,
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
             getTooltipItem: (group, groupIdx, rod, rodIdx) {
-              final d = domains[group.x];
+              if (group.x < 0 || group.x >= items.length) return null;
+              final item = items is List<DomainAnalysis>
+                  ? items[group.x]
+                  : (items as List<DomainScore>)[group.x];
+              final label = item is DomainAnalysis ? item.etichetta : (item as DomainScore).etichetta;
+              final suffix = useStandard ? ' std' : ' pt';
               return BarTooltipItem(
-                '${d.etichetta}\n${rod.toY.toInt()} pt',
+                '$label\n${rod.toY.toInt()}$suffix',
                 const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
               );
             },
@@ -363,19 +479,22 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 60,
+              reservedSize: 48,
               getTitlesWidget: (val, _) {
                 final idx = val.toInt();
-                if (idx < 0 || idx >= domains.length) return const SizedBox();
+                if (idx < 0 || idx >= items.length) return const SizedBox();
+                final name = items is List<DomainAnalysis>
+                    ? (items as List<DomainAnalysis>)[idx].etichetta
+                    : (items as List<DomainScore>)[idx].etichetta;
                 return Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: SizedBox(
-                    width: 80,
+                    width: 70,
                     child: Text(
-                      _wrapLabel(domains[idx].etichetta),
+                      name,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 10,
+                        fontSize: 11,
                         color: AppTheme.textPrimary,
                       ),
                       maxLines: 2,
@@ -391,7 +510,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 32,
-              interval: 5,
+              interval: useStandard ? 5 : 5,
               getTitlesWidget: (val, _) => Text(
                 val.toInt().toString(),
                 style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary),
@@ -408,19 +527,24 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
           getDrawingHorizontalLine: (_) =>
               FlLine(color: const Color(0xFFE8EEF8), strokeWidth: 1),
         ),
-        barGroups: domains.asMap().entries.map((e) {
+        barGroups: items.asMap().entries.map((e) {
           final color = _domainColors[e.key % _domainColors.length];
+          final value = items is List<DomainAnalysis>
+              ? ((useStandard
+                    ? (items as List<DomainAnalysis>)[e.key].punteggioStandard
+                    : (items as List<DomainAnalysis>)[e.key].punteggioDiretto) ?? 0)
+              : (items as List<DomainScore>)[e.key].punteggio;
           return BarChartGroupData(
             x: e.key,
             barRods: [
               BarChartRodData(
-                toY: e.value.punteggio.toDouble(),
+                toY: value.toDouble(),
                 color: color,
                 width: 28,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
                 backDrawRodData: BackgroundBarChartRodData(
                   show: true,
-                  toY: 18,
+                  toY: useStandard ? 20 : 18,
                   color: color.withValues(alpha: 0.08),
                 ),
               ),
@@ -433,6 +557,18 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
 
   // ─── Tabella riepilogo domini ───────────────────────────────────────────────
   Widget _buildDomainTable() {
+    final hasAnalysis = _analysis != null && _analysis!.domini.isNotEmpty;
+    final showStandard = hasAnalysis && _analysis!.indiceQv != null;
+
+    if (_isLoadingAnalysis) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(40),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -443,52 +579,95 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
             const SizedBox(height: 16),
             Table(
-              columnWidths: const {
-                0: FlexColumnWidth(1),
-                1: FlexColumnWidth(3),
-                2: FlexColumnWidth(1.5),
-                3: FlexColumnWidth(1),
-              },
+              columnWidths: showStandard
+                  ? const {
+                      0: FlexColumnWidth(1),
+                      1: FlexColumnWidth(3),
+                      2: FlexColumnWidth(1.2),
+                      3: FlexColumnWidth(1.2),
+                      4: FlexColumnWidth(0.8),
+                    }
+                  : const {
+                      0: FlexColumnWidth(1),
+                      1: FlexColumnWidth(3),
+                      2: FlexColumnWidth(1.5),
+                      3: FlexColumnWidth(1),
+                    },
               children: [
                 TableRow(
                   decoration: BoxDecoration(
                     color: AppTheme.primaryColor.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  children: const [
-                    _TableHeader('Cod.'),
-                    _TableHeader('Dominio'),
-                    _TableHeader('Punteggio'),
-                    _TableHeader('Domande'),
+                  children: [
+                    const _TableHeader('Cod.'),
+                    const _TableHeader('Dominio'),
+                    if (showStandard) ...[
+                      const _TableHeader('Grezzo'),
+                      const _TableHeader('Std'),
+                      const _TableHeader('Dom.'),
+                    ] else ...[
+                      const _TableHeader('Punteggio'),
+                      const _TableHeader('Domande'),
+                    ],
                   ],
                 ),
-                ..._eval!.domini.asMap().entries.map((e) {
-                  final d = e.value;
+                ...(showStandard ? _analysis!.domini.asMap().entries : _eval!.domini.asMap().entries).map((e) {
                   final color = _domainColors[e.key % _domainColors.length];
-                  return TableRow(
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: const Color(0xFFE8EEF8)),
-                      ),
-                    ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(d.codice,
-                              style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 12)),
+                  if (showStandard) {
+                    final d = _analysis!.domini[e.key];
+                    return TableRow(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: const Color(0xFFE8EEF8)),
                         ),
                       ),
-                      _TableCell(d.etichetta),
-                      _TableCell(d.punteggio.toString(), bold: true),
-                      _TableCell(d.numDomande.toString()),
-                    ],
-                  );
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(d.codice,
+                                style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 12)),
+                          ),
+                        ),
+                        _TableCell(d.etichetta),
+                        _TableCell(d.punteggioDiretto.toString()),
+                        _TableCell(d.punteggioStandard?.toString() ?? '—', bold: true),
+                        _TableCell(d.numDomande.toString()),
+                      ],
+                    );
+                  } else {
+                    final d = _eval!.domini[e.key];
+                    return TableRow(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: const Color(0xFFE8EEF8)),
+                        ),
+                      ),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(d.codice,
+                                style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 12)),
+                          ),
+                        ),
+                        _TableCell(d.etichetta),
+                        _TableCell(d.punteggio.toString(), bold: true),
+                        _TableCell(d.numDomande.toString()),
+                      ],
+                    );
+                  }
                 }),
               ],
             ),
@@ -534,25 +713,18 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     final answer = _editableAnswers[idx];
     return ExpansionTile(
       tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      leading: InkWell(
-        borderRadius: BorderRadius.circular(6),
-        onTap: () => _showQuestionDetailDialog(answer),
-        child: Tooltip(
-          message: 'Clicca per vedere la domanda intera',
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              answer.codiceDomanda,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-                color: AppTheme.primaryColor,
-              ),
-            ),
+      leading: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryColor.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          answer.codiceDomanda,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+            color: AppTheme.primaryColor,
           ),
         ),
       ),
@@ -625,258 +797,6 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  String _wrapLabel(String text, {int maxChars = 14}) {
-    if (text == "Autodeterminazione") {
-      return "Autodeter-\nminazione";
-    }
-    if (text.length <= maxChars) {
-      return text;
-    }
-    if (text.contains(' ')) {
-      final List<int> spaces = [];
-      for (int i = 0; i < text.length; i++) {
-        if (text[i] == ' ') {
-          spaces.add(i);
-        }
-      }
-      if (spaces.isNotEmpty) {
-        final mid = text.length / 2;
-        int bestSpace = spaces[0];
-        double minDist = (bestSpace - mid).abs();
-        for (final space in spaces) {
-          final dist = (space - mid).abs();
-          if (dist < minDist) {
-            minDist = dist;
-            bestSpace = space;
-          }
-        }
-        return text.substring(0, bestSpace) + '\n' + text.substring(bestSpace + 1);
-      }
-    }
-    final mid = text.length ~/ 2;
-    return text.substring(0, mid) + '\n' + text.substring(mid);
-  }
-
-  Question? _findQuestionByCode(String code) {
-    for (var section in widget.scale.sezioni) {
-      for (var question in section.domande) {
-        if (question.codice == code || question.idDomanda == code) {
-          return question;
-        }
-      }
-    }
-    return null;
-  }
-
-  void _showQuestionDetailDialog(AnswerModel answer) {
-    final question = _findQuestionByCode(answer.codiceDomanda);
-    if (question == null) return;
-
-    final selectedOption = question.opzioni.firstWhere(
-      (o) => o.punteggio == answer.punteggio,
-      orElse: () => Option(testoRisposta: 'Nessuna descrizione disponibile', punteggio: answer.punteggio),
-    );
-
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Container(
-          width: 550,
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      answer.codiceDomanda,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: AppTheme.primaryColor,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  const Text(
-                    'Dettaglio Domanda',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'DOMANDA',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textSecondary,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                question.testoDomanda,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary,
-                  height: 1.4,
-                ),
-              ),
-              if (question.note != null && question.note!.isNotEmpty) ...[
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.shade100),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.info_outline, size: 18, color: Colors.amber.shade800),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          question.note!,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.amber.shade900,
-                            height: 1.3,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 24),
-              const Divider(color: Color(0xFFE8EEF8)),
-              const SizedBox(height: 16),
-              const Text(
-                'RISPOSTA DATA',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textSecondary,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: const BoxDecoration(
-                      color: AppTheme.accentColor,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        answer.punteggio.toString(),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          selectedOption.testoRisposta,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                        if (selectedOption.descrizione != null && selectedOption.descrizione!.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            selectedOption.descrizione!,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppTheme.textSecondary,
-                              height: 1.3,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              if (answer.nota != null && answer.nota!.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF3F8FF),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE8EEF8)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'NOTA OPERATORE',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textSecondary,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        answer.nota!,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppTheme.textPrimary,
-                          fontStyle: FontStyle.italic,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 28),
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Chiudi'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

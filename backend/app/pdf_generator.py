@@ -18,7 +18,7 @@ from reportlab.lib.units import cm
 from reportlab.lib.colors import Color, HexColor, white, black
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    Image as RLImage, HRFlowable, PageBreak
+    Image as RLImage, HRFlowable
 )
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
@@ -59,16 +59,16 @@ def aggregate_domains(risposte: list, domini_map: Dict[str, str]) -> List[dict]:
 
 def _wrap_label(text: str, max_chars: int = 14) -> str:
     """Divide un'etichetta su due righe se supera max_chars."""
-    if text == "Autodeterminazione":
-        return "Autodeter-\nminazione"
     if len(text) <= max_chars:
         return text
     if ' ' in text:
-        spaces = [i for i, ch in enumerate(text) if ch == ' ']
-        if spaces:
-            mid = len(text) / 2
-            best_space = min(spaces, key=lambda x: abs(x - mid))
-            return text[:best_space] + '\n' + text[best_space + 1:]
+        mid = len(text) // 2
+        best = mid
+        for i, ch in enumerate(text):
+            if ch == ' ':
+                if abs(i - mid) < abs(best - mid):
+                    best = i
+        return text[:best] + '\n' + text[best + 1:]
     mid = len(text) // 2
     return text[:mid] + '\n' + text[mid:]
 
@@ -130,8 +130,8 @@ def generate_evaluation_pdf(
         pagesize=A4,
         leftMargin=1.8 * cm,
         rightMargin=1.8 * cm,
-        topMargin=1.2 * cm,
-        bottomMargin=1.2 * cm,
+        topMargin=2 * cm,
+        bottomMargin=2 * cm,
     )
 
     styles = getSampleStyleSheet()
@@ -179,8 +179,9 @@ def generate_evaluation_pdf(
     )
 
     # ── Header ─────────────────────────────────────────────────────────────
-    story.append(Paragraph("Report Valutativo", title_style))
-    story.append(HRFlowable(width="100%", thickness=1, color=BORDER, spaceBefore=4, spaceAfter=10))
+    story.append(Paragraph("AutAnalysis", title_style))
+    story.append(Paragraph("Report di Valutazione Clinica", subtitle_style))
+    story.append(HRFlowable(width="100%", thickness=1, color=BORDER, spaceAfter=14))
 
     # ── Info paziente / valutazione ─────────────────────────────────────────
     nome_paziente = f"{patient.get('nome', '')} {patient.get('cognome', '')}"
@@ -196,9 +197,10 @@ def generate_evaluation_pdf(
     meta_data = [
         ["Paziente:", nome_paziente,     "Data:",      data_str],
         ["Scala:",    scale.get("nome", ""), "Operatore:", evaluation.get("nome_operatore", "-")],
-        ["Intervistato/a:", evaluation.get("nome_intervistato", "-"), "ID:", evaluation.get("id_valutazione", "-")[:8] + "…"],
+        ["Intervistato/a:", evaluation.get("nome_intervistato", "-"), "Anno:", str(evaluation.get("anno", "-"))],
+        ["ID Valutazione:", evaluation.get("id_valutazione", "-")[:8] + "…", "", ""],
     ]
-    meta_table = Table(meta_data, colWidths=[2.5*cm, 6.2*cm, 2.5*cm, 6.2*cm])
+    meta_table = Table(meta_data, colWidths=[2.8*cm, 7*cm, 2.8*cm, 7*cm])
     meta_table.setStyle(TableStyle([
         ('FONTNAME',    (0, 0), (-1, -1), 'Helvetica'),
         ('FONTSIZE',    (0, 0), (-1, -1), 9),
@@ -216,16 +218,16 @@ def generate_evaluation_pdf(
         ('ROUNDEDCORNERS', [4]),
     ]))
     story.append(meta_table)
-    story.append(Spacer(1, 0.3 * cm))
+    story.append(Spacer(1, 0.4 * cm))
 
     # ── Grafico ─────────────────────────────────────────────────────────────
     story.append(Paragraph("Profilo dei Punteggi Aggregati", section_header_style))
 
     chart_buf = _make_bar_chart(domains)
 
-    chart_img = RLImage(chart_buf, width=17 * cm, height=8.2 * cm)
+    chart_img = RLImage(chart_buf, width=17 * cm, height=6.5 * cm)
     story.append(chart_img)
-    story.append(Spacer(1, 0.3 * cm))
+    story.append(Spacer(1, 0.4 * cm))
 
     # ── Tabella aggregata domìni ─────────────────────────────────────────────
     story.append(Paragraph("Riepilogo per Dominio", section_header_style))
@@ -251,45 +253,34 @@ def generate_evaluation_pdf(
         ('LEFTPADDING',  (0, 0), (-1, -1), 6),
     ]))
     story.append(domain_table)
-    story.append(Spacer(1, 0.3 * cm))
+    story.append(Spacer(1, 0.5 * cm))
 
-    # ── Tabella dettaglio risposte (sempre a partire da pagina 2) ────────────
-    story.append(PageBreak())
+    # ── Tabella dettaglio risposte ───────────────────────────────────────────
     story.append(Paragraph("Dettaglio Risposte", section_header_style))
 
-    note_cell_style = ParagraphStyle(
-        'NoteCell',
-        parent=styles['Normal'],
-        fontSize=8.5,
-        textColor=DARK_TEXT,
-        fontName='Helvetica',
-        leading=11,
-    )
-
     resp_headers = ["Codice", "Punteggio", "Nota"]
-    resp_rows = [resp_headers]
-    for r in evaluation.get("risposte", []):
-        nota_text = r.get("nota") or ""
-        nota_flowable = Paragraph(nota_text, note_cell_style) if nota_text else ""
-        resp_rows.append([
+    resp_rows = [resp_headers] + [
+        [
             r.get("codice_domanda", "-"),
             str(r.get("punteggio", "-")),
-            nota_flowable,
-        ])
-
-    resp_table = Table(resp_rows, colWidths=[2.0*cm, 2.0*cm, 13.4*cm])
+            r.get("nota") or "",
+        ]
+        for r in evaluation.get("risposte", [])
+    ]
+    resp_table = Table(resp_rows, colWidths=[2.5*cm, 2.5*cm, 14.5*cm])
     resp_table.setStyle(TableStyle([
         ('FONTNAME',      (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE',      (0, 0), (-1, -1), 8.5),
         ('BACKGROUND',    (0, 0), (-1, 0), SECONDARY),
         ('TEXTCOLOR',     (0, 0), (-1, 0), white),
         ('ALIGN',         (1, 0), (1, -1), 'CENTER'),
-        ('VALIGN',        (0, 0), (-1, -1), 'TOP'),
+        ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [LIGHT_GREY, white]),
         ('GRID',          (0, 0), (-1, -1), 0.3, BORDER),
         ('TOPPADDING',    (0, 0), (-1, -1), 4),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
         ('LEFTPADDING',   (0, 0), (-1, -1), 6),
+        ('WORDWRAP',      (2, 0), (2, -1), True),
     ]))
     story.append(resp_table)
 

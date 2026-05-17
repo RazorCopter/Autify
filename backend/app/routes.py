@@ -4,7 +4,8 @@ from typing import List
 from bson import ObjectId
 from .models import Scale, Evaluation, Patient, AppSettings, Section, Question, Option, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest
 from .database import evaluations_collection, database, settings_collection, patients_collection, scales_collection, users_collection
-from .pdf_generator import generate_evaluation_pdf, aggregate_domains
+from .pdf_generator import generate_evaluation_pdf
+from .analytics import compute_psychometric_analysis, compute_direct_scores, build_domain_map
 from datetime import datetime, timezone
 import json
 import uuid
@@ -224,7 +225,10 @@ async def download_evaluation_pdf(
     patient_doc = await patients_collection.find_one({"id": eval_doc["id_paziente"]})
     scale_doc   = await scales_collection.find_one({"id": eval_doc["id_scala"]})
 
-    domains = aggregate_domains(eval_doc.get("risposte", []), DOMINI_POS)
+    domain_map = build_domain_map(scale_doc or {})
+    if not domain_map:
+        domain_map = DOMINI_POS
+    domains = compute_direct_scores(eval_doc.get("risposte", []), domain_map)
 
     pdf_bytes = generate_evaluation_pdf(
         evaluation=eval_doc,
@@ -255,7 +259,11 @@ async def get_aggregated_evaluation(patient_id: str, scale_id: str):
 
     history = []
     for eval_doc in eval_docs:
-        domains = aggregate_domains(eval_doc.get("risposte", []), DOMINI_POS)
+        scale_doc = await scales_collection.find_one({"id": eval_doc["id_scala"]})
+        domain_map = build_domain_map(scale_doc or {})
+        if not domain_map:
+            domain_map = DOMINI_POS
+        domains = compute_direct_scores(eval_doc.get("risposte", []), domain_map)
         history.append(
             AggregatedEvaluation(
                 id_valutazione=eval_doc["id_valutazione"],
@@ -287,7 +295,11 @@ async def update_evaluation(evaluation_id: str, payload: EvaluationUpdateRequest
         {"$set": {"risposte": new_risposte}}
     )
     existing["risposte"] = new_risposte
-    domains = aggregate_domains(new_risposte, DOMINI_POS)
+    scale_doc = await scales_collection.find_one({"id": existing["id_scala"]})
+    domain_map = build_domain_map(scale_doc or {})
+    if not domain_map:
+        domain_map = DOMINI_POS
+    domains = compute_direct_scores(new_risposte, domain_map)
     return AggregatedEvaluation(
         id_valutazione=existing["id_valutazione"],
         id_paziente=existing["id_paziente"],
@@ -322,6 +334,29 @@ async def get_settings():
             settings.gemini_api_key = "***-HIDDEN"
         return settings
     return AppSettings()
+
+
+@admin_router.get("/evaluations/{evaluation_id}/analysis", tags=["Admin - Evaluations"])
+async def get_evaluation_analysis(evaluation_id: str):
+    """Restituisce l'analisi psicometrica completa di una valutazione."""
+    eval_doc = await _find_evaluation_document(evaluation_id)
+    if not eval_doc:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Valutazione non trovata per id '{evaluation_id}'",
+        )
+    scale_doc = await scales_collection.find_one({"id": eval_doc["id_scala"]})
+    if not scale_doc:
+        raise HTTPException(status_code=404, detail="Scala associata non trovata")
+
+    analysis = compute_psychometric_analysis(
+        risposte=eval_doc.get("risposte", []),
+        scale_doc=scale_doc,
+    )
+    analysis["id_valutazione"] = eval_doc.get("id_valutazione") or evaluation_id
+    analysis["id_paziente"] = eval_doc.get("id_paziente", "")
+    analysis["id_scala"] = eval_doc.get("id_scala", "")
+    return analysis
 
 
 # ─── DATABASE EXPORT / IMPORT ────────────────────────────────────────────────
