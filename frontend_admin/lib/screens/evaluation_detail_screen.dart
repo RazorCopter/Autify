@@ -639,19 +639,25 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
       return text;
     }
     if (text.contains(' ')) {
-      final mid = text.length ~/ 2;
-      int best = mid;
-      int minDist = text.length;
+      final List<int> spaces = [];
       for (int i = 0; i < text.length; i++) {
         if (text[i] == ' ') {
-          final dist = (i - mid).abs();
-          if (dist < minDist) {
-            minDist = dist;
-            best = i;
-          }
+          spaces.add(i);
         }
       }
-      return text.substring(0, best) + '\n' + text.substring(best + 1);
+      if (spaces.isNotEmpty) {
+        final mid = text.length / 2;
+        int bestSpace = spaces[0];
+        double minDist = (bestSpace - mid).abs();
+        for (final space in spaces) {
+          final dist = (space - mid).abs();
+          if (dist < minDist) {
+            minDist = dist;
+            bestSpace = space;
+          }
+        }
+        return text.substring(0, bestSpace) + '\n' + text.substring(bestSpace + 1);
+      }
     }
     final mid = text.length ~/ 2;
     return text.substring(0, mid) + '\n' + text.substring(mid);

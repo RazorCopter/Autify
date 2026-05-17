@@ -18,7 +18,7 @@ from reportlab.lib.units import cm
 from reportlab.lib.colors import Color, HexColor, white, black
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    Image as RLImage, HRFlowable
+    Image as RLImage, HRFlowable, PageBreak
 )
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
@@ -64,13 +64,11 @@ def _wrap_label(text: str, max_chars: int = 14) -> str:
     if len(text) <= max_chars:
         return text
     if ' ' in text:
-        mid = len(text) // 2
-        best = mid
-        for i, ch in enumerate(text):
-            if ch == ' ':
-                if abs(i - mid) < abs(best - mid):
-                    best = i
-        return text[:best] + '\n' + text[best + 1:]
+        spaces = [i for i, ch in enumerate(text) if ch == ' ']
+        if spaces:
+            mid = len(text) / 2
+            best_space = min(spaces, key=lambda x: abs(x - mid))
+            return text[:best_space] + '\n' + text[best_space + 1:]
     mid = len(text) // 2
     return text[:mid] + '\n' + text[mid:]
 
@@ -227,7 +225,7 @@ def generate_evaluation_pdf(
 
     chart_buf = _make_bar_chart(domains)
 
-    chart_img = RLImage(chart_buf, width=17 * cm, height=6.5 * cm)
+    chart_img = RLImage(chart_buf, width=17 * cm, height=9.5 * cm)
     story.append(chart_img)
     story.append(Spacer(1, 0.4 * cm))
 
@@ -257,7 +255,8 @@ def generate_evaluation_pdf(
     story.append(domain_table)
     story.append(Spacer(1, 0.5 * cm))
 
-    # ── Tabella dettaglio risposte ───────────────────────────────────────────
+    # ── Tabella dettaglio risposte (sempre a partire da pagina 2) ────────────
+    story.append(PageBreak())
     story.append(Paragraph("Dettaglio Risposte", section_header_style))
 
     resp_headers = ["Codice", "Punteggio", "Nota"]
