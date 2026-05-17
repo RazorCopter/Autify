@@ -59,6 +59,8 @@ def aggregate_domains(risposte: list, domini_map: Dict[str, str]) -> List[dict]:
 
 def _wrap_label(text: str, max_chars: int = 14) -> str:
     """Divide un'etichetta su due righe se supera max_chars."""
+    if text == "Autodeterminazione":
+        return "Autodeter-\nminazione"
     if len(text) <= max_chars:
         return text
     if ' ' in text:

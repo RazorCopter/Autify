@@ -366,19 +366,19 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 48,
+              reservedSize: 60,
               getTitlesWidget: (val, _) {
                 final idx = val.toInt();
                 if (idx < 0 || idx >= domains.length) return const SizedBox();
                 return Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: SizedBox(
-                    width: 70,
+                    width: 80,
                     child: Text(
-                      domains[idx].etichetta,
+                      _wrapLabel(domains[idx].etichetta),
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 11,
+                        fontSize: 10,
                         color: AppTheme.textPrimary,
                       ),
                       maxLines: 2,
@@ -622,6 +622,32 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
         ),
       ],
     );
+  }
+
+  String _wrapLabel(String text, {int maxChars = 14}) {
+    if (text == "Autodeterminazione") {
+      return "Autodeter-\nminazione";
+    }
+    if (text.length <= maxChars) {
+      return text;
+    }
+    if (text.contains(' ')) {
+      final mid = text.length ~/ 2;
+      int best = mid;
+      int minDist = text.length;
+      for (int i = 0; i < text.length; i++) {
+        if (text[i] == ' ') {
+          final dist = (i - mid).abs();
+          if (dist < minDist) {
+            minDist = dist;
+            best = i;
+          }
+        }
+      }
+      return text.substring(0, best) + '\n' + text.substring(best + 1);
+    }
+    final mid = text.length ~/ 2;
+    return text.substring(0, mid) + '\n' + text.substring(mid);
   }
 }
 
