@@ -1,0 +1,1347 @@
+{
+  "scala": {
+    "nome": "Scala San Martín",
+    "sottotitolo": "Valutazione della qualità della vita delle persone con disabilità gravi",
+    "autori": "Miguel Ángel Verdugo, Laura E. Gómez, Benito Arias, Mónica Santamaría, Ester Navallas, Sonia Fernández, Irene Hierro",
+    "anno": 2014,
+    "editore": "Fundación Obra San Martín (FOSM) - INICO",
+    "versione_italiana": "Traduzione di Silvia Manfredini, Virginia Cuneo, Marco Crostelli, Ariana López, Verónica Marina Guillén",
+    "target": "Persone con disabilità grave (disabilità intellettiva con bisogno di assistenza estesa o generalizzata, spesso associate ad altre condizioni)",
+    "eta": "Adulti a partire dai 18 anni (16 anni se fuori dal sistema scolastico)",
+    "informatori": "Professionisti dei servizi sociali che conoscono la persona da almeno 3 mesi; familiari o amici stretti",
+    "tempo_somministrazione": "30 minuti circa",
+    "proprieta_psicometriche": {
+      "consistenza_interna_totale": 0.97,
+      "alpha_dominio_min": 0.82,
+      "alpha_dominio_max": 0.93,
+      "campione_validazione": 1770,
+      "modello_fattoriale": "8 dimensioni correlate (CFI=0.984, RMSEA=0.054)"
+    },
+    "struttura_punteggi": {
+      "punteggi_item": "1=Mai, 2=Qualche volta, 3=Frequentemente, 4=Sempre",
+      "punteggio_diretto_dominio": "somma dei punteggi degli item del dominio (min-max variabile per dominio)",
+      "punteggio_standard_dominio": "conversione del punteggio diretto tramite tabella (media=10, DS=3, range 1-20)",
+      "indice_qdv": "somma degli 8 punteggi standard → conversione tramite tabella (media=100, DS=15, range 60-132)",
+      "percentili": "disponibili sia per i domini che per l'indice totale"
+    },
+    "note_operative": [
+      "L'informatore non deve mai essere la persona con disabilità stessa.",
+      "Rispondere in base a ciò che si è osservato negli ultimi 3 mesi (o più).",
+      "'Qualche volta' = 2-3 giorni/settimana; 'Frequentemente' = 4-6 giorni/settimana; 'Sempre' = tutti i giorni (con possibili eccezioni); 'Mai' = nessuna volta.",
+      "Per azioni non quotidiane, usare criteri proporzionali (mese/anno).",
+      "Completare assolutamente tutti gli item."
+    ],
+    "domini": [
+      {
+        "codice": "AU",
+        "nome": "Autodeterminazione",
+        "descrizione": "Opinioni e preferenze personali, autonomia, decisioni e scelte",
+        "domande": [
+          {
+            "codice": "AU-1",
+            "testo": "Le persone che la assistono tengono conto delle sue preferenze e scelte",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "AU-2",
+            "testo": "Partecipa all'elaborazione del suo programma di assistenza individuale",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "AU-3",
+            "testo": "Il personale del centro rispetta le sue decisioni",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "AU-4",
+            "testo": "Sceglie come passare il proprio tempo libero",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "AU-5",
+            "testo": "Vengono adottate soluzioni specifiche per permetterle di esercitare influenza sull'ambiente che la circonda (es., ambiente fisico, materiale, sociale)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "AU-6",
+            "testo": "Vengono adottate soluzioni specifiche per permetterle di compiere delle scelte",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "AU-7",
+            "testo": "Ha la possibilità di rifiutarsi di svolgere attività irrilevanti per la propria salute (es., partecipare ad attività ricreativa, andare a dormire ad un orario prestabilito, indossare vestiti scelti da altri)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "AU-8",
+            "testo": "Sceglie cosa mangiare quando c'è varietà tra 1°, 2° e dolce",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "AU-9",
+            "testo": "Decora la stanza a piacere",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "AU-10",
+            "testo": "Viene assistita secondo le sue necessità, i suoi desideri e le sue preferenze (es., le persone che la assistono, stare solo/a o in gruppo, luoghi, tempo, ritmi)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "AU-11",
+            "testo": "Si riflette attentamente sulla decisione di compiere un'azione se la persona la ritiene sgradevole (es., durante la cura corpo, i pasti, le attività)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "AU-12",
+            "testo": "Dispone di un programma di attività quotidiane adeguato alle sue preferenze",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "BE",
+        "nome": "Benessere Emotivo",
+        "descrizione": "Soddisfazione, autoconcetto, assenza di stress, sentimenti negativi o problemi di comportamento, sicurezza di base, comunicazione delle emozioni",
+        "domande": [
+          {
+            "codice": "BE-13",
+            "testo": "Le persone che la assistono dispongono di un elenco di comportamenti osservabili che esprimono i suoi stati emotivi (es., mappe, registri, ecc.)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BE-14",
+            "testo": "La persona viene informata in anticipo su eventuali sostituzioni delle persone che la assistono (es. turni, permessi, vacanze, situazioni familiari, ecc.)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BE-15",
+            "testo": "Le persone che la assistono conoscono le sue espressioni personali di benessere emotivo",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BE-16",
+            "testo": "Le persone che la assistono conoscono le sue espressioni personali di angoscia",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BE-17",
+            "testo": "Le persone che la assistono sanno come esprime i suoi desideri",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BE-18",
+            "testo": "Le persone che la assistono prestano attenzione a dettagli che la riguardano come espressioni del viso, sguardi e movimenti degli occhi, voce, tensione muscolare, postura, movimento e reazioni fisiologiche",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BE-19",
+            "testo": "Dispone di una scheda personale che contiene ciò che le piace o la tranquillizza, ciò che non sopporta e come può reagire, ossia particolari che tutto il personale conosce e che deve rispettare",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BE-20",
+            "testo": "Le vengono fornite regole e consigli specifici per aiutarla a controllare il proprio comportamento",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BE-21",
+            "testo": "Le persone che la assistono vantano una formazione in tecniche dell'Applied Behaviour Intervention",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BE-22",
+            "testo": "Le vengono trasmessi dolcezza, affetto e contatto fisico appropriati quando ne ha bisogno",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BE-23",
+            "testo": "Si adottano misure specifiche per ottimizzare l'atmosfera o l'ambiente di gruppo",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BE-24",
+            "testo": "Si adottano misure specifiche per far sì che il suo ambiente sia riconoscibile e prevedibile (es. spazi, orari, persone che la assistono, attività, ecc.)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "BF",
+        "nome": "Benessere Fisico",
+        "descrizione": "Alimentazione, esercizio fisico, igiene, mobilità, cure mediche, assistenza sanitaria, sessualità",
+        "domande": [
+          {
+            "codice": "BF-25",
+            "testo": "Segue una dieta adatta alle proprie caratteristiche e necessità",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BF-26",
+            "testo": "Svolge attività ed esercizi fisici adeguati alle proprie caratteristiche e necessità",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BF-27",
+            "testo": "Assume le quantità di cibo e di liquidi consigliate per mantenersi in buono stato",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BF-28",
+            "testo": "Si presta attenzione alla preparazione e alla presentazione dei piatti (es. composizione, gusto, varietà, temperatura, ecc.)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BF-29",
+            "testo": "Chi la assiste vanta una formazione tecnica riguardo alle specifiche condizioni di salute della persona",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BF-30",
+            "testo": "Ha un'igiene (es. denti, capelli, unghie, corpo) e un'immagine personale (es. abiti adatti alla sua età, per le occasioni, ecc.) adeguate",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BF-31",
+            "testo": "Si muove in spazi diversi (cioè interni ed esterni)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BF-32",
+            "testo": "Si adottano misure specifiche per prevenire o curare i problemi derivati da disabilità fisiche (es. spasticità, rigidità, deformità, ecc.)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BF-33",
+            "testo": "Si adottano misure specifiche in relazione alla sua mobilità per stimolare la sua indipendenza",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BF-34",
+            "testo": "Si adottano misure specifiche per prevenire o curare il dolore",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BF-35",
+            "testo": "Si presta particolare attenzione alla diagnosi e alla cura delle disabilità sensoriali esistenti",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": "Se la persona non è affetta da disabilità sensoriale, indichi lo stesso se si presta attenzione alla prevenzione e al controllo di una sua possibile manifestazione."
+          },
+          {
+            "codice": "BF-36",
+            "testo": "Le persone che la assistono le offrono consigli e sostegno riguardo alla sua sessualità",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "BM",
+        "nome": "Benessere Materiale",
+        "descrizione": "Beni, entrate, stato della casa, stato del centro, supporto tecnico",
+        "domande": [
+          {
+            "codice": "BM-37",
+            "testo": "I suoi effetti personali vengono riparati o sostituiti quando si deteriorano",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BM-38",
+            "testo": "Il centro che frequenta è adatto alle sue caratteristiche (es. sensoriali, cognitive, comportamentali, fisiche)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": "Il termine 'centro' si riferisce a centro diurno, occupazionale, ricreativo, ecc."
+          },
+          {
+            "codice": "BM-39",
+            "testo": "Il centro che frequenta adotta misure specifiche per evitare rischi come colpi, cadute, fughe",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": "Il termine 'centro' si riferisce a centro diurno, occupazionale, ricreativo, ecc."
+          },
+          {
+            "codice": "BM-40",
+            "testo": "Dispone di uno spazio fisico con i propri effetti personali a portata di mano",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BM-41",
+            "testo": "Gli aiuti tecnici di cui ha bisogno sono stati adattati individualmente",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BM-42",
+            "testo": "Si valuta l'effetto degli aiuti tecnici sulla vita e sul comportamento della persona",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BM-43",
+            "testo": "Dispone degli aiuti tecnici di cui ha bisogno",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BM-44",
+            "testo": "Le persone che la assistono conoscono i sistemi di comunicazione alternativi di cui ha bisogno",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": "Nel caso in cui non ne abbia bisogno, scegliere 'Sempre'."
+          },
+          {
+            "codice": "BM-45",
+            "testo": "Dispone di oggetti personali per intrattenersi (es. giochi, riviste, musica, televisione, ecc.)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BM-46",
+            "testo": "Dispone dei beni materiali di cui ha bisogno",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BM-47",
+            "testo": "Si adottano misure specifiche per adattare l'ambiente in cui vive alle sue capacità e ai suoi limiti (es., sensoriali, cognitivi, comportamentali, fisici)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "BM-48",
+            "testo": "Si adottano misure specifiche per adattare l'ambiente in cui vive ai suoi desideri e alle sue preferenze",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "DI",
+        "nome": "Diritti",
+        "descrizione": "Conoscenza dei diritti, intimità, privacy, riservatezza, rispetto",
+        "domande": [
+          {
+            "codice": "DI-49",
+            "testo": "Le persone che la assistono vantano una formazione specifica in etica e rispetto dei diritti delle persone con disabilità",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "DI-50",
+            "testo": "Le persone che la assistono la trattano con rispetto (es. le parlano con tono adeguato e non in maniera infantile, usano termini positivi, evitano commenti negativi in pubblico e di parlare davanti a lei come se non fosse presente, ecc.)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "DI-51",
+            "testo": "Il centro che frequenta rispetta e difende i suoi diritti (es. riservatezza, informazioni sui propri diritti come utenti, ecc.)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "DI-52",
+            "testo": "La persona conosce la propria scheda dei diritti personalizzata",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "DI-53",
+            "testo": "Nel centro che frequenta si rispetta la sua privacy (es., bussare prima di entrare, chiudere la porta quando la lavano, usa in bagno o le cambiano il pannolino, etc.)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "DI-54",
+            "testo": "Nel centro che la persona frequenta dispone di uno spazio dove poter stare da sola se lo desidera",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "DI-55",
+            "testo": "Tutta la documentazione personale, i servizi e le valutazioni che le spettano per legge sono in regola",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "DI-56",
+            "testo": "Si adottano misure specifiche per rispettare la sua privacy (es. durante la cura del corpo e l'igiene, riguardo alla sua sessualità, alle informazioni riservate, ecc.)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "DI-57",
+            "testo": "Nel suo ambiente la trattano con rispetto",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "DI-58",
+            "testo": "Nel centro che frequenta si rispettano sia i suoi effetti personali che il suo diritto di proprietà",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "DI-59",
+            "testo": "Nel centro che frequenta si rispettano i suoi diritti",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "DI-60",
+            "testo": "Il centro che frequenta rispetta la privacy delle informazioni (es. diffusione di immagini, dati personali, ecc.)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "SP",
+        "nome": "Sviluppo Personale",
+        "descrizione": "Arricchimento personale, apprendimento, abilità e capacità, motivazione",
+        "domande": [
+          {
+            "codice": "SP-61",
+            "testo": "Dispone di un programma di attività che le piacciono e contribuiscono al proprio arricchimento personale",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SP-62",
+            "testo": "Le attività che svolge le permettono di acquisire nuove abilità",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SP-63",
+            "testo": "Le insegnano cose interessanti",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SP-64",
+            "testo": "Apprende cose che la rendono più indipendente",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SP-65",
+            "testo": "Nel centro le forniscono istruzioni e modelli per apprendere cose nuove",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SP-66",
+            "testo": "Nel centro ha l'opportunità di dimostrare le proprie abilità",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SP-67",
+            "testo": "Ha la possibilità di svolgere attività in maniera indipendente",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SP-68",
+            "testo": "Si adottano misure specifiche per mantenere le sue capacità e abilità",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SP-69",
+            "testo": "Si adottano misure specifiche per permetterle di sviluppare nuove abilità",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SP-70",
+            "testo": "Si stimola il suo sviluppo in diverse aree (es. cognitiva, sociale, sensoriale, emotiva, motoria)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SP-71",
+            "testo": "Si incentiva il suo sviluppo rispettando i suoi ritmi e le sue preferenze (es. evitando che sia ipo o iper stimolata)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SP-72",
+            "testo": "Acquisisce nuove abilità o esperienze grazie alla partecipazione ad attività",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "IS",
+        "nome": "Inclusione Sociale",
+        "descrizione": "Integrazione, partecipazione e assistenza nella comunità",
+        "domande": [
+          {
+            "codice": "IS-73",
+            "testo": "Ha la possibilità di conoscere ambienti diversi dal luogo in cui vive (cioè viaggiare, fare escursioni, gite turistiche, ecc.)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "IS-74",
+            "testo": "Trascorre le vacanze in ambienti coinvolgenti (es. hotel, parchi, agriturismi, spiagge, montagne, SPA, parchi tematici, ecc.)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "IS-75",
+            "testo": "Ha una scheda di assistenza personalizzata che tutto il personale conosce e deve rispettare",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "IS-76",
+            "testo": "Partecipa ad attività fuori dal centro con persone esterne al suo contesto di assistenza",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": "Il contesto di assistenza può includere familiari, professionisti, volontari/e, compagni/e del centro, amici/che, ecc."
+          },
+          {
+            "codice": "IS-77",
+            "testo": "Partecipa ad attività d'inclusione sociale adeguate alle sue condizioni fisiche e mentali",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "IS-78",
+            "testo": "Partecipa ad attività d'inclusione sociale che la interessano",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "IS-79",
+            "testo": "Le attività a cui partecipa tengono conto delle strutture ricreative e culturali presenti nella zona",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "IS-80",
+            "testo": "Si adottano misure specifiche per offrirle la maggior varietà di attività possibile (es. attività nuove in funzione delle sue preferenze)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "IS-81",
+            "testo": "Partecipa ad attività sociali al di fuori del luogo in cui riceve servizi o assistenza",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "IS-82",
+            "testo": "Si adottano misure specifiche per aumentare la sua partecipazione all'interno della società",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "IS-83",
+            "testo": "Frequenta ambienti sociali (es. ristoranti, caffetterie, biblioteche, piscina, cinema, parchi, spiagge, ecc.)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "RI",
+        "nome": "Relazioni Interpersonali",
+        "descrizione": "Rapporti familiari, rapporti sociali, comunicazione",
+        "domande": [
+          {
+            "codice": "RI-84",
+            "testo": "Le persone che la assistono conoscono il sistema di comunicazione che utilizza",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "RI-85",
+            "testo": "Il centro che frequenta individua la miglior forma di comunicarle informazioni (es., visiva, tattile, uditiva, olfattiva, gustativa)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "RI-86",
+            "testo": "Nel centro che frequenta si creano attività che favoriscono l'interazione personale tra compagni/e",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "RI-87",
+            "testo": "Nel centro che frequenta si forniscono informazioni riguardo a come la persona interagisce nel momento in cui conosce gente nuova",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "RI-88",
+            "testo": "Festeggia eventi importanti per se stessa e per le persone a lei care (es. compleanni, anniversari)",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "RI-89",
+            "testo": "Nel centro che frequenta si programmano attività o assistenza che le permettono di interagire",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "RI-90",
+            "testo": "Quando si interagisce con la persona, le si concede il tempo necessario per poter rispondere",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "RI-91",
+            "testo": "Quando manifesta un comportamento particolare, se ne analizza sistematicamente il significato",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "RI-92",
+            "testo": "Le persone che la assistono verificano se la persona le comprende correttamente studiando le sue reazioni",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "RI-93",
+            "testo": "Si adottano misure specifiche per migliorare la sua capacità comunicativa",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "RI-94",
+            "testo": "Ha la possibilità di conoscere persone esterne al contesto di assistenza",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": "Il contesto di assistenza può includere familiari, professionisti, volontari/e, compagni/e del centro, amici/che, ecc."
+          },
+          {
+            "codice": "RI-95",
+            "testo": "Si adottano misure specifiche per mantenere ed estendere le sue relazioni sociali",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sempre", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Frequentemente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Qualche volta", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mai", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      }
+    ],
+    "scoring_tables": {
+      "tabella_A_conversione_punteggi_diretti_standard": {
+        "descrizione": "Conversione del punteggio diretto di ciascun dominio (12 item, tranne IS=11) in punteggio standard (media 10, DS 3) e percentile. I punteggi diretti dipendono dal numero di item del dominio. Le tabelle sono fornite nel manuale a pagina 57.",
+        "domini_con_12_item": {
+          "punteggi_diretti_range": [12, 48],
+          "conversione": {
+            "12": { "std": 1, "perc": 1 },
+            "13": { "std": 1, "perc": 1 },
+            "14": { "std": 1, "perc": 1 },
+            "15": { "std": 1, "perc": 1 },
+            "16": { "std": 1, "perc": 1 },
+            "17": { "std": 2, "perc": 1 },
+            "18": { "std": 2, "perc": 1 },
+            "19": { "std": 2, "perc": 1 },
+            "20": { "std": 2, "perc": 1 },
+            "21": { "std": 3, "perc": 1 },
+            "22": { "std": 3, "perc": 1 },
+            "23": { "std": 3, "perc": 1 },
+            "24": { "std": 3, "perc": 1 },
+            "25": { "std": 4, "perc": 2 },
+            "26": { "std": 4, "perc": 2 },
+            "27": { "std": 5, "perc": 5 },
+            "28": { "std": 5, "perc": 5 },
+            "29": { "std": 6, "perc": 9 },
+            "30": { "std": 6, "perc": 9 },
+            "31": { "std": 7, "perc": 16 },
+            "32": { "std": 7, "perc": 16 },
+            "33": { "std": 8, "perc": 25 },
+            "34": { "std": 8, "perc": 25 },
+            "35": { "std": 9, "perc": 37 },
+            "36": { "std": 9, "perc": 37 },
+            "37": { "std": 10, "perc": 50 },
+            "38": { "std": 10, "perc": 50 },
+            "39": { "std": 11, "perc": 63 },
+            "40": { "std": 11, "perc": 63 },
+            "41": { "std": 12, "perc": 75 },
+            "42": { "std": 12, "perc": 75 },
+            "43": { "std": 13, "perc": 84 },
+            "44": { "std": 13, "perc": 84 },
+            "45": { "std": 14, "perc": 91 },
+            "46": { "std": 14, "perc": 91 },
+            "47": { "std": 15, "perc": 95 },
+            "48": { "std": 15, "perc": 95 }
+          }
+        },
+        "dominio_IS_con_11_item": {
+          "punteggi_diretti_range": [11, 44],
+          "conversione": {
+            "11": { "std": 1, "perc": 1 },
+            "12": { "std": 1, "perc": 1 },
+            "13": { "std": 1, "perc": 1 },
+            "14": { "std": 2, "perc": 1 },
+            "15": { "std": 2, "perc": 1 },
+            "16": { "std": 3, "perc": 1 },
+            "17": { "std": 3, "perc": 1 },
+            "18": { "std": 4, "perc": 2 },
+            "19": { "std": 4, "perc": 2 },
+            "20": { "std": 5, "perc": 5 },
+            "21": { "std": 5, "perc": 5 },
+            "22": { "std": 6, "perc": 9 },
+            "23": { "std": 6, "perc": 9 },
+            "24": { "std": 7, "perc": 16 },
+            "25": { "std": 7, "perc": 16 },
+            "26": { "std": 8, "perc": 25 },
+            "27": { "std": 8, "perc": 25 },
+            "28": { "std": 9, "perc": 37 },
+            "29": { "std": 9, "perc": 37 },
+            "30": { "std": 10, "perc": 50 },
+            "31": { "std": 10, "perc": 50 },
+            "32": { "std": 11, "perc": 63 },
+            "33": { "std": 11, "perc": 63 },
+            "34": { "std": 12, "perc": 75 },
+            "35": { "std": 12, "perc": 75 },
+            "36": { "std": 13, "perc": 84 },
+            "37": { "std": 13, "perc": 84 },
+            "38": { "std": 14, "perc": 91 },
+            "39": { "std": 14, "perc": 91 },
+            "40": { "std": 15, "perc": 95 },
+            "41": { "std": 15, "perc": 95 },
+            "42": { "std": 16, "perc": 98 },
+            "43": { "std": 16, "perc": 98 },
+            "44": { "std": 17, "perc": 99 }
+          }
+        }
+      },
+      "tabella_B_indice_qdv": {
+        "descrizione": "Conversione della somma degli 8 punteggi standard (range 8-160) in Indice di Qualità della Vita (media 100, DS 15) e percentile. I valori sono riportati alle pagine 58-59.",
+        "conversione": {
+          "122": { "indice": 132, "perc": 98 },
+          "121": { "indice": 131, "perc": 98 },
+          "120": { "indice": 130, "perc": 98 },
+          "119": { "indice": 129, "perc": 97 },
+          "118": { "indice": 128, "perc": 97 },
+          "117": { "indice": 127, "perc": 96 },
+          "116": { "indice": 126, "perc": 95 },
+          "115": { "indice": 125, "perc": 95 },
+          "114": { "indice": 124, "perc": 95 },
+          "113": { "indice": 123, "perc": 94 },
+          "112": { "indice": 122, "perc": 93 },
+          "111": { "indice": 121, "perc": 92 },
+          "110": { "indice": 120, "perc": 91 },
+          "109": { "indice": 119, "perc": 90 },
+          "108": { "indice": 118, "perc": 89 },
+          "107": { "indice": 117, "perc": 87 },
+          "106": { "indice": 116, "perc": 86 },
+          "105": { "indice": 115, "perc": 84 },
+          "104": { "indice": 114, "perc": 82 },
+          "103": { "indice": 113, "perc": 81 },
+          "102": { "indice": 112, "perc": 79 },
+          "101": { "indice": 111, "perc": 77 },
+          "100": { "indice": 110, "perc": 75 },
+          "99": { "indice": 109, "perc": 73 },
+          "98": { "indice": 108, "perc": 70 },
+          "97": { "indice": 107, "perc": 68 },
+          "96": { "indice": 106, "perc": 65 },
+          "95": { "indice": 105, "perc": 63 },
+          "94": { "indice": 104, "perc": 61 },
+          "93": { "indice": 103, "perc": 58 },
+          "92": { "indice": 102, "perc": 55 },
+          "91": { "indice": 101, "perc": 53 },
+          "90": { "indice": 100, "perc": 50 },
+          "89": { "indice": 99, "perc": 47 },
+          "88": { "indice": 98, "perc": 45 },
+          "87": { "indice": 97, "perc": 42 },
+          "86": { "indice": 96, "perc": 39 },
+          "85": { "indice": 95, "perc": 37 },
+          "84": { "indice": 94, "perc": 34 },
+          "83": { "indice": 93, "perc": 32 },
+          "82": { "indice": 92, "perc": 30 },
+          "81": { "indice": 91, "perc": 27 },
+          "80": { "indice": 90, "perc": 25 },
+          "79": { "indice": 89, "perc": 23 },
+          "78": { "indice": 88, "perc": 21 },
+          "77": { "indice": 87, "perc": 19 },
+          "76": { "indice": 86, "perc": 18 },
+          "75": { "indice": 85, "perc": 16 },
+          "74": { "indice": 84, "perc": 14 },
+          "73": { "indice": 83, "perc": 13 },
+          "72": { "indice": 82, "perc": 12 },
+          "71": { "indice": 81, "perc": 10 },
+          "70": { "indice": 80, "perc": 9 },
+          "69": { "indice": 79, "perc": 8 },
+          "68": { "indice": 78, "perc": 7 },
+          "67": { "indice": 77, "perc": 6 },
+          "66": { "indice": 76, "perc": 5 },
+          "65": { "indice": 75, "perc": 5 },
+          "64": { "indice": 74, "perc": 4 },
+          "63": { "indice": 73, "perc": 3 },
+          "62": { "indice": 72, "perc": 3 },
+          "61": { "indice": 71, "perc": 2 },
+          "60": { "indice": 70, "perc": 2 },
+          "59": { "indice": 69, "perc": 2 },
+          "58": { "indice": 68, "perc": 1 },
+          "57": { "indice": 67, "perc": 1 },
+          "56": { "indice": 66, "perc": 1 },
+          "55": { "indice": 65, "perc": 1 },
+          "54": { "indice": 64, "perc": 1 },
+          "53": { "indice": 63, "perc": 1 },
+          "52": { "indice": 62, "perc": 1 },
+          "51": { "indice": 61, "perc": 1 },
+          "50": { "indice": 60, "perc": 1 },
+          "49": { "indice": 59, "perc": 1 },
+          "48": { "indice": 58, "perc": 1 },
+          "47": { "indice": 57, "perc": 1 },
+          "46": { "indice": 56, "perc": 1 },
+          "45": { "indice": 55, "perc": 1 },
+          "44": { "indice": 54, "perc": 1 },
+          "43": { "indice": 53, "perc": 1 },
+          "42": { "indice": 52, "perc": 1 },
+          "41": { "indice": 51, "perc": 1 },
+          "40": { "indice": 50, "perc": 1 },
+          "39": { "indice": 49, "perc": 1 },
+          "38": { "indice": 48, "perc": 1 },
+          "37": { "indice": 47, "perc": 1 },
+          "36": { "indice": 46, "perc": 1 },
+          "35": { "indice": 45, "perc": 1 },
+          "34": { "indice": 44, "perc": 1 },
+          "33": { "indice": 43, "perc": 1 },
+          "32": { "indice": 42, "perc": 1 },
+          "31": { "indice": 41, "perc": 1 },
+          "30": { "indice": 40, "perc": 1 },
+          "29": { "indice": 39, "perc": 1 },
+          "28": { "indice": 38, "perc": 1 },
+          "27": { "indice": 37, "perc": 1 },
+          "26": { "indice": 36, "perc": 1 },
+          "25": { "indice": 35, "perc": 1 },
+          "24": { "indice": 34, "perc": 1 },
+          "23": { "indice": 33, "perc": 1 },
+          "22": { "indice": 32, "perc": 1 },
+          "21": { "indice": 31, "perc": 1 },
+          "20": { "indice": 30, "perc": 1 },
+          "19": { "indice": 29, "perc": 1 },
+          "18": { "indice": 28, "perc": 1 },
+          "17": { "indice": 27, "perc": 1 },
+          "16": { "indice": 26, "perc": 1 },
+          "15": { "indice": 25, "perc": 1 },
+          "14": { "indice": 24, "perc": 1 },
+          "13": { "indice": 23, "perc": 1 },
+          "12": { "indice": 22, "perc": 1 },
+          "11": { "indice": 21, "perc": 1 },
+          "10": { "indice": 20, "perc": 1 },
+          "9": { "indice": 19, "perc": 1 },
+          "8": { "indice": 18, "perc": 1 }
+        }
+      }
+    },
+    "profilo_grafico": {
+      "descrizione": "Il profilo della qualità della vita si costruisce riportando i punteggi standard di ogni dominio (1-20) e l'indice QdV (da 60 a 132) sulla griglia presente nel questionario (pagina 75). I valori di riferimento per i ranghi dei punteggi standard sono: 1-4 (molto basso), 5-7 (basso), 8-12 (medio), 13-15 (alto), 16-20 (molto alto). L'indice QdV segue la distribuzione normale con media 100 e DS 15."
+    }
+  }
+}
