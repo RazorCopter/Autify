@@ -128,6 +128,93 @@ def _make_radar_chart(
     return buf
 
 
+def _make_qol_visual_chart(domains: List[dict]) -> io.BytesIO:
+    """
+    Crea la Tabella Visiva Qualità della Vita (fasce normative verticali)
+    replicando la stessa estetica premium del frontend Flutter.
+    """
+    codes = [d["codice"] for d in domains]
+    labels = [d.get("etichetta", "") for d in domains]
+    patient_scores = [d.get("punteggio_standard") for d in domains]
+    
+    # Mappa dei nomi dei domini abbreviati o spezzati per l'asse X
+    wrapped_labels = []
+    for label in labels:
+        wrapped_labels.append(_wrap_label(label, max_chars=12))
+
+    fig, ax = plt.subplots(figsize=(10, 5.8), dpi=150)
+    fig.patch.set_facecolor('#F8FBFF')
+    ax.set_facecolor('#F8FBFF')
+
+    # 1. Disegna le fasce normative orizzontali di sfondo
+    band_items = [
+        ('Molto Alto', 15.5, 20.0, '#388E3C'),
+        ('Alto',       12.5, 15.5, '#7CB342'),
+        ('Medio',       7.5, 12.5, '#FBC02D'),
+        ('Basso',       4.5,  7.5, '#F57C00'),
+        ('Molto Basso', 1.0,  4.5, '#D32F2F'),
+    ]
+
+    for label, min_val, max_val, color in band_items:
+        ax.axhspan(min_val, max_val, color=color, alpha=0.12, zorder=1)
+        # Aggiungi etichetta di testo sul lato sinistro
+        ax.text(-0.35, (min_val + max_val)/2, label, color=color, fontsize=8,
+                fontweight='bold', va='center', ha='left', alpha=0.8)
+
+    # 2. Linee griglia e limiti degli assi
+    ax.set_ylim(1, 20)
+    ax.set_yticks([1, 5, 10, 15, 20])
+    ax.tick_params(axis='y', colors='#718096', labelsize=9)
+    ax.yaxis.grid(True, color='#DDE7F8', linestyle='-', linewidth=0.6, zorder=2)
+    
+    x = np.arange(len(codes))
+    ax.set_xlim(-0.5, len(codes) - 0.5)
+    ax.set_xticks(x)
+    
+    # Asse X con codici in grande e nomi completi wrapped sotto
+    x_tick_labels = [f"{code}\n{w_lbl}" for code, w_lbl in zip(codes, wrapped_labels)]
+    ax.set_xticklabels(x_tick_labels, fontsize=8.5, color='#2D3748', fontweight='bold', ha='center', va='top')
+    
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_color('#DDE7F8')
+    ax.spines['bottom'].set_color('#DDE7F8')
+
+    # 3. Disegna i punti del profilo e le linee di collegamento
+    valid_points = []
+    for idx, score in enumerate(patient_scores):
+        if score is not None:
+            valid_points.append((idx, float(score)))
+
+    if len(valid_points) > 1:
+        px, py = zip(*valid_points)
+        ax.plot(px, py, '-', color='#1A237E', linewidth=2.5, alpha=0.45, zorder=3)
+
+    # 4. Disegna i badge circolari punteggio
+    for idx, score in enumerate(patient_scores):
+        if score is not None:
+            d = domains[idx]
+            fascia = d.get("fascia")
+            band_color = FASCIA_COLORS.get(fascia, '#718096')
+            
+            # Disegna il cerchietto con bordo
+            ax.plot(idx, score, 'o', markersize=18, color=band_color,
+                    markerfacecolor='white', markeredgewidth=2.5, markeredgecolor=band_color, zorder=4)
+            # Scrivi il punteggio al centro del cerchio
+            ax.text(idx, score, str(score), color=band_color, fontsize=9.5,
+                    fontweight='bold', va='center', ha='center', zorder=5)
+
+    ax.set_title('Tabella Visiva Qualità della Vita', fontsize=12,
+                 fontweight='bold', color='#2D3748', pad=16)
+
+    plt.tight_layout()
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight', facecolor='#F8FBFF', dpi=150)
+    plt.close(fig)
+    buf.seek(0)
+    return buf
+
+
 # ─── Grafico a barre (fallback POS) ─────────────────────────────────────────
 
 def _make_bar_chart(domains: List[dict], score_min: int = 6, score_max: int = 18) -> io.BytesIO:
@@ -610,11 +697,18 @@ def generate_evaluation_pdf(
         story.append(Spacer(1, 0.25 * cm))
     # ── Tabella riepilogo domìni ─────────────────────────────────────────────
     story.append(PageBreak())
-    story.append(Paragraph("Riepilogo per Dominio", section_header))
-
+    
     if is_sanmartin and analysis is not None:
+        story.append(Paragraph("Tabella Visiva Qualità della Vita", section_header))
+        qol_buf = _make_qol_visual_chart(chart_domains)
+        qol_img = RLImage(qol_buf, width=17.4 * cm, height=10.1 * cm)
+        story.append(qol_img)
+        story.append(Spacer(1, 0.4 * cm))
+        
+        story.append(Paragraph("Riepilogo per Dominio", section_header))
         domain_table = _make_san_martin_domain_table(analysis)
     else:
+        story.append(Paragraph("Riepilogo per Dominio", section_header))
         domain_headers = ["Cod.", "Dominio", "Punteggio Totale", "N° Domande"]
         domain_rows = [
             [d["codice"], d["etichetta"], str(d["punteggio_totale"]), str(d["num_domande"])]
@@ -632,21 +726,24 @@ def generate_evaluation_pdf(
     story.append(Spacer(1, 0.5 * cm))
 
     # ── Tabella dettaglio risposte ───────────────────────────────────────────
+    story.append(PageBreak())
     story.append(Paragraph("Dettaglio Risposte", section_header))
 
     if is_sanmartin and analysis is not None:
-        # Build map for San Martin questions
+        # Build map for San Martin questions (supporting both "sezioni" and "domini")
         questions_map = {}
-        if scale and "domini" in scale:
-            for domain in scale["domini"]:
-                for q in domain.get("domande", []):
-                    q_code = q.get("codice")
+        if scale:
+            sections = scale.get("sezioni") or scale.get("domini") or []
+            for section in sections:
+                for q in section.get("domande", []):
+                    q_code = q.get("codice") or q.get("id_domanda") or q.get("codice_domanda")
                     if q_code:
+                        opts = q.get("opzioni") or q.get("opzioni_risposta") or []
                         questions_map[q_code] = {
-                            "testo": q.get("testo", ""),
+                            "testo": q.get("testo") or q.get("testo_domanda") or "",
                             "opzioni": {
-                                opt.get("punteggio"): opt.get("etichetta", "")
-                                for opt in q.get("opzioni", [])
+                                str(opt.get("punteggio")): opt.get("etichetta") or opt.get("testo_risposta") or ""
+                                for opt in opts
                             }
                         }
 
@@ -664,13 +761,8 @@ def generate_evaluation_pdf(
             q_text = q_info["testo"] if q_info else "—"
             
             opt_label = ""
-            try:
-                p_val = int(punteggio)
-            except ValueError:
-                p_val = None
-                
-            if q_info and p_val is not None:
-                opt_label = q_info["opzioni"].get(p_val, "")
+            if q_info and punteggio is not None:
+                opt_label = q_info["opzioni"].get(str(punteggio), "")
             
             if opt_label:
                 risposta_display = f"{opt_label} ({punteggio})"
