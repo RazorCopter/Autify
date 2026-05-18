@@ -18,18 +18,61 @@ client_router = APIRouter()
 
 async def _find_evaluation_document(evaluation_id: str):
     """Recupera una valutazione supportando sia il campo applicativo che fallback legacy."""
-    eval_doc = await evaluations_collection.find_one({"id_valutazione": evaluation_id})
-    if eval_doc:
-        return eval_doc
+    string_candidates = [
+        {"id_valutazione": evaluation_id},
+        {"idValutazione": evaluation_id},
+        {"id": evaluation_id},
+        {"_id": evaluation_id},
+    ]
 
-    eval_doc = await evaluations_collection.find_one({"id": evaluation_id})
+    eval_doc = await evaluations_collection.find_one({"$or": string_candidates})
     if eval_doc:
         return eval_doc
 
     if ObjectId.is_valid(evaluation_id):
-        return await evaluations_collection.find_one({"_id": ObjectId(evaluation_id)})
+        eval_doc = await evaluations_collection.find_one({"_id": ObjectId(evaluation_id)})
+        if eval_doc:
+            return eval_doc
+
+    # Fallback ultra-tollerante per documenti legacy/importati da backup:
+    # confronta in memoria i principali campi identificativi come stringhe.
+    async for doc in evaluations_collection.find({}):
+        doc_identifiers = [
+            doc.get("id_valutazione"),
+            doc.get("idValutazione"),
+            doc.get("id"),
+            doc.get("_id"),
+        ]
+        if any(str(value) == evaluation_id for value in doc_identifiers if value is not None):
+            return doc
 
     return None
+
+
+def _extract_evaluation_identifier(eval_doc: dict) -> str:
+    """Restituisce sempre un identificativo stabile e risolvibile per la valutazione."""
+    if eval_doc.get("id_valutazione"):
+        return str(eval_doc["id_valutazione"])
+    if eval_doc.get("idValutazione"):
+        return str(eval_doc["idValutazione"])
+    if eval_doc.get("id"):
+        return str(eval_doc["id"])
+    if eval_doc.get("_id") is not None:
+        return str(eval_doc["_id"])
+    return ""
+
+
+def _build_evaluation_selector(eval_doc: dict) -> dict:
+    """Costruisce il filtro Mongo più affidabile per aggiornare la valutazione trovata."""
+    if eval_doc.get("_id") is not None:
+        return {"_id": eval_doc["_id"]}
+    if eval_doc.get("id_valutazione"):
+        return {"id_valutazione": eval_doc["id_valutazione"]}
+    if eval_doc.get("idValutazione"):
+        return {"idValutazione": eval_doc["idValutazione"]}
+    if eval_doc.get("id"):
+        return {"id": eval_doc["id"]}
+    return {"id_valutazione": _extract_evaluation_identifier(eval_doc)}
 
 
 def _normalize_scale_name(value: Optional[str]) -> str:
@@ -347,7 +390,7 @@ async def get_aggregated_evaluation(patient_id: str, scale_id: str):
         domains = compute_direct_scores(eval_doc.get("risposte", []), domain_map)
         history.append(
             AggregatedEvaluation(
-                id_valutazione=eval_doc["id_valutazione"],
+                id_valutazione=_extract_evaluation_identifier(eval_doc),
                 id_paziente=eval_doc["id_paziente"],
                 id_scala=eval_doc["id_scala"],
                 anno=eval_doc["anno"],
@@ -366,13 +409,13 @@ async def get_aggregated_evaluation(patient_id: str, scale_id: str):
                   tags=["Admin - Evaluations"])
 async def update_evaluation(evaluation_id: str, payload: EvaluationUpdateRequest):
     """Modifica inline punteggi/note di una valutazione, restituisce i dati riaggregati."""
-    existing = await evaluations_collection.find_one({"id_valutazione": evaluation_id})
+    existing = await _find_evaluation_document(evaluation_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Valutazione non trovata")
 
     new_risposte = [r.model_dump() for r in payload.risposte]
     await evaluations_collection.update_one(
-        {"id_valutazione": evaluation_id},
+        _build_evaluation_selector(existing),
         {"$set": {"risposte": new_risposte}}
     )
     existing["risposte"] = new_risposte
@@ -384,7 +427,7 @@ async def update_evaluation(evaluation_id: str, payload: EvaluationUpdateRequest
         domain_map = DOMINI_POS
     domains = compute_direct_scores(new_risposte, domain_map)
     return AggregatedEvaluation(
-        id_valutazione=existing["id_valutazione"],
+        id_valutazione=_extract_evaluation_identifier(existing),
         id_paziente=existing["id_paziente"],
         id_scala=existing["id_scala"],
         anno=existing["anno"],
@@ -438,7 +481,7 @@ async def get_evaluation_analysis(evaluation_id: str):
         risposte=eval_doc.get("risposte", []),
         scale_doc=scale_doc,
     )
-    analysis["id_valutazione"] = eval_doc.get("id_valutazione") or evaluation_id
+    analysis["id_valutazione"] = _extract_evaluation_identifier(eval_doc) or evaluation_id
     analysis["id_paziente"] = eval_doc.get("id_paziente", "")
     analysis["id_scala"] = eval_doc.get("id_scala", "")
     return analysis
