@@ -625,20 +625,78 @@ def generate_evaluation_pdf(
     # ── Tabella dettaglio risposte ───────────────────────────────────────────
     story.append(Paragraph("Dettaglio Risposte", section_header))
 
-    resp_headers = ["Codice", "Punteggio", "Nota"]
-    resp_rows = [
-        [
-            r.get("codice_domanda", "-"),
-            str(r.get("punteggio", "-")),
-            r.get("nota") or "",
+    if is_sanmartin and analysis is not None:
+        # Build map for San Martin questions
+        questions_map = {}
+        if scale and "domini" in scale:
+            for domain in scale["domini"]:
+                for q in domain.get("domande", []):
+                    q_code = q.get("codice")
+                    if q_code:
+                        questions_map[q_code] = {
+                            "testo": q.get("testo", ""),
+                            "opzioni": {
+                                opt.get("punteggio"): opt.get("etichetta", "")
+                                for opt in q.get("opzioni", [])
+                            }
+                        }
+
+        resp_headers = ["Codice", "Domanda", "Risposta", "Nota"]
+        resp_rows = []
+        cell_style = ParagraphStyle('RespCell', parent=styles['Normal'], fontSize=8, leading=10)
+        cell_style_bold = ParagraphStyle('RespCellBold', parent=styles['Normal'], fontSize=8, leading=10, fontName='Helvetica-Bold')
+
+        for r in evaluation.get("risposte", []):
+            q_code = r.get("codice_domanda", "-")
+            punteggio = r.get("punteggio", "-")
+            nota = r.get("nota") or ""
+            
+            q_info = questions_map.get(q_code)
+            q_text = q_info["testo"] if q_info else "—"
+            
+            opt_label = ""
+            try:
+                p_val = int(punteggio)
+            except ValueError:
+                p_val = None
+                
+            if q_info and p_val is not None:
+                opt_label = q_info["opzioni"].get(p_val, "")
+            
+            if opt_label:
+                risposta_display = f"{opt_label} ({punteggio})"
+            else:
+                risposta_display = str(punteggio)
+
+            resp_rows.append([
+                Paragraph(q_code, cell_style_bold),
+                Paragraph(q_text, cell_style),
+                Paragraph(risposta_display, cell_style),
+                Paragraph(nota, cell_style)
+            ])
+            
+        # Total printable width is 17.4 * cm
+        col_widths = [1.8*cm, 7.2*cm, 3.8*cm, 4.6*cm]
+        resp_table = _make_table(
+            resp_headers, resp_rows, col_widths, SECONDARY,
+            [('VALIGN', (0, 0), (-1, -1), 'TOP')]
+        )
+    else:
+        # Fallback/standard style for other scales
+        resp_headers = ["Codice", "Punteggio", "Nota"]
+        resp_rows = [
+            [
+                r.get("codice_domanda", "-"),
+                str(r.get("punteggio", "-")),
+                r.get("nota") or "",
+            ]
+            for r in evaluation.get("risposte", [])
         ]
-        for r in evaluation.get("risposte", [])
-    ]
-    resp_table = _make_table(
-        resp_headers, resp_rows, [2.5*cm, 2.5*cm, 14.5*cm], SECONDARY,
-        [('ALIGN', (1, 0), (1, -1), 'CENTER'),
-         ('WORDWRAP', (2, 0), (2, -1), True)]
-    )
+        resp_table = _make_table(
+            resp_headers, resp_rows, [2.5*cm, 2.5*cm, 14.5*cm], SECONDARY,
+            [('ALIGN', (1, 0), (1, -1), 'CENTER'),
+             ('WORDWRAP', (2, 0), (2, -1), True)]
+        )
     story.append(resp_table)
 
     # ── Footer ──────────────────────────────────────────────────────────────
