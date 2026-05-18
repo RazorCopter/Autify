@@ -586,17 +586,17 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
         radarBorderData: const BorderSide(color: Color(0xFF90A4AE), width: 1.2),
         radarBackgroundColor: const Color(0xFFF8FBFF),
         titlePositionPercentageOffset: 0.18,
+        titleTextStyle: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF2D3748),
+        ),
         getTitle: (index, _) {
           if (index < 0 || index >= domains.length) {
             return const RadarChartTitle(text: '');
           }
           return RadarChartTitle(
             text: titles[index],
-            textStyle: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
-            ),
           );
         },
         dataSets: [
@@ -608,7 +608,6 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
             borderWidth: 2.5,
             fillColor: const Color(0xFF1A237E).withValues(alpha: 0.12),
             entryRadius: 4.5,
-            borderDashArray: [],
           ),
           RadarDataSet(
             dataEntries: meanValues
@@ -618,7 +617,6 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
             borderWidth: 1.8,
             fillColor: Colors.transparent,
             entryRadius: 2,
-            borderDashArray: [6, 4],
           ),
         ],
       ),

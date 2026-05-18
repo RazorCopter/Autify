@@ -41,8 +41,8 @@ class DomainScore {
     return DomainScore(
       codice: json['codice'] ?? '',
       etichetta: json['etichetta'] ?? '',
-      punteggio: json['punteggio_totale'] ?? 0,
-      numDomande: json['num_domande'] ?? 0,
+      punteggio: (json['punteggio_totale'] ?? 0) as int,
+      numDomande: (json['num_domande'] ?? 0) as int,
     );
   }
 }
@@ -70,11 +70,11 @@ class DomainAnalysis {
     return DomainAnalysis(
       codice: json['codice'] ?? '',
       etichetta: json['etichetta'] ?? '',
-      punteggioDiretto: json['punteggio_diretto'] ?? 0,
-      punteggioStandard: json['punteggio_standard'],
-      percentileDominio: json['percentile_dominio'],
-      fascia: json['fascia'],
-      numDomande: json['num_domande'] ?? 0,
+      punteggioDiretto: (json['punteggio_diretto'] ?? 0) as int,
+      punteggioStandard: json['punteggio_standard'] as int?,
+      percentileDominio: json['percentile_dominio'] as int?,
+      fascia: json['fascia'] as String?,
+      numDomande: (json['num_domande'] ?? 0) as int,
     );
   }
 }
@@ -106,11 +106,11 @@ class PsychometricAnalysis {
       idPaziente: json['id_paziente'] ?? '',
       idScala: json['id_scala'] ?? '',
       scalaNome: json['scala_nome'] ?? '',
-      indiceQv: json['indice_qv'],
-      percentile: json['percentile'],
-      fasciaQv: json['fascia_qv'],
+      indiceQv: json['indice_qv'] as int?,
+      percentile: json['percentile'] as int?,
+      fasciaQv: json['fascia_qv'] as String?,
       domini: (json['domini'] as List?)
-              ?.map((e) => DomainAnalysis.fromJson(e))
+              ?.map((e) => DomainAnalysis.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
     );
@@ -145,16 +145,16 @@ class AggregatedEvaluation {
       idValutazione: json['id_valutazione'] ?? '',
       idPaziente: json['id_paziente'] ?? '',
       idScala: json['id_scala'] ?? '',
-      anno: json['anno'] ?? 0,
+      anno: (json['anno'] ?? 0) as int,
       dataCompilazione: json['data_compilazione']?.toString() ?? '',
       nomeOperatore: json['nome_operatore'] ?? '',
-      nomeIntervistato: json['nome_intervistato'],
+      nomeIntervistato: json['nome_intervistato'] as String?,
       domini: (json['domini'] as List?)
-              ?.map((e) => DomainScore.fromJson(e))
+              ?.map((e) => DomainScore.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
       risposte: (json['risposte'] as List?)
-              ?.map((e) => AnswerModel.fromJson(e))
+              ?.map((e) => AnswerModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
     );
