@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_version.dart';
 import 'screens/settings_screen.dart';
 import 'screens/protocols_screen.dart';
 import 'screens/anagrafica_screen.dart';
@@ -14,7 +15,7 @@ class AdminApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AutAnalysis Admin',
+      title: 'AutAnalysis Admin v$kFrontendVersion',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: const AdminDashboard(),
@@ -78,7 +79,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'v2.0',
+              'v$kFrontendVersion',
               style: TextStyle(fontSize: 10, color: AppTheme.textSecondary.withValues(alpha: 0.5)),
             ),
           ),

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, UploadFile, File
 from fastapi.responses import StreamingResponse
-from typing import List
+from typing import List, Optional
 from bson import ObjectId
 from .models import Scale, Evaluation, Patient, AppSettings, Section, Question, Option, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest
 from .database import evaluations_collection, settings_collection, patients_collection, scales_collection, users_collection
@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 import json
 import uuid
 import io
+from pathlib import Path
 
 admin_router = APIRouter()
 client_router = APIRouter()
@@ -29,6 +30,60 @@ async def _find_evaluation_document(evaluation_id: str):
         return await evaluations_collection.find_one({"_id": ObjectId(evaluation_id)})
 
     return None
+
+
+def _normalize_scale_name(value: Optional[str]) -> str:
+    return (value or "").lower().replace(" ", "").replace("-", "")
+
+
+def _load_builtin_san_martin_scale() -> Optional[dict]:
+    """Carica il protocollo San Martin bundled per reidratare metadati mancanti."""
+    app_dir = Path(__file__).resolve().parent
+    candidate_files = [
+        app_dir / "ScalaSanMartin.json",
+        app_dir / "Scala San Martin.json",
+    ]
+
+    for candidate in candidate_files:
+        if not candidate.exists():
+            continue
+        try:
+            data = json.loads(candidate.read_text(encoding="utf-8-sig"))
+            scala = data.get("scala")
+            if scala:
+                return scala
+        except (OSError, json.JSONDecodeError):
+            continue
+    return None
+
+
+def _hydrate_scale_doc(scale_doc: Optional[dict]) -> dict:
+    """
+    Ripristina i metadati psicometrici per le scale San Martin importate
+    prima del supporto a `scoring_tables`.
+    """
+    if not scale_doc:
+        return {}
+
+    if scale_doc.get("scoring_tables"):
+        return scale_doc
+
+    normalized_id = _normalize_scale_name(scale_doc.get("id"))
+    normalized_name = _normalize_scale_name(scale_doc.get("nome"))
+    is_san_martin = "sanmartin" in normalized_id or "sanmartin" in normalized_name
+
+    if not is_san_martin:
+        return scale_doc
+
+    builtin_scale = _load_builtin_san_martin_scale()
+    if not builtin_scale:
+        return scale_doc
+
+    enriched_scale = dict(scale_doc)
+    for key, value in builtin_scale.items():
+        if key not in enriched_scale:
+            enriched_scale[key] = value
+    return enriched_scale
 
 # ==========================================
 # ADMIN ROUTER (/api/admin)
@@ -239,7 +294,9 @@ async def download_evaluation_pdf(
         )
 
     patient_doc = await patients_collection.find_one({"id": eval_doc["id_paziente"]})
-    scale_doc   = await scales_collection.find_one({"id": eval_doc["id_scala"]})
+    scale_doc = _hydrate_scale_doc(
+        await scales_collection.find_one({"id": eval_doc["id_scala"]})
+    )
 
     analysis = compute_psychometric_analysis(
         risposte=eval_doc.get("risposte", []),
@@ -281,7 +338,9 @@ async def get_aggregated_evaluation(patient_id: str, scale_id: str):
 
     history = []
     for eval_doc in eval_docs:
-        scale_doc = await scales_collection.find_one({"id": eval_doc["id_scala"]})
+        scale_doc = _hydrate_scale_doc(
+            await scales_collection.find_one({"id": eval_doc["id_scala"]})
+        )
         domain_map = build_domain_map(scale_doc or {})
         if not domain_map:
             domain_map = DOMINI_POS
@@ -317,7 +376,9 @@ async def update_evaluation(evaluation_id: str, payload: EvaluationUpdateRequest
         {"$set": {"risposte": new_risposte}}
     )
     existing["risposte"] = new_risposte
-    scale_doc = await scales_collection.find_one({"id": existing["id_scala"]})
+    scale_doc = _hydrate_scale_doc(
+        await scales_collection.find_one({"id": existing["id_scala"]})
+    )
     domain_map = build_domain_map(scale_doc or {})
     if not domain_map:
         domain_map = DOMINI_POS
@@ -367,7 +428,9 @@ async def get_evaluation_analysis(evaluation_id: str):
             status_code=404,
             detail=f"Valutazione non trovata per id '{evaluation_id}'",
         )
-    scale_doc = await scales_collection.find_one({"id": eval_doc["id_scala"]})
+    scale_doc = _hydrate_scale_doc(
+        await scales_collection.find_one({"id": eval_doc["id_scala"]})
+    )
     if not scale_doc:
         raise HTTPException(status_code=404, detail="Scala associata non trovata")
 
