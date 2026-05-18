@@ -19,7 +19,7 @@ from reportlab.lib.units import cm
 from reportlab.lib.colors import Color, HexColor, white, black
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    Image as RLImage, HRFlowable
+    Image as RLImage, HRFlowable, PageBreak
 )
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
@@ -470,19 +470,14 @@ def generate_evaluation_pdf(
     )
 
     # ── Header ─────────────────────────────────────────────────────────────
-    story.append(Paragraph("AutAnalysis", title_style))
-    story.append(Paragraph("Report di Valutazione Clinica", subtitle_style))
-    story.append(HRFlowable(width="100%", thickness=1, color=BORDER, spaceAfter=10))
+    story.append(Paragraph("Report Valutativo", title_style))
+    story.append(HRFlowable(width="100%", thickness=1, color=BORDER, spaceBefore=4, spaceAfter=10))
 
     # ── Info scala ─────────────────────────────────────────────────────────
     if is_sanmartin:
         scale_meta = []
-        if scale.get("autori"):
-            scale_meta.append(f"Autori: {scale['autori']}")
         if scale.get("anno"):
             scale_meta.append(f"Anno: {scale['anno']}")
-        if scale.get("editore"):
-            scale_meta.append(f"Editore: {scale['editore']}")
         if scale_meta:
             story.append(Paragraph("Scala San Martín", section_header))
             for line in scale_meta:
@@ -583,8 +578,8 @@ def generate_evaluation_pdf(
         ]))
         story.append(legend_table)
         story.append(Spacer(1, 0.25 * cm))
-
     # ── Tabella riepilogo domìni ─────────────────────────────────────────────
+    story.append(PageBreak())
     story.append(Paragraph("Riepilogo per Dominio", section_header))
 
     if is_sanmartin and analysis is not None:
