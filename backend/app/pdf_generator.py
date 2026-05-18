@@ -78,7 +78,7 @@ def _make_radar_chart(
     - Indicatori di valore puntuali per il paziente
     - Legenda posizionata elegantemente in basso
     """
-    labels = [d["codice"] for d in domains]
+    labels = [_wrap_label(d.get("etichetta", d["codice"])) for d in domains]
     patient_values = [d.get("punteggio_standard") or 0 for d in domains]
     n = len(labels)
 
@@ -619,7 +619,7 @@ def _make_qv_summary_table(analysis: dict, styles) -> Table:
                     parent=styles["BodyText"],
                     fontName="Helvetica",
                     fontSize=10,
-                    leading=13,
+                    leading=22,
                     alignment=TA_CENTER,
                     textColor=white,
                 ),
@@ -631,7 +631,7 @@ def _make_qv_summary_table(analysis: dict, styles) -> Table:
                     parent=styles["BodyText"],
                     fontName="Helvetica",
                     fontSize=10,
-                    leading=13,
+                    leading=22,
                     alignment=TA_CENTER,
                     textColor=HexColor('#AED581'),
                 ),

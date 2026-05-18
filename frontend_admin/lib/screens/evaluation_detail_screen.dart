@@ -828,8 +828,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
 
   List<Widget> _buildRadarAxisLabels(List<DomainAnalysis> domains, double chartSize) {
     final center = chartSize / 2;
-    final labelRadius = (chartSize / 2) + 12;
-    const labelWidth = 76.0;
+    final labelRadius = (chartSize / 2) + 24;
+    const labelWidth = 130.0;
 
     return List<Widget>.generate(domains.length, (index) {
       final angle = (-math.pi / 2) + (2 * math.pi * index / domains.length);
@@ -838,13 +838,16 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
 
       return Positioned(
         left: dx - (labelWidth / 2),
-        top: dy - 14,
+        top: dy - 20,
         width: labelWidth,
         child: Text(
-          domains[index].codice,
+          domains[index].etichetta,
           textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 11,
+            height: 1.1,
             fontWeight: FontWeight.bold,
             color: AppTheme.textPrimary,
           ),
@@ -976,15 +979,28 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
       const DataColumn(
         label: Text(
           'Metrica',
-          style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+          style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor, fontSize: 13),
         ),
       ),
-      ...domainsList.map((d) => DataColumn(
-        label: Text(
-          d.etichetta,
-          style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
-        ),
-      )),
+      ...domainsList.map((d) {
+        final labelText = (d is DomainAnalysis) ? d.etichetta : (d as DomainScore).etichetta;
+        return DataColumn(
+          label: SizedBox(
+            width: 115,
+            child: Text(
+              labelText,
+              softWrap: true,
+              maxLines: 3,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.primaryColor,
+                fontSize: 12,
+                height: 1.15,
+              ),
+            ),
+          ),
+        );
+      }),
     ];
 
     final List<DataRow> rows = [];

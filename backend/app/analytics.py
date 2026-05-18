@@ -296,10 +296,22 @@ def _build_domain_analyses(
             score=raw_score,
             table_section=table_section,
         ) or {}
-        percentile = entry.get("perc")
         standard_score = _lookup_standard_score_from_matrix(domain_code, raw_score)
         if standard_score is None:
             standard_score = entry.get("std")
+
+        # I percentili del dominio dipendono direttamente e matematicamente dal Punteggio Standard (media 10, DS 3).
+        # Per garantire la coerenza clinica, ricaviamo il percentile direttamente dal Punteggio Standard effettivo.
+        if standard_score is not None:
+            std_to_perc_map = {
+                1: 1, 2: 1, 3: 1, 4: 2, 5: 5, 6: 9, 7: 16, 8: 25, 9: 37,
+                10: 50, 11: 63, 12: 75, 13: 84, 14: 91, 15: 95, 16: 98,
+                17: 99, 18: 99, 19: 99, 20: 99
+            }
+            percentile = std_to_perc_map.get(standard_score, entry.get("perc"))
+        else:
+            percentile = entry.get("perc")
+
         fascia = _std_to_fascia(standard_score) if standard_score is not None else None
 
         print(
