@@ -545,188 +545,213 @@ async def get_dashboard_stats():
     - Trend degli ultimi 6 mesi (valutazioni mensili per scala)
     - Lista degli ultimi alert (max 5) di pazienti da rivalutare urgentemente
     """
-    # 1. Recupero di tutti i pazienti e di tutte le scale per mappare i nomi
-    patients_cursor = patients_collection.find({})
-    patients = await patients_cursor.to_list(length=2000)
-    active_patient_ids = {pat["id"] for pat in patients}
-    
-    scales_cursor = scales_collection.find({})
-    scales_list = await scales_cursor.to_list(length=100)
-    scale_names = {s["id"]: s["nome"] for s in scales_list}
-    
-    # Self-healing: Purgamento automatico a database di eventuali valutazioni orfane
-    if active_patient_ids:
-        await evaluations_collection.delete_many({
-            "$or": [
-                {"id_paziente": {"$nin": list(active_patient_ids)}},
-                {"id_paziente": {"$exists": False}},
-                {"id_paziente": None}
-            ]
-        })
-    else:
-        await evaluations_collection.delete_many({})
+    try:
+        # 1. Recupero di tutti i pazienti e di tutte le scale per mappare i nomi
+        patients_cursor = patients_collection.find({})
+        patients = await patients_cursor.to_list(length=2000)
         
-    # 2. Recupero di tutte le valutazioni pulite ed integre
-    evaluations_cursor = evaluations_collection.find({})
-    evaluations = await evaluations_cursor.to_list(length=5000)
-    
-    now = datetime.now(timezone.utc)
-    
-    # 3. Raggruppamento valutazioni per paziente
-    evals_by_patient = {}
-    for ev in evaluations:
-        pat_id = ev.get("id_paziente")
-        if not pat_id:
-            continue
-        if pat_id not in evals_by_patient:
-            evals_by_patient[pat_id] = []
-        evals_by_patient[pat_id].append(ev)
+        active_patient_ids = set()
+        for pat in patients:
+            pat_id = pat.get("id") or (str(pat.get("_id")) if pat.get("_id") else None)
+            if pat_id:
+                active_patient_ids.add(pat_id)
         
-    # 4. Calcolo dello stato di copertura di ciascun paziente
-    coperti_count = 0
-    scaduti_count = 0
-    alert_candidates = []
-    
-    for pat in patients:
-        pat_id = pat["id"]
-        pat_evals = evals_by_patient.get(pat_id, [])
+        scales_cursor = scales_collection.find({})
+        scales_list = await scales_cursor.to_list(length=100)
         
-        if not pat_evals:
-            # Mai valutato: è un caso di alert
-            scaduti_count += 1
-            alert_candidates.append({
-                "paziente_id": pat_id,
-                "paziente_nome": pat.get("nome", ""),
-                "paziente_cognome": pat.get("cognome", ""),
-                "ultima_valutazione_data": None,
-                "giorni_da_ultima_valutazione": 9999,  # Alto valore per priorità
-                "stato": "mai_valutato",
-                "scala_nome": "Nessuna scala somministrata"
-            })
-        else:
-            # Ordina le valutazioni per trovare la più recente
-            def get_date(ev_doc):
-                d = ev_doc.get("data_compilazione")
-                if isinstance(d, str):
-                    try:
-                        return datetime.fromisoformat(d.replace("Z", "+00:00"))
-                    except ValueError:
-                        return datetime.min.replace(tzinfo=timezone.utc)
-                if isinstance(d, datetime):
-                    if d.tzinfo is None:
-                        return d.replace(tzinfo=timezone.utc)
-                    return d
-                return datetime.min.replace(tzinfo=timezone.utc)
+        scale_names = {}
+        for s in scales_list:
+            s_id = s.get("id") or (str(s.get("_id")) if s.get("_id") else None)
+            s_nome = s.get("nome") or "Scala senza nome"
+            if s_id:
+                scale_names[s_id] = s_nome
                 
-            sorted_evals = sorted(pat_evals, key=get_date, reverse=True)
-            latest_ev = sorted_evals[0]
-            latest_date = get_date(latest_ev)
+        # 2. Recupero di tutte le valutazioni
+        evaluations_cursor = evaluations_collection.find({})
+        evaluations = await evaluations_cursor.to_list(length=5000)
+        
+        now = datetime.now(timezone.utc)
+        
+        # 3. Raggruppamento valutazioni per paziente (saltando orfane)
+        evals_by_patient = {}
+        for ev in evaluations:
+            pat_id = ev.get("id_paziente")
+            if not pat_id or pat_id not in active_patient_ids:
+                continue
+            if pat_id not in evals_by_patient:
+                evals_by_patient[pat_id] = []
+            evals_by_patient[pat_id].append(ev)
             
-            # Calcolo dei giorni passati da oggi
-            days_since = (now - latest_date).days
+        # 4. Calcolo dello stato di copertura di ciascun paziente
+        coperti_count = 0
+        scaduti_count = 0
+        alert_candidates = []
+        
+        for pat in patients:
+            pat_id = pat.get("id") or (str(pat.get("_id")) if pat.get("_id") else None)
+            if not pat_id:
+                continue
+            pat_evals = evals_by_patient.get(pat_id, [])
             
-            if days_since <= 180:
-                coperti_count += 1
-            else:
+            if not pat_evals:
+                # Mai valutato: è un caso di alert
                 scaduti_count += 1
-                scale_id = latest_ev.get("id_scala")
-                scala_nome = scale_names.get(scale_id, scale_id)
                 alert_candidates.append({
                     "paziente_id": pat_id,
                     "paziente_nome": pat.get("nome", ""),
                     "paziente_cognome": pat.get("cognome", ""),
-                    "ultima_valutazione_data": latest_date.isoformat(),
-                    "giorni_da_ultima_valutazione": days_since,
-                    "stato": "scaduto",
-                    "scala_nome": scala_nome
+                    "ultima_valutazione_data": None,
+                    "giorni_da_ultima_valutazione": 9999,  # Alto valore per priorità
+                    "stato": "mai_valutato",
+                    "scala_nome": "Nessuna scala somministrata"
                 })
-
-    # Calcolo percentuale di copertura
-    totale_pazienti = len(patients)
-    copertura_percentuale = (coperti_count / totale_pazienti * 100) if totale_pazienti > 0 else 0.0
-    
-    # 5. Ordina gli alert: prima chi non ne ha mai fatte, poi chi ha valutazioni scadute da più tempo
-    alert_candidates.sort(key=lambda x: x["giorni_da_ultima_valutazione"], reverse=True)
-    ultimi_alert = alert_candidates[:5]
-    
-    # 6. Distribuzione per tipo di scala
-    distribuzione_raw = {}
-    for ev in evaluations:
-        scale_id = ev.get("id_scala")
-        if scale_id:
-            distribuzione_raw[scale_id] = distribuzione_raw.get(scale_id, 0) + 1
-        
-    totale_valutazioni = len(evaluations)
-    distribuzione_scale = []
-    for scale_id, count in distribuzione_raw.items():
-        scala_nome = scale_names.get(scale_id, scale_id)
-        distribuzione_scale.append({
-            "scala_id": scale_id,
-            "scala_nome": scala_nome,
-            "count": count,
-            "percentuale": round((count / totale_valutazioni * 100), 1) if totale_valutazioni > 0 else 0.0
-        })
-        
-    # 7. Trend degli ultimi 6 mesi (BarChart dati delle somministrazioni mensili)
-    trend_dati = []
-    for i in range(5, -1, -1):
-        offset_months = i
-        target_year = now.year
-        target_month = now.month - offset_months
-        while target_month <= 0:
-            target_month += 12
-            target_year -= 1
-            
-        mesi_it = {
-            1: "Gen", 2: "Feb", 3: "Mar", 4: "Apr", 5: "Mag", 6: "Giu",
-            7: "Lug", 8: "Ago", 9: "Set", 10: "Ott", 11: "Nov", 12: "Dic"
-        }
-        nome_mese = f"{mesi_it[target_month]} {target_year}"
-        
-        # Filtra valutazioni fatte in questo anno/mese
-        count_mese = 0
-        dettaglio_scale = {}
-        for ev in evaluations:
-            def get_date(ev_doc):
-                d = ev_doc.get("data_compilazione")
-                if isinstance(d, str):
-                    try:
-                        return datetime.fromisoformat(d.replace("Z", "+00:00"))
-                    except ValueError:
-                        return datetime.min.replace(tzinfo=timezone.utc)
-                if isinstance(d, datetime):
-                    if d.tzinfo is None:
-                        return d.replace(tzinfo=timezone.utc)
-                    return d
-                return datetime.min.replace(tzinfo=timezone.utc)
-            
-            ev_date = get_date(ev)
-            if ev_date.year == target_year and ev_date.month == target_month:
-                count_mese += 1
-                scale_id = ev.get("id_scala")
-                scala_nome = scale_names.get(scale_id, scale_id)
-                dettaglio_scale[scala_nome] = dettaglio_scale.get(scala_nome, 0) + 1
+            else:
+                # Ordina le valutazioni per trovare la più recente
+                def get_date(ev_doc):
+                    d = ev_doc.get("data_compilazione")
+                    if isinstance(d, str):
+                        try:
+                            return datetime.fromisoformat(d.replace("Z", "+00:00"))
+                        except ValueError:
+                            return datetime.min.replace(tzinfo=timezone.utc)
+                    if isinstance(d, datetime):
+                        if d.tzinfo is None:
+                            return d.replace(tzinfo=timezone.utc)
+                        return d
+                    return datetime.min.replace(tzinfo=timezone.utc)
+                    
+                sorted_evals = sorted(pat_evals, key=get_date, reverse=True)
+                latest_ev = sorted_evals[0]
+                latest_date = get_date(latest_ev)
                 
-        trend_dati.append({
-            "mese": nome_mese,
-            "anno": target_year,
-            "num_mese": target_month,
-            "count": count_mese,
-            "dettaglio_scale": dettaglio_scale
-        })
+                # Calcolo dei giorni passati da oggi
+                days_since = (now - latest_date).days
+                
+                if days_since <= 180:
+                    coperti_count += 1
+                else:
+                    scaduti_count += 1
+                    scale_id = latest_ev.get("id_scala")
+                    scala_nome = scale_names.get(scale_id) or scale_id or "Scala sconosciuta"
+                    alert_candidates.append({
+                        "paziente_id": pat_id,
+                        "paziente_nome": pat.get("nome", ""),
+                        "paziente_cognome": pat.get("cognome", ""),
+                        "ultima_valutazione_data": latest_date.isoformat(),
+                        "giorni_da_ultima_valutazione": days_since,
+                        "stato": "scaduto",
+                        "scala_nome": scala_nome
+                    })
+
+        # Calcolo percentuale di copertura
+        totale_pazienti = len(patients)
+        copertura_percentuale = (coperti_count / totale_pazienti * 100) if totale_pazienti > 0 else 0.0
         
-    return {
-        "totale_utenze_attive": totale_pazienti,
-        "totale_valutazioni_eseguite": totale_valutazioni,
-        "copertura_scale": {
-            "coperti_percentuale": round(copertura_percentuale, 1),
-            "coperti_count": coperti_count,
-            "scaduti_count": scaduti_count
-        },
-        "distribuzione_scale": distribuzione_scale,
-        "trend_somministrazioni": trend_dati,
-        "ultimi_alert": ultimi_alert
-    }
+        # 5. Ordina gli alert: prima chi non ne ha mai fatte, poi chi ha valutazioni scadute da più tempo
+        alert_candidates.sort(key=lambda x: x.get("giorni_da_ultima_valutazione", 0), reverse=True)
+        ultimi_alert = alert_candidates[:5]
+        
+        # 6. Distribuzione per tipo di scala (saltando orfane o non valide)
+        distribuzione_raw = {}
+        for ev in evaluations:
+            pat_id = ev.get("id_paziente")
+            if not pat_id or pat_id not in active_patient_ids:
+                continue
+            scale_id = ev.get("id_scala")
+            if scale_id:
+                distribuzione_raw[scale_id] = distribuzione_raw.get(scale_id, 0) + 1
+            
+        totale_valutazioni = sum(distribuzione_raw.values())
+        distribuzione_scale = []
+        for scale_id, count in distribuzione_raw.items():
+            scala_nome = scale_names.get(scale_id) or scale_id or "Scala sconosciuta"
+            distribuzione_scale.append({
+                "scala_id": scale_id,
+                "scala_nome": scala_nome,
+                "count": count,
+                "percentuale": round((count / totale_valutazioni * 100), 1) if totale_valutazioni > 0 else 0.0
+            })
+            
+        # 7. Trend degli ultimi 6 mesi (BarChart dati delle somministrazioni mensili)
+        trend_dati = []
+        for i in range(5, -1, -1):
+            offset_months = i
+            target_year = now.year
+            target_month = now.month - offset_months
+            while target_month <= 0:
+                target_month += 12
+                target_year -= 1
+                
+            mesi_it = {
+                1: "Gen", 2: "Feb", 3: "Mar", 4: "Apr", 5: "Mag", 6: "Giu",
+                7: "Lug", 8: "Ago", 9: "Set", 10: "Ott", 11: "Nov", 12: "Dic"
+            }
+            nome_mese = f"{mesi_it[target_month]} {target_year}"
+            
+            # Filtra valutazioni fatte in questo anno/mese (escludendo orfane)
+            count_mese = 0
+            dettaglio_scale = {}
+            for ev in evaluations:
+                pat_id = ev.get("id_paziente")
+                if not pat_id or pat_id not in active_patient_ids:
+                    continue
+                
+                def get_date(ev_doc):
+                    d = ev_doc.get("data_compilazione")
+                    if isinstance(d, str):
+                        try:
+                            return datetime.fromisoformat(d.replace("Z", "+00:00"))
+                        except ValueError:
+                            return datetime.min.replace(tzinfo=timezone.utc)
+                    if isinstance(d, datetime):
+                        if d.tzinfo is None:
+                            return d.replace(tzinfo=timezone.utc)
+                        return d
+                    return datetime.min.replace(tzinfo=timezone.utc)
+                
+                ev_date = get_date(ev)
+                if ev_date.year == target_year and ev_date.month == target_month:
+                    count_mese += 1
+                    scale_id = ev.get("id_scala")
+                    scala_nome = scale_names.get(scale_id) or scale_id or "Scala sconosciuta"
+                    dettaglio_scale[scala_nome] = dettaglio_scale.get(scala_nome, 0) + 1
+                    
+            trend_dati.append({
+                "mese": nome_mese,
+                "anno": target_year,
+                "num_mese": target_month,
+                "count": count_mese,
+                "dettaglio_scale": dettaglio_scale
+            })
+            
+        return {
+            "totale_utenze_attive": totale_pazienti,
+            "totale_valutazioni_eseguite": totale_valutazioni,
+            "copertura_scale": {
+                "coperti_percentuale": round(copertura_percentuale, 1),
+                "coperti_count": coperti_count,
+                "scaduti_count": scaduti_count
+            },
+            "distribuzione_scale": distribuzione_scale,
+            "trend_somministrazioni": trend_dati,
+            "ultimi_alert": ultimi_alert
+        }
+    except Exception as e:
+        import traceback
+        print("CRITICAL ERROR in get_dashboard_stats:")
+        traceback.print_exc()
+        return {
+            "totale_utenze_attive": 0,
+            "totale_valutazioni_eseguite": 0,
+            "copertura_scale": {
+                "coperti_percentuale": 0.0,
+                "coperti_count": 0,
+                "scaduti_count": 0
+            },
+            "distribuzione_scale": [],
+            "trend_somministrazioni": [],
+            "ultimi_alert": []
+        }
 
 
 # ─── DATABASE EXPORT / IMPORT ────────────────────────────────────────────────
