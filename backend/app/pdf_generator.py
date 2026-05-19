@@ -308,36 +308,57 @@ def _make_qol_visual_chart(domains: List[dict]) -> io.BytesIO:
 def _make_bar_chart(domains: List[dict], score_min: int = 6, score_max: int = 18) -> io.BytesIO:
     """
     Crea un grafico a barre orizzontali ad alto impatto estetico (flat left, rounded right)
-    ispirato alle interfacce moderne.
+    con sfumature gradiente personalizzate per ciascun dominio, ispirato a interfacce moderne.
     """
     import matplotlib.patches as patches
+    import matplotlib.colors as mcolors
     
     labels = [_wrap_label(d['etichetta'], max_chars=20) for d in domains]
     scores = [d["punteggio_totale"] for d in domains]
     n = len(labels)
-    colors = DOMAIN_COLORS[:n]
 
-    fig, ax = plt.subplots(figsize=(10, max(4.0, n * 0.65 + 1.2)), dpi=150)
+    # Palette gradiente moderna e professionale per i domini
+    GRADIENTS = [
+        ('#818CF8', '#312E81'),  # 1. Indigo / Blu profondo
+        ('#F87171', '#7F1D1D'),  # 2. Rosso corallo / Rosso vino
+        ('#34D399', '#064E3B'),  # 3. Smeraldo / Verde bosco
+        ('#FBBF24', '#78350F'),  # 4. Ambra / Terracotta
+        ('#C084FC', '#581C87'),  # 5. Lavanda / Viola profondo
+        ('#22D3EE', '#164E63'),  # 6. Turchese / Petrolio
+        ('#60A5FA', '#1E3A8A'),  # 7. Sky Blue / Blu notte
+        ('#F97316', '#7C2D12'),  # 8. Arancione vivo / Cioccolato
+    ]
+
+    fig, ax = plt.subplots(figsize=(10, max(5.0, n * 0.75 + 1.5)), dpi=150)
     fig.patch.set_facecolor('#FFFFFF')
     ax.set_facecolor('#FFFFFF')
 
     y = np.arange(n)
-    h = 0.46  # Spessore delle barre
+    h = 0.44  # Spessore delle barre
 
     # Evidenzia la fascia ottimale (normativa)
-    ax.axvspan(12, 18, color='#4CAF50', alpha=0.04, label='Fascia Ottimale (12–18)', zorder=0)
-    ax.axvline(12, color='#81C784', linewidth=1.0, linestyle='--', alpha=0.4, zorder=0)
+    ax.axvspan(12, 18, color='#4CAF50', alpha=0.03, label='Fascia Ottimale (12–18)', zorder=0)
+    ax.axvline(12, color='#81C784', linewidth=1.0, linestyle='--', alpha=0.35, zorder=0)
 
-    for idx, (y_val, score, bar_color) in enumerate(zip(y, scores, colors)):
-        # 1. Disegna la barra principale (rettangolo flat a sinistra)
-        rect = patches.Rectangle((0, y_val - h/2), score, h, color=bar_color, zorder=2)
-        ax.add_patch(rect)
+    for idx, (y_val, score, label) in enumerate(zip(y, scores, labels)):
+        # Recupera la coppia di colori per il gradiente di questo dominio
+        start_color, end_color = GRADIENTS[idx % len(GRADIENTS)]
+        cmap = mcolors.LinearSegmentedColormap.from_list("grad", [start_color, end_color])
         
-        # 2. Disegna il cerchio per rendere l'estremità destra perfettamente arrotondata
-        circle = patches.Circle((score, y_val), h/2, color=bar_color, zorder=2)
+        # 1. Disegna il corpo della barra a gradiente orizzontale in piccoli segmenti
+        steps = 100
+        for i in range(steps):
+            x1 = (i / steps) * score
+            x2 = ((i + 1) / steps) * score
+            rect_w = x2 - x1
+            rect = patches.Rectangle((x1, y_val - h/2), rect_w, h, color=cmap(i / steps), edgecolor='none', zorder=2)
+            ax.add_patch(rect)
+        
+        # 2. Disegna il cerchio all'estremità destra (con il colore finale) per arrotondarlo
+        circle = patches.Circle((score, y_val), h/2, color=end_color, edgecolor='none', zorder=2)
         ax.add_patch(circle)
 
-        # 3. Posiziona il testo del punteggio in grassetto subito dopo l'estremità arrotondata
+        # 3. Posiziona il testo del punteggio in grassetto
         ax.text(
             score + 0.4, 
             y_val, 
@@ -916,7 +937,7 @@ def generate_evaluation_pdf(
         chart_img = RLImage(chart_buf, width=10.2 * cm, height=10.2 * cm)
     else:
         chart_buf = _make_bar_chart(domains)
-        chart_img = RLImage(chart_buf, width=17 * cm, height=6.5 * cm)
+        chart_img = RLImage(chart_buf, width=17 * cm, height=10.5 * cm)
 
     story.append(chart_img)
     story.append(Spacer(1, 0.2 * cm))
