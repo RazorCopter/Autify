@@ -768,8 +768,9 @@ async def get_dashboard_stats():
         }
     except Exception as e:
         import traceback
+        tb_str = traceback.format_exc()
         print("CRITICAL ERROR in get_dashboard_stats:")
-        traceback.print_exc()
+        print(tb_str)
         return {
             "totale_utenze_attive": 0,
             "totale_valutazioni_eseguite": 0,
@@ -780,7 +781,8 @@ async def get_dashboard_stats():
             },
             "distribuzione_scale": [],
             "trend_somministrazioni": [],
-            "ultimi_alert": []
+            "ultimi_alert": [],
+            "error_traceback": tb_str
         }
 
 
