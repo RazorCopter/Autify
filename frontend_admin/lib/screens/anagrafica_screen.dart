@@ -23,6 +23,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<ScaleModel> _availableScales = [];
   bool _isLoading = false;
+  bool _isGridView = true;
 
   @override
   void initState() {
@@ -314,6 +315,54 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
     }
   }
 
+  void _openProtocolDialog(PatientModel patient) {
+    if (_availableScales.isEmpty) {
+      _showSnack('Nessun protocollo disponibile', isError: true);
+      return;
+    }
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Scegli Protocollo', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: _availableScales.length,
+            itemBuilder: (context, index) {
+              final scale = _availableScales[index];
+              return ListTile(
+                leading: const Icon(Icons.description_outlined, color: AppTheme.primaryColor),
+                title: Text(scale.nome, style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text(scale.id, style: const TextStyle(fontSize: 12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EvaluationDetailScreen(
+                        patient: patient,
+                        scale: scale,
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annulla'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showSnack(String msg, {required bool isError}) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Row(
@@ -418,6 +467,31 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(width: 16),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE8EEF8)),
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.grid_view_rounded, size: 20),
+                          color: _isGridView ? AppTheme.primaryColor : AppTheme.textSecondary,
+                          onPressed: () => setState(() => _isGridView = true),
+                          tooltip: 'Vista Griglia',
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.view_list_rounded, size: 20),
+                          color: !_isGridView ? AppTheme.primaryColor : AppTheme.textSecondary,
+                          onPressed: () => setState(() => _isGridView = false),
+                          tooltip: 'Vista Elenco',
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 24),
@@ -451,13 +525,20 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                     // Filtra i pazienti in base alla query
                     final query = _searchController.text.toLowerCase().trim();
                     final filteredList = query.isEmpty
-                        ? snapshot.data!
+                        ? List<PatientModel>.from(snapshot.data!)
                         : snapshot.data!.where((p) {
                             final matchNome = p.nome.toLowerCase().contains(query);
                             final matchCognome = p.cognome.toLowerCase().contains(query);
                             final matchNote = (p.note ?? '').toLowerCase().contains(query);
                             return matchNome || matchCognome || matchNote;
                           }).toList();
+
+                    // Ordina per Cognome (Primario) e Nome (Secondario)
+                    filteredList.sort((a, b) {
+                      final comp = a.cognome.toLowerCase().compareTo(b.cognome.toLowerCase());
+                      if (comp != 0) return comp;
+                      return a.nome.toLowerCase().compareTo(b.nome.toLowerCase());
+                    });
 
                     if (filteredList.isEmpty) {
                       return const Center(
@@ -466,17 +547,21 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                       );
                     }
 
-                    return GridView.builder(
-                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 400,
-                        mainAxisExtent: 180,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                      ),
-                      itemCount: filteredList.length,
-                      padding: const EdgeInsets.only(bottom: 24),
-                      itemBuilder: (ctx, i) => _buildPatientCard(filteredList[i], i),
-                    );
+                    if (_isGridView) {
+                      return GridView.builder(
+                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 280,
+                          mainAxisExtent: 140,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        itemCount: filteredList.length,
+                        padding: const EdgeInsets.only(bottom: 24),
+                        itemBuilder: (ctx, i) => _buildPatientCardCompact(filteredList[i], i),
+                      );
+                    } else {
+                      return _buildPatientListView(filteredList);
+                    }
                   },
                 ),
               ),
@@ -492,145 +577,222 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
     );
   }
 
-  Widget _buildPatientCard(PatientModel patient, int index) {
+  Widget _buildPatientCardCompact(PatientModel patient, int index) {
     final color = AppTheme.puzzleColorAt(index);
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE8EEF8)),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.12),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: color.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CircleAvatar(
-                  backgroundColor: color.withValues(alpha: 0.15),
+                  radius: 15,
+                  backgroundColor: color.withValues(alpha: 0.12),
                   child: Text(
                     '${patient.nome[0].toUpperCase()}${patient.cognome[0].toUpperCase()}',
-                    style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11),
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('${patient.nome} ${patient.cognome}',
+                      Text(
+                        '${patient.nome} ${patient.cognome}',
                         style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
                           color: AppTheme.textPrimary,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         [
                           if (patient.dataNascita != null && patient.dataNascita!.isNotEmpty)
-                            '${patient.sesso == 'F' ? 'Nata' : 'Nato'} il ${_formatDateString(patient.dataNascita!)}${patient.sesso != null ? ' (${patient.sesso})' : ''}'
-                          else if (patient.sesso != null && patient.sesso!.isNotEmpty)
-                            'Sesso: ${patient.sesso}',
-                          if (patient.altezza != null) '${patient.altezza} cm',
-                          if (patient.peso != null) '${patient.peso} kg',
+                            _formatDateString(patient.dataNascita!),
+                          if (patient.sesso != null) patient.sesso,
                         ].join(' • '),
-                        style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                        style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 6),
             if (patient.note != null && patient.note!.isNotEmpty)
-              Expanded(
-                child: Text(patient.note!,
-                  style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary, fontStyle: FontStyle.italic),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+              Text(
+                patient.note!,
+                style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary, fontStyle: FontStyle.italic),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               )
             else
               const Spacer(),
+            const Spacer(),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.analytics_outlined, size: 20, color: AppTheme.accentColor),
-                  onPressed: () {
-                    if (_availableScales.isEmpty) {
-                      _showSnack('Nessun protocollo disponibile', isError: true);
-                      return;
-                    }
-                    showDialog(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        title: const Text('Scegli Protocollo', style: TextStyle(fontWeight: FontWeight.bold)),
-                        content: SizedBox(
-                          width: double.maxFinite,
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: _availableScales.length,
-                            itemBuilder: (context, index) {
-                              final scale = _availableScales[index];
-                              return ListTile(
-                                leading: const Icon(Icons.description_outlined, color: AppTheme.primaryColor),
-                                title: Text(scale.nome, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                subtitle: Text(scale.id, style: const TextStyle(fontSize: 12)),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                onTap: () {
-                                  Navigator.pop(ctx);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => EvaluationDetailScreen(
-                                        patient: patient,
-                                        scale: scale,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            child: const Text('Annulla'),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  tooltip: 'Analisi Valutazione',
+                  icon: const Icon(Icons.analytics_outlined, size: 18, color: AppTheme.accentColor),
+                  onPressed: () => _openProtocolDialog(patient),
+                  tooltip: 'Scegli Protocollo',
+                  constraints: const BoxConstraints(),
+                  padding: const EdgeInsets.all(4),
                 ),
+                const SizedBox(width: 6),
                 IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 20, color: AppTheme.primaryColor),
+                  icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.primaryColor),
                   onPressed: () => _showPatientDialog(patient: patient),
                   tooltip: 'Modifica',
+                  constraints: const BoxConstraints(),
+                  padding: const EdgeInsets.all(4),
                 ),
+                const SizedBox(width: 6),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.errorColor),
+                  icon: const Icon(Icons.delete_outline, size: 18, color: AppTheme.errorColor),
                   onPressed: () => _confirmDelete(patient),
                   tooltip: 'Elimina',
+                  constraints: const BoxConstraints(),
+                  padding: const EdgeInsets.all(4),
                 ),
               ],
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPatientListView(List<PatientModel> list) {
+    return Column(
+      children: [
+        // Table Header
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF4F7FC),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Row(
+            children: [
+              Expanded(flex: 2, child: Text('COGNOME', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
+              Expanded(flex: 2, child: Text('NOME', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
+              Expanded(flex: 2, child: Text('DATA NASCITA', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
+              Expanded(flex: 1, child: Text('SESSO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
+              Expanded(flex: 2, child: Text('FISICO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
+              Expanded(flex: 3, child: Text('NOTE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
+              SizedBox(width: 120, child: Text('AZIONI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary), textAlign: TextAlign.right)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Table Body
+        Expanded(
+          child: ListView.builder(
+            itemCount: list.length,
+            padding: const EdgeInsets.only(bottom: 24),
+            itemBuilder: (ctx, i) {
+              final p = list[i];
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: const BoxDecoration(
+                  border: Border(bottom: BorderSide(color: Color(0xFFE8EEF8))),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(flex: 2, child: Text(p.cognome, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary))),
+                    Expanded(flex: 2, child: Text(p.nome, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary))),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        p.dataNascita != null && p.dataNascita!.isNotEmpty ? _formatDateString(p.dataNascita!) : '-',
+                        style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Text(
+                        p.sesso ?? '-',
+                        style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        [
+                          if (p.altezza != null) '${p.altezza} cm',
+                          if (p.peso != null) '${p.peso} kg',
+                        ].join(' • '),
+                        style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        p.note ?? '',
+                        style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary, fontStyle: FontStyle.italic),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 120,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.analytics_outlined, size: 18, color: AppTheme.accentColor),
+                            onPressed: () => _openProtocolDialog(p),
+                            tooltip: 'Analisi Valutazione',
+                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.all(4),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.primaryColor),
+                            onPressed: () => _showPatientDialog(patient: p),
+                            tooltip: 'Modifica',
+                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.all(4),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 18, color: AppTheme.errorColor),
+                            onPressed: () => _confirmDelete(p),
+                            tooltip: 'Elimina',
+                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.all(4),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
