@@ -546,6 +546,27 @@ async def get_dashboard_stats():
     - Lista degli ultimi alert (max 5) di pazienti da rivalutare urgentemente
     """
     try:
+        # Helper di parsing delle date robusto (garantisce sempre un datetime offset-aware con UTC)
+        def parse_eval_date(ev_doc):
+            d = ev_doc.get("data_compilazione")
+            if not d:
+                return datetime.min.replace(tzinfo=timezone.utc)
+            if isinstance(d, str):
+                try:
+                    clean_str = d
+                    if clean_str.endswith("Z"):
+                        clean_str = clean_str[:-1] + "+00:00"
+                    res = datetime.fromisoformat(clean_str)
+                except ValueError:
+                    res = datetime.min
+            elif isinstance(d, datetime):
+                res = d
+            else:
+                res = datetime.min
+            if res.tzinfo is None:
+                res = res.replace(tzinfo=timezone.utc)
+            return res
+
         # 1. Recupero di tutti i pazienti e di tutte le scale per mappare i nomi
         patients_cursor = patients_collection.find({})
         patients = await patients_cursor.to_list(length=2000)
@@ -628,22 +649,9 @@ async def get_dashboard_stats():
                 })
             else:
                 # Ordina le valutazioni per trovare la più recente
-                def get_date(ev_doc):
-                    d = ev_doc.get("data_compilazione")
-                    if isinstance(d, str):
-                        try:
-                            return datetime.fromisoformat(d.replace("Z", "+00:00"))
-                        except ValueError:
-                            return datetime.min.replace(tzinfo=timezone.utc)
-                    if isinstance(d, datetime):
-                        if d.tzinfo is None:
-                            return d.replace(tzinfo=timezone.utc)
-                        return d
-                    return datetime.min.replace(tzinfo=timezone.utc)
-                    
-                sorted_evals = sorted(pat_evals, key=get_date, reverse=True)
+                sorted_evals = sorted(pat_evals, key=parse_eval_date, reverse=True)
                 latest_ev = sorted_evals[0]
-                latest_date = get_date(latest_ev)
+                latest_date = parse_eval_date(latest_ev)
                 
                 # Calcolo dei giorni passati da oggi
                 days_since = (now - latest_date).days
@@ -725,20 +733,7 @@ async def get_dashboard_stats():
                 if pat_id_str not in active_patient_ids:
                     continue
                 
-                def get_date(ev_doc):
-                    d = ev_doc.get("data_compilazione")
-                    if isinstance(d, str):
-                        try:
-                            return datetime.fromisoformat(d.replace("Z", "+00:00"))
-                        except ValueError:
-                            return datetime.min.replace(tzinfo=timezone.utc)
-                    if isinstance(d, datetime):
-                        if d.tzinfo is None:
-                            return d.replace(tzinfo=timezone.utc)
-                        return d
-                    return datetime.min.replace(tzinfo=timezone.utc)
-                
-                ev_date = get_date(ev)
+                ev_date = parse_eval_date(ev)
                 if ev_date.year == target_year and ev_date.month == target_month:
                     count_mese += 1
                     scale_id = ev.get("id_scala")
