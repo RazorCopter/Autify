@@ -552,19 +552,25 @@ async def get_dashboard_stats():
         
         active_patient_ids = set()
         for pat in patients:
-            pat_id = pat.get("id") or (str(pat.get("_id")) if pat.get("_id") else None)
-            if pat_id:
-                active_patient_ids.add(pat_id)
+            p_id = pat.get("id")
+            if p_id:
+                active_patient_ids.add(str(p_id))
+            p_id2 = pat.get("_id")
+            if p_id2:
+                active_patient_ids.add(str(p_id2))
         
         scales_cursor = scales_collection.find({})
         scales_list = await scales_cursor.to_list(length=100)
         
         scale_names = {}
         for s in scales_list:
-            s_id = s.get("id") or (str(s.get("_id")) if s.get("_id") else None)
             s_nome = s.get("nome") or "Scala senza nome"
+            s_id = s.get("id")
             if s_id:
-                scale_names[s_id] = s_nome
+                scale_names[str(s_id)] = s_nome
+            s_id2 = s.get("_id")
+            if s_id2:
+                scale_names[str(s_id2)] = s_nome
                 
         # 2. Recupero di tutte le valutazioni
         evaluations_cursor = evaluations_collection.find({})
@@ -572,15 +578,18 @@ async def get_dashboard_stats():
         
         now = datetime.now(timezone.utc)
         
-        # 3. Raggruppamento valutazioni per paziente (saltando orfane)
+        # 3. Raggruppamento valutazioni per paziente (saltando orfane e normalizzando gli ID a stringa)
         evals_by_patient = {}
         for ev in evaluations:
             pat_id = ev.get("id_paziente")
-            if not pat_id or pat_id not in active_patient_ids:
+            if not pat_id:
                 continue
-            if pat_id not in evals_by_patient:
-                evals_by_patient[pat_id] = []
-            evals_by_patient[pat_id].append(ev)
+            pat_id_str = str(pat_id)
+            if pat_id_str not in active_patient_ids:
+                continue
+            if pat_id_str not in evals_by_patient:
+                evals_by_patient[pat_id_str] = []
+            evals_by_patient[pat_id_str].append(ev)
             
         # 4. Calcolo dello stato di copertura di ciascun paziente
         coperti_count = 0
@@ -588,16 +597,28 @@ async def get_dashboard_stats():
         alert_candidates = []
         
         for pat in patients:
-            pat_id = pat.get("id") or (str(pat.get("_id")) if pat.get("_id") else None)
-            if not pat_id:
+            p_id = pat.get("id")
+            p_id2 = pat.get("_id")
+            
+            p_id_str = str(p_id) if p_id else None
+            p_id2_str = str(p_id2) if p_id2 else None
+            
+            pat_display_id = p_id_str or p_id2_str
+            if not pat_display_id:
                 continue
-            pat_evals = evals_by_patient.get(pat_id, [])
+                
+            # Recupera le valutazioni del paziente provando entrambe le chiavi stringa
+            pat_evals = []
+            if p_id_str and p_id_str in evals_by_patient:
+                pat_evals = evals_by_patient[p_id_str]
+            elif p_id2_str and p_id2_str in evals_by_patient:
+                pat_evals = evals_by_patient[p_id2_str]
             
             if not pat_evals:
                 # Mai valutato: è un caso di alert
                 scaduti_count += 1
                 alert_candidates.append({
-                    "paziente_id": pat_id,
+                    "paziente_id": pat_display_id,
                     "paziente_nome": pat.get("nome", ""),
                     "paziente_cognome": pat.get("cognome", ""),
                     "ultima_valutazione_data": None,
@@ -632,9 +653,10 @@ async def get_dashboard_stats():
                 else:
                     scaduti_count += 1
                     scale_id = latest_ev.get("id_scala")
-                    scala_nome = scale_names.get(scale_id) or scale_id or "Scala sconosciuta"
+                    scale_id_str = str(scale_id) if scale_id else ""
+                    scala_nome = scale_names.get(scale_id_str) or scale_names.get(str(scale_id)) or scale_id_str or "Scala sconosciuta"
                     alert_candidates.append({
-                        "paziente_id": pat_id,
+                        "paziente_id": pat_display_id,
                         "paziente_nome": pat.get("nome", ""),
                         "paziente_cognome": pat.get("cognome", ""),
                         "ultima_valutazione_data": latest_date.isoformat(),
@@ -655,11 +677,15 @@ async def get_dashboard_stats():
         distribuzione_raw = {}
         for ev in evaluations:
             pat_id = ev.get("id_paziente")
-            if not pat_id or pat_id not in active_patient_ids:
+            if not pat_id:
+                continue
+            pat_id_str = str(pat_id)
+            if pat_id_str not in active_patient_ids:
                 continue
             scale_id = ev.get("id_scala")
             if scale_id:
-                distribuzione_raw[scale_id] = distribuzione_raw.get(scale_id, 0) + 1
+                scale_id_str = str(scale_id)
+                distribuzione_raw[scale_id_str] = distribuzione_raw.get(scale_id_str, 0) + 1
             
         totale_valutazioni = sum(distribuzione_raw.values())
         distribuzione_scale = []
@@ -693,7 +719,10 @@ async def get_dashboard_stats():
             dettaglio_scale = {}
             for ev in evaluations:
                 pat_id = ev.get("id_paziente")
-                if not pat_id or pat_id not in active_patient_ids:
+                if not pat_id:
+                    continue
+                pat_id_str = str(pat_id)
+                if pat_id_str not in active_patient_ids:
                     continue
                 
                 def get_date(ev_doc):
@@ -713,7 +742,8 @@ async def get_dashboard_stats():
                 if ev_date.year == target_year and ev_date.month == target_month:
                     count_mese += 1
                     scale_id = ev.get("id_scala")
-                    scala_nome = scale_names.get(scale_id) or scale_id or "Scala sconosciuta"
+                    scale_id_str = str(scale_id) if scale_id else "unknown"
+                    scala_nome = scale_names.get(scale_id_str) or scale_id_str or "Scala sconosciuta"
                     dettaglio_scale[scala_nome] = dettaglio_scale.get(scala_nome, 0) + 1
                     
             trend_dati.append({
