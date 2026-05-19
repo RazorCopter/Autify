@@ -307,8 +307,9 @@ def _make_qol_visual_chart(domains: List[dict]) -> io.BytesIO:
 
 def _make_bar_chart(domains: List[dict], score_min: int = 6, score_max: int = 18) -> io.BytesIO:
     """
-    Crea un grafico a barre orizzontali ad alto impatto estetico (flat left, rounded right)
-    con sfumature gradiente personalizzate per ciascun dominio, ispirato a interfacce moderne.
+    Crea un grafico a barre orizzontali ad altissimo impatto estetico ispirato alle dashboard premium (Bento Grid).
+    Include una barra di sfondo per ciascuna domanda (progress-bar track) e una barra a sfumatura orizzontale
+    con terminazione arrotondata, posizionando i valori all'interno di eleganti pill-badge numerici.
     """
     import matplotlib.patches as patches
     import matplotlib.colors as mcolors
@@ -317,83 +318,108 @@ def _make_bar_chart(domains: List[dict], score_min: int = 6, score_max: int = 18
     scores = [d["punteggio_totale"] for d in domains]
     n = len(labels)
 
-    # Palette gradiente moderna e professionale per i domini
-    GRADIENTS = [
-        ('#818CF8', '#312E81'),  # 1. Indigo / Blu profondo
-        ('#F87171', '#7F1D1D'),  # 2. Rosso corallo / Rosso vino
-        ('#34D399', '#064E3B'),  # 3. Smeraldo / Verde bosco
-        ('#FBBF24', '#78350F'),  # 4. Ambra / Terracotta
-        ('#C084FC', '#581C87'),  # 5. Lavanda / Viola profondo
-        ('#22D3EE', '#164E63'),  # 6. Turchese / Petrolio
-        ('#60A5FA', '#1E3A8A'),  # 7. Sky Blue / Blu notte
-        ('#F97316', '#7C2D12'),  # 8. Arancione vivo / Cioccolato
+    # Palette di colori coordinati per un look moderno ed elegante (Material Design e Tailwind-like)
+    THEME_COLORS = [
+        ('#6366F1', '#4F46E5'),  # Indigo
+        ('#EC4899', '#DB2777'),  # Pink
+        ('#10B981', '#059669'),  # Emerald
+        ('#F59E0B', '#D97706'),  # Amber
+        ('#8B5CF6', '#7C3AED'),  # Purple
+        ('#06B6D4', '#0891B2'),  # Cyan
+        ('#3B82F6', '#2563EB'),  # Blue
+        ('#F97316', '#EA580C'),  # Orange
     ]
 
-    fig, ax = plt.subplots(figsize=(10, max(5.0, n * 0.75 + 1.5)), dpi=150)
+    fig, ax = plt.subplots(figsize=(10, max(5.0, n * 0.65 + 1.2)), dpi=150)
     fig.patch.set_facecolor('#FFFFFF')
     ax.set_facecolor('#FFFFFF')
 
     y = np.arange(n)
-    h = 0.44  # Spessore delle barre
+    h = 0.38  # Spessore delle barre (più sottili ed eleganti)
 
-    # Evidenzia la fascia ottimale (normativa)
-    ax.axvspan(12, 18, color='#4CAF50', alpha=0.03, label='Fascia Ottimale (12–18)', zorder=0)
-    ax.axvline(12, color='#81C784', linewidth=1.0, linestyle='--', alpha=0.35, zorder=0)
+    # 1. Disegna l'area normativa (fascia ottimale 12-18) con una sfumatura traslucida
+    ax.axvspan(12, 18, color='#E2F5E9', alpha=0.5, label='Fascia Ottimale (12–18)', zorder=1)
+    ax.axvline(12, color='#10B981', linewidth=1.0, linestyle=':', alpha=0.5, zorder=1)
 
     for idx, (y_val, score, label) in enumerate(zip(y, scores, labels)):
-        # Recupera la coppia di colori per il gradiente di questo dominio
-        start_color, end_color = GRADIENTS[idx % len(GRADIENTS)]
-        cmap = mcolors.LinearSegmentedColormap.from_list("grad", [start_color, end_color])
+        # Palette del dominio
+        start_color, end_color = THEME_COLORS[idx % len(THEME_COLORS)]
         
-        # 1. Disegna il corpo della barra a gradiente orizzontale in piccoli segmenti
+        # 2. Disegna la barra di sfondo (Track)
+        track_rect = patches.FancyBboxPatch(
+            (0, y_val - h/2), score_max, h,
+            boxstyle="round,pad=0,rounding_size=0.1",
+            facecolor='#F1F5F9', edgecolor='none',
+            zorder=2
+        )
+        ax.add_patch(track_rect)
+        
+        # 3. Disegna la barra di progresso colorata con sfumatura
+        cmap = mcolors.LinearSegmentedColormap.from_list("grad", [start_color, end_color])
         steps = 100
+        prog_rect = patches.FancyBboxPatch(
+            (0, y_val - h/2), score, h,
+            boxstyle="round,pad=0,rounding_size=0.1",
+            facecolor=end_color, edgecolor='none',
+            zorder=3
+        )
+        ax.add_patch(prog_rect)
+        
         for i in range(steps):
             x1 = (i / steps) * score
             x2 = ((i + 1) / steps) * score
             rect_w = x2 - x1
-            rect = patches.Rectangle((x1, y_val - h/2), rect_w, h, color=cmap(i / steps), edgecolor='none', zorder=2)
-            ax.add_patch(rect)
-        
-        # 2. Disegna il cerchio all'estremità destra (con il colore finale) per arrotondarlo
-        circle = patches.Circle((score, y_val), h/2, color=end_color, edgecolor='none', zorder=2)
-        ax.add_patch(circle)
+            if rect_w <= 0:
+                continue
+            if i == steps - 1:
+                p = patches.FancyBboxPatch(
+                    (x1, y_val - h/2), rect_w, h,
+                    boxstyle="round,pad=0,rounding_size=0.1",
+                    facecolor=cmap(i / steps), edgecolor='none',
+                    zorder=3
+                )
+            else:
+                p = patches.Rectangle(
+                    (x1, y_val - h/2), rect_w, h,
+                    color=cmap(i / steps), edgecolor='none',
+                    zorder=3
+                )
+            ax.add_patch(p)
 
-        # 3. Posiziona il testo del punteggio in grassetto
+        # 4. Disegna il badge del punteggio (un pill-box arrotondato a destra della barra di sfondo)
         ax.text(
-            score + 0.4, 
+            score_max + 0.6, 
             y_val, 
-            str(score), 
+            f" {score} ", 
             va='center', 
-            ha='left', 
-            fontsize=10.5,
+            ha='center', 
+            fontsize=9.5,
             fontweight='bold', 
-            color='#1E293B',
+            color='#FFFFFF',
+            bbox=dict(boxstyle='round,pad=0.3,rounding_size=0.3', facecolor=end_color, edgecolor='none'),
             zorder=4
         )
 
     ax.set_yticks(y)
     ax.set_yticklabels(labels, fontsize=9.5, color='#334155', fontweight='bold')
     ax.set_xlabel('Punteggio', fontsize=9.5, color='#64748B', fontweight='bold', labelpad=8)
-    ax.set_xlim(0, score_max * 1.15)
-    ax.invert_yaxis()  # Inverte l'ordine per avere il primo dominio in alto
+    ax.set_xlim(-0.5, score_max + 2.0)
+    ax.set_ylim(-0.7, n - 0.3)
+    ax.invert_yaxis()
     
-    # Pulizia spine
-    for spine in ['top', 'right']:
-        ax.spines[spine].set_visible(False)
-    ax.spines['left'].set_color('#CBD5E1')
-    ax.spines['left'].set_linewidth(1.0)
-    ax.spines['bottom'].set_color('#CBD5E1')
-    ax.spines['bottom'].set_linewidth(1.0)
+    # Rimuovi tutte le spine esterne
+    for spine in ax.spines.values():
+        spine.set_visible(False)
 
-    # Griglia e tick
-    ax.xaxis.grid(True, color='#F1F5F9', linestyle='-', linewidth=1.0, zorder=1)
+    # Griglia verticale
+    ax.xaxis.grid(True, color='#E2E8F0', linestyle='-', linewidth=0.8, zorder=0)
     ax.yaxis.grid(False)
-    ax.tick_params(bottom=True, left=True, colors='#64748B')
+    ax.tick_params(bottom=False, left=False, colors='#64748B')
 
-    ax.set_title('Profilo di Qualità della Vita per Dominio', fontsize=12.5,
+    ax.set_title('Profilo di Qualità della Vita per Dominio (Scala POS)', fontsize=12,
                  fontweight='bold', color='#0F172A', pad=18)
     
-    ax.legend(loc='lower right', frameon=False, fontsize=8.5)
+    ax.legend(loc='lower left', frameon=False, fontsize=8.5)
 
     plt.tight_layout()
     buf = io.BytesIO()
@@ -1031,6 +1057,35 @@ def generate_evaluation_pdf(
                             for opt in opts
                         }
                     }
+
+    # Carica la scala POS predefinita per arricchire con domande e opzioni parlanti reali
+    import json
+    import os
+    pos_json_path = os.path.join(os.path.dirname(__file__), "Scala_POS.json")
+    if os.path.exists(pos_json_path):
+        try:
+            with open(pos_json_path, "r", encoding="utf-8") as f:
+                pos_data = json.load(f)
+                scala_obj = pos_data.get("scala", {})
+                domini_list = scala_obj.get("domini", [])
+                for d in domini_list:
+                    for q in d.get("domande", []):
+                        q_code = q.get("codice")
+                        q_id = q.get("id_domanda")
+                        opts = q.get("opzioni") or []
+                        q_info = {
+                            "testo": q.get("testo") or q.get("testo_domanda") or "",
+                            "opzioni": {
+                                str(opt.get("punteggio")): opt.get("testo_risposta") or opt.get("etichetta") or opt.get("descrizione") or ""
+                                for opt in opts
+                            }
+                        }
+                        if q_code:
+                            questions_map[q_code] = q_info
+                        if q_id:
+                            questions_map[q_id] = q_info
+        except Exception as e:
+            print(f"Errore caricamento Scala_POS.json in pdf_generator: {e}")
 
     if questions_map:
         resp_headers = ["Codice", "Domanda", "Risposta", "Nota"]

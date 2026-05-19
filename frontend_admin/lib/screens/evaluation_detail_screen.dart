@@ -38,6 +38,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
 
   // Teniamo una copia mutabile delle risposte per l'editing inline
   List<AnswerModel> _editableAnswers = [];
+  final Map<String, TextEditingController> _noteControllers = {};
 
   static const List<Color> _domainColors = [
     Color(0xFF64B5F6), Color(0xFFFFB74D), Color(0xFF81C784), Color(0xFFCE93D8),
@@ -95,6 +96,14 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     _loadData();
   }
 
+  @override
+  void dispose() {
+    for (final controller in _noteControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     final history = await _api.getAggregatedEvaluationHistory(
@@ -126,6 +135,15 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               nota: r.nota,
             ))
         .toList();
+
+    for (final controller in _noteControllers.values) {
+      controller.dispose();
+    }
+    _noteControllers.clear();
+    for (final r in evaluation.risposte) {
+      _noteControllers[r.codiceDomanda] = TextEditingController(text: r.nota ?? '');
+    }
+
     _loadAnalysis();
   }
 
@@ -876,7 +894,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
   Widget _buildBarChart() {
     final hasAnalysis = _analysis != null && _analysis!.domini.isNotEmpty;
     final items = hasAnalysis ? _analysis!.domini : _eval!.domini;
-    const maxY = 60.0;
+    final isPos = widget.scale.id.toLowerCase().contains("pos") || widget.scale.nome.toLowerCase().contains("pos");
+    final maxY = isPos ? 18.0 : 60.0;
 
     return BarChart(
       BarChartData(
@@ -933,7 +952,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 32,
-              interval: 10,
+              interval: isPos ? 3.0 : 10.0,
               getTitlesWidget: (val, _) => Text(
                 val.toInt().toString(),
                 style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary),
@@ -1100,26 +1119,6 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
           }),
         ],
       ));
-    } else {
-      // Altrimenti aggiungiamo righe vuote per compatibilità
-      rows.add(DataRow(
-        cells: [
-          const DataCell(Text('Punteggio Standard', style: TextStyle(fontWeight: FontWeight.bold))),
-          ...domainsList.map((_) => const DataCell(Text('—', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary)))),
-        ],
-      ));
-      rows.add(DataRow(
-        cells: [
-          const DataCell(Text('Percentile', style: TextStyle(fontWeight: FontWeight.bold))),
-          ...domainsList.map((_) => const DataCell(Text('—', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary)))),
-        ],
-      ));
-      rows.add(DataRow(
-        cells: [
-          const DataCell(Text('Fascia', style: TextStyle(fontWeight: FontWeight.bold))),
-          ...domainsList.map((_) => const DataCell(Text('—', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary)))),
-        ],
-      ));
     }
 
     return Card(
@@ -1131,14 +1130,6 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
             const Text('Riepilogo per Dominio',
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
             const SizedBox(height: 16),
-            if (!_shouldUseSanMartinUi)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 12),
-                child: Text(
-                  'La scala corrente non include tabelle di conversione: il punteggio standard non è disponibile.',
-                  style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-                ),
-              ),
             LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(
@@ -1308,10 +1299,9 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           child: TextField(
-            controller:
-                TextEditingController(text: answer.nota ?? '')
-                  ..selection = TextSelection.collapsed(
-                      offset: (answer.nota ?? '').length),
+            controller: _noteControllers.putIfAbsent(
+                answer.codiceDomanda,
+                () => TextEditingController(text: answer.nota ?? '')),
             onChanged: (val) => _editableAnswers[idx].nota = val,
             maxLines: 2,
             decoration: InputDecoration(

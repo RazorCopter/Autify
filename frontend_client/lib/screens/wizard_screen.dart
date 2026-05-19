@@ -262,11 +262,13 @@ class _WizardScreenState extends State<WizardScreen>
         _questions[newIndex].domanda.idDomanda;
     _noteController.text = _notes[newKey] ?? '';
 
-    _pageController.animateToPage(
-      newIndex,
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeInOut,
-    );
+    if (_pageController.hasClients) {
+      _pageController.animateToPage(
+        newIndex,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+    }
     _requestKeyboardFocus();
   }
 
