@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
+import '../config.dart';
 import '../models/scale_model.dart';
 import '../models/patient_model.dart';
 import '../models/evaluation_model.dart';
@@ -18,6 +19,7 @@ class ApiService {
         'POST',
         Uri.parse('$baseUrl/import-scale'),
       );
+      request.headers['X-Admin-Password'] = kAdminPassword;
       
       // In Flutter Web, il file ha i bytes esposti direttamente se letto con withData: true
       if (file.bytes != null) {
@@ -40,7 +42,10 @@ class ApiService {
 
   Future<List<ScaleModel>> getScales() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/scales'));
+      final response = await http.get(
+        Uri.parse('$baseUrl/scales'),
+        headers: {'X-Admin-Password': kAdminPassword},
+      );
       if (response.statusCode == 200) {
         final List<dynamic> body = jsonDecode(response.body);
         return body.map((json) => ScaleModel.fromJson(json)).toList();
@@ -56,7 +61,10 @@ class ApiService {
     try {
       final response = await http.put(
         Uri.parse('$baseUrl/scales/${scale.id}'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Password': kAdminPassword,
+        },
         body: jsonEncode(scale.toJson()),
       );
       return response.statusCode == 200;
@@ -68,7 +76,10 @@ class ApiService {
 
   Future<bool> deleteScale(String id) async {
     try {
-      final response = await http.delete(Uri.parse('$baseUrl/scales/$id'));
+      final response = await http.delete(
+        Uri.parse('$baseUrl/scales/$id'),
+        headers: {'X-Admin-Password': kAdminPassword},
+      );
       return response.statusCode == 200;
     } catch (e) {
       print('Errore eliminazione scala: $e');
@@ -78,7 +89,10 @@ class ApiService {
 
   Future<String?> getGeminiKey() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/settings'));
+      final response = await http.get(
+        Uri.parse('$baseUrl/settings'),
+        headers: {'X-Admin-Password': kAdminPassword},
+      );
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         return body['gemini_api_key'];
@@ -93,7 +107,10 @@ class ApiService {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/settings'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Password': kAdminPassword,
+        },
         body: jsonEncode({
           'id': 'global_settings',
           'gemini_api_key': key,
@@ -109,7 +126,10 @@ class ApiService {
 
   Future<List<PatientModel>> getPatients() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/patients'));
+      final response = await http.get(
+        Uri.parse('$baseUrl/patients'),
+        headers: {'X-Admin-Password': kAdminPassword},
+      );
       if (response.statusCode == 200) {
         final List<dynamic> body = jsonDecode(response.body);
         return body.map((json) => PatientModel.fromJson(json)).toList();
@@ -125,7 +145,10 @@ class ApiService {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/patients'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Password': kAdminPassword,
+        },
         body: jsonEncode(patient.toJson()),
       );
       return response.statusCode == 201;
@@ -139,7 +162,10 @@ class ApiService {
     try {
       final response = await http.put(
         Uri.parse('$baseUrl/patients/${patient.id}'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Password': kAdminPassword,
+        },
         body: jsonEncode(patient.toJson()),
       );
       return response.statusCode == 200;
@@ -151,7 +177,10 @@ class ApiService {
 
   Future<bool> deletePatient(String id) async {
     try {
-      final response = await http.delete(Uri.parse('$baseUrl/patients/$id'));
+      final response = await http.delete(
+        Uri.parse('$baseUrl/patients/$id'),
+        headers: {'X-Admin-Password': kAdminPassword},
+      );
       return response.statusCode == 200;
     } catch (e) {
       print('Errore eliminazione paziente: $e');
@@ -166,6 +195,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/evaluations/$patientId/$scaleId'),
+        headers: {'X-Admin-Password': kAdminPassword},
       );
       if (response.statusCode == 200) {
         final List<dynamic> body = jsonDecode(response.body);
@@ -183,7 +213,10 @@ class ApiService {
     try {
       final response = await http.put(
         Uri.parse('$baseUrl/evaluations/$evaluationId'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Password': kAdminPassword,
+        },
         body: jsonEncode({
           'risposte': risposte.map((r) => r.toJson()).toList(),
         }),
@@ -202,6 +235,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/evaluations/$evaluationId/pdf'),
+        headers: {'X-Admin-Password': kAdminPassword},
       );
       if (response.statusCode == 200) {
         return response.bodyBytes;
@@ -219,6 +253,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/evaluations/$evaluationId/analysis'),
+        headers: {'X-Admin-Password': kAdminPassword},
       );
       print('DEBUG AUTANALYSIS API - analysis status: ${response.statusCode}');
       if (response.statusCode == 200) {
@@ -241,6 +276,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/export-db'),
+        headers: {'X-Admin-Password': kAdminPassword},
       );
       if (response.statusCode == 200) {
         return response.bodyBytes;
@@ -258,6 +294,7 @@ class ApiService {
         'POST',
         Uri.parse('$baseUrl/import-db'),
       );
+      request.headers['X-Admin-Password'] = kAdminPassword;
       if (file.bytes != null) {
         request.files.add(http.MultipartFile.fromBytes(
           'file',
@@ -307,7 +344,10 @@ class ApiService {
 
   Future<Map<String, dynamic>?> getDashboardStats() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/dashboard-stats'));
+      final response = await http.get(
+        Uri.parse('$baseUrl/dashboard-stats'),
+        headers: {'X-Admin-Password': kAdminPassword},
+      );
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       }

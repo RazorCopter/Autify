@@ -33,6 +33,7 @@ class _WizardScreenState extends State<WizardScreen>
   final TextEditingController _noteController = TextEditingController();
   final FocusNode _focusNode = FocusNode(debugLabel: 'wizard_keyboard_focus');
 
+  bool _allowPop = false;
   bool _isLoading = true;
   String? _scaleNome;
   List<_WizardItem> _questions = [];
@@ -409,23 +410,115 @@ class _WizardScreenState extends State<WizardScreen>
     }
   }
 
+  Future<bool> _showExitConfirmationDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Annullare la valutazione?'),
+        content: const Text(
+            'Se esci ora, tutte le risposte inserite andranno perse. Vuoi uscire comunque?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Continua Compilazione'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Esci e Elimina'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        body: Focus(
-          focusNode: _focusNode,
-          autofocus: true,
-          onKeyEvent: _handleKeyEvent,
-          child: Container(
-            decoration: _gradientDecoration(),
-            child: const Center(child: CircularProgressIndicator()),
+    Widget buildContent() {
+      if (_isLoading) {
+        return Scaffold(
+          body: Focus(
+            focusNode: _focusNode,
+            autofocus: true,
+            onKeyEvent: _handleKeyEvent,
+            child: Container(
+              decoration: _gradientDecoration(),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
           ),
-        ),
-      );
-    }
+        );
+      }
 
-    if (!_preliminaryDone) {
+      if (!_preliminaryDone) {
+        return Scaffold(
+          body: Focus(
+            focusNode: _focusNode,
+            autofocus: true,
+            onKeyEvent: _handleKeyEvent,
+            child: Container(
+              decoration: _gradientDecoration(),
+              child: SafeArea(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: _buildPreliminaryCard(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      final isSanMartin = widget.scaleId.toLowerCase().contains('martin') ||
+          widget.scaleId.toLowerCase().contains('san') ||
+          widget.scaleId.toLowerCase().contains('sanmartin') ||
+          (_scaleNome ?? '').toLowerCase().contains('martin') ||
+          (_scaleNome ?? '').toLowerCase().contains('san') ||
+          (_scaleNome ?? '').toLowerCase().contains('sanmartin');
+
+      if (isSanMartin && !_demographicsDone) {
+        return Scaffold(
+          body: Container(
+            decoration: _gradientDecoration(),
+            child: SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: _buildDemographicsCard(),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      if (_questions.isEmpty) {
+        return Scaffold(
+          body: Focus(
+            focusNode: _focusNode,
+            autofocus: true,
+            onKeyEvent: _handleKeyEvent,
+            child: Container(
+              decoration: _gradientDecoration(),
+              child: const Center(
+                child: Text('Nessuna domanda disponibile per questa scala',
+                    style: TextStyle(fontSize: 18, color: AppTheme.textSecondary)),
+              ),
+            ),
+          ),
+        );
+      }
+
+      final currentQ = _questions[_currentIndex];
+      final isLast = _currentIndex == _questions.length - 1;
+      final hasAnswered = _answers.containsKey(_currentKey);
+      final totalQ = _questions.length;
+
       return Scaffold(
         body: Focus(
           focusNode: _focusNode,
@@ -434,118 +527,69 @@ class _WizardScreenState extends State<WizardScreen>
           child: Container(
             decoration: _gradientDecoration(),
             child: SafeArea(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: _buildPreliminaryCard(),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isTablet = constraints.maxWidth > 650;
+                  final maxW = isTablet ? 720.0 : double.infinity;
+                  final hPad = isTablet ? 0.0 : 0.0;
 
-    final isSanMartin = widget.scaleId.toLowerCase().contains('martin') ||
-        widget.scaleId.toLowerCase().contains('san') ||
-        widget.scaleId.toLowerCase().contains('sanmartin') ||
-        (_scaleNome ?? '').toLowerCase().contains('martin') ||
-        (_scaleNome ?? '').toLowerCase().contains('san') ||
-        (_scaleNome ?? '').toLowerCase().contains('sanmartin');
-
-    if (isSanMartin && !_demographicsDone) {
-      return Scaffold(
-        body: Container(
-          decoration: _gradientDecoration(),
-          child: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: _buildDemographicsCard(),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (_questions.isEmpty) {
-      return Scaffold(
-        body: Focus(
-          focusNode: _focusNode,
-          autofocus: true,
-          onKeyEvent: _handleKeyEvent,
-          child: Container(
-            decoration: _gradientDecoration(),
-            child: const Center(
-              child: Text('Nessuna domanda disponibile per questa scala',
-                  style: TextStyle(fontSize: 18, color: AppTheme.textSecondary)),
-            ),
-          ),
-        ),
-      );
-    }
-
-    final currentQ = _questions[_currentIndex];
-    final isLast = _currentIndex == _questions.length - 1;
-    final hasAnswered = _answers.containsKey(_currentKey);
-    final totalQ = _questions.length;
-
-    return Scaffold(
-      body: Focus(
-        focusNode: _focusNode,
-        autofocus: true,
-        onKeyEvent: _handleKeyEvent,
-        child: Container(
-          decoration: _gradientDecoration(),
-          child: SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isTablet = constraints.maxWidth > 650;
-                final maxW = isTablet ? 720.0 : double.infinity;
-                final hPad = isTablet ? 0.0 : 0.0;
-
-                return Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: maxW),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: hPad),
-                      child: Column(
-                        children: [
-                          _buildHeader(currentQ, isTablet, totalQ),
-                          _buildProgressBar(totalQ),
-                          Expanded(
-                            child: SingleChildScrollView(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isTablet ? 32 : 20,
-                                vertical: 20,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  _buildQuestionCard(currentQ, isTablet),
-                                  const SizedBox(height: 12),
-                                  _buildQuestionNote(currentQ.domanda, isTablet),
-                                  const SizedBox(height: 8),
-                                  _buildOptionsList(currentQ, isTablet),
-                                  const SizedBox(height: 12),
-                                  _buildNoteSection(currentQ, isTablet),
-                                  const SizedBox(height: 24),
-                                ],
+                  return Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: maxW),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: hPad),
+                        child: Column(
+                          children: [
+                            _buildHeader(currentQ, isTablet, totalQ),
+                            _buildProgressBar(totalQ),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isTablet ? 32 : 20,
+                                  vertical: 20,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    _buildQuestionCard(currentQ, isTablet),
+                                    const SizedBox(height: 12),
+                                    _buildQuestionNote(currentQ.domanda, isTablet),
+                                    const SizedBox(height: 8),
+                                    _buildOptionsList(currentQ, isTablet),
+                                    const SizedBox(height: 12),
+                                    _buildNoteSection(currentQ, isTablet),
+                                    const SizedBox(height: 24),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                          _buildNavBar(hasAnswered, isLast, isTablet),
-                        ],
+                            _buildNavBar(hasAnswered, isLast, isTablet),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
         ),
-      ),
+      );
+    }
+
+    return PopScope(
+      canPop: _allowPop,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldPop = await _showExitConfirmationDialog();
+        if (shouldPop && mounted) {
+          setState(() {
+            _allowPop = true;
+          });
+          Navigator.of(context).pop();
+        }
+      },
+      child: buildContent(),
     );
   }
 

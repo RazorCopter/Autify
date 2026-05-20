@@ -117,6 +117,12 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                         controller: altezzaController,
                         decoration: const InputDecoration(labelText: 'Altezza (cm)', prefixIcon: Icon(Icons.height)),
                         keyboardType: TextInputType.number,
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return null;
+                          final n = int.tryParse(v.trim());
+                          if (n == null || n <= 0) return 'Valore non valido';
+                          return null;
+                        },
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -125,6 +131,12 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                         controller: pesoController,
                         decoration: const InputDecoration(labelText: 'Peso (kg)', prefixIcon: Icon(Icons.monitor_weight_outlined)),
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return null;
+                          final n = double.tryParse(v.trim().replaceAll(',', '.'));
+                          if (n == null || n <= 0) return 'Valore non valido';
+                          return null;
+                        },
                       ),
                     ),
                   ],

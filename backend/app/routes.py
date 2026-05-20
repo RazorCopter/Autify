@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Header, Depends
 from fastapi.responses import StreamingResponse
 from typing import List, Optional
 from bson import ObjectId
@@ -10,9 +10,15 @@ from datetime import datetime, timezone
 import json
 import uuid
 import io
+import os
 from pathlib import Path
 
-admin_router = APIRouter()
+async def verify_admin_auth(x_admin_password: Optional[str] = Header(None, alias="X-Admin-Password")):
+    expected = os.getenv("ADMIN_PASSWORD", "tiglio2026")
+    if not x_admin_password or x_admin_password != expected:
+        raise HTTPException(status_code=401, detail="Non autorizzato")
+
+admin_router = APIRouter(dependencies=[Depends(verify_admin_auth)])
 client_router = APIRouter()
 
 
@@ -197,6 +203,10 @@ async def create_patient(patient: Patient):
         patient_dict.pop("id", None)
         patient = Patient(**patient_dict)
         patient_dict = patient.model_dump()
+    else:
+        existing = await patients_collection.find_one({"id": patient.id})
+        if existing:
+            raise HTTPException(status_code=400, detail="Paziente con questo ID già esistente")
     await patients_collection.insert_one(patient_dict)
     return patient
 
@@ -259,7 +269,11 @@ async def import_scale(file: UploadFile = File(...)):
     if not (file.filename or '').lower().endswith('.json'):
         raise HTTPException(status_code=400, detail="Il file deve essere un JSON (.json)")
 
-    content = await file.read()
+    MAX_FILE_SIZE = 5 * 1024 * 1024
+    content = await file.read(MAX_FILE_SIZE + 1)
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="Il file supera la dimensione massima consentita di 5MB")
+
     try:
         data = json.loads(content.decode('utf-8-sig'))
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
@@ -520,6 +534,8 @@ async def update_settings(settings: AppSettings):
         existing = await settings_collection.find_one({"id": settings.id})
         if existing:
             settings_dict["gemini_api_key"] = existing.get("gemini_api_key")
+        else:
+            settings_dict["gemini_api_key"] = None
             
     await settings_collection.replace_one({"id": settings.id}, settings_dict, upsert=True)
     return {"message": "Impostazioni salvate con successo"}
@@ -798,7 +814,7 @@ async def export_database():
     db_dump = {
         "metadata": {
             "exported_at": datetime.now(timezone.utc).isoformat(),
-            "version": "1.0",
+            "version": "2.0.0",
         },
         "collections": {
             "patients": await _collect_collection("patients", patients_collection),
@@ -824,7 +840,11 @@ async def import_database(file: UploadFile = File(...)):
     if not (file.filename or '').lower().endswith('.json'):
         raise HTTPException(status_code=400, detail="Il file deve essere un JSON (.json)")
 
-    content = await file.read()
+    MAX_FILE_SIZE = 5 * 1024 * 1024
+    content = await file.read(MAX_FILE_SIZE + 1)
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="Il file supera la dimensione massima consentita di 5MB")
+
     try:
         data = json.loads(content.decode('utf-8-sig'))
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:

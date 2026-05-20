@@ -287,6 +287,18 @@ def _build_domain_analyses(
         domain_code = domain["codice"]
         num_domande = domain["num_domande"]
 
+        if num_domande == 0:
+            domain_analyses.append({
+                "codice": domain_code,
+                "etichetta": domain["etichetta"],
+                "punteggio_diretto": 0,
+                "punteggio_standard": None,
+                "percentile_dominio": None,
+                "fascia": None,
+                "num_domande": 0,
+            })
+            continue
+
         table_section = _get_domain_conversion_table(
             domain_code=domain_code,
             num_domande=num_domande,
