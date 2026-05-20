@@ -954,29 +954,6 @@ class _WizardScreenState extends State<WizardScreen>
           ),
           child: Row(
             children: [
-              // Score badge
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                width: isTablet ? 44 : 38,
-                height: isTablet ? 44 : 38,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? Colors.white.withValues(alpha: 0.25)
-                      : color.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    opt.punteggio.toString(),
-                    style: TextStyle(
-                      fontSize: isTablet ? 18 : 16,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : color,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
               // Testo opzione
               Expanded(
                 child: Row(

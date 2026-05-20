@@ -719,7 +719,7 @@ async def get_dashboard_stats():
                 "scala_id": scale_id,
                 "scala_nome": scala_nome,
                 "count": count,
-                "percentuale": round((count / totale_valutazioni * 100), 1) if totale_valutazioni > 0 else 0.0
+                "percentuale": round((count / totale_pazienti * 100), 1) if totale_pazienti > 0 else 0.0
             })
             
         # 7. Trend degli ultimi 6 mesi (BarChart dati delle somministrazioni mensili)
@@ -814,7 +814,7 @@ async def export_database():
     db_dump = {
         "metadata": {
             "exported_at": datetime.now(timezone.utc).isoformat(),
-            "version": "2.0.0",
+            "version": "2.1.0",
         },
         "collections": {
             "patients": await _collect_collection("patients", patients_collection),

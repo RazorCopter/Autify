@@ -98,7 +98,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Stato e monitoraggio della documentazione clinica',
+              'Stato e monitoraggio della documentazione',
               style: TextStyle(
                 fontSize: 14,
                 color: AppTheme.textSecondary.withValues(alpha: 0.8),
@@ -386,7 +386,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 24),
                   Expanded(
                     flex: 2,
-                    child: _buildDistributionCard(distributions, totalEvals),
+                    child: _buildDistributionCard(distributions, activePatients),
                   ),
                 ],
               )
@@ -395,7 +395,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   _buildAlertListCard(alertList),
                   const SizedBox(height: 24),
-                  _buildDistributionCard(distributions, totalEvals),
+                  _buildDistributionCard(distributions, activePatients),
                 ],
               ),
           ],
@@ -415,7 +415,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Stato di Copertura Clinica',
+              'Stato di Copertura Documentale',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
             ),
             const SizedBox(height: 4),
@@ -772,7 +772,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ─── DISTRIBUTION CARD ─────────────────────────────────────────────────────
-  Widget _buildDistributionCard(List<dynamic> distributions, int totalEvals) {
+  Widget _buildDistributionCard(List<dynamic> distributions, int totalPatients) {
     return _HoverBentoCard(
       height: 360,
       child: Padding(
@@ -785,9 +785,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
             ),
             const SizedBox(height: 4),
-            const Text(
-              'Quota percentuale per ciascuna scala somministrata',
-              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+            Text(
+              'Completamento rispetto al totale di $totalPatients utenti',
+              style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 24),
             Expanded(
@@ -824,7 +824,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                 ),
                                 Text(
-                                  '$count ($percent%)',
+                                  '$count / $totalPatients ($percent%)',
                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary),
                                 ),
                               ],
@@ -833,7 +833,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: LinearProgressIndicator(
-                                value: totalEvals > 0 ? count / totalEvals : 0,
+                                value: totalPatients > 0 ? (percent / 100).clamp(0.0, 1.0) : 0,
                                 backgroundColor: const Color(0xFFF1F5F9),
                                 valueColor: AlwaysStoppedAnimation<Color>(color),
                                 minHeight: 8,

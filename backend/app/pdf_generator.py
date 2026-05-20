@@ -416,7 +416,7 @@ def _make_bar_chart(domains: List[dict], score_min: int = 6, score_max: int = 18
     ax.yaxis.grid(False)
     ax.tick_params(bottom=False, left=False, colors='#64748B')
 
-    ax.set_title('Profilo di Qualità della Vita per Dominio (Scala POS)', fontsize=12,
+    ax.set_title('Diagramma Domini scala POS', fontsize=12,
                  fontweight='bold', color='#0F172A', pad=18)
     
     ax.legend(loc='lower left', frameon=False, fontsize=8.5)

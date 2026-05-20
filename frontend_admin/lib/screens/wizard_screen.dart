@@ -1,4 +1,4 @@
-import 'dart:ui';
+﻿import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/scale_model.dart';
@@ -292,7 +292,7 @@ class _WizardScreenState extends State<WizardScreen>
       );
     }).toList();
 
-    // Raccoglie i dati socio-demografici se la scala è San Martín
+    // Raccoglie i dati socio-demografici se la scala Ã¨ San MartÃ­n
     Map<String, dynamic>? demographicsData;
     final isSanMartin = widget.scaleId.toLowerCase().contains('martin') ||
         widget.scaleId.toLowerCase().contains('san') ||
@@ -598,7 +598,7 @@ class _WizardScreenState extends State<WizardScreen>
     );
   }
 
-  // ─── Scheda preliminare ─────────────────────────────────────────────────
+  // â”€â”€â”€ Scheda preliminare â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildPreliminaryCard() {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 500),
@@ -744,7 +744,7 @@ class _WizardScreenState extends State<WizardScreen>
     );
   }
 
-  // ─── Header ────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildHeader(_WizardItem currentQ, bool isTablet, int total) {
     return ClipRRect(
       child: BackdropFilter(
@@ -799,7 +799,7 @@ class _WizardScreenState extends State<WizardScreen>
     );
   }
 
-  // ─── Progress bar ──────────────────────────────────────────────────────────
+  // â”€â”€â”€ Progress bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildProgressBar(int total) {
     final progress = (_currentIndex + 1) / total;
     return TweenAnimationBuilder<double>(
@@ -815,7 +815,7 @@ class _WizardScreenState extends State<WizardScreen>
     );
   }
 
-  // ─── Question card (Glassmorphism) ─────────────────────────────────────────
+  // â”€â”€â”€ Question card (Glassmorphism) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildQuestionCard(_WizardItem item, bool isTablet) {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 380),
@@ -867,7 +867,7 @@ class _WizardScreenState extends State<WizardScreen>
     );
   }
 
-  // ─── Banner Note Domanda ───────────────────────────────────────────────────
+  // â”€â”€â”€ Banner Note Domanda â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildQuestionNote(QuestionModel question, bool isTablet) {
     if (question.note == null || question.note!.isEmpty) {
       return const SizedBox.shrink();
@@ -898,7 +898,7 @@ class _WizardScreenState extends State<WizardScreen>
     );
   }
 
-  // ─── Options list (dynamic & animated) ────────────────────────────────────
+  // â”€â”€â”€ Options list (dynamic & animated) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildOptionsList(_WizardItem item, bool isTablet) {
     if (item.domanda.opzioni.isEmpty) {
       return const Text(
@@ -959,29 +959,6 @@ class _WizardScreenState extends State<WizardScreen>
           ),
           child: Row(
             children: [
-              // Score badge
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                width: isTablet ? 44 : 38,
-                height: isTablet ? 44 : 38,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? Colors.white.withValues(alpha: 0.25)
-                      : color.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    opt.punteggio.toString(),
-                    style: TextStyle(
-                      fontSize: isTablet ? 18 : 16,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : color,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
               // Testo opzione
               Expanded(
                 child: Row(
@@ -1047,7 +1024,7 @@ class _WizardScreenState extends State<WizardScreen>
     );
   }
 
-  // ─── Note section ──────────────────────────────────────────────────────────
+  // â”€â”€â”€ Note section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildNoteSection(_WizardItem item, bool isTablet) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1075,7 +1052,7 @@ class _WizardScreenState extends State<WizardScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _noteVisible ? 'Nascondi nota' : '📝  Aggiungi nota (opzionale)',
+                  _noteVisible ? 'Nascondi nota' : 'ðŸ“  Aggiungi nota (opzionale)',
                   style: const TextStyle(
                     color: AppTheme.primaryColor,
                     fontWeight: FontWeight.w600,
@@ -1141,7 +1118,7 @@ class _WizardScreenState extends State<WizardScreen>
     );
   }
 
-  // ─── Nav bar ───────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Nav bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildNavBar(bool hasAnswered, bool isLast, bool isTablet) {
     return ClipRect(
       child: BackdropFilter(
@@ -1203,7 +1180,7 @@ class _WizardScreenState extends State<WizardScreen>
     );
   }
 
-  // ─── Helpers ───────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   BoxDecoration _gradientDecoration() {
     return const BoxDecoration(
       gradient: LinearGradient(
@@ -1266,7 +1243,7 @@ class _WizardScreenState extends State<WizardScreen>
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Informazioni richieste dal protocollo Scala San Martín',
+                    'Informazioni richieste dal protocollo Scala San MartÃ­n',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
                   ),
@@ -1278,7 +1255,7 @@ class _WizardScreenState extends State<WizardScreen>
                   
                   DropdownButtonFormField<String>(
                     value: _livelloAssistenza,
-                    decoration: _inputDecoration('Livello di necessità di assistenza', Icons.assistant_direction_outlined),
+                    decoration: _inputDecoration('Livello di necessitÃ  di assistenza', Icons.assistant_direction_outlined),
                     items: const [
                       DropdownMenuItem(value: 'Esteso', child: Text('Esteso')),
                       DropdownMenuItem(value: 'Generalizzato', child: Text('Generalizzato')),
@@ -1307,7 +1284,7 @@ class _WizardScreenState extends State<WizardScreen>
                         child: TextFormField(
                           controller: _percentualeDisabilitaController,
                           keyboardType: TextInputType.number,
-                          decoration: _inputDecoration('Disabilità (%)', Icons.percent),
+                          decoration: _inputDecoration('DisabilitÃ  (%)', Icons.percent),
                           validator: (val) {
                             if (val == null || val.isEmpty) return 'Richiesto';
                             final n = int.tryParse(val);
@@ -1340,7 +1317,7 @@ class _WizardScreenState extends State<WizardScreen>
                   ),
                   const SizedBox(height: 8),
 
-                  _buildModernCheckbox('Disabilità fisica', _disFisica, (val) {
+                  _buildModernCheckbox('DisabilitÃ  fisica', _disFisica, (val) {
                     setState(() {
                       _disFisica = val ?? false;
                       if (!_disFisica) {
@@ -1365,7 +1342,7 @@ class _WizardScreenState extends State<WizardScreen>
                     ),
                   ],
 
-                  _buildModernCheckbox('Disabilità sensoriale', _disSensoriale, (val) {
+                  _buildModernCheckbox('DisabilitÃ  sensoriale', _disSensoriale, (val) {
                     setState(() {
                       _disSensoriale = val ?? false;
                       if (!_disSensoriale) {
@@ -1379,7 +1356,7 @@ class _WizardScreenState extends State<WizardScreen>
                       padding: const EdgeInsets.only(left: 24.0, bottom: 8),
                       child: Column(
                         children: [
-                          _buildModernCheckbox('Uditiva/sordità', _uditoSordita, (val) {
+                          _buildModernCheckbox('Uditiva/sorditÃ ', _uditoSordita, (val) {
                             setState(() => _uditoSordita = val ?? false);
                           }),
                           _buildModernCheckbox('Visiva', _visiva, (val) {
