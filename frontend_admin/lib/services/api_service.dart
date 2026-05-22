@@ -216,7 +216,7 @@ class ApiService {
       String evaluationId, List<AnswerModel> risposte,
       {String? nomeOperatore, String? nomeIntervistato}) async {
     try {
-      final body = {
+      final Map<String, dynamic> body = {
         'risposte': risposte.map((r) => r.toJson()).toList(),
       };
       if (nomeOperatore != null) body['nome_operatore'] = nomeOperatore;

@@ -783,7 +783,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         barGroups: List.generate(domini.length, (i) {
           final maxScore = domini[i].numDomande * 3;
           final double toYValue = domini[i].punteggio.toDouble();
-          final double backYValue = domini[i].punteggioTotale > 0 ? domini[i].punteggioTotale.toDouble() : maxScore.toDouble();
+          final double backYValue = maxScore.toDouble();
           
           return BarChartGroupData(
             x: i,

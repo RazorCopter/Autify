@@ -2,6 +2,11 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.3.2] - 2026-05-22
+
+### Risolto
+- **Build Flutter Web**: Corretti alcuni errori di tipizzazione di Dart (es. assegnazioni scorrette di tipi di dato ai Map del body per la rotta API, uso di un getter errato per `DomainScore`) che causavano il fallimento silente del compilatore `dart2js` con `exit code 1` durante il deploy su Docker.
+
 ## [2.3.1] - 2026-05-22
 
 ### Modificato/Risolto

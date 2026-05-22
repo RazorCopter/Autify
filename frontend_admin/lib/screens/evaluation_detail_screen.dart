@@ -449,13 +449,15 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
             _metaItem('Data', _formatEvaluationDate(e.dataCompilazione)),
             _metaItem('Anno', e.anno.toString()),
             
-            _isEditMode 
-                ? SizedBox(width: 200, child: TextField(controller: _operatoreController, decoration: const InputDecoration(labelText: 'Operatore', border: UnderlineInputBorder()), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)))
-                : _metaItem('Operatore', e.nomeOperatore),
+            if (_isEditMode)
+              SizedBox(width: 200, child: TextField(controller: _operatoreController, decoration: const InputDecoration(labelText: 'Operatore', border: UnderlineInputBorder()), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)))
+            else
+              _metaItem('Operatore', e.nomeOperatore),
                 
-            _isEditMode
-                ? SizedBox(width: 200, child: TextField(controller: _intervistatoController, decoration: const InputDecoration(labelText: 'Intervistato/a', border: UnderlineInputBorder()), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)))
-                : (e.nomeIntervistato != null && e.nomeIntervistato!.isNotEmpty ? _metaItem('Intervistato/a', e.nomeIntervistato!) : const SizedBox()),
+            if (_isEditMode)
+              SizedBox(width: 200, child: TextField(controller: _intervistatoController, decoration: const InputDecoration(labelText: 'Intervistato/a', border: UnderlineInputBorder()), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)))
+            else if (e.nomeIntervistato != null && e.nomeIntervistato!.isNotEmpty)
+              _metaItem('Intervistato/a', e.nomeIntervistato!),
                 
             _metaItem('ID', e.idValutazione.length > 8 ? '${e.idValutazione.substring(0, 8)}…' : e.idValutazione),
           ],
