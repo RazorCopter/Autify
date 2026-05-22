@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/patient_model.dart';
 import '../models/scale_model.dart';
-import 'evaluation_detail_screen.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import 'evaluation_detail_screen.dart';
+import 'multidimensional_dashboard_screen.dart';
 
 class AnagraficaScreen extends StatefulWidget {
   final String? initialSearchQuery;
@@ -327,50 +328,15 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
     }
   }
 
-  void _openProtocolDialog(PatientModel patient) {
+  void _openMultidimensionalDashboard(PatientModel patient) {
     if (_availableScales.isEmpty) {
-      _showSnack('Nessun protocollo disponibile', isError: true);
+      _showSnack('Nessun protocollo disponibile nel sistema', isError: true);
       return;
     }
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Scegli Protocollo', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: _availableScales.length,
-            itemBuilder: (context, index) {
-              final scale = _availableScales[index];
-              return ListTile(
-                leading: const Icon(Icons.description_outlined, color: AppTheme.primaryColor),
-                title: Text(scale.nome, style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(scale.id, style: const TextStyle(fontSize: 12)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EvaluationDetailScreen(
-                        patient: patient,
-                        scale: scale,
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annulla'),
-          ),
-        ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MultidimensionalDashboardScreen(patient: patient),
       ),
     );
   }
@@ -677,8 +643,8 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.analytics_outlined, size: 18, color: AppTheme.accentColor),
-                      onPressed: () => _openProtocolDialog(patient),
-                      tooltip: 'Scegli Protocollo',
+                      onPressed: () => _openMultidimensionalDashboard(patient),
+                      tooltip: 'Analisi Utente',
                       constraints: const BoxConstraints(),
                       padding: const EdgeInsets.all(4),
                     ),
@@ -853,8 +819,8 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.analytics_outlined, size: 18, color: AppTheme.accentColor),
-                            onPressed: () => _openProtocolDialog(p),
-                            tooltip: 'Analisi Valutazione',
+                            onPressed: () => _openMultidimensionalDashboard(p),
+                            tooltip: 'Analisi Utente',
                             constraints: const BoxConstraints(),
                             padding: const EdgeInsets.all(4),
                           ),

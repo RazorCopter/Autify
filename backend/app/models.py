@@ -22,6 +22,7 @@ class Patient(BaseModel):
 class AppSettings(BaseModel):
     id: str = "global_settings"
     gemini_api_key: Optional[str] = None
+    gemini_model: Optional[str] = "gemini-1.5-pro"
 
 # --- MODELLI SCALA (Scale Models) ---
 

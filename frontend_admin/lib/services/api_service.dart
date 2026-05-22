@@ -87,7 +87,7 @@ class ApiService {
     }
   }
 
-  Future<String?> getGeminiKey() async {
+  Future<Map<String, String?>> getGeminiSettings() async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/settings'),
@@ -95,15 +95,18 @@ class ApiService {
       );
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
-        return body['gemini_api_key'];
+        return {
+          'key': body['gemini_api_key'],
+          'model': body['gemini_model'] ?? 'gemini-1.5-pro',
+        };
       }
-      return null;
+      return {'key': null, 'model': 'gemini-1.5-pro'};
     } catch (e) {
-      return null;
+      return {'key': null, 'model': 'gemini-1.5-pro'};
     }
   }
 
-  Future<bool> saveGeminiKey(String key) async {
+  Future<bool> saveGeminiSettings(String key, String model) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/settings'),
@@ -114,6 +117,7 @@ class ApiService {
         body: jsonEncode({
           'id': 'global_settings',
           'gemini_api_key': key,
+          'gemini_model': model,
         }),
       );
       return response.statusCode == 200;

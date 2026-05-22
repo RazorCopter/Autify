@@ -28,11 +28,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadSettings();
   }
 
+  String _selectedModel = 'gemini-1.5-pro';
+
   Future<void> _loadSettings() async {
-    final key = await _apiService.getGeminiKey();
-    if (key != null && key.isNotEmpty) {
+    final settings = await _apiService.getGeminiSettings();
+    if (settings['key'] != null && settings['key']!.isNotEmpty) {
       setState(() {
-        _apiKeyController.text = key;
+        _apiKeyController.text = settings['key']!;
+        _selectedModel = settings['model'] ?? 'gemini-1.5-pro';
       });
     }
   }
@@ -113,7 +116,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _saveAIConfig() async {
     setState(() => _isLoading = true);
-    final success = await _apiService.saveGeminiKey(_apiKeyController.text);
+    final success = await _apiService.saveGeminiSettings(_apiKeyController.text, _selectedModel);
     setState(() => _isLoading = false);
 
     if (mounted) {
@@ -177,11 +180,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   const Text('Configurazione AI (Gemini)', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  const Text('Inserisci la tua API Key per abilitare le funzionalità di analisi intelligente dei dati.'),
+                  const Text('Inserisci la tua API Key e seleziona il modello per abilitare le funzionalità di analisi intelligente dei dati.'),
                   const SizedBox(height: 16),
                   Row(
                     children: [
                       Expanded(
+                        flex: 2,
                         child: TextField(
                           controller: _apiKeyController,
                           obscureText: true,
@@ -193,10 +197,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                       const SizedBox(width: 16),
+                      Expanded(
+                        flex: 1,
+                        child: DropdownButtonFormField<String>(
+                          value: _selectedModel,
+                          decoration: const InputDecoration(
+                            labelText: 'Modello',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.psychology),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'gemini-1.5-pro', child: Text('1.5 Pro (Raccomandato)')),
+                            DropdownMenuItem(value: 'gemini-1.5-flash', child: Text('1.5 Flash (Veloce)')),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                _selectedModel = value;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
                       ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(minimumSize: const Size(0, 56)),
                         onPressed: _isLoading ? null : _saveAIConfig,
                         icon: const Icon(Icons.save),
-                        label: const Text('Salva Configurazione'),
+                        label: const Text('Salva'),
                       ),
                     ],
                   ),
