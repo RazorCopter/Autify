@@ -157,11 +157,11 @@ async def get_patients():
         if mongo_id:
             scale_map[str(mongo_id)] = nome_lower
         
-    # Arricchisce ciascun paziente con le date delle ultime scale compilate
+    # Arricchisce ciascun utente con le date delle ultime scale compilate
     for pat in patients:
         pat_id = pat["id"]
         
-        # Recupera tutte le valutazioni per questo paziente, ordinate per data decrescente
+        # Recupera tutte le valutazioni per questo utente, ordinate per data decrescente
         evals_cursor = evaluations_collection.find({"id_paziente": pat_id}).sort("data_compilazione", -1)
         evals = await evals_cursor.to_list(length=100)
         
@@ -192,7 +192,7 @@ async def get_patients():
             if not pat_dict.get("ultimo_san_martin_compilato") and ("martin" in scale_name_clean or "martin" in scale_id_str.lower()):
                 pat_dict["ultimo_san_martin_compilato"] = data_str
                 
-            # Se abbiamo trovato entrambe, possiamo interrompere la ricerca per questo paziente
+            # Se abbiamo trovato entrambe, possiamo interrompere la ricerca per questo utente
             if pat_dict.get("ultimo_pos_compilato") and pat_dict.get("ultimo_san_martin_compilato"):
                 break
                 
@@ -215,7 +215,7 @@ async def create_patient(patient: Patient):
     else:
         existing = await patients_collection.find_one({"id": patient.id})
         if existing:
-            raise HTTPException(status_code=400, detail="Paziente con questo ID già esistente")
+            raise HTTPException(status_code=400, detail="Utente con questo ID già esistente")
     await patients_collection.insert_one(patient_dict)
     return patient
 
@@ -224,22 +224,22 @@ async def update_patient(id: str, patient: Patient):
     patient_dict = patient.model_dump()
     result = await patients_collection.replace_one({"id": id}, patient_dict)
     if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Paziente non trovato")
+        raise HTTPException(status_code=404, detail="Utente non trovato")
     return patient
 
 @admin_router.delete("/patients/{id}", tags=["Admin - Patients"])
 async def delete_patient(id: str):
-    # Elimina a cascata tutte le valutazioni associate al paziente prima di rimuoverlo
+    # Elimina a cascata tutte le valutazioni associate all'utente prima di rimuoverlo
     await evaluations_collection.delete_many({"id_paziente": id})
     
     result = await patients_collection.delete_one({"id": id})
     if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Paziente non trovato")
-    return {"message": "Paziente e le relative valutazioni eliminati con successo"}
+        raise HTTPException(status_code=404, detail="Utente non trovato")
+    return {"message": "Utente e le relative valutazioni eliminati con successo"}
 
 @admin_router.get("/evaluations/{id_patient}", response_model=List[Evaluation], tags=["Admin - Evaluations"])
 async def get_evaluations(id_patient: str):
-    """Storico completo per un paziente, per fini analitici."""
+    """Storico completo per un utente, per fini analitici."""
     cursor = evaluations_collection.find({"id_paziente": id_patient})
     evaluations = await cursor.to_list(length=1000)
     return evaluations
@@ -247,7 +247,7 @@ async def get_evaluations(id_patient: str):
 @admin_router.post("/import-scale", tags=["Admin - Configuration"])
 async def import_scale(file: UploadFile = File(...)):
     """
-    Importa una scala clinica da un file JSON strutturato.
+    Importa una scala multidimensionale da un file JSON strutturato.
 
     Formato atteso:
     {
@@ -467,7 +467,7 @@ async def get_evaluation_analysis(evaluation_id: str):
                   response_model=List[AggregatedEvaluation],
                   tags=["Admin - Evaluations"])
 async def get_aggregated_evaluation(patient_id: str, scale_id: str):
-    """Recupera lo storico valutazioni per paziente+scala ordinato per data decrescente."""
+    """Recupera lo storico valutazioni per utente+scala ordinato per data decrescente."""
     cursor = evaluations_collection.find(
         {"id_paziente": patient_id, "id_scala": scale_id}
     ).sort("data_compilazione", -1)
@@ -632,7 +632,7 @@ async def get_dashboard_stats():
         
         now = datetime.now(timezone.utc)
         
-        # 3. Raggruppamento valutazioni per paziente (saltando orfane e normalizzando gli ID a stringa)
+        # 3. Raggruppamento valutazioni per utente (saltando orfane e normalizzando gli ID a stringa)
         evals_by_patient = {}
         for ev in evaluations:
             pat_id = ev.get("id_paziente")
@@ -645,7 +645,7 @@ async def get_dashboard_stats():
                 evals_by_patient[pat_id_str] = []
             evals_by_patient[pat_id_str].append(ev)
             
-        # 4. Calcolo dello stato di copertura di ciascun paziente
+        # 4. Calcolo dello stato di copertura di ciascun utente
         coperti_count = 0
         scaduti_count = 0
         alert_candidates = []
@@ -661,7 +661,7 @@ async def get_dashboard_stats():
             if not pat_display_id:
                 continue
                 
-            # Recupera le valutazioni del paziente provando entrambe le chiavi stringa
+            # Recupera le valutazioni dell'utente provando entrambe le chiavi stringa
             pat_evals = []
             if p_id_str and p_id_str in evals_by_patient:
                 pat_evals = evals_by_patient[p_id_str]
@@ -834,7 +834,7 @@ async def export_database():
     db_dump = {
         "metadata": {
             "exported_at": datetime.now(timezone.utc).isoformat(),
-            "version": "2.5.1",
+            "version": "2.6.0",
         },
         "collections": {
             "patients": await _collect_collection("patients", patients_collection),

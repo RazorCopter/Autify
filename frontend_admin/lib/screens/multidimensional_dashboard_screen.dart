@@ -124,7 +124,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     }
 
     if (_latestEvaluations.isEmpty) {
-      setState(() => _aiError = 'Nessun dato clinico disponibile per l\'analisi.');
+      setState(() => _aiError = 'Nessuna valutazione disponibile per l\'analisi.');
       return;
     }
 
@@ -839,7 +839,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 _buildMetaRow(eval),
                 const SizedBox(height: 20),
 
-                // ── Indicatori clinici (solo SM con analisi) ──
+                // ── Indicatori multidimensionali (solo SM con analisi) ──
                 if (isSM && analysis != null)
                   _buildSanMartinIndicators(analysis),
 
@@ -945,7 +945,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               Expanded(child: _indicatorBadge(
                 title: 'Fascia',
                 value: analysis.fasciaQv ?? '—',
-                subtitle: 'Classificazione clinica',
+                subtitle: 'Fascia di Supporto',
                 icon: Icons.verified,
               )),
             ],
@@ -1290,10 +1290,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Analisi Clinica con Intelligenza Artificiale',
+                      Text('Analisi Multidimensionale con Intelligenza Artificiale',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                       SizedBox(height: 6),
-                      Text('L\'IA analizza i dati clinici aggregati per individuare correlazioni, punti di forza/debolezza e suggerire linee guida terapeutiche personalizzate.',
+                      Text('L\'IA analizza le valutazioni aggregate per individuare correlazioni, punti di forza/debolezza e suggerire linee guida di supporto personalizzate.',
                         style: TextStyle(fontSize: 13, color: Colors.white70)),
                     ],
                   ),
@@ -1372,7 +1372,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   children: [
                     Icon(Icons.auto_awesome_outlined, size: 64, color: Colors.deepPurple.shade100),
                     const SizedBox(height: 16),
-                    const Text('Premi "Analizza con IA" per generare il report clinico.',
+                    const Text('Premi "Analizza con IA" per generare il report multidimensionale.',
                       style: TextStyle(fontSize: 16, color: AppTheme.textSecondary)),
                   ],
                 ),

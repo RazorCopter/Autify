@@ -176,7 +176,7 @@ def _make_radar_chart(
             zorder=2
         )
 
-    # 3. Disegna il profilo del paziente (Linea spessa arancione + riempimento traslucido)
+    # 3. Disegna il profilo dell'utente (Linea spessa arancione + riempimento traslucido)
     ax.fill(angles, patient_vals, color='#FF7043', alpha=0.28, zorder=3)
     ax.plot(
         angles, patient_vals, 
@@ -187,7 +187,7 @@ def _make_radar_chart(
         markerfacecolor='#FF7043', 
         markeredgewidth=2.0,
         markeredgecolor='#FFFFFF', 
-        label='Profilo Paziente', 
+        label='Profilo Utente', 
         zorder=5
     )
 
@@ -519,7 +519,7 @@ def _make_san_martin_meta_table(
 
     rows = [
         [
-            _make_label_value_paragraph("Paziente:", patient_name, styles),
+            _make_label_value_paragraph("Utente:", patient_name, styles),
             _make_label_value_paragraph("Data:", _format_pdf_date(evaluation.get("data_compilazione")), styles),
             _make_label_value_paragraph("Scala:", scale.get("nome"), styles),
             _make_label_value_paragraph("Operatore:", evaluation.get("nome_operatore"), styles),
@@ -529,7 +529,7 @@ def _make_san_martin_meta_table(
             _make_label_value_paragraph("Anno:", evaluation.get("anno"), styles),
             _make_label_value_paragraph("ID valutazione:", _safe_text(evaluation.get("id_valutazione"))[:12], styles),
             _make_label_value_paragraph(
-                "Dati clinici:",
+                "Informazioni:",
                 " / ".join(clinical_bits) if clinical_bits else "—",
                 styles,
             ),
@@ -538,7 +538,7 @@ def _make_san_martin_meta_table(
 
     if notes_value:
         rows.append([
-            _make_label_value_paragraph("Note cliniche:", notes_value, styles, ""),
+            _make_label_value_paragraph("Note generali:", notes_value, styles, ""),
             Paragraph("", styles["BodyText"]),
             Paragraph("", styles["BodyText"]),
             Paragraph("", styles["BodyText"]),
@@ -941,7 +941,7 @@ def generate_evaluation_pdf(
         nome_paziente = f"{patient.get('nome', '')} {patient.get('cognome', '')}"
         data_str = _format_pdf_date(evaluation.get("data_compilazione", datetime.now(timezone.utc)))
         meta_data = [
-            ["Paziente:", nome_paziente, "Data:", data_str],
+            ["Utente:", nome_paziente, "Data:", data_str],
             ["Scala:", scala_nome, "Operatore:", evaluation.get("nome_operatore", "-")],
             ["Intervistato/a:", evaluation.get("nome_intervistato", "-"),
              "Anno:", str(evaluation.get("anno", "-"))],

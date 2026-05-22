@@ -1,5 +1,5 @@
 """
-analytics.py — Motore di calcolo psicometrico per scale cliniche.
+analytics.py — Motore di calcolo psicometrico per scale multidimensionali.
 
 Supporta sia scale con tabelle di conversione (San Martín) sia scale semplici (POS)
 con semplice aggregazione per dominio.
@@ -313,7 +313,7 @@ def _build_domain_analyses(
             standard_score = entry.get("std")
 
         # I percentili del dominio dipendono direttamente e matematicamente dal Punteggio Standard (media 10, DS 3).
-        # Per garantire la coerenza clinica, ricaviamo il percentile direttamente dal Punteggio Standard effettivo.
+        # Per garantire la coerenza metodologica, ricaviamo il percentile direttamente dal Punteggio Standard effettivo.
         if standard_score is not None:
             std_to_perc_map = {
                 1: 1, 2: 1, 3: 1, 4: 2, 5: 5, 6: 9, 7: 16, 8: 25, 9: 37,
@@ -413,7 +413,7 @@ def compute_psychometric_analysis(
     fascia_qv = None
 
     if total_standard is not None:
-        # Override con tab_qv per garantire precisione clinica assoluta con la Tabella B del manuale
+        # Override con tab_qv per garantire precisione assoluta con la Tabella B del manuale
         scale_id = scale_doc.get("id", "").lower()
         scale_nome = scale_doc.get("nome", "").lower()
         is_san_martin = (

@@ -16,16 +16,16 @@ class GeminiService {
     final url = Uri.parse('$_baseUrl/$modelName:generateContent?key=$apiKey');
 
     final systemPrompt = '''
-Sei il massimo esperto clinico e ricercatore specializzato nei Disturbi dello Spettro Autistico (ASD) a livello mondiale.
-Il tuo compito è analizzare in modo multidimensionale i dati quantitativi e qualitativi estratti dalle scale di valutazione del paziente.
+Sei il massimo esperto e consulente di supporto specializzato nei percorsi per l'Autismo.
+Il tuo compito è analizzare in modo multidimensionale i dati quantitativi e qualitativi estratti dalle scale di valutazione dell'utente.
 
 OBIETTIVO DELL'ANALISI:
-1. Valutare l'andamento clinico e il profilo dell'utente (punti di forza e aree di severità nei vari domini).
+1. Valutare l'andamento generale e il profilo dell'utente (punti di forza e aree di supporto nei vari domini).
 2. Evidenziare correlazioni significative tra le diverse scale somministrate (es. POS, San Martín).
-3. Proporre ipotesi e linee guida per progetti terapeutici/educativi customizzati e ritagliati sartorialmente sulle specifiche esigenze dell'utente.
+3. Proporre ipotesi e linee guida per progetti educativi e di supporto customizzati e ritagliati sartorialmente sulle specifiche esigenze dell'utente.
 
 TONO E FORMATTAZIONE:
-- Tono: Professionale, rigoroso, empatico, fortemente orientato all'utilità clinica ed educativa.
+- Tono: Professionale, rigoroso, empatico, fortemente orientato all'utilità educativa e di supporto.
 - Formattazione: Usa il Markdown (titoli, liste, grassetti) per strutturare un referto elegante, chiaro e leggibile.
 ''';
 
@@ -40,7 +40,7 @@ TONO E FORMATTAZIONE:
       "contents": [
         {
           "parts": [
-            {"text": "Ecco i dati clinici estratti dalle valutazioni del paziente:\n\n$patientData\n\nProcedi con l'analisi clinica globale."}
+            {"text": "Ecco i dati estratti dalle valutazioni dell'utente:\n\n$patientData\n\nProcedi con l'analisi multidimensionale globale."}
           ]
         }
       ]
@@ -68,13 +68,13 @@ TONO E FORMATTAZIONE:
   String _serializePatientData(PatientModel patient, List<AggregatedEvaluation> evals) {
     final buffer = StringBuffer();
     buffer.writeln("Dati Anagrafici:");
-    buffer.writeln("- ID Paziente: ${patient.id}");
+    buffer.writeln("- ID Utente: ${patient.id}");
     buffer.writeln("- Sesso: ${patient.sesso}");
     if (patient.dataNascita != null) {
       buffer.writeln("- Data di Nascita: ${patient.dataNascita!.split('T')[0]}");
     }
     if (patient.note != null && patient.note!.isNotEmpty) {
-      buffer.writeln("- Note Cliniche: ${patient.note}");
+      buffer.writeln("- Note Generali: ${patient.note}");
     }
 
     buffer.writeln("\nCronologia Valutazioni:");

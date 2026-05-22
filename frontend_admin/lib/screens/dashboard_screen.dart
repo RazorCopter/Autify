@@ -281,7 +281,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: _BentoKpiCard(
                       title: 'UTENZE ATTIVE',
                       value: activePatients.toDouble(),
-                      subtitle: 'Pazienti totali censiti',
+                      subtitle: 'Utenti totali censiti',
                       icon: Icons.people_alt_outlined,
                       gradientColors: const [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
                       onTap: () => widget.onNavigate(2), // Vai a Utenza
@@ -318,7 +318,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _BentoKpiCard(
                     title: 'UTENZE ATTIVE',
                     value: activePatients.toDouble(),
-                    subtitle: 'Pazienti totali censiti',
+                    subtitle: 'Utenti totali censiti',
                     icon: Icons.people_alt_outlined,
                     gradientColors: const [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
                     onTap: () => widget.onNavigate(2),
@@ -537,7 +537,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 4),
             const Text(
-              'Valutazioni cliniche eseguite negli ultimi 6 mesi',
+              'Valutazioni multidimensionali eseguite negli ultimi 6 mesi',
               style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 32),
@@ -679,7 +679,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 4),
             const Text(
-              'Pazienti che necessitano di somministrazione della scala',
+              'Utenti che necessitano di somministrazione della scala',
               style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 18),

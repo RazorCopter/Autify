@@ -5,7 +5,7 @@
     "display": "standalone",
     "background_color": "#1E3A8A",
     "theme_color": "#1E3A8A",
-    "description": "Piattaforma di valutazione clinica e monitoraggio documentale.",
+    "description": "Piattaforma di valutazione multidimensionale e monitoraggio documentale.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

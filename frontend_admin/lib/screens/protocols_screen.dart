@@ -202,7 +202,7 @@ class _ProtocolsScreenState extends State<ProtocolsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Protocolli Clinici',
+                        Text('Protocolli di Supporto',
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w800,

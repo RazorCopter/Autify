@@ -14,7 +14,7 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      print('Errore caricamento pazienti: $e');
+      print('Errore caricamento utenti: $e');
       return [];
     }
   }

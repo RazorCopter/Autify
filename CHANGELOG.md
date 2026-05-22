@@ -2,6 +2,19 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.6.0] - 2026-05-22
+
+### Modificato
+- **Bonifica Semantica e Linguaggio Inclusivo**: Effettuata una revisione sistematica del linguaggio in tutta l'applicazione (UI frontends, API backend, generatori PDF, messaggi di log/errore, commenti e descrizioni) per sostituire la terminologia clinico-medica obsoleta con un vocabolario educativo e di monitoraggio multidimensionale inclusivo.
+  - Sostituito `"Paziente/i"` con `"Utente/i"` nei testi, etichette e descrizioni della UI e dei PDF.
+  - Sostituito `"Dati clinici"` / `"Note cliniche"` con `"Informazioni"` / `"Note generali"`.
+  - Sostituito `"Quadro clinico"` / `"Classificazione clinica"` con `"Quadro dell'utente"` / `"Fascia di Supporto"`.
+  - Sostituito `"Terapeutico"` / `"Terapia"` con `"di Supporto"` / `"Percorso"` / `"Intervento"`.
+  - Sostituita la dicitura `"Report clinico"` con `"Report multidimensionale"`.
+- **System Prompt Gemini AI**: Riprogettato il prompt di sistema di Gemini Service per agire come esperto e consulente di supporto per i percorsi sull'Autismo, istruendo l'IA a suggerire linee guida di supporto ed educative piuttosto che terapie cliniche, e a usare un linguaggio inclusivo e centrato sulla persona.
+- **Web App Manifests**: Aggiornata la descrizione SEO in `index.html` e `manifest.json` modificando la dicitura da "valutazione clinica" a "valutazione multidimensionale".
+- **Uniformità e Tracciabilità**: Allineata la versione del frontend (`kFrontendVersion`) e l'esportazione dei metadata del backend alla release `2.6.0`.
+
 ## [2.5.1] - 2026-05-22
 
 ### Risolto

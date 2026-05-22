@@ -126,7 +126,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nessuna valutazione trovata per questo paziente e scala')),
+          const SnackBar(content: Text('Nessuna valutazione trovata per questo utente e scala')),
         );
       }
     }
@@ -434,7 +434,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     );
   }
 
-  // ─── Metadati paziente ─────────────────────────────────────────────────────
+  // ─── Metadati utente ───────────────────────────────────────────────────────
   Widget _buildMetaCard() {
     final e = _eval!;
     return Card(
@@ -444,7 +444,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
           spacing: 32,
           runSpacing: 12,
           children: [
-            _metaItem('Paziente', '${widget.patient.nome} ${widget.patient.cognome}'),
+            _metaItem('Utente', '${widget.patient.nome} ${widget.patient.cognome}'),
             _metaItem('Scala', widget.scale.nome),
             _metaItem('Data', _formatEvaluationDate(e.dataCompilazione)),
             _metaItem('Anno', e.anno.toString()),
@@ -478,7 +478,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     );
   }
 
-  // ─── Pannello Clinico ────────────────────────────────────────────────────────
+  // ─── Pannello Informazioni Generale ──────────────────────────────────────────
   Widget _buildClinicalCard() {
     final p = widget.patient;
     final noteLines = (p.note != null && p.note!.isNotEmpty)
@@ -495,7 +495,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               children: [
                 const Icon(Icons.assignment_ind_outlined, size: 20, color: AppTheme.primaryColor),
                 const SizedBox(width: 8),
-                const Text('Quadro Clinico',
+                const Text('Quadro dell\'Utente',
                     style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
               ],
             ),
@@ -515,7 +515,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                 ),
               ),
             if (noteLines.isNotEmpty) ...[
-              const Text('Note Cliniche',
+              const Text('Note Generali',
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary)),
               const SizedBox(height: 6),
               ...noteLines.map((line) => Padding(
@@ -533,7 +533,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                   )),
             ],
             if (p.altezza == null && p.peso == null && noteLines.isEmpty)
-              const Text('Nessun dato clinico aggiuntivo registrato.',
+              const Text('Nessuna informazione aggiuntiva registrata.',
                   style: TextStyle(fontSize: 13, color: AppTheme.textSecondary, fontStyle: FontStyle.italic)),
           ],
         ),
@@ -624,7 +624,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                     ),
                     const SizedBox(height: 2),
                     const Text(
-                      'Classificazione clinica',
+                      'Fascia di Supporto',
                       style: TextStyle(fontSize: 12, color: Colors.white54),
                     ),
                   ],
@@ -874,7 +874,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               children: const [
                 _LegendItem(
                   color: Color(0xFFF97316),
-                  label: 'Profilo paziente',
+                  label: 'Profilo utente',
                 ),
                 _LegendItem(
                   color: Color(0xFFE57373),

@@ -77,7 +77,7 @@ class _SelectionScreenState extends State<SelectionScreen> {
                           ),
                           const SizedBox(height: 12),
                           const Text(
-                            'Seleziona il paziente e la scala\ndi valutazione da compilare',
+                            'Seleziona l\'utente e la scala\ndi valutazione da compilare',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 16,
@@ -87,11 +87,11 @@ class _SelectionScreenState extends State<SelectionScreen> {
                           ),
                           const SizedBox(height: 48),
                           
-                          // Dropdown Paziente
+                          // Dropdown Utente
                           _buildDropdownCard<String>(
                             icon: Icons.person_outline,
-                            label: 'Paziente',
-                            hint: 'Seleziona paziente...',
+                            label: 'Utente',
+                            hint: 'Seleziona utente...',
                             color: AppTheme.primaryColor,
                             value: _selectedPatientId,
                             items: _patients.map((p) => DropdownMenuItem(
@@ -260,7 +260,7 @@ class _SelectionScreenState extends State<SelectionScreen> {
                 ),
               ),
               Text(
-                'Valutazione Clinica',
+                'Valutazione Multidimensionale',
                 style: TextStyle(
                   fontSize: 12,
                   color: AppTheme.textSecondary,

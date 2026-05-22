@@ -84,7 +84,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                       child: Icon(isEdit ? Icons.edit : Icons.person_add, color: AppTheme.primaryColor, size: 22),
                     ),
                     const SizedBox(width: 14),
-                    Text(isEdit ? 'Modifica Paziente' : 'Nuovo Paziente',
+                    Text(isEdit ? 'Modifica Utente' : 'Nuovo Utente',
                       style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
                     ),
                   ],
@@ -240,7 +240,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                           if (success && mounted) {
                             Navigator.pop(ctx);
                             _refreshPatients();
-                            _showSnack(isEdit ? 'Paziente aggiornato' : 'Paziente creato', isError: false);
+                            _showSnack(isEdit ? 'Utente aggiornato' : 'Utente creato', isError: false);
                           } else if (mounted) {
                             _showSnack('Errore di salvataggio', isError: true);
                           }
@@ -281,7 +281,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                     child: const Icon(Icons.delete_outline, color: AppTheme.errorColor, size: 22),
                   ),
                   const SizedBox(width: 14),
-                  const Text('Elimina Paziente',
+                  const Text('Elimina Utente',
                     style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
                   ),
                 ],
@@ -320,7 +320,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
       setState(() => _isLoading = false);
       if (success) {
         _refreshPatients();
-        _showSnack('Paziente eliminato', isError: false);
+        _showSnack('Utente eliminato', isError: false);
       } else {
         _showSnack('Errore durante l\'eliminazione', isError: true);
       }
@@ -381,7 +381,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                           ),
                         ),
                         SizedBox(height: 4),
-                        Text('Gestisci i dati dei pazienti',
+                        Text('Gestisci i dati degli utenti',
                           style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
                         ),
                       ],
@@ -390,7 +390,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                   FilledButton.icon(
                     onPressed: () => _showPatientDialog(),
                     icon: const Icon(Icons.add),
-                    label: const Text('Aggiungi Paziente'),
+                    label: const Text('Aggiungi Utente'),
                   ),
                   const SizedBox(width: 12),
                   IconButton.outlined(
@@ -424,7 +424,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                               controller: _searchController,
                               onChanged: (val) => setState(() {}),
                               decoration: const InputDecoration(
-                                hintText: 'Cerca paziente per nome, cognome o note...',
+                                hintText: 'Cerca utente per nome, cognome o note...',
                                 border: InputBorder.none,
                                 enabledBorder: InputBorder.none,
                                 focusedBorder: InputBorder.none,
@@ -484,7 +484,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                           children: [
                             CircularProgressIndicator(color: AppTheme.primaryColor),
                             SizedBox(height: 16),
-                            Text('Caricamento pazienti...', style: TextStyle(color: AppTheme.textSecondary)),
+                            Text('Caricamento utenti...', style: TextStyle(color: AppTheme.textSecondary)),
                           ],
                         ),
                       );
@@ -494,12 +494,12 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                     }
                     if (!snapshot.hasData || snapshot.data!.isEmpty) {
                       return const Center(
-                        child: Text('Nessun paziente trovato. Aggiungine uno.',
+                        child: Text('Nessun utente trovato. Aggiungine uno.',
                             style: TextStyle(fontSize: 16, color: AppTheme.textSecondary)),
                       );
                     }
 
-                    // Filtra i pazienti in base alla query
+                    // Filtra gli utenti in base alla query
                     final query = _searchController.text.toLowerCase().trim();
                     final filteredList = query.isEmpty
                         ? List<PatientModel>.from(snapshot.data!)
@@ -519,7 +519,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
 
                     if (filteredList.isEmpty) {
                       return const Center(
-                        child: Text('Nessun paziente corrisponde ai criteri di ricerca.',
+                        child: Text('Nessun utente corrisponde ai criteri di ricerca.',
                             style: TextStyle(fontSize: 15, color: AppTheme.textSecondary)),
                       );
                     }
@@ -629,7 +629,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Indicatori delle scale cliniche compilate
+                // Indicatori delle scale multidimensionali compilate
                 Row(
                   children: [
                     _buildScaleIndicator(patient.ultimoPosCompilato, "POS"),
