@@ -1,4 +1,4 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/scale_model.dart';
@@ -279,6 +279,16 @@ class _WizardScreenState extends State<WizardScreen>
   }
 
   Future<void> _saveEvaluation() async {
+    if (ApiService.isViewer) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Azione non consentita in modalità Sola Lettura'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     // Salva nota pagina corrente
     _notes[_currentKey] = _noteController.text;
 

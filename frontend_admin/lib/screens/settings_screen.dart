@@ -152,7 +152,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SizedBox(
                     height: 56,
                     child: ElevatedButton.icon(
-                      onPressed: _isLoading ? null : _pickAndUploadJSON,
+                      onPressed: _isLoading || ApiService.isViewer ? null : _pickAndUploadJSON,
                       icon: const Icon(Icons.upload_file),
                       label: const Text('Carica Protocollo JSON'),
                     ),
@@ -191,6 +191,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: TextField(
                           controller: _apiKeyController,
                           obscureText: true,
+                          enabled: !ApiService.isViewer,
                           decoration: const InputDecoration(
                             labelText: 'Gemini API Key',
                             border: OutlineInputBorder(),
@@ -212,7 +213,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             DropdownMenuItem(value: 'gemini-1.5-pro', child: Text('1.5 Pro (Raccomandato)')),
                             DropdownMenuItem(value: 'gemini-1.5-flash', child: Text('1.5 Flash (Veloce)')),
                           ],
-                          onChanged: (value) {
+                          onChanged: ApiService.isViewer ? null : (value) {
                             if (value != null) {
                               setState(() {
                                 _selectedModel = value;
@@ -224,7 +225,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(width: 16),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(minimumSize: const Size(0, 56)),
-                        onPressed: _isLoading ? null : _saveAIConfig,
+                        onPressed: _isLoading || ApiService.isViewer ? null : _saveAIConfig,
                         icon: const Icon(Icons.save),
                         label: const Text('Salva'),
                       ),
@@ -323,7 +324,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       SizedBox(
                         height: 56,
                         child: ElevatedButton.icon(
-                          onPressed: _isExporting || _isImporting ? null : _exportDatabase,
+                          onPressed: _isExporting || _isImporting || ApiService.isViewer ? null : _exportDatabase,
                           icon: _isExporting
                               ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                               : const Icon(Icons.download_rounded),
@@ -334,7 +335,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       SizedBox(
                         height: 56,
                         child: ElevatedButton.icon(
-                          onPressed: _isExporting || _isImporting ? null : _importDatabase,
+                          onPressed: _isExporting || _isImporting || ApiService.isViewer ? null : _importDatabase,
                           icon: _isImporting
                               ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                               : const Icon(Icons.upload_file),
@@ -414,7 +415,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   divisions: (max - min).toInt(),
                   activeColor: const Color(0xFF64B5F6),
                   inactiveColor: const Color(0xFF64B5F6).withValues(alpha: 0.15),
-                  onChanged: onChanged,
+                  onChanged: ApiService.isViewer ? null : onChanged,
                 ),
               ),
               Text('${max.toInt()}', style: const TextStyle(color: Color(0xFF718096), fontSize: 12)),

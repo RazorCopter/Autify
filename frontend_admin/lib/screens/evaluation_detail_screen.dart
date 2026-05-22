@@ -313,25 +313,27 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
             child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
           )
         else ...[
-          OutlinedButton.icon(
-            onPressed: () {
-              setState(() {
-                _isEditMode = !_isEditMode;
-                if (!_isEditMode && _eval != null) {
-                  _selectEvaluation(_eval!);
-                }
-              });
-            },
-            icon: Icon(_isEditMode ? Icons.cancel_outlined : Icons.edit_outlined, size: 18),
-            label: Text(_isEditMode ? 'Annulla' : 'Edit'),
-          ),
-          const SizedBox(width: 8),
-          if (_isEditMode)
-            TextButton.icon(
-              onPressed: _saveChanges,
-              icon: const Icon(Icons.save_outlined, size: 18),
-              label: const Text('Salva modifiche'),
+          if (!ApiService.isViewer) ...[
+            OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _isEditMode = !_isEditMode;
+                  if (!_isEditMode && _eval != null) {
+                    _selectEvaluation(_eval!);
+                  }
+                });
+              },
+              icon: Icon(_isEditMode ? Icons.cancel_outlined : Icons.edit_outlined, size: 18),
+              label: Text(_isEditMode ? 'Annulla' : 'Edit'),
             ),
+            const SizedBox(width: 8),
+            if (_isEditMode)
+              TextButton.icon(
+                onPressed: _saveChanges,
+                icon: const Icon(Icons.save_outlined, size: 18),
+                label: const Text('Salva modifiche'),
+              ),
+          ],
         ],
         const SizedBox(width: 8),
         FilledButton.icon(

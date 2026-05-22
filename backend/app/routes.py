@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, UploadFile, File, Header, Depends
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Header, Depends, Request
 from fastapi.responses import StreamingResponse
 from typing import List, Optional
 from bson import ObjectId
@@ -13,10 +13,30 @@ import io
 import os
 from pathlib import Path
 
-async def verify_admin_auth(x_admin_password: Optional[str] = Header(None, alias="X-Admin-Password")):
-    expected = os.getenv("ADMIN_PASSWORD", "tiglio2026")
-    if not x_admin_password or x_admin_password != expected:
+async def verify_admin_auth(request: Request, x_admin_password: Optional[str] = Header(None, alias="X-Admin-Password")):
+    admin_pwd = os.getenv("ADMIN_PASSWORD", "tiglio2026")
+    viewer_pwd = os.getenv("VIEWER_PASSWORD", "tiglioviewer")
+    
+    if not x_admin_password:
         raise HTTPException(status_code=401, detail="Non autorizzato")
+        
+    role = None
+    if x_admin_password == admin_pwd:
+        role = "admin"
+    elif x_admin_password == viewer_pwd:
+        role = "viewer"
+        
+    if not role:
+        raise HTTPException(status_code=401, detail="Non autorizzato")
+        
+    # Blocca le modifiche di stato per il ruolo Viewer
+    if role == "viewer" and request.method not in ("GET", "HEAD"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Azione non consentita per il profilo Viewer (sola lettura)"
+        )
+        
+    return role
 
 admin_router = APIRouter(dependencies=[Depends(verify_admin_auth)])
 client_router = APIRouter()
@@ -885,7 +905,7 @@ async def export_database():
     db_dump = {
         "metadata": {
             "exported_at": datetime.now(timezone.utc).isoformat(),
-            "version": "2.6.2",
+            "version": "2.7.0",
         },
         "collections": {
             "patients": await _collect_collection("patients", patients_collection),

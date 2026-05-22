@@ -2,6 +2,25 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.7.0] - 2026-05-23
+
+### Aggiunto
+- **Controllo degli Accessi Basato sui Ruoli (RBAC)**: Evoluto il sistema di autenticazione introducendo la gestione differenziata delle autorizzazioni per due profili utente distinti:
+  - **Admin (Profilo 1)**: Mantiene l'accesso completo e illimitato a tutte le operazioni CRUD (Create, Read, Update, Delete) sia nel backend che nei frontend.
+  - **Viewer (Profilo 2 - Sola Lettura)**: Profilo protetto e limitato alla sola consultazione ed esplorazione delle informazioni, dei protocolli e dei report multidimensionali.
+- **Sicurezza e Protezione Backend**:
+  - Implementata la verifica del ruolo nel middleware di sicurezza (`verify_admin_auth` in `routes.py`) per intercettare e bloccare sul nascere tutte le richieste di scrittura (POST, PUT, DELETE) associate alle credenziali del ruolo Viewer, restituendo un errore standardizzato `403 Forbidden`.
+  - Riorganizzato il sistema di credenziali per supportare due password distinte (`ADMIN_PASSWORD` e `VIEWER_PASSWORD`).
+- **Restrizioni Dinamiche dell'Interfaccia Utente (Frontend Admin)**:
+  - **Gestione Sessioni e Badge di Stato (`login_screen.dart` / `main.dart`)**: Introdotto il salvataggio sicuro del ruolo attivo in locale. Mostrato un badge grafico elegante nell'interfaccia principale per visualizzare chiaramente il livello di accesso corrente ("Amministratore" vs "Visualizzatore - Sola Lettura").
+  - **Impostazioni di Sistema (`settings_screen.dart`)**: Disabilitati in modalità Viewer i cursori per la regolazione dei parametri di validità delle scale, i pulsanti per l'esportazione e l'importazione del database, la chiave API e il modello di Gemini.
+  - **Anagrafica Utenti (`anagrafica_screen.dart`)**: Disabilitati i comandi di creazione di nuovi utenti e le azioni di modifica ed eliminazione sia all'interno delle schede individuali che nell'elenco tabellare.
+  - **Protocolli di Supporto (`protocols_screen.dart`)**: Disabilitati e colorati in tonalità grigia premium i comandi per rinominare ed eliminare le scale di valutazione.
+  - **Dettaglio Valutazione (`evaluation_detail_screen.dart`)**: Nascosti completamente i pulsanti "Edit" e "Salva modifiche" nell'AppBar per l'utente Viewer, impedendo qualsiasi modifica retroattiva alle valutazioni salvate.
+  - **Selezione Valutazione (`selection_screen.dart`)**: Disabilitato il pulsante per avviare una nuova valutazione, con aggiornamento dinamico della label in "Sola Lettura - Compilazione Disabilitata".
+  - **Wizard di Compilazione (`wizard_screen.dart`)**: Inserita una guardia logica di controllo nel metodo di salvataggio `_saveEvaluation()` per intercettare e respingere a livello client qualsiasi tentativo anomalo di sottomissione dati da parte del Viewer.
+- **Allineamento Versioni**: Incrementata la versione dell'intera suite a `2.7.0` in `app_version.dart`, in entrambi i file `pubspec.yaml` (admin e client), ed esportata nei metadati dei backup del database in `routes.py` e `main.py`.
+
 ## [2.6.2] - 2026-05-22
 
 ### Aggiunto

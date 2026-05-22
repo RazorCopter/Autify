@@ -1,12 +1,30 @@
 import 'dart:convert';
+import 'dart:html' as html;
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
-import '../config.dart';
+import '../config.dart' as cfg;
 import '../models/scale_model.dart';
 import '../models/patient_model.dart';
 import '../models/evaluation_model.dart';
 
 class ApiService {
+  static String get kAdminPassword {
+    try {
+      final stored = html.window.localStorage['auth_password'];
+      if (stored != null && stored.isNotEmpty) {
+        return stored;
+      }
+    } catch (_) {}
+    return cfg.kAdminPassword;
+  }
+
+  static bool get isViewer {
+    try {
+      return html.window.localStorage['auth_role'] == 'viewer';
+    } catch (_) {}
+    return false;
+  }
+
   // Dato che questo frontend è servito da Nginx sulla stessa origine e proxy verso backend,
   // possiamo usare un URL relativo o parametrizzato. In dev locale su Flutter web, 
   // potremmo aver bisogno dell'url completo se non passiamo da Nginx.

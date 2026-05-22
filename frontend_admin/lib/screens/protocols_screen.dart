@@ -383,15 +383,20 @@ class _ProtocolsScreenState extends State<ProtocolsScreen> {
         Tooltip(
           message: 'Rinomina protocollo',
           child: InkWell(
-            onTap: () => _showEditDialog(scale),
+            onTap: ApiService.isViewer ? null : () => _showEditDialog(scale),
             borderRadius: BorderRadius.circular(10),
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                color: ApiService.isViewer
+                    ? Colors.grey.withValues(alpha: 0.08)
+                    : AppTheme.primaryColor.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.primaryColor),
+              child: Icon(Icons.edit_outlined, 
+                size: 18, 
+                color: ApiService.isViewer ? Colors.grey : AppTheme.primaryColor,
+              ),
             ),
           ),
         ),
@@ -400,15 +405,20 @@ class _ProtocolsScreenState extends State<ProtocolsScreen> {
         Tooltip(
           message: 'Elimina protocollo',
           child: InkWell(
-            onTap: () => _confirmDelete(scale),
+            onTap: ApiService.isViewer ? null : () => _confirmDelete(scale),
             borderRadius: BorderRadius.circular(10),
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppTheme.errorColor.withValues(alpha: 0.08),
+                color: ApiService.isViewer
+                    ? Colors.grey.withValues(alpha: 0.08)
+                    : AppTheme.errorColor.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.delete_outline, size: 18, color: AppTheme.errorColor),
+              child: Icon(Icons.delete_outline, 
+                size: 18, 
+                color: ApiService.isViewer ? Colors.grey : AppTheme.errorColor,
+              ),
             ),
           ),
         ),

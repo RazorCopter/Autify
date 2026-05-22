@@ -19,10 +19,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleLogin() {
     final enteredPassword = _passwordController.text;
+    String? role;
     if (enteredPassword == kAdminPassword) {
+      role = 'admin';
+    } else if (enteredPassword == kViewerPassword) {
+      role = 'viewer';
+    }
+
+    if (role != null) {
       // Salva lo stato in localStorage
       try {
         html.window.localStorage['admin_authenticated'] = 'true';
+        html.window.localStorage['auth_role'] = role;
+        html.window.localStorage['auth_password'] = enteredPassword;
       } catch (_) {}
 
       // Naviga alla Dashboard pulendo lo stack

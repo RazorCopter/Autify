@@ -124,27 +124,39 @@ class _SelectionScreenState extends State<SelectionScreen> {
                             width: double.infinity,
                             height: 56,
                             child: FilledButton.icon(
-                              onPressed: (_selectedPatientId != null && _selectedScaleId != null) 
-                                  ? () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => WizardScreen(
-                                            patientId: _selectedPatientId!,
-                                            scaleId: _selectedScaleId!,
-                                          ),
-                                        ),
-                                      );
-                                    } 
-                                  : null,
-                              icon: const Icon(Icons.play_circle_outline, size: 24),
-                              label: const Text(
-                                'Inizia Compilazione',
-                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                              onPressed: ApiService.isViewer
+                                  ? null
+                                  : (_selectedPatientId != null && _selectedScaleId != null) 
+                                      ? () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => WizardScreen(
+                                                patientId: _selectedPatientId!,
+                                                scaleId: _selectedScaleId!,
+                                              ),
+                                            ),
+                                          );
+                                        } 
+                                      : null,
+                              icon: Icon(
+                                ApiService.isViewer ? Icons.block : Icons.play_circle_outline,
+                                size: 24,
+                              ),
+                              label: Text(
+                                ApiService.isViewer
+                                    ? 'Sola Lettura - Compilazione Disabilitata'
+                                    : 'Inizia Compilazione',
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                               ),
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppTheme.primaryColor,
-                                disabledBackgroundColor: AppTheme.textSecondary.withValues(alpha: 0.3),
+                                disabledBackgroundColor: ApiService.isViewer
+                                    ? Colors.grey.withValues(alpha: 0.12)
+                                    : AppTheme.textSecondary.withValues(alpha: 0.3),
+                                disabledForegroundColor: ApiService.isViewer
+                                    ? Colors.grey
+                                    : null,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(18),

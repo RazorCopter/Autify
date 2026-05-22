@@ -125,6 +125,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
             onPressed: () {
               try {
                 html.window.localStorage.remove('admin_authenticated');
+                html.window.localStorage.remove('auth_role');
+                html.window.localStorage.remove('auth_password');
               } catch (_) {}
               Navigator.pushAndRemoveUntil(
                 context,
@@ -136,10 +138,54 @@ class _AdminDashboardState extends State<AdminDashboard> {
           const SizedBox(height: 8),
           // Footer
           Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Text(
-              'v$kFrontendVersion',
-              style: TextStyle(fontSize: 10, color: AppTheme.textSecondary.withValues(alpha: 0.5)),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Column(
+              children: [
+                _buildRoleBadge(),
+                const SizedBox(height: 6),
+                Text(
+                  'v$kFrontendVersion',
+                  style: TextStyle(fontSize: 10, color: AppTheme.textSecondary.withValues(alpha: 0.5)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoleBadge() {
+    String role = 'viewer';
+    try {
+      role = html.window.localStorage['auth_role'] ?? 'viewer';
+    } catch (_) {}
+
+    final isAdmin = role == 'admin';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isAdmin 
+            ? AppTheme.accentColor.withValues(alpha: 0.15) 
+            : AppTheme.primaryColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isAdmin ? Icons.admin_panel_settings_rounded : Icons.visibility_rounded,
+            size: 10,
+            color: isAdmin ? const Color(0xFF388E3C) : AppTheme.primaryColor,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            isAdmin ? 'Admin' : 'Sola Lettura',
+            style: TextStyle(
+              fontSize: 8.5,
+              fontWeight: FontWeight.bold,
+              color: isAdmin ? const Color(0xFF388E3C) : AppTheme.primaryColor,
             ),
           ),
         ],

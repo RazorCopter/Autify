@@ -394,7 +394,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                     ),
                   ),
                   FilledButton.icon(
-                    onPressed: () => _showPatientDialog(),
+                    onPressed: ApiService.isViewer ? null : () => _showPatientDialog(),
                     icon: const Icon(Icons.add),
                     label: const Text('Aggiungi Utente'),
                   ),
@@ -656,7 +656,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                     const SizedBox(width: 4),
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.primaryColor),
-                      onPressed: () => _showPatientDialog(patient: patient),
+                      onPressed: ApiService.isViewer ? null : () => _showPatientDialog(patient: patient),
                       tooltip: 'Modifica',
                       constraints: const BoxConstraints(),
                       padding: const EdgeInsets.all(4),
@@ -664,7 +664,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                     const SizedBox(width: 4),
                     IconButton(
                       icon: const Icon(Icons.delete_outline, size: 18, color: AppTheme.errorColor),
-                      onPressed: () => _confirmDelete(patient),
+                      onPressed: ApiService.isViewer ? null : () => _confirmDelete(patient),
                       tooltip: 'Elimina',
                       constraints: const BoxConstraints(),
                       padding: const EdgeInsets.all(4),
@@ -844,7 +844,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                           const SizedBox(width: 8),
                           IconButton(
                             icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.primaryColor),
-                            onPressed: () => _showPatientDialog(patient: p),
+                            onPressed: ApiService.isViewer ? null : () => _showPatientDialog(patient: p),
                             tooltip: 'Modifica',
                             constraints: const BoxConstraints(),
                             padding: const EdgeInsets.all(4),
@@ -852,7 +852,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                           const SizedBox(width: 8),
                           IconButton(
                             icon: const Icon(Icons.delete_outline, size: 18, color: AppTheme.errorColor),
-                            onPressed: () => _confirmDelete(p),
+                            onPressed: ApiService.isViewer ? null : () => _confirmDelete(p),
                             tooltip: 'Elimina',
                             constraints: const BoxConstraints(),
                             padding: const EdgeInsets.all(4),
