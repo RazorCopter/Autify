@@ -76,6 +76,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     for (final scale in _availableScales) {
       final history = await _apiService.getAggregatedEvaluationHistory(widget.patient.id, scale.id);
       if (history.isNotEmpty) {
+        history.sort((a, b) => b.dataCompilazione.compareTo(a.dataCompilazione));
         _latestEvaluations[scale.id] = history.first;
         // Carica analisi psicometrica
         try {
@@ -91,8 +92,24 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   }
 
   bool _isSanMartinScale(String scaleId, [String? scaleName]) {
-    final normalizedId = scaleId.toLowerCase().replaceAll(' ', '').replaceAll('-', '').replaceAll('_', '');
-    final normalizedName = (scaleName ?? '').toLowerCase().replaceAll(' ', '').replaceAll('-', '').replaceAll('_', '');
+    String normalize(String s) {
+      return s.toLowerCase()
+          .replaceAll(' ', '')
+          .replaceAll('-', '')
+          .replaceAll('_', '')
+          .replaceAll('à', 'a')
+          .replaceAll('á', 'a')
+          .replaceAll('è', 'e')
+          .replaceAll('é', 'e')
+          .replaceAll('ì', 'i')
+          .replaceAll('í', 'i')
+          .replaceAll('ò', 'o')
+          .replaceAll('ó', 'o')
+          .replaceAll('ù', 'u')
+          .replaceAll('ú', 'u');
+    }
+    final normalizedId = normalize(scaleId);
+    final normalizedName = normalize(scaleName ?? '');
     return normalizedId.contains('sanmartin') ||
         normalizedId.contains('martin') ||
         normalizedName.contains('sanmartin') ||

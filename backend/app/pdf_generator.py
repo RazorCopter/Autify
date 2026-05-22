@@ -892,14 +892,14 @@ def generate_evaluation_pdf(
     scale_id = scale.get("id", "").lower()
     scale_nome_lower = str(scala_nome).lower()
     is_sanmartin = (
-        analysis is not None and (
-            "sanmartin" in scale_id or
-            "san_martin" in scale_id or
-            "san martin" in scale_nome_lower or
-            "san martín" in scale_nome_lower or
+        "sanmartin" in scale_id or
+        "san_martin" in scale_id or
+        "san martin" in scale_nome_lower or
+        "san martín" in scale_nome_lower or
+        (analysis is not None and (
             analysis.get("indice_qv") is not None or
             analysis.get("fascia_qv") is not None
-        )
+        ))
     )
 
     # ── Header ─────────────────────────────────────────────────────────────
@@ -908,7 +908,7 @@ def generate_evaluation_pdf(
     story.append(HRFlowable(width="100%", thickness=1, color=PRIMARY, spaceBefore=4, spaceAfter=10))
     
     if is_sanmartin:
-        story.append(Paragraph("Report Valutativo", title_style))
+        story.append(Paragraph("SCALA SAN MARTÍN", title_style))
     else:
         story.append(Paragraph("POS ETEROVALUTATIVA", title_style))
     

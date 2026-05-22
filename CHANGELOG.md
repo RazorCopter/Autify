@@ -2,6 +2,14 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.4.0] - 2026-05-22
+
+### Risolto
+- **Rilevamento Scala San Martín (Accenti/Etichette)**: Risolto definitivamente il bug in cui la colonna San Martín continuava a mostrare "POS" e a nascondere il grafo radar. La causa era il carattere accentato "í" (i acuta) nel nome "Scala San Martín", che ora viene normalizzato in "i" durante la decodifica.
+- **Icone presenza scale (San Martín grigia)**: Risolto il bug per cui le icone di compilazione della scala San Martín restavano grigie nelle schede/badge degli utenti pur essendo presenti nel database. Il backend ora arricchisce correttamente la mappa delle scale supportando sia gli ID testuali che gli ID MongoDB (ObjectId), e normalizza gli accenti.
+- **Titolo PDF San Martín**: Aggiornato il titolo della scala San Martín nei PDF esportati da "Report Valutativo" a "SCALA SAN MARTÍN", uniformandolo con il corrispettivo "POS ETEROVALUTATIVA".
+- **Safety Net Storico**: Aggiunto un ordinamento esplicito lato client nella Dashboard Multidimensionale per garantire che venga prelevata la valutazione più recente in presenza di duplicati o cronologia multipla.
+
 ## [2.3.5] - 2026-05-22
 
 ### Risolto

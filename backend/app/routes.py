@@ -82,7 +82,10 @@ def _build_evaluation_selector(eval_doc: dict) -> dict:
 
 
 def _normalize_scale_name(value: Optional[str]) -> str:
-    return (value or "").lower().replace(" ", "").replace("-", "")
+    val = (value or "").lower().replace(" ", "").replace("-", "")
+    for a, b in [("á", "a"), ("à", "a"), ("é", "e"), ("è", "e"), ("í", "i"), ("ì", "i"), ("ó", "o"), ("ò", "o"), ("ú", "u"), ("ù", "u")]:
+        val = val.replace(a, b)
+    return val
 
 
 def _load_builtin_san_martin_scale() -> Optional[dict]:
@@ -148,7 +151,11 @@ async def get_patients():
     scales_list = await scales_cursor.to_list(length=100)
     scale_map = {}
     for s in scales_list:
-        scale_map[s["id"]] = s["nome"].lower()
+        nome_lower = s["nome"].lower()
+        scale_map[s["id"]] = nome_lower
+        mongo_id = s.get("_id")
+        if mongo_id:
+            scale_map[str(mongo_id)] = nome_lower
         
     # Arricchisce ciascun paziente con le date delle ultime scale compilate
     for pat in patients:
@@ -165,7 +172,8 @@ async def get_patients():
         
         for ev in evals:
             scale_id = ev.get("id_scala")
-            scale_name = scale_map.get(scale_id, "").lower()
+            scale_id_str = str(scale_id) if scale_id else ""
+            scale_name = scale_map.get(scale_id, scale_map.get(scale_id_str, "")).lower()
             
             data_val = ev.get("data_compilazione")
             data_str = None
@@ -176,12 +184,12 @@ async def get_patients():
                     data_str = str(data_val)
             
             # Se la scala è POS ed è la prima che incontriamo (l'ultima compilata cronologicamente)
-            if not pat_dict.get("ultimo_pos_compilato") and ("pos" in scale_name or "pos" in scale_id.lower()):
+            if not pat_dict.get("ultimo_pos_compilato") and ("pos" in scale_name or "pos" in scale_id_str.lower()):
                 pat_dict["ultimo_pos_compilato"] = data_str
                 
             # Se la scala è San Martín ed è la prima che incontriamo
             scale_name_clean = scale_name.replace('í', 'i').replace('ì', 'i')
-            if not pat_dict.get("ultimo_san_martin_compilato") and ("martin" in scale_name_clean or "martin" in scale_id.lower()):
+            if not pat_dict.get("ultimo_san_martin_compilato") and ("martin" in scale_name_clean or "martin" in scale_id_str.lower()):
                 pat_dict["ultimo_san_martin_compilato"] = data_str
                 
             # Se abbiamo trovato entrambe, possiamo interrompere la ricerca per questo paziente
@@ -826,7 +834,7 @@ async def export_database():
     db_dump = {
         "metadata": {
             "exported_at": datetime.now(timezone.utc).isoformat(),
-            "version": "2.3.5",
+            "version": "2.4.0",
         },
         "collections": {
             "patients": await _collect_collection("patients", patients_collection),
