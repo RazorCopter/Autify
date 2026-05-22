@@ -54,7 +54,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     _geminiModel = settings['model'] ?? 'gemini-1.5-pro';
 
     // 2. Carica scale disponibili
-    _availableScales = await _apiService.getAvailableScales();
+    _availableScales = await _apiService.getScales();
     
     // 3. Carica ultima valutazione per ogni scala
     for (final scale in _availableScales) {

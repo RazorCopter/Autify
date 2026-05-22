@@ -71,7 +71,7 @@ TONO E FORMATTAZIONE:
     buffer.writeln("- ID Paziente: ${patient.id}");
     buffer.writeln("- Sesso: ${patient.sesso}");
     if (patient.dataNascita != null) {
-      buffer.writeln("- Data di Nascita: ${patient.dataNascita!.toIso8601String().split('T')[0]}");
+      buffer.writeln("- Data di Nascita: ${patient.dataNascita!.split('T')[0]}");
     }
     if (patient.note != null && patient.note!.isNotEmpty) {
       buffer.writeln("- Note Cliniche: ${patient.note}");
