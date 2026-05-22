@@ -178,22 +178,16 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 const Divider(height: 32),
                 
                 // Mostra un grafico o metriche in base ai dati disponibili
-                if (eval.analisi != null && eval.analisi!.domini.isNotEmpty)
+                if (eval.domini.isNotEmpty)
                   SizedBox(
                     height: 300,
                     child: _buildChartForEval(eval),
                   )
                 else
-                  Text(
-                    'Punteggio Totale: ${eval.punteggioTotale ?? "N/D"}',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  const Text(
+                    'Punteggio non disponibile',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
-                  
-                if (eval.analisi?.indiceQv != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16.0),
-                    child: Text('Indice QV: ${eval.analisi!.indiceQv}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
-                  )
               ],
             ),
           ),
@@ -203,10 +197,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   }
 
   Widget _buildChartForEval(AggregatedEvaluation eval) {
-    final isSanMartin = eval.scalaNome.toLowerCase().contains('sanmartin') || eval.idScala.toLowerCase().contains('sanmartin');
-    final domini = eval.analisi!.domini;
+    final isSanMartin = eval.idScala.toLowerCase().contains('sanmartin');
+    final domini = eval.domini;
     
-    if (isSanMartin && domini.any((d) => d.punteggioStandard != null)) {
+    if (isSanMartin) {
       // Radar Chart per San Martin (semplificato per overview)
       return RadarChart(
         RadarChartData(
@@ -215,16 +209,16 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           ticksTextStyle: const TextStyle(color: Colors.transparent),
           gridBorderData: BorderSide(color: Colors.grey.shade300, width: 1),
           titlePositionPercentageOffset: 0.1,
-          getTitle: (index, angle) {
-            final text = domini[index].codice ?? '';
-            return RadarChartTitle(text: text, angle: 0, positionPercentageOffset: 0.2);
+          getTitle: (index, _) {
+            final text = domini[index].codice;
+            return RadarChartTitle(text: text);
           },
           dataSets: [
             RadarDataSet(
               fillColor: AppTheme.primaryColor.withOpacity(0.3),
               borderColor: AppTheme.primaryColor,
               entryRadius: 4,
-              dataEntries: domini.map((d) => RadarEntry(value: (d.punteggioStandard ?? 0).toDouble())).toList(),
+              dataEntries: domini.map((d) => RadarEntry(value: d.punteggio.toDouble())).toList(),
               borderWidth: 2,
             )
           ],
@@ -246,7 +240,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   if (value.toInt() < 0 || value.toInt() >= domini.length) return const SizedBox.shrink();
                   return Padding(
                     padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(domini[value.toInt()].codice ?? '', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                    child: Text(domini[value.toInt()].codice, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                   );
                 },
               ),
@@ -263,7 +257,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               x: i,
               barRods: [
                 BarChartRodData(
-                  toY: (domini[i].punteggioTotale ?? domini[i].punteggioDiretto ?? 0).toDouble(),
+                  toY: domini[i].punteggio.toDouble(),
                   color: _domainColors[i % _domainColors.length],
                   width: 30,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),

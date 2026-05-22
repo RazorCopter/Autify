@@ -3,7 +3,6 @@ import '../models/patient_model.dart';
 import '../models/scale_model.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
-import 'evaluation_detail_screen.dart';
 import 'multidimensional_dashboard_screen.dart';
 
 class AnagraficaScreen extends StatefulWidget {

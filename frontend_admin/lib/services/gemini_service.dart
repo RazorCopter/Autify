@@ -79,23 +79,17 @@ TONO E FORMATTAZIONE:
 
     buffer.writeln("\nCronologia Valutazioni:");
     for (final eval in evals) {
-      buffer.writeln("\nScala: ${eval.scalaNome}");
-      buffer.writeln("Data Compilazione: ${eval.dataCompilazione.toIso8601String().split('T')[0]}");
-      if (eval.punteggioTotale != null) {
-        buffer.writeln("Punteggio Totale: ${eval.punteggioTotale}");
-      }
-      if (eval.analisi != null) {
-        final analysis = eval.analisi!;
-        if (analysis.indiceQv != null) buffer.writeln("Indice Qualità Vita (QV): ${analysis.indiceQv}");
-        if (analysis.percentile != null) buffer.writeln("Percentile: ${analysis.percentile}");
-        if (analysis.fasciaQv != null) buffer.writeln("Fascia: ${analysis.fasciaQv}");
-        
-        if (analysis.domini.isNotEmpty) {
-          buffer.writeln("Dettaglio Domini:");
-          for (final d in analysis.domini) {
-            buffer.writeln("  - [${d.codice}] ${d.etichetta}: Punteggio Diretto ${d.punteggioDiretto ?? d.punteggioTotale ?? 'N/A'}, Standard ${d.punteggioStandard ?? 'N/A'}");
-          }
+      buffer.writeln("\nScala: ${eval.idScala}");
+      buffer.writeln("Data Compilazione: ${eval.dataCompilazione}");
+      
+      if (eval.domini.isNotEmpty) {
+        buffer.writeln("Dettaglio Domini:");
+        int totale = 0;
+        for (final d in eval.domini) {
+          totale += d.punteggio;
+          buffer.writeln("  - [${d.codice}] ${d.etichetta}: Punteggio ${d.punteggio}");
         }
+        buffer.writeln("Punteggio Totale Stimato: $totale");
       }
     }
 
