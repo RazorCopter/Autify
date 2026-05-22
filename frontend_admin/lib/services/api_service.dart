@@ -213,17 +213,22 @@ class ApiService {
   }
 
   Future<AggregatedEvaluation?> updateEvaluationAnswers(
-      String evaluationId, List<AnswerModel> risposte) async {
+      String evaluationId, List<AnswerModel> risposte,
+      {String? nomeOperatore, String? nomeIntervistato}) async {
     try {
+      final body = {
+        'risposte': risposte.map((r) => r.toJson()).toList(),
+      };
+      if (nomeOperatore != null) body['nome_operatore'] = nomeOperatore;
+      if (nomeIntervistato != null) body['nome_intervistato'] = nomeIntervistato;
+
       final response = await http.put(
         Uri.parse('$baseUrl/evaluations/$evaluationId'),
         headers: {
           'Content-Type': 'application/json',
           'X-Admin-Password': kAdminPassword,
         },
-        body: jsonEncode({
-          'risposte': risposte.map((r) => r.toJson()).toList(),
-        }),
+        body: jsonEncode(body),
       );
       if (response.statusCode == 200) {
         return AggregatedEvaluation.fromJson(jsonDecode(response.body));

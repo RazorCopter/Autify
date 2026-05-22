@@ -39,6 +39,10 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
   // Teniamo una copia mutabile delle risposte per l'editing inline
   List<AnswerModel> _editableAnswers = [];
   final Map<String, TextEditingController> _noteControllers = {};
+  
+  bool _isEditMode = false;
+  final TextEditingController _operatoreController = TextEditingController();
+  final TextEditingController _intervistatoController = TextEditingController();
 
   static const List<Color> _domainColors = [
     Color(0xFF64B5F6), Color(0xFFFFB74D), Color(0xFF81C784), Color(0xFFCE93D8),
@@ -101,6 +105,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     for (final controller in _noteControllers.values) {
       controller.dispose();
     }
+    _operatoreController.dispose();
+    _intervistatoController.dispose();
     super.dispose();
   }
 
@@ -143,6 +149,9 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     for (final r in evaluation.risposte) {
       _noteControllers[r.codiceDomanda] = TextEditingController(text: r.nota ?? '');
     }
+    
+    _operatoreController.text = evaluation.nomeOperatore;
+    _intervistatoController.text = evaluation.nomeIntervistato ?? '';
 
     _loadAnalysis();
   }
@@ -200,6 +209,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     final updated = await _api.updateEvaluationAnswers(
       _eval!.idValutazione,
       _editableAnswers,
+      nomeOperatore: _operatoreController.text.isNotEmpty ? _operatoreController.text : null,
+      nomeIntervistato: _intervistatoController.text.isNotEmpty ? _intervistatoController.text : null,
     );
     if (updated != null && mounted) {
       setState(() {
@@ -301,12 +312,27 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
           )
-        else
-          TextButton.icon(
-            onPressed: _saveChanges,
-            icon: const Icon(Icons.save_outlined, size: 18),
-            label: const Text('Salva modifiche'),
+        else ...[
+          OutlinedButton.icon(
+            onPressed: () {
+              setState(() {
+                _isEditMode = !_isEditMode;
+                if (!_isEditMode && _eval != null) {
+                  _selectEvaluation(_eval!);
+                }
+              });
+            },
+            icon: Icon(_isEditMode ? Icons.cancel_outlined : Icons.edit_outlined, size: 18),
+            label: Text(_isEditMode ? 'Annulla' : 'Edit'),
           ),
+          const SizedBox(width: 8),
+          if (_isEditMode)
+            TextButton.icon(
+              onPressed: _saveChanges,
+              icon: const Icon(Icons.save_outlined, size: 18),
+              label: const Text('Salva modifiche'),
+            ),
+        ],
         const SizedBox(width: 8),
         FilledButton.icon(
           onPressed: _isDownloading ? null : _downloadPdf,
@@ -422,9 +448,15 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
             _metaItem('Scala', widget.scale.nome),
             _metaItem('Data', _formatEvaluationDate(e.dataCompilazione)),
             _metaItem('Anno', e.anno.toString()),
-            _metaItem('Operatore', e.nomeOperatore),
-            if (e.nomeIntervistato != null && e.nomeIntervistato!.isNotEmpty)
-              _metaItem('Intervistato/a', e.nomeIntervistato!),
+            
+            _isEditMode 
+                ? SizedBox(width: 200, child: TextField(controller: _operatoreController, decoration: const InputDecoration(labelText: 'Operatore', border: UnderlineInputBorder()), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)))
+                : _metaItem('Operatore', e.nomeOperatore),
+                
+            _isEditMode
+                ? SizedBox(width: 200, child: TextField(controller: _intervistatoController, decoration: const InputDecoration(labelText: 'Intervistato/a', border: UnderlineInputBorder()), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)))
+                : (e.nomeIntervistato != null && e.nomeIntervistato!.isNotEmpty ? _metaItem('Intervistato/a', e.nomeIntervistato!) : const SizedBox()),
+                
             _metaItem('ID', e.idValutazione.length > 8 ? '${e.idValutazione.substring(0, 8)}…' : e.idValutazione),
           ],
         ),
@@ -1263,7 +1295,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               padding: const EdgeInsets.only(right: 6),
               child: InkWell(
                 borderRadius: BorderRadius.circular(8),
-                onTap: () => setState(() => _editableAnswers[idx].punteggio = score),
+                onTap: _isEditMode ? () => setState(() => _editableAnswers[idx].punteggio = score) : null,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   width: 32,
@@ -1342,6 +1374,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                 () => TextEditingController(text: answer.nota ?? '')),
             onChanged: (val) => _editableAnswers[idx].nota = val,
             maxLines: 2,
+            readOnly: !_isEditMode,
             decoration: InputDecoration(
               hintText: 'Aggiungi una nota per questa risposta...',
               prefixIcon: const Icon(Icons.notes_outlined, size: 18),

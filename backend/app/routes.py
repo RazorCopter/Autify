@@ -502,9 +502,17 @@ async def update_evaluation(evaluation_id: str, payload: EvaluationUpdateRequest
         raise HTTPException(status_code=404, detail="Valutazione non trovata")
 
     new_risposte = [r.model_dump() for r in payload.risposte]
+    update_data = {"risposte": new_risposte}
+    if payload.nome_operatore is not None:
+        update_data["nome_operatore"] = payload.nome_operatore
+        existing["nome_operatore"] = payload.nome_operatore
+    if payload.nome_intervistato is not None:
+        update_data["nome_intervistato"] = payload.nome_intervistato
+        existing["nome_intervistato"] = payload.nome_intervistato
+        
     await evaluations_collection.update_one(
         _build_evaluation_selector(existing),
-        {"$set": {"risposte": new_risposte}}
+        {"$set": update_data}
     )
     existing["risposte"] = new_risposte
     scale_doc = _hydrate_scale_doc(

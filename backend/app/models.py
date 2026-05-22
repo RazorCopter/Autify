@@ -100,3 +100,5 @@ class AggregatedEvaluation(BaseModel):
 
 class EvaluationUpdateRequest(BaseModel):
     risposte: List[Answer]
+    nome_operatore: Optional[str] = None
+    nome_intervistato: Optional[str] = None
