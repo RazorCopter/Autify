@@ -2,6 +2,15 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.5.0] - 2026-05-22
+
+### Aggiunto
+- **Modalità Comparazione ("Compara")**: Introdotto un interruttore (Toggle) "Compara" nella scheda Overview dell'analisi utente. Quando abilitato, collassa le due schede POS e San Martín in un unico grafico comparativo unificato.
+- **Logica di Normalizzazione (0-100%)**: Implementata la normalizzazione automatica dei punteggi assoluti di ciascun dominio in valori percentuali rispetto al punteggio massimo teorico (numero di domande × 3) per consentire un confronto omogeneo tra le scale.
+- **Intersezione dei Domini**: Il grafico comparativo mostra esclusivamente i domini comuni (es. SP, BE, BF, BM, IS, RI) presenti in entrambe le scale.
+- **Grafico a barre raggruppate (Grouped Bar Chart)**: Realizzato un grafico a barre raggruppate utilizzando `fl_chart`, con barre affiancate per ciascun dominio comune (Blu per POS, Arancione per San Martín), legenda e tooltip interattivo che mostra sia il valore assoluto originale che la percentuale normalizzata: `"$ValoreAssoluto / $PunteggioMassimo ($Percentuale%)"`.
+- **Transizioni animate**: Integrato un `AnimatedSwitcher` combinato con `FadeTransition` e `SlideTransition` per garantire un'animazione fluida e premium nel passaggio dalla visualizzazione standard a quella comparativa.
+
 ## [2.4.1] - 2026-05-22
 
 ### Risolto

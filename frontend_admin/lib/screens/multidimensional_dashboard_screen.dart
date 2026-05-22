@@ -25,6 +25,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
   bool _isLoading = true;
   bool _isAnalyzing = false;
+  bool _isCompareMode = false;
 
   String? _geminiKey;
   String _geminiModel = 'gemini-1.5-pro';
@@ -186,6 +187,25 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   // ════════════════════════════════════════════════════════════════════════════
 
   Widget _buildOverviewTab() {
+    AggregatedEvaluation? posEval;
+    AggregatedEvaluation? smEval;
+    ScaleModel? posScale;
+    ScaleModel? smScale;
+
+    for (final scale in _availableScales) {
+      if (!_latestEvaluations.containsKey(scale.id)) continue;
+      final isSM = _isSanMartinScale(scale.id, scale.nome);
+      if (isSM) {
+        smEval = _latestEvaluations[scale.id];
+        smScale = scale;
+      } else {
+        posEval = _latestEvaluations[scale.id];
+        posScale = scale;
+      }
+    }
+
+    final bool canCompare = posEval != null && smEval != null;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -210,39 +230,425 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               ),
             )
           else ...[
-            // ── Scale cards side by side ──────────────────────────────────
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final cards = <Widget>[];
-                for (final scale in _availableScales) {
-                  if (!_latestEvaluations.containsKey(scale.id)) continue;
-                  cards.add(_buildScalePanel(scale));
-                }
+            // ── Compare Toggle ──
+            _buildCompareToggle(canCompare),
+            const SizedBox(height: 24),
 
-                if (constraints.maxWidth > 800 && cards.length >= 2) {
-                  // Side by side
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: cards.map((c) => Expanded(child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: c,
-                    ))).toList(),
-                  );
-                }
-                // Stacked
-                return Column(
-                  children: cards.map((c) => Padding(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    child: c,
-                  )).toList(),
+            // ── Scale cards or Unified Comparison ──
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0.0, 0.04),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
                 );
               },
+              child: _isCompareMode && canCompare
+                  ? _buildComparePanel(posEval!, smEval!)
+                  : LayoutBuilder(
+                      key: const ValueKey('standard_panels'),
+                      builder: (context, constraints) {
+                        final cards = <Widget>[];
+                        for (final scale in _availableScales) {
+                          if (!_latestEvaluations.containsKey(scale.id)) continue;
+                          cards.add(_buildScalePanel(scale));
+                        }
+
+                        if (constraints.maxWidth > 800 && cards.length >= 2) {
+                          // Side by side
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: cards.map((c) => Expanded(child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              child: c,
+                            ))).toList(),
+                          );
+                        }
+                        // Stacked
+                        return Column(
+                          children: cards.map((c) => Padding(
+                            padding: const EdgeInsets.only(bottom: 20),
+                            child: c,
+                          )).toList(),
+                        );
+                      },
+                    ),
             ),
           ],
         ],
       ),
     );
   }
+
+  Widget _buildCompareToggle(bool canCompare) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE8EEF8)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.compare_arrows,
+                  color: AppTheme.primaryColor,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Modalità Comparazione',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    canCompare
+                        ? 'Confronta la scala POS e la scala San Martín in un grafico unificato.'
+                        : 'Compila entrambe le scale per sbloccare la comparazione dei domini.',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          Switch.adaptive(
+            value: _isCompareMode && canCompare,
+            activeColor: AppTheme.primaryColor,
+            onChanged: canCompare
+                ? (value) {
+                    setState(() {
+                      _isCompareMode = value;
+                    });
+                  }
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComparePanel(AggregatedEvaluation posEval, AggregatedEvaluation smEval) {
+    final commonCodes = posEval.domini
+        .map((d) => d.codice)
+        .where((code) => smEval.domini.any((d) => d.codice == code))
+        .toList();
+
+    return Card(
+      key: const ValueKey('compare_panel'),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: Color(0xFFE8EEF8)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.indigo.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.analytics_outlined, color: Colors.indigo.shade800),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Comparazione Multidimensionale',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Confronto diretto normalizzato (0-100%) dei domini comuni',
+                        style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // Legend
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _legendItem('Scala POS', const Color(0xFF3B82F6)),
+                const SizedBox(width: 28),
+                _legendItem('Scala San Martín', const Color(0xFFF59E0B)),
+              ],
+            ),
+            const SizedBox(height: 28),
+            // Chart Container
+            if (commonCodes.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Text(
+                    'Nessun dominio in comune trovato tra le scale.',
+                    style: TextStyle(color: AppTheme.textSecondary),
+                  ),
+                ),
+              )
+            else ...[
+              SizedBox(
+                height: 320,
+                child: _buildGroupedBarChart(posEval, smEval, commonCodes),
+              ),
+              const SizedBox(height: 24),
+              // Explanation text
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.backgroundColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE8EEF8)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: Colors.indigo, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'I punteggi dei singoli domini sono normalizzati in percentuale (0-100%) rispetto al rispettivo punteggio massimo teorico (numero domande × 3) per consentire una visualizzazione e un confronto coerente.',
+                        style: TextStyle(fontSize: 12, height: 1.5, color: Colors.indigo.shade900),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _legendItem(String label, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.3),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGroupedBarChart(AggregatedEvaluation posEval, AggregatedEvaluation smEval, List<String> commonCodes) {
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        maxY: 100.0,
+        minY: 0.0,
+        barTouchData: BarTouchData(
+          enabled: true,
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (_) => Colors.grey.shade900,
+            tooltipBorder: const BorderSide(color: Colors.white24, width: 0.5),
+            tooltipPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              final code = commonCodes[group.x];
+              final isPos = rodIndex == 0;
+              final scaleName = isPos ? 'POS' : 'San Martín';
+              
+              final DomainScore ds = isPos
+                  ? posEval.domini.firstWhere((d) => d.codice == code)
+                  : smEval.domini.firstWhere((d) => d.codice == code);
+                  
+              final maxTheoretical = ds.numDomande * 3;
+              final percent = rod.toY.toStringAsFixed(1);
+              
+              return BarTooltipItem(
+                '$scaleName\n',
+                const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+                children: [
+                  TextSpan(
+                    text: 'Dominio: ${ds.etichetta} ($code)\n',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.normal,
+                      fontSize: 12,
+                    ),
+                  ),
+                  TextSpan(
+                    text: 'Punteggio: ${ds.punteggio} / $maxTheoretical ($percent%)',
+                    style: const TextStyle(
+                      color: Colors.amberAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        titlesData: FlTitlesData(
+          show: true,
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 45,
+              getTitlesWidget: (value, meta) {
+                final idx = value.toInt();
+                if (idx < 0 || idx >= commonCodes.length) return const SizedBox.shrink();
+                final code = commonCodes[idx];
+                return Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(
+                    code,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                );
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 45,
+              getTitlesWidget: (value, meta) {
+                if (value % 20 != 0) return const SizedBox.shrink();
+                return Text(
+                  '${value.toInt()}%',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textSecondary,
+                  ),
+                );
+              },
+            ),
+          ),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: 20,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: Colors.grey.shade200,
+            strokeWidth: 0.8,
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        barGroups: List.generate(commonCodes.length, (i) {
+          final code = commonCodes[i];
+          final posDs = posEval.domini.firstWhere((d) => d.codice == code);
+          final smDs = smEval.domini.firstWhere((d) => d.codice == code);
+
+          final double posMax = posDs.numDomande > 0 ? (posDs.numDomande * 3).toDouble() : 15.0;
+          final double smMax = smDs.numDomande > 0 ? (smDs.numDomande * 3).toDouble() : 15.0;
+
+          final double posPercent = posMax > 0 ? (posDs.punteggio / posMax) * 100.0 : 0.0;
+          final double smPercent = smMax > 0 ? (smDs.punteggio / smMax) * 100.0 : 0.0;
+
+          return BarChartGroupData(
+            x: i,
+            barsSpace: 6,
+            barRods: [
+              BarChartRodData(
+                toY: posPercent,
+                color: const Color(0xFF3B82F6),
+                width: 14,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                backDrawRodData: BackgroundBarChartRodData(
+                  show: true,
+                  toY: 100,
+                  color: Colors.grey.shade100,
+                ),
+              ),
+              BarChartRodData(
+                toY: smPercent,
+                color: const Color(0xFFF59E0B),
+                width: 14,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                backDrawRodData: BackgroundBarChartRodData(
+                  show: true,
+                  toY: 100,
+                  color: Colors.grey.shade100,
+                ),
+              ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
 
   // ── Patient Header ──────────────────────────────────────────────────────────
   Widget _buildPatientHeader() {
