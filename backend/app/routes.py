@@ -826,7 +826,7 @@ async def export_database():
     db_dump = {
         "metadata": {
             "exported_at": datetime.now(timezone.utc).isoformat(),
-            "version": "2.3.4",
+            "version": "2.3.5",
         },
         "collections": {
             "patients": await _collect_collection("patients", patients_collection),

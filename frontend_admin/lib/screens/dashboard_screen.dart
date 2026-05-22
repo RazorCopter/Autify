@@ -803,9 +803,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     itemBuilder: (context, index) {
                       final item = distributions[index];
                       final name = item['scala_nome'] ?? '';
-                      final percent = (item['percentuale'] ?? 0.0).toDouble();
-                      final count = item['count'] ?? 0;
+                      final count = (item['count'] ?? 0) as int;
                       final color = AppTheme.puzzleColorAt(index);
+                      // Calcola la percentuale client-side per garantire coerenza con totalPatients
+                      final double percent = totalPatients > 0
+                          ? double.parse((count / totalPatients * 100).toStringAsFixed(1))
+                          : 0.0;
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 18),

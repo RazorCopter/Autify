@@ -2,6 +2,11 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.3.5] - 2026-05-22
+
+### Risolto
+- **Dashboard - Distribuzione Documentazione**: La percentuale di completamento per scala veniva ricevuta dal backend con un denominatore errato (somma di tutte le valutazioni anziché numero di pazienti). Il frontend ora calcola la percentuale **lato client** da `count / totalPatients × 100`, garantendo che POS 18/18 → 100% e San Martín 14/18 → 77.8% indipendentemente dal valore restituito dal backend.
+
 ## [2.3.4] - 2026-05-22
 
 ### Risolto
