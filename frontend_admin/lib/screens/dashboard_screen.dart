@@ -261,6 +261,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final coveredCount = coverage['coperti_count'] ?? 0;
     final expiredCount = coverage['scaduti_count'] ?? 0;
     final coveragePercent = (coverage['coperti_percentuale'] ?? 0.0).toDouble();
+    final posMancanti = coverage['pos_mancanti'] ?? 0;
+    final sanMartinMancanti = coverage['san_martin_mancanti'] ?? 0;
 
     final alertList = (_stats?['ultimi_alert'] as List<dynamic>?) ?? [];
     final distributions = (_stats?['distribuzione_scale'] as List<dynamic>?) ?? [];
@@ -308,6 +310,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       icon: Icons.warning_amber_rounded,
                       gradientColors: const [Color(0xFF9A3412), Color(0xFFF97316)],
                       onTap: () => widget.onNavigate(2), // Vai a Utenza
+                      tooltip: 'Scale Mancanti o Scadute:\n\nPOS: $posMancanti\nSan Martín: $sanMartinMancanti',
                     ),
                   ),
                 ],
@@ -341,6 +344,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     icon: Icons.warning_amber_rounded,
                     gradientColors: const [Color(0xFF9A3412), Color(0xFFF97316)],
                     onTap: () => widget.onNavigate(2),
+                    tooltip: 'Scale Mancanti o Scadute:\n\nPOS: $posMancanti\nSan Martín: $sanMartinMancanti',
                   ),
                 ],
               ),
@@ -912,6 +916,7 @@ class _BentoKpiCard extends StatefulWidget {
   final List<Color> gradientColors;
   final String suffix;
   final VoidCallback onTap;
+  final String? tooltip;
 
   const _BentoKpiCard({
     required this.title,
@@ -921,6 +926,7 @@ class _BentoKpiCard extends StatefulWidget {
     required this.gradientColors,
     this.suffix = '',
     required this.onTap,
+    this.tooltip,
   });
 
   @override
@@ -932,7 +938,7 @@ class _BentoKpiCardState extends State<_BentoKpiCard> {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
+    Widget cardContent = MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: AnimatedContainer(
@@ -1026,5 +1032,28 @@ class _BentoKpiCardState extends State<_BentoKpiCard> {
         ),
       ),
     );
+
+    if (widget.tooltip != null) {
+      return Tooltip(
+        message: widget.tooltip!,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white24, width: 1),
+        ),
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        textStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          height: 1.4,
+        ),
+        triggerMode: TooltipTriggerMode.tap,
+        child: cardContent,
+      );
+    }
+
+    return cardContent;
   }
 }

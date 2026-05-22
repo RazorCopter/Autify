@@ -645,9 +645,11 @@ async def get_dashboard_stats():
                 evals_by_patient[pat_id_str] = []
             evals_by_patient[pat_id_str].append(ev)
             
-        # 4. Calcolo dello stato di copertura di ciascun utente
-        coperti_count = 0
-        scaduti_count = 0
+        # 4. Calcolo dello stato di copertura di ciascun utente (POS e San Martin valutati individualmente)
+        pos_attivi = 0
+        san_martin_attivi = 0
+        pos_scaduti = 0
+        san_martin_scaduti = 0
         alert_candidates = []
         
         for pat in patients:
@@ -668,31 +670,69 @@ async def get_dashboard_stats():
             elif p_id2_str and p_id2_str in evals_by_patient:
                 pat_evals = evals_by_patient[p_id2_str]
             
-            if not pat_evals:
-                # Mai valutato: è un caso di alert
-                scaduti_count += 1
-                alert_candidates.append({
-                    "paziente_id": pat_display_id,
-                    "paziente_nome": pat.get("nome", ""),
-                    "paziente_cognome": pat.get("cognome", ""),
-                    "ultima_valutazione_data": None,
-                    "giorni_da_ultima_valutazione": 9999,  # Alto valore per priorità
-                    "stato": "mai_valutato",
-                    "scala_nome": "Nessuna scala somministrata"
-                })
-            else:
-                # Ordina le valutazioni per trovare la più recente
-                sorted_evals = sorted(pat_evals, key=parse_eval_date, reverse=True)
-                latest_ev = sorted_evals[0]
-                latest_date = parse_eval_date(latest_ev)
+            # Dividi le valutazioni in POS e San Martín
+            pat_pos_evals = []
+            pat_sm_evals = []
+            
+            for ev in pat_evals:
+                scale_id = ev.get("id_scala")
+                scale_id_str = str(scale_id) if scale_id else ""
+                scale_name = scale_names.get(scale_id_str) or scale_names.get(str(scale_id)) or scale_id_str or ""
+                scale_name = scale_name.lower()
+                scale_name_clean = scale_name.replace('í', 'i').replace('ì', 'i')
                 
-                # Calcolo dei giorni passati da oggi
-                days_since = (now - latest_date).days
-                
-                if days_since <= 180:
-                    coperti_count += 1
+                if "pos" in scale_name or "pos" in scale_id_str.lower():
+                    pat_pos_evals.append(ev)
+                elif "martin" in scale_name_clean or "martin" in scale_id_str.lower():
+                    pat_sm_evals.append(ev)
+            
+            # --- Valuta POS ---
+            has_valid_pos = False
+            if pat_pos_evals:
+                sorted_pos = sorted(pat_pos_evals, key=parse_eval_date, reverse=True)
+                latest_pos = sorted_pos[0]
+                latest_pos_date = parse_eval_date(latest_pos)
+                days_since_pos = (now - latest_pos_date).days
+                if days_since_pos <= 180:
+                    has_valid_pos = True
+                    pos_attivi += 1
                 else:
-                    scaduti_count += 1
+                    pos_scaduti += 1
+            else:
+                pos_scaduti += 1
+                
+            # --- Valuta San Martín ---
+            has_valid_sm = False
+            if pat_sm_evals:
+                sorted_sm = sorted(pat_sm_evals, key=parse_eval_date, reverse=True)
+                latest_sm = sorted_sm[0]
+                latest_sm_date = parse_eval_date(latest_sm)
+                days_since_sm = (now - latest_sm_date).days
+                if days_since_sm <= 180:
+                    has_valid_sm = True
+                    san_martin_attivi += 1
+                else:
+                    san_martin_scaduti += 1
+            else:
+                san_martin_scaduti += 1
+                
+            # Alert candidates: se non ha POS valida o non ha San Martín valida
+            if not has_valid_pos or not has_valid_sm:
+                if not pat_evals:
+                    alert_candidates.append({
+                        "paziente_id": pat_display_id,
+                        "paziente_nome": pat.get("nome", ""),
+                        "paziente_cognome": pat.get("cognome", ""),
+                        "ultima_valutazione_data": None,
+                        "giorni_da_ultima_valutazione": 9999,
+                        "stato": "mai_valutato",
+                        "scala_nome": "Nessuna scala somministrata"
+                    })
+                else:
+                    sorted_evals = sorted(pat_evals, key=parse_eval_date, reverse=True)
+                    latest_ev = sorted_evals[0]
+                    latest_date = parse_eval_date(latest_ev)
+                    days_since = (now - latest_date).days
                     scale_id = latest_ev.get("id_scala")
                     scale_id_str = str(scale_id) if scale_id else ""
                     scala_nome = scale_names.get(scale_id_str) or scale_names.get(str(scale_id)) or scale_id_str or "Scala sconosciuta"
@@ -708,7 +748,10 @@ async def get_dashboard_stats():
 
         # Calcolo percentuale di copertura
         totale_pazienti = len(patients)
-        copertura_percentuale = (coperti_count / totale_pazienti * 100) if totale_pazienti > 0 else 0.0
+        coperti_count = pos_attivi + san_martin_attivi
+        scaduti_count = pos_scaduti + san_martin_scaduti
+        max_scale_teoriche = 2 * totale_pazienti
+        copertura_percentuale = (coperti_count / max_scale_teoriche * 100) if max_scale_teoriche > 0 else 0.0
         
         # 5. Ordina gli alert: prima chi non ne ha mai fatte, poi chi ha valutazioni scadute da più tempo
         alert_candidates.sort(key=lambda x: x.get("giorni_da_ultima_valutazione", 0), reverse=True)
@@ -791,7 +834,11 @@ async def get_dashboard_stats():
             "copertura_scale": {
                 "coperti_percentuale": round(copertura_percentuale, 1),
                 "coperti_count": coperti_count,
-                "scaduti_count": scaduti_count
+                "scaduti_count": scaduti_count,
+                "pos_mancanti": pos_scaduti,
+                "san_martin_mancanti": san_martin_scaduti,
+                "pos_attivi": pos_attivi,
+                "san_martin_attivi": san_martin_attivi
             },
             "distribuzione_scale": distribuzione_scale,
             "trend_somministrazioni": trend_dati,
@@ -808,7 +855,11 @@ async def get_dashboard_stats():
             "copertura_scale": {
                 "coperti_percentuale": 0.0,
                 "coperti_count": 0,
-                "scaduti_count": 0
+                "scaduti_count": 0,
+                "pos_mancanti": 0,
+                "san_martin_mancanti": 0,
+                "pos_attivi": 0,
+                "san_martin_attivi": 0
             },
             "distribuzione_scale": [],
             "trend_somministrazioni": [],
@@ -834,7 +885,7 @@ async def export_database():
     db_dump = {
         "metadata": {
             "exported_at": datetime.now(timezone.utc).isoformat(),
-            "version": "2.6.0",
+            "version": "2.6.1",
         },
         "collections": {
             "patients": await _collect_collection("patients", patients_collection),

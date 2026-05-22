@@ -2,6 +2,15 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.6.1] - 2026-05-22
+
+### Aggiunto
+- **Tooltip Dettagliato Card KPI Dashboard**: Aggiunto un tooltip interattivo e animato con stile premium (sfondo scuro semi-trasparente, bordi arrotondati, testo formattato) alla card "DA VALUTARE / SCADUTI" sulla Dashboard per visualizzare l'esatto conteggio delle scale mancanti/scadute separate per tipologia (POS e San Martín). Supporta sia l'hover su desktop che il tap su dispositivi mobili/tablet.
+
+### Modificato
+- **Logica Card KPI Dashboard (Conteggio Individuale Scale)**: Modificata la logica di calcolo delle card KPI "Valutazioni Attive" e "Da Valutare / Scaduti" nella Dashboard. Ora i contatori mostrano la somma totale dei singoli test/scale (POS + San Martín) validi o mancanti anziché il conteggio univoco degli utenti, calcolando la percentuale di copertura rispetto al massimo teorico delle scale somministrabili (2 per utente).
+- **Allineamento Versioni**: Incrementata la versione dell'intera suite a `2.6.1` in `app_version.dart`, in entrambi i file `pubspec.yaml` (admin e client), ed esportata nei metadati dei backup del database in `routes.py`.
+
 ## [2.6.0] - 2026-05-22
 
 ### Modificato
