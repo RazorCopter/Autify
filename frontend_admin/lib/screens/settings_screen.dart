@@ -265,7 +265,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         min: 1,
                         max: 24,
                         unit: 'mesi',
-                        icon: Icons.calendar_month_outlined,
+                        icon: Icons.calendar_month,
                         onChanged: (val) {
                           notifier.updateSettings(validityMonthsPOS: val.toInt());
                         },
@@ -279,7 +279,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         min: 1,
                         max: 24,
                         unit: 'mesi',
-                        icon: Icons.edit_calendar_outlined,
+                        icon: Icons.edit_calendar,
                         onChanged: (val) {
                           notifier.updateSettings(validityMonthsSanMartin: val.toInt());
                         },
@@ -293,7 +293,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         min: 0,
                         max: 60,
                         unit: 'giorni',
-                        icon: Icons.notification_important_outlined,
+                        icon: Icons.notification_important,
                         onChanged: (val) {
                           notifier.updateSettings(alertThresholdDays: val.toInt());
                         },
