@@ -1,11 +1,11 @@
 {
-    "name": "frontend",
-    "short_name": "frontend",
+    "name": "AutAnalysis",
+    "short_name": "AutAnalysis",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#1E3A8A",
+    "theme_color": "#1E3A8A",
+    "description": "Piattaforma di valutazione clinica e monitoraggio documentale.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
