@@ -81,7 +81,6 @@ def _make_letterhead(styles) -> Table:
         left_elem = Paragraph("<b>Logo Mancante</b>", styles['Normal'])
         
     foundation_text = """<b>FONDAZIONE IL TIGLIO ONLUS</b><br/>
-Orari: lun-ven dalle 9.00 alle 17.00<br/>
 P. IVA: 02095510182<br/>
 Cod. Fisc: 96046680185"""
     

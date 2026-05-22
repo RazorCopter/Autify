@@ -2,6 +2,12 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.4.1] - 2026-05-22
+
+### Risolto
+- **PDF - Rimozione Orari di Apertura**: Rimosso l'orario di servizio della Fondazione ("Orari: lun-ven dalle 9.00 alle 17.00") dalla sezione in alto a destra di tutte le intestazioni dei PDF generati.
+- **PDF - Aggiornamento Logo Ufficiale**: Sostituito il vecchio logo ad alto contrasto/scuro nell'angolo in alto a sinistra di tutti i PDF generati con il nuovo logo ufficiale su sfondo bianco fornito dall'utente.
+
 ## [2.4.0] - 2026-05-22
 
 ### Risolto
