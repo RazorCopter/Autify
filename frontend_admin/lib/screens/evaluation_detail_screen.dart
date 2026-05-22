@@ -35,6 +35,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
   bool _isSaving = false;
   bool _isDownloading = false;
   bool _isLoadingAnalysis = false;
+  bool _isDeleting = false;
 
   // Teniamo una copia mutabile delle risposte per l'editing inline
   List<AnswerModel> _editableAnswers = [];
@@ -256,18 +257,129 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     }
   }
 
+  Future<void> _confirmDeleteEvaluation(AggregatedEvaluation evaluation) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.errorColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.delete_outline, color: AppTheme.errorColor, size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  const Text('Elimina Valutazione',
+                    style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Sei sicuro di voler eliminare definitivamente la valutazione del ${_formatEvaluationDate(evaluation.dataCompilazione)}?\n\nQuesta azione è irreversibile e rimuoverà tutti i punteggi associati.',
+                style: const TextStyle(fontSize: 15, color: AppTheme.textSecondary, height: 1.5),
+              ),
+              const SizedBox(height: 28),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Annulla'),
+                  ),
+                  const SizedBox(width: 12),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(backgroundColor: AppTheme.errorColor),
+                    onPressed: () => Navigator.pop(ctx, true),
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    label: const Text('Elimina'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      _deleteEvaluation(evaluation);
+    }
+  }
+
+  Future<void> _deleteEvaluation(AggregatedEvaluation evaluation) async {
+    setState(() => _isDeleting = true);
+    final success = await _api.deleteEvaluation(evaluation.idValutazione);
+    if (mounted) {
+      setState(() => _isDeleting = false);
+      if (success) {
+        setState(() {
+          _history.removeWhere((e) => e.idValutazione == evaluation.idValutazione);
+          if (_eval?.idValutazione == evaluation.idValutazione) {
+            if (_history.isNotEmpty) {
+              _selectEvaluation(_history.first);
+            } else {
+              _eval = null;
+              _analysis = null;
+            }
+          }
+        });
+        _showSnack('Valutazione eliminata con successo', isError: false);
+      } else {
+        _showSnack('Errore durante l\'eliminazione della valutazione', isError: true);
+      }
+    }
+  }
+
+  void _showSnack(String msg, {required bool isError}) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Row(
+        children: [
+          Icon(isError ? Icons.error_outline : Icons.check_circle_outline, color: Colors.white, size: 18),
+          const SizedBox(width: 10),
+          Expanded(child: Text(msg)),
+        ],
+      ),
+      backgroundColor: isError ? AppTheme.errorColor : const Color(0xFF43A047),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.all(20),
+    ));
+  }
+
   // ─── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: _buildAppBar(),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _eval == null
-              ? _buildEmptyState()
-              : _buildContent(),
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: AppTheme.backgroundColor,
+          appBar: _buildAppBar(),
+          body: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _eval == null
+                  ? _buildEmptyState()
+                  : _buildContent(),
+        ),
+        if (_isDeleting)
+          Container(
+            color: Colors.black.withValues(alpha: 0.3),
+            child: const Center(
+              child: CircularProgressIndicator(color: AppTheme.primaryColor),
+            ),
+          ),
+      ],
     );
   }
 
@@ -421,12 +533,62 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               runSpacing: 10,
               children: _history.map((evaluation) {
                 final isSelected = evaluation.idValutazione == selectedId;
-                return ChoiceChip(
-                  selected: isSelected,
-                  label: Text('Valutazione del ${_formatEvaluationDate(evaluation.dataCompilazione)}'),
-                  onSelected: (_) {
-                    setState(() => _selectEvaluation(evaluation));
-                  },
+                return Container(
+                  decoration: BoxDecoration(
+                    color: isSelected 
+                        ? AppTheme.primaryColor.withValues(alpha: 0.08)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected 
+                          ? AppTheme.primaryColor 
+                          : const Color(0xFFE8EEF8),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      onTap: () => setState(() => _selectEvaluation(evaluation)),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Valutazione del ${_formatEvaluationDate(evaluation.dataCompilazione)}',
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                color: isSelected 
+                                    ? AppTheme.primaryColor 
+                                    : AppTheme.textPrimary,
+                              ),
+                            ),
+                            if (!ApiService.isViewer && _isEditMode) ...[
+                              const SizedBox(width: 8),
+                              InkWell(
+                                onTap: () => _confirmDeleteEvaluation(evaluation),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.errorColor.withValues(alpha: 0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.close_rounded,
+                                    size: 13,
+                                    color: AppTheme.errorColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 );
               }).toList(),
             ),

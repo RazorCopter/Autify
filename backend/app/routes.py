@@ -905,7 +905,7 @@ async def export_database():
     db_dump = {
         "metadata": {
             "exported_at": datetime.now(timezone.utc).isoformat(),
-            "version": "2.7.0",
+            "version": "2.7.1",
         },
         "collections": {
             "patients": await _collect_collection("patients", patients_collection),
@@ -965,6 +965,20 @@ async def import_database(file: UploadFile = File(...)):
         "message": "Database importato con successo",
         "collections": imported_counts,
     }
+
+
+@admin_router.delete("/evaluations/{evaluation_id}", tags=["Admin - Evaluations"])
+async def delete_evaluation(evaluation_id: str):
+    """Elimina definitivamente una singola valutazione dal database."""
+    eval_doc = await evaluations_collection.find_one({"id_valutazione": evaluation_id})
+    if not eval_doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Valutazione non trovata")
+    
+    result = await evaluations_collection.delete_one({"id_valutazione": evaluation_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Errore nell'eliminazione della valutazione")
+        
+    return {"status": "success", "message": "Valutazione eliminata con successo"}
 
 
 # ==========================================

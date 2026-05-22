@@ -184,6 +184,7 @@ backend/
     * `GET /evaluations/{id_patient}`: Recupera lo storico dei test eseguiti da un determinato paziente.
     * `GET /evaluations/{evaluation_id}/pdf`: Restituisce il PDF autogenerato impostando gli header HTTP corretti per il download del file (`application/pdf`).
     * `GET /evaluations/{evaluation_id}/analysis`: Restituisce l'analisi psicometrica elaborata in tempo reale.
+    * `DELETE /evaluations/{evaluation_id}`: Rimuove definitivamente una singola valutazione dal database (protetto da RBAC).
     * `GET /dashboard-stats`: Calcola le statistiche riassuntive della dashboard (totale pazienti, numero valutazioni per anno, saturazione dei test).
     * `GET /export-db` / `POST /import-db`: Utility per il backup completo del database MongoDB in formato JSON e per il rispettivo ripristino.
   * Endpoint Client principali:
@@ -255,7 +256,7 @@ frontend_admin/
   * Utilizza il pacchetto Flutter `http` per eseguire richieste asincrone (`GET`, `POST`, `PUT`, `DELETE`).
   * Gestisce dinamicamente le credenziali di sessione leggendole da `SharedPreferences` (permettendo il login flessibile di Admin o Viewer).
   * Espone la proprietà statica `ApiService.isViewer` per determinare istantaneamente in tutta l'app se la sessione corrente è in modalità Sola Lettura.
-  * Offre metodi per il recupero delle anagrafiche, delle statistiche della dashboard, delle valutazioni di un paziente e per il caricamento o eliminazione delle scale cliniche.
+  * Offre metodi per il recupero delle anagrafiche, delle statistiche della dashboard, delle valutazioni di un paziente e per il caricamento o eliminazione delle scale cliniche e delle valutazioni storiche (`deleteEvaluation`).
   * Gestisce il download dei report PDF come flussi binari (`Uint8List`) pronti per essere visualizzati a schermo o salvati in locale tramite il browser o l'app desktop.
 * **Dipendenze/Relazioni**:
   * Legge i dati di connessione da `frontend_admin/lib/config.dart`.
@@ -374,7 +375,8 @@ frontend_admin/
 * **Scopo Funzionale**: Cartella clinica e cruscotto dettagliato per la singola valutazione. Mostra i punteggi, le percentuali di dominio, i grafici a barre o a radar, l'indice di Qualità della Vita globale e la sintesi scritta da Gemini.
 * **Dettagli Tecnici**:
   * Disegna in modo estremamente personalizzato il profilo psicometrico.
-  * Restrizioni Viewer: Nasconde del tutto i pulsanti di modifica ("Edit" e "Salva modifiche") dall'AppBar dell'applicazione, blindando le valutazioni già completate contro qualsiasi alterazione.
+  * Restrizioni Viewer: Nasconde del tutto i pulsanti di modifica ("Edit" e "Salva modifiche") dall'AppBar e i pulsanti "X" per eliminare le singole valutazioni storiche, inibendo qualsiasi alterazione.
+  * Modifiche per Admin: Aggiunge la funzionalità per eliminare una singola valutazione dello storico. Il pulsante "X" (cestino o cerchio con croce) è renderizzato nel DOM e cliccabile solo per il ruolo Admin ed esclusivamente se la modalità edit è attiva. Include la gestione di un Dialog premium di conferma e la rimozione reattiva locale dell'elemento senza refresh della pagina.
 * **Dipendenze/Relazioni**:
   * Carica i report e le analisi tramite `ApiService` e genera la sintesi clinica tramite `GeminiService`.
 

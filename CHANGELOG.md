@@ -2,6 +2,18 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.7.1] - 2026-05-23
+
+### Aggiunto
+- **Cancellazione Singolo Record Storico Valutazione**:
+  - Implementata la possibilità di eliminare definitivamente una specifica valutazione storica direttamente dalla schermata di dettaglio ([evaluation_detail_screen.dart](file:///home/gianvito/progetti/AutAnalysis/frontend_admin/lib/screens/evaluation_detail_screen.dart)).
+  - **Integrazione RBAC & Safety UX**: L'opzione di cancellazione non viene renderizzata nel DOM per il ruolo Viewer. Per l'utente Admin, il pulsante (icona a forma di "X" circolare) compare ed è cliccabile solo se la modalità di modifica ("Edit Mode") è attiva.
+  - **Safety UX (Modal di Conferma)**: Introdotto un dialog premium di conferma eliminazione con avviso di irreversibilità dell'operazione.
+  - **Aggiornamento Reattivo dello Stato**: Alla rimozione asincrona del record, la lista dello storico locale `_history` viene aggiornata istantaneamente senza provocare il ricaricamento dell'intera schermata.
+- **Protezione API Backend**:
+  - Sviluppato l'endpoint `DELETE /evaluations/{evaluation_id}` in [routes.py](file:///home/gianvito/progetti/AutAnalysis/backend/app/routes.py), protetto dal middleware di autenticazione asimmetrico `verify_admin_auth` (bloccando le chiamate non autorizzate con `403 Forbidden`).
+- **Allineamento Versioni**: Incrementata la versione della suite a `2.7.1` in `app_version.dart`, `pubspec.yaml` (admin e client), `main.py` e `routes.py` (metadata backup).
+
 ## [2.7.0] - 2026-05-23
 
 ### Aggiunto

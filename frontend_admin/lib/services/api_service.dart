@@ -105,6 +105,19 @@ class ApiService {
     }
   }
 
+  Future<bool> deleteEvaluation(String id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/evaluations/$id'),
+        headers: {'X-Admin-Password': kAdminPassword},
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Errore eliminazione valutazione: $e');
+      return false;
+    }
+  }
+
   Future<Map<String, String?>> getGeminiSettings() async {
     try {
       final response = await http.get(
