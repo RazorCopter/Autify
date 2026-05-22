@@ -62,6 +62,48 @@ def _wrap_label(text: str, max_chars: int = 16) -> str:
     mid = len(text) // 2
     return text[:mid] + '\n' + text[mid:]
 
+import os
+from pathlib import Path
+
+def _make_letterhead(styles) -> Table:
+    logo_path = Path(__file__).parent / "assets" / "logo.png"
+    
+    if logo_path.exists():
+        # L'immagine viene ridimensionata mantenendo l'aspect ratio
+        img = RLImage(str(logo_path))
+        # Altezza fissa di circa 2.5 cm
+        h = 2.5 * cm
+        w = h * (img.imageWidth / img.imageHeight) if img.imageHeight > 0 else h
+        img.drawHeight = h
+        img.drawWidth = w
+        left_elem = img
+    else:
+        left_elem = Paragraph("<b>Logo Mancante</b>", styles['Normal'])
+        
+    foundation_text = """<b>FONDAZIONE IL TIGLIO ONLUS</b><br/>
+Orari: lun-ven dalle 9.00 alle 17.00<br/>
+P. IVA: 02095510182<br/>
+Cod. Fisc: 96046680185"""
+    
+    right_elem = Paragraph(
+        foundation_text, 
+        ParagraphStyle(
+            'FoundationStyle', parent=styles['Normal'], 
+            fontSize=9, textColor=DARK_TEXT, alignment=TA_RIGHT, leading=12
+        )
+    )
+    
+    table = Table([[left_elem, right_elem]], colWidths=[8*cm, 9*cm])
+    table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('ALIGN', (0,0), (0,0), 'LEFT'),
+        ('ALIGN', (1,0), (1,0), 'RIGHT'),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+    ]))
+    return table
+
 
 # ─── Grafico radar per San Martín ───────────────────────────────────────────
 
@@ -861,7 +903,15 @@ def generate_evaluation_pdf(
     )
 
     # ── Header ─────────────────────────────────────────────────────────────
-    story.append(Paragraph("Report Valutativo", title_style))
+    story.append(_make_letterhead(styles))
+    story.append(Spacer(1, 0.3 * cm))
+    story.append(HRFlowable(width="100%", thickness=1, color=PRIMARY, spaceBefore=4, spaceAfter=10))
+    
+    if is_sanmartin:
+        story.append(Paragraph("Report Valutativo", title_style))
+    else:
+        story.append(Paragraph("POS ETEROVALUTATIVA", title_style))
+    
     story.append(HRFlowable(width="100%", thickness=1, color=BORDER, spaceBefore=4, spaceAfter=10))
 
     # ── Info scala ─────────────────────────────────────────────────────────

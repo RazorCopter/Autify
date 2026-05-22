@@ -180,7 +180,8 @@ async def get_patients():
                 pat_dict["ultimo_pos_compilato"] = data_str
                 
             # Se la scala è San Martín ed è la prima che incontriamo
-            if not pat_dict.get("ultimo_san_martin_compilato") and ("martin" in scale_name or "martin" in scale_id.lower()):
+            scale_name_clean = scale_name.replace('í', 'i').replace('ì', 'i')
+            if not pat_dict.get("ultimo_san_martin_compilato") and ("martin" in scale_name_clean or "martin" in scale_id.lower()):
                 pat_dict["ultimo_san_martin_compilato"] = data_str
                 
             # Se abbiamo trovato entrambe, possiamo interrompere la ricerca per questo paziente
