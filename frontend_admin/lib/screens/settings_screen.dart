@@ -380,7 +380,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             color: const Color(0xFF64B5F6).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(icon, color: Color(0xFF64B5F6), size: 24),
+          child: Icon(icon, color: const Color(0xFF64B5F6), size: 24),
         ),
         const SizedBox(width: 16),
         Expanded(
