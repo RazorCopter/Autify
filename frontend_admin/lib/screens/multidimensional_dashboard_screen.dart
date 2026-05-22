@@ -781,15 +781,23 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         ),
         borderData: FlBorderData(show: false),
         barGroups: List.generate(domini.length, (i) {
+          final maxScore = domini[i].numDomande * 3;
+          final double toYValue = domini[i].punteggio.toDouble();
+          final double backYValue = domini[i].punteggioTotale > 0 ? domini[i].punteggioTotale.toDouble() : maxScore.toDouble();
+          
           return BarChartGroupData(
             x: i,
             barRods: [
-              // Ghost bar (max)
               BarChartRodData(
-                toY: 18,
-                color: Colors.grey.shade100,
+                toY: toYValue,
+                color: _domainColors[i % _domainColors.length],
                 width: 28,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                backDrawRodData: BackgroundBarChartRodData(
+                  show: true,
+                  toY: backYValue,
+                  color: Colors.grey.shade100,
+                ),
               ),
             ],
             showingTooltipIndicators: [],

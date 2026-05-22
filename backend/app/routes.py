@@ -718,11 +718,14 @@ async def get_dashboard_stats():
             scale_id = ev.get("id_scala")
             if scale_id:
                 scale_id_str = str(scale_id)
-                distribuzione_raw[scale_id_str] = distribuzione_raw.get(scale_id_str, 0) + 1
+                if scale_id_str not in distribuzione_raw:
+                    distribuzione_raw[scale_id_str] = set()
+                distribuzione_raw[scale_id_str].add(pat_id_str)
             
-        totale_valutazioni = sum(distribuzione_raw.values())
+        totale_valutazioni = sum(len(patients) for patients in distribuzione_raw.values())
         distribuzione_scale = []
-        for scale_id, count in distribuzione_raw.items():
+        for scale_id, patients_set in distribuzione_raw.items():
+            count = len(patients_set)
             scala_nome = scale_names.get(scale_id) or scale_id or "Scala sconosciuta"
             distribuzione_scale.append({
                 "scala_id": scale_id,
