@@ -451,7 +451,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'I punteggi dei singoli domini sono normalizzati in percentuale (0-100%) rispetto al rispettivo punteggio massimo teorico (numero domande × 3) per consentire una visualizzazione e un confronto coerente.',
+                        'I punteggi dei singoli domini sono normalizzati in percentuale (0-100%) rispetto al rispettivo punteggio massimo teorico (numero domande × 3 per POS e numero domande × 4 per San Martín) per consentire una visualizzazione e un confronto coerente.',
                         style: TextStyle(fontSize: 12, height: 1.5, color: Colors.indigo.shade900),
                       ),
                     ),
@@ -518,7 +518,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   ? posEval.domini.firstWhere((d) => d.codice == code)
                   : smEval.domini.firstWhere((d) => d.codice == code);
                   
-              final maxTheoretical = ds.numDomande * 3;
+              final maxTheoretical = isPos ? ds.numDomande * 3 : ds.numDomande * 4;
               final percent = rod.toY.toStringAsFixed(1);
               
               return BarTooltipItem(
@@ -555,21 +555,35 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 45,
+              reservedSize: 75,
               getTitlesWidget: (value, meta) {
                 final idx = value.toInt();
                 if (idx < 0 || idx >= commonCodes.length) return const SizedBox.shrink();
                 final code = commonCodes[idx];
-                return Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Text(
-                    code,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
+                final posDs = posEval.domini.firstWhere(
+                  (d) => d.codice == code,
+                  orElse: () => smEval.domini.firstWhere((d) => d.codice == code),
+                );
+                final name = posDs.etichetta;
+                return SideTitleWidget(
+                  axisSide: meta.axisSide,
+                  space: 8,
+                  child: Transform.rotate(
+                    angle: -0.4,
+                    child: SizedBox(
+                      width: 85,
+                      child: Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimary,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    textAlign: TextAlign.center,
                   ),
                 );
               },
@@ -611,7 +625,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           final smDs = smEval.domini.firstWhere((d) => d.codice == code);
 
           final double posMax = posDs.numDomande > 0 ? (posDs.numDomande * 3).toDouble() : 15.0;
-          final double smMax = smDs.numDomande > 0 ? (smDs.numDomande * 3).toDouble() : 15.0;
+          final double smMax = smDs.numDomande > 0 ? (smDs.numDomande * 4).toDouble() : 20.0;
 
           final double posPercent = posMax > 0 ? (posDs.punteggio / posMax) * 100.0 : 0.0;
           final double smPercent = smMax > 0 ? (smDs.punteggio / smMax) * 100.0 : 0.0;
@@ -841,7 +855,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     height: 250,
                     child: isSM && analysis != null && analysis.domini.isNotEmpty
                         ? _buildRadarChartForPanel(analysis)
-                        : _buildBarChartForPanel(eval.domini),
+                        : _buildBarChartForPanel(eval.domini, isSm: isSM),
                   ),
               ],
             ),
@@ -1144,13 +1158,13 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   }
 
   // ── Bar Chart (POS) ─────────────────────────────────────────────────────────
-  Widget _buildBarChartForPanel(List<DomainScore> domini) {
+  Widget _buildBarChartForPanel(List<DomainScore> domini, {bool isSm = false}) {
     if (domini.isEmpty) return const SizedBox();
 
     // Calcola il maxY dinamico basato sui dati reali
     double dynamicMaxY = 0;
     for (final d in domini) {
-      final maxScore = d.numDomande * 3;
+      final maxScore = d.numDomande * (isSm ? 4 : 3);
       final score = d.punteggio.toDouble();
       if (maxScore > dynamicMaxY) dynamicMaxY = maxScore.toDouble();
       if (score > dynamicMaxY) dynamicMaxY = score.toDouble();
@@ -1221,7 +1235,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         ),
         borderData: FlBorderData(show: false),
         barGroups: List.generate(domini.length, (i) {
-          final maxScore = domini[i].numDomande * 3;
+          final maxScore = domini[i].numDomande * (isSm ? 4 : 3);
           final double toYValue = domini[i].punteggio.toDouble();
           final double backYValue = maxScore.toDouble();
           

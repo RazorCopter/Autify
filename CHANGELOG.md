@@ -2,6 +2,14 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.5.1] - 2026-05-22
+
+### Risolto
+- **Normalizzazione Scala San Martín**: Corretto il calcolo del valore massimo teorico per i domini della Scala San Martín nella modalità "Compara". Dato che le risposte della San Martín si basano su una scala Likert da 1 a 4 (mentre POS si basa su 1 a 3), il denominatore della percentuale è stato corretto a `numero domande × 4` (anziché `× 3`). Questo evita che le barre arancioni "sfondino" il limite del 100% (arrivando al 125%+).
+- **Leggibilità del Grafico di Comparazione**: Sostituite le sigle dei domini (es. "SP", "RI") con i loro nomi completi (es. "Sviluppo Personale", "Relazioni Interpersonali") sull'asse X del grafico comparativo. Le etichette lunghe sono state ruotate a -0.4 radianti per prevenire sovrapposizioni e migliorare il design visivo.
+- **Footer e Tooltip**: Aggiornato il testo esplicativo nel footer del grafico di comparazione e i dettagli del tooltip per riflettere accuratamente il calcolo del massimo teorico per entrambe le scale.
+- **Pannelli di Dettaglio individuali**: Estesa la parametrizzazione del calcolo del massimo teorico anche ai grafici a barre dei singoli domini nel caso la scala San Martín debba essere visualizzata tramite barre in assenza di analisi psicometrica.
+
 ## [2.5.0] - 2026-05-22
 
 ### Aggiunto
