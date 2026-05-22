@@ -1290,7 +1290,45 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               ),
             );
           }),
-          const SizedBox(width: 12),
+          // Etichetta testuale della risposta selezionata
+          if (question != null) ...[
+            const SizedBox(width: 8),
+            const Text('—', style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Builder(builder: (context) {
+                final selectedOption = question.opzioni
+                    .cast<Option?>()
+                    .firstWhere(
+                      (o) => o?.punteggio == answer.punteggio,
+                      orElse: () => null,
+                    );
+                if (selectedOption == null) return const SizedBox.shrink();
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.20),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    selectedOption.testoRisposta,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.primaryColor,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }),
+            ),
+          ],
+          const SizedBox(width: 8),
           if (answer.nota != null && answer.nota!.isNotEmpty)
             const Icon(Icons.notes_rounded, size: 16, color: AppTheme.textSecondary),
         ],
