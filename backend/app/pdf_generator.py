@@ -305,121 +305,88 @@ def _make_qol_visual_chart(domains: List[dict]) -> io.BytesIO:
 
 # ─── Grafico a barre (fallback POS) ─────────────────────────────────────────
 
-def _make_bar_chart(domains: List[dict], score_min: int = 6, score_max: int = 18) -> io.BytesIO:
+def _make_bar_chart(domains: List[dict], score_min: int = 0, score_max: int = 18) -> io.BytesIO:
     """
-    Crea un grafico a barre orizzontali ad altissimo impatto estetico ispirato alle dashboard premium (Bento Grid).
-    Include una barra di sfondo per ciascuna domanda (progress-bar track) e una barra a sfumatura orizzontale
-    con terminazione arrotondata, posizionando i valori all'interno di eleganti pill-badge numerici.
+    Crea un grafico a barre VERTICALI identico alla pagina di analisi POS nel frontend Flutter.
+    Una barra colorata per dominio, barra di sfondo ghost, griglia orizzontale,
+    etichette dominio sull'asse X, badge numerico sopra ogni barra.
     """
-    import matplotlib.patches as patches
-    import matplotlib.colors as mcolors
-    
-    labels = [_wrap_label(d['etichetta'], max_chars=20) for d in domains]
-    scores = [d["punteggio_totale"] for d in domains]
-    n = len(labels)
+    labels    = [_wrap_label(d['etichetta'], max_chars=14) for d in domains]
+    scores    = [d["punteggio_totale"] for d in domains]
+    n         = len(labels)
 
-    # Palette di colori coordinati per un look moderno ed elegante (Material Design e Tailwind-like)
+    # Stessa palette del frontend Flutter (_domainColors)
     THEME_COLORS = [
-        ('#6366F1', '#4F46E5'),  # Indigo
-        ('#EC4899', '#DB2777'),  # Pink
-        ('#10B981', '#059669'),  # Emerald
-        ('#F59E0B', '#D97706'),  # Amber
-        ('#8B5CF6', '#7C3AED'),  # Purple
-        ('#06B6D4', '#0891B2'),  # Cyan
-        ('#3B82F6', '#2563EB'),  # Blue
-        ('#F97316', '#EA580C'),  # Orange
+        '#60A5FA',  # Blue
+        '#F59E0B',  # Amber
+        '#34D399',  # Emerald
+        '#A78BFA',  # Purple
+        '#F87171',  # Red
+        '#38BDF8',  # Sky
+        '#86EFAC',  # Green
+        '#FB923C',  # Orange
     ]
 
-    fig, ax = plt.subplots(figsize=(10, max(5.0, n * 0.65 + 1.2)), dpi=150)
+    fig, ax = plt.subplots(figsize=(max(9.0, n * 1.15), 5.5), dpi=150)
     fig.patch.set_facecolor('#FFFFFF')
     ax.set_facecolor('#FFFFFF')
 
-    y = np.arange(n)
-    h = 0.38  # Spessore delle barre (più sottili ed eleganti)
+    x = np.arange(n)
+    bar_w = 0.52
 
-    # 1. Disegna l'area normativa (fascia ottimale 12-18) con una sfumatura traslucida
-    ax.axvspan(12, 18, color='#E2F5E9', alpha=0.5, label='Fascia Ottimale (12–18)', zorder=1)
-    ax.axvline(12, color='#10B981', linewidth=1.0, linestyle=':', alpha=0.5, zorder=1)
+    for idx in range(n):
+        color = THEME_COLORS[idx % len(THEME_COLORS)]
+        score = scores[idx]
 
-    for idx, (y_val, score, label) in enumerate(zip(y, scores, labels)):
-        # Palette del dominio
-        start_color, end_color = THEME_COLORS[idx % len(THEME_COLORS)]
-        
-        # 2. Disegna la barra di sfondo (Track)
-        track_rect = patches.FancyBboxPatch(
-            (0, y_val - h/2), score_max, h,
-            boxstyle="round,pad=0,rounding_size=0.1",
-            facecolor='#F1F5F9', edgecolor='none',
-            zorder=2
+        # 1. Barra di sfondo ghost (track)
+        ax.bar(
+            x[idx], score_max,
+            width=bar_w,
+            color=color,
+            alpha=0.10,
+            zorder=2,
         )
-        ax.add_patch(track_rect)
-        
-        # 3. Disegna la barra di progresso colorata con sfumatura
-        cmap = mcolors.LinearSegmentedColormap.from_list("grad", [start_color, end_color])
-        steps = 100
-        prog_rect = patches.FancyBboxPatch(
-            (0, y_val - h/2), score, h,
-            boxstyle="round,pad=0,rounding_size=0.1",
-            facecolor=end_color, edgecolor='none',
-            zorder=3
-        )
-        ax.add_patch(prog_rect)
-        
-        for i in range(steps):
-            x1 = (i / steps) * score
-            x2 = ((i + 1) / steps) * score
-            rect_w = x2 - x1
-            if rect_w <= 0:
-                continue
-            if i == steps - 1:
-                p = patches.FancyBboxPatch(
-                    (x1, y_val - h/2), rect_w, h,
-                    boxstyle="round,pad=0,rounding_size=0.1",
-                    facecolor=cmap(i / steps), edgecolor='none',
-                    zorder=3
-                )
-            else:
-                p = patches.Rectangle(
-                    (x1, y_val - h/2), rect_w, h,
-                    color=cmap(i / steps), edgecolor='none',
-                    zorder=3
-                )
-            ax.add_patch(p)
 
-        # 4. Disegna il badge del punteggio (un pill-box arrotondato a destra della barra di sfondo)
+        # 2. Barra colorata principale
+        ax.bar(
+            x[idx], score,
+            width=bar_w,
+            color=color,
+            alpha=1.0,
+            zorder=3,
+            linewidth=0,
+        )
+
+        # 3. Badge numerico sopra la barra
         ax.text(
-            score_max + 0.6, 
-            y_val, 
-            f" {score} ", 
-            va='center', 
-            ha='center', 
-            fontsize=9.5,
-            fontweight='bold', 
-            color='#FFFFFF',
-            bbox=dict(boxstyle='round,pad=0.3,rounding_size=0.3', facecolor=end_color, edgecolor='none'),
-            zorder=4
+            x[idx], score + 0.35,
+            str(score),
+            ha='center', va='bottom',
+            fontsize=10, fontweight='bold',
+            color=color,
+            zorder=4,
         )
 
-    ax.set_yticks(y)
-    ax.set_yticklabels(labels, fontsize=9.5, color='#334155', fontweight='bold')
-    ax.set_xlabel('Punteggio', fontsize=9.5, color='#64748B', fontweight='bold', labelpad=8)
-    ax.set_xlim(-0.5, score_max + 2.0)
-    ax.set_ylim(-0.7, n - 0.3)
-    ax.invert_yaxis()
-    
-    # Rimuovi tutte le spine esterne
+    # Assi e griglia
+    ax.set_xlim(-0.6, n - 0.4)
+    ax.set_ylim(0, score_max + 2.0)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, fontsize=8.5, color='#334155', fontweight='bold',
+                       ha='center', va='top', multialignment='center')
+    ax.set_yticks(range(0, score_max + 1, 3))
+    ax.tick_params(axis='y', colors='#94A3B8', labelsize=9)
+    ax.tick_params(axis='x', bottom=False)
+
+    # Griglia orizzontale discreta
+    ax.yaxis.grid(True, color='#E2E8F0', linestyle='-', linewidth=0.8, zorder=1)
+    ax.xaxis.grid(False)
+
+    # Rimuovi spine
     for spine in ax.spines.values():
         spine.set_visible(False)
 
-    # Griglia verticale
-    ax.xaxis.grid(True, color='#E2E8F0', linestyle='-', linewidth=0.8, zorder=0)
-    ax.yaxis.grid(False)
-    ax.tick_params(bottom=False, left=False, colors='#64748B')
-
     ax.set_title('Diagramma Domini scala POS', fontsize=12,
-                 fontweight='bold', color='#0F172A', pad=18)
-    
-    ax.legend(loc='lower left', frameon=False, fontsize=8.5)
+                 fontweight='bold', color='#0F172A', pad=16)
 
     plt.tight_layout()
     buf = io.BytesIO()
@@ -427,6 +394,7 @@ def _make_bar_chart(domains: List[dict], score_min: int = 6, score_max: int = 18
     plt.close(fig)
     buf.seek(0)
     return buf
+
 
 
 
