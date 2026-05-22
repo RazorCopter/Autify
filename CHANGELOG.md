@@ -2,6 +2,13 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.3.4] - 2026-05-22
+
+### Risolto
+- **Analisi Utente - Etichetta San Martín**: La colonna San Martín mostrava erroneamente "POS" come titolo. La funzione di rilevamento `_isSanMartinScale` ora controlla sia l'ID che il nome della scala (con normalizzazione accenti/spazi/trattini).
+- **Analisi Utente - Grafici sovrapposti**: Il grafico a barre POS aveva `maxY` hardcoded a 20, causando barre schiaccianti per punteggi superiori. Ora il valore massimo dell'asse Y è calcolato dinamicamente dai dati reali (+10% di margine).
+- **Analisi Utente - Radar Chart San Martín mancante**: Poiché il rilevamento San Martín falliva, il radar chart non veniva mai renderizzato. Con la correzione dell'identificazione, il grafo radar appare correttamente nella colonna San Martín.
+
 ## [2.3.3] - 2026-05-22
 
 ### Risolto

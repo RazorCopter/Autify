@@ -90,8 +90,13 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     setState(() => _isLoading = false);
   }
 
-  bool _isSanMartinScale(String scaleId) {
-    return scaleId.toLowerCase().replaceAll(' ', '').replaceAll('-', '').contains('sanmartin');
+  bool _isSanMartinScale(String scaleId, [String? scaleName]) {
+    final normalizedId = scaleId.toLowerCase().replaceAll(' ', '').replaceAll('-', '').replaceAll('_', '');
+    final normalizedName = (scaleName ?? '').toLowerCase().replaceAll(' ', '').replaceAll('-', '').replaceAll('_', '');
+    return normalizedId.contains('sanmartin') ||
+        normalizedId.contains('martin') ||
+        normalizedName.contains('sanmartin') ||
+        normalizedName.contains('martin');
   }
 
   Future<void> _runAiAnalysis() async {
@@ -328,7 +333,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   Widget _buildScalePanel(ScaleModel scale) {
     final eval = _latestEvaluations[scale.id]!;
     final analysis = _analyses[scale.id];
-    final isSM = _isSanMartinScale(scale.id);
+    final isSM = _isSanMartinScale(scale.id, scale.nome);
     final accentGradient = isSM
         ? const [Color(0xFF1A237E), Color(0xFF3949AB)]
         : const [Color(0xFF0D47A1), Color(0xFF42A5F5)];
@@ -719,10 +724,22 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   Widget _buildBarChartForPanel(List<DomainScore> domini) {
     if (domini.isEmpty) return const SizedBox();
 
+    // Calcola il maxY dinamico basato sui dati reali
+    double dynamicMaxY = 0;
+    for (final d in domini) {
+      final maxScore = d.numDomande * 3;
+      final score = d.punteggio.toDouble();
+      if (maxScore > dynamicMaxY) dynamicMaxY = maxScore.toDouble();
+      if (score > dynamicMaxY) dynamicMaxY = score.toDouble();
+    }
+    if (dynamicMaxY <= 0) dynamicMaxY = 20;
+    // Aggiungi un margine del 10% per estetica
+    dynamicMaxY = (dynamicMaxY * 1.1).ceilToDouble();
+
     return BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
-        maxY: 20,
+        maxY: dynamicMaxY,
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
             getTooltipItem: (group, gIdx, rod, rIdx) {
