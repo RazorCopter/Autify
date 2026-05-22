@@ -2,6 +2,11 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.3.3] - 2026-05-22
+
+### Risolto
+- **Allineamento versione UI**: Aggiornata la costante hardcoded `kFrontendVersion` e i file di configurazione (`routes.py`, `pubspec.yaml`) per allineare la versione mostrata in basso a sinistra della dashboard e nei dump del database alla release corretta `2.3.3`.
+
 ## [2.3.2] - 2026-05-22
 
 ### Risolto
