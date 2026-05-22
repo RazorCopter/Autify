@@ -2,6 +2,23 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.6.2] - 2026-05-22
+
+### Aggiunto
+- **Gestione Dinamica e Reattiva della Validità delle Scale**: Implementato un sistema client-side reattivo completo per regolare i parametri di scadenza delle scale di valutazione (POS e San Martín).
+  - Aggiunta una sezione "Parametri di Validità Scale" nelle Impostazioni con tre Slider per regolare:
+    - Mesi di validità per la scala POS (1-24 mesi).
+    - Mesi di validità per la scala San Martín (1-24 mesi).
+    - Giorni di preavviso per l'alert di scadenza (0-60 giorni).
+  - Persistenza locale dei parametri tramite `shared_preferences`.
+  - Propagazione globale e in tempo reale dello stato reattivo tramite il pacchetto `provider` (`SettingsNotifier`).
+  - Aggiornamento dinamico istantaneo degli indicatori di stato ("POS", "SM") nella lista utenti (`anagrafica_screen.dart`), ricalcolati in base alle nuove soglie tramite la classe helper `ValidityCalculator`.
+  - Tooltip informativi arricchiti con il dettaglio dei mesi di validità attuali per una trasparenza ottimale.
+- **Miglioramento dell'Usabilità**: Avvolta la schermata Impostazioni in un contenitore a scorrimento verticale (`SingleChildScrollView`) per prevenire overflow dell'interfaccia su schermi con risoluzione verticale ridotta.
+
+### Modificato
+- **Allineamento Versioni**: Incrementata la versione dell'intera suite a `2.6.2` in `app_version.dart`, in entrambi i file `pubspec.yaml` (admin e client), ed esportata nei metadati dei backup del database in `routes.py`.
+
 ## [2.6.1] - 2026-05-22
 
 ### Aggiunto

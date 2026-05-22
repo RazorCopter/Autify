@@ -3,6 +3,8 @@ import 'dart:html' as html;
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:provider/provider.dart';
+import '../services/settings_notifier.dart';
 import '../services/api_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -128,7 +130,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(32.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,6 +236,76 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           
           const SizedBox(height: 24),
+
+          // Sezione Parametri di Validità Scale (Gestione reattiva)
+          Consumer<SettingsNotifier>(
+            builder: (context, notifier, child) {
+              final settings = notifier.settings;
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Parametri di Validità Scale',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Configura la validità temporale delle valutazioni e la soglia di preavviso per gli indicatori di scadenza.',
+                        style: TextStyle(color: Color(0xFF718096)),
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Validità POS Slider
+                      _buildSliderRow(
+                        title: 'Validità Scala POS',
+                        value: settings.validityMonthsPOS.toDouble(),
+                        min: 1,
+                        max: 24,
+                        unit: 'mesi',
+                        icon: Icons.calendar_month_outlined,
+                        onChanged: (val) {
+                          notifier.updateSettings(validityMonthsPOS: val.toInt());
+                        },
+                      ),
+                      const Divider(height: 32, color: Color(0xFFE8EEF8)),
+                      
+                      // Validità San Martín Slider
+                      _buildSliderRow(
+                        title: 'Validità Scala San Martín',
+                        value: settings.validityMonthsSanMartin.toDouble(),
+                        min: 1,
+                        max: 24,
+                        unit: 'mesi',
+                        icon: Icons.edit_calendar_outlined,
+                        onChanged: (val) {
+                          notifier.updateSettings(validityMonthsSanMartin: val.toInt());
+                        },
+                      ),
+                      const Divider(height: 32, color: Color(0xFFE8EEF8)),
+                      
+                      // Preavviso Alert Slider
+                      _buildSliderRow(
+                        title: 'Preavviso Alert di Scadenza',
+                        value: settings.alertThresholdDays.toDouble(),
+                        min: 0,
+                        max: 60,
+                        unit: 'giorni',
+                        icon: Icons.notification_important_outlined,
+                        onChanged: (val) {
+                          notifier.updateSettings(alertThresholdDays: val.toInt());
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          
+          const SizedBox(height: 24),
           
           // Sezione Database
           Card(
@@ -287,6 +359,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSliderRow({
+    required String title,
+    required double value,
+    required double min,
+    required double max,
+    required String unit,
+    required IconData icon,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF64B5F6).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(icon, color: Color(0xFF64B5F6), size: 24),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          flex: 2,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Valore attuale: ${value.toInt()} $unit',
+                style: const TextStyle(color: Color(0xFF718096), fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 24),
+        Expanded(
+          flex: 3,
+          child: Row(
+            children: [
+              Text('${min.toInt()}', style: const TextStyle(color: Color(0xFF718096), fontSize: 12)),
+              Expanded(
+                child: Slider(
+                  value: value,
+                  min: min,
+                  max: max,
+                  divisions: (max - min).toInt(),
+                  activeColor: const Color(0xFF64B5F6),
+                  inactiveColor: const Color(0xFF64B5F6).withValues(alpha: 0.15),
+                  onChanged: onChanged,
+                ),
+              ),
+              Text('${max.toInt()}', style: const TextStyle(color: Color(0xFF718096), fontSize: 12)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

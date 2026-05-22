@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/patient_model.dart';
 import '../models/scale_model.dart';
 import '../services/api_service.dart';
+import '../services/settings_notifier.dart';
+import '../services/validity_calculator.dart';
 import '../theme/app_theme.dart';
 import 'multidimensional_dashboard_screen.dart';
 
@@ -358,6 +361,9 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to SettingsNotifier to reactively rebuild when validity settings change
+    context.watch<SettingsNotifier>();
+
     return Stack(
       children: [
         Padding(
@@ -683,24 +689,36 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
       try {
         final date = DateTime.parse(dateStr);
         formattedDate = "${date.day}/${date.month}/${date.year}";
-        final now = DateTime.now();
-        final days = now.difference(date).inDays;
 
-        if (days > 180) {
-          // Scaduta: Rossa
-          badgeColor = AppTheme.errorColor.withValues(alpha: 0.12);
-          textColor = AppTheme.errorColor;
-          status = "Scaduta (compilata il $formattedDate)";
-        } else if (days > 150) {
-          // Prossima alla scadenza: Arancio
-          badgeColor = AppTheme.secondaryColor.withValues(alpha: 0.12);
-          textColor = AppTheme.secondaryColor;
-          status = "Prossima alla scadenza (compilata il $formattedDate)";
-        } else {
-          // Attiva e valida: Verde
-          badgeColor = AppTheme.accentColor.withValues(alpha: 0.12);
-          textColor = AppTheme.accentColor;
-          status = "Attiva (compilata il $formattedDate)";
+        final currentSettings = context.read<SettingsNotifier>().settings;
+        final statusEnum = ValidityCalculator.getStatus(
+          completionDate: date,
+          scaleType: scaleName,
+          currentSettings: currentSettings,
+        );
+
+        final color = ValidityCalculator.getColor(
+          completionDate: date,
+          scaleType: scaleName,
+          currentSettings: currentSettings,
+        );
+
+        badgeColor = color.withValues(alpha: 0.12);
+        textColor = color;
+
+        final isSM = scaleName.toLowerCase().contains('martin') || scaleName.toLowerCase().contains('san');
+        final months = isSM ? currentSettings.validityMonthsSanMartin : currentSettings.validityMonthsPOS;
+
+        switch (statusEnum) {
+          case EvaluationStatus.expired:
+            status = "Scaduta (compilata il $formattedDate - validità: $months mesi)";
+            break;
+          case EvaluationStatus.expiring:
+            status = "Prossima alla scadenza (compilata il $formattedDate - validità: $months mesi)";
+            break;
+          case EvaluationStatus.valid:
+            status = "Attiva (compilata il $formattedDate - validità: $months mesi)";
+            break;
         }
       } catch (_) {
         badgeColor = Colors.grey.shade100;

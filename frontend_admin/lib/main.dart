@@ -1,6 +1,8 @@
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'app_version.dart';
+import 'services/settings_notifier.dart';
 import 'screens/settings_screen.dart';
 import 'screens/protocols_screen.dart';
 import 'screens/anagrafica_screen.dart';
@@ -10,7 +12,12 @@ import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
-  runApp(const AdminApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => SettingsNotifier(),
+      child: const AdminApp(),
+    ),
+  );
 }
 
 class AdminApp extends StatelessWidget {
