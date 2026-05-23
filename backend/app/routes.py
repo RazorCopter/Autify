@@ -13,10 +13,22 @@ import uuid
 import io
 import os
 from pathlib import Path
+from . import auth_manager
+
+class LoginRequest(BaseModel):
+    password: str
+    device_id: Optional[str] = "Sconosciuto"
+
+class AuthConfigUpdate(BaseModel):
+    admin_pwd: Optional[str] = None
+    viewer_pwd: Optional[str] = None
+    viewer_enabled: Optional[bool] = None
 
 async def verify_admin_auth(request: Request, x_admin_password: Optional[str] = Header(None, alias="X-Admin-Password")):
-    admin_pwd = os.getenv("ADMIN_PASSWORD", "tiglio2026")
-    viewer_pwd = os.getenv("VIEWER_PASSWORD", "tiglioviewer")
+    config = auth_manager.get_auth_config()
+    admin_pwd = config.get("admin_pwd", "tiglio2026")
+    viewer_pwd = config.get("viewer_pwd", "tiglioviewer")
+    viewer_enabled = config.get("viewer_enabled", True)
     
     if not x_admin_password:
         raise HTTPException(status_code=401, detail="Non autorizzato")
@@ -25,13 +37,21 @@ async def verify_admin_auth(request: Request, x_admin_password: Optional[str] = 
     if x_admin_password == admin_pwd:
         role = "admin"
     elif x_admin_password == viewer_pwd:
+        if not viewer_enabled:
+            raise HTTPException(status_code=403, detail="L'accesso Viewer è stato disabilitato.")
         role = "viewer"
         
     if not role:
-        raise HTTPException(status_code=401, detail="Non autorizzato")
+        raise HTTPException(status_code=401, detail="Credenziali non valide")
         
     # Blocca le modifiche di stato per il ruolo Viewer
-    if role == "viewer" and request.method not in ("GET", "HEAD"):
+    if role == "viewer" and request.method not in ("GET", "HEAD", "POST"):
+        # Permettiamo POST solo per login o azioni di sola lettura come i PDF, le blocchiamo in base all'endpoint se necessario, ma i default bloccano le modifiche.
+        # Eccezione specifica per POST /api/admin/evaluations/ai-analysis-pdf e simili. 
+        # Mantengo il controllo originale, ma includo POST se necessario (attualmente AI PDF usa POST).
+        pass
+
+    if role == "viewer" and request.method not in ("GET", "HEAD") and request.url.path != "/api/admin/evaluations/ai-analysis-pdf" and request.url.path != "/api/admin/auth/login":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, 
             detail="Azione non consentita per il profilo Viewer (sola lettura)"
@@ -40,6 +60,7 @@ async def verify_admin_auth(request: Request, x_admin_password: Optional[str] = 
     return role
 
 admin_router = APIRouter(dependencies=[Depends(verify_admin_auth)])
+public_admin_router = APIRouter()
 client_router = APIRouter()
 
 
@@ -161,6 +182,58 @@ def _hydrate_scale_doc(scale_doc: Optional[dict]) -> dict:
 # ==========================================
 # ADMIN ROUTER (/api/admin)
 # ==========================================
+
+@public_admin_router.post("/auth/login", tags=["Admin - Auth"])
+async def auth_login(payload: LoginRequest, request: Request):
+    """
+    Endpoint pubblico per verificare la password, restituire il ruolo e, 
+    se si tratta di account viewer, loggare la connessione.
+    (Non necessita di verify_admin_auth perché serve per ottenere l'accesso)
+    """
+    config = auth_manager.get_auth_config()
+    admin_pwd = config.get("admin_pwd", "tiglio2026")
+    viewer_pwd = config.get("viewer_pwd", "tiglioviewer")
+    viewer_enabled = config.get("viewer_enabled", True)
+    
+    if payload.password == admin_pwd:
+        return {"role": "admin"}
+    elif payload.password == viewer_pwd:
+        if not viewer_enabled:
+            raise HTTPException(status_code=403, detail="L'accesso Viewer è stato disabilitato.")
+        
+        # Log viewer connection
+        client_ip = request.client.host if request.client else "Sconosciuto"
+        
+        # Prova a prendere l'IP da X-Forwarded-For se dietro proxy Nginx
+        x_forwarded_for = request.headers.get("X-Forwarded-For")
+        if x_forwarded_for:
+            client_ip = x_forwarded_for.split(",")[0].strip()
+            
+        auth_manager.log_viewer_connection(ip_address=client_ip, device_name=payload.device_id)
+        
+        return {"role": "viewer"}
+    
+    raise HTTPException(status_code=401, detail="Credenziali non valide")
+
+@admin_router.get("/auth/config", tags=["Admin - Auth"])
+async def get_auth_config(role: str = Depends(verify_admin_auth)):
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="Solo l'admin può leggere la configurazione di sicurezza")
+    return auth_manager.get_auth_config()
+
+@admin_router.put("/auth/config", tags=["Admin - Auth"])
+async def update_auth_config(payload: AuthConfigUpdate, role: str = Depends(verify_admin_auth)):
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="Solo l'admin può modificare la configurazione di sicurezza")
+    updated = auth_manager.update_auth_config(payload.model_dump(exclude_unset=True))
+    return updated
+
+@admin_router.get("/auth/logs", tags=["Admin - Auth"])
+async def get_viewer_logs(role: str = Depends(verify_admin_auth)):
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="Solo l'admin può leggere i log di connessione")
+    return auth_manager.get_viewer_logs()
+
 
 @admin_router.get("/patients", response_model=List[Patient], tags=["Admin - Patients"])
 async def get_patients():

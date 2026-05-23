@@ -1225,7 +1225,7 @@ def generate_ai_analysis_pdf(patient: dict, report: str) -> bytes:
     nome = patient.get("nome", "")
     cognome = patient.get("cognome", "")
     cf = patient.get("codiceFiscale", "N/D")
-    story.append(Paragraph(f"<b>Paziente:</b> {nome} {cognome} ({cf})", styles['PatientInfo']))
+    story.append(Paragraph(f"<b>Utente:</b> {nome} {cognome} ({cf})", styles['PatientInfo']))
     data_str = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M")
     story.append(Paragraph(f"<b>Data Generazione:</b> {data_str}", styles['PatientInfo']))
     story.append(HRFlowable(width="100%", thickness=1, color=BORDER, spaceBefore=10, spaceAfter=20))

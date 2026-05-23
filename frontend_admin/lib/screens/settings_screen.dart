@@ -18,6 +18,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final ApiService _apiService = ApiService();
   final TextEditingController _apiKeyController = TextEditingController();
   
+  // Auth Config
+  final TextEditingController _adminPwdController = TextEditingController();
+  final TextEditingController _viewerPwdController = TextEditingController();
+  bool _viewerEnabled = true;
+  bool _isAuthConfigLoading = false;
+
   bool _isLoading = false;
   bool _isExporting = false;
   bool _isImporting = false;
@@ -28,6 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadSettings();
+    _loadAuthConfig();
   }
 
   String _selectedModel = 'gemini-1.5-pro';
@@ -47,6 +54,94 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _selectedModel = 'gemini-1.5-pro';
       }
     });
+  }
+
+  Future<void> _loadAuthConfig() async {
+    if (ApiService.isViewer) return;
+    setState(() => _isAuthConfigLoading = true);
+    final config = await _apiService.getAuthConfig();
+    setState(() {
+      _isAuthConfigLoading = false;
+      if (config != null) {
+        _adminPwdController.text = config['admin_pwd'] ?? '';
+        _viewerPwdController.text = config['viewer_pwd'] ?? '';
+        _viewerEnabled = config['viewer_enabled'] ?? true;
+      }
+    });
+  }
+
+  Future<void> _saveAuthConfig() async {
+    if (ApiService.isViewer) return;
+    setState(() => _isAuthConfigLoading = true);
+    final success = await _apiService.updateAuthConfig({
+      'admin_pwd': _adminPwdController.text,
+      'viewer_pwd': _viewerPwdController.text,
+      'viewer_enabled': _viewerEnabled,
+    });
+    setState(() => _isAuthConfigLoading = false);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(success ? 'Configurazione Sicurezza salvata!' : 'Errore nel salvataggio')),
+      );
+      // Aggiorna password salvata se l'admin ha cambiato la propria
+      if (success) {
+         try {
+           html.window.localStorage['auth_password'] = _adminPwdController.text;
+         } catch (_) {}
+      }
+    }
+  }
+
+  Future<void> _showViewerLogsDialog() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+    final logs = await _apiService.getViewerLogs();
+    if (mounted) Navigator.pop(context);
+
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Registro Accessi Viewer', style: TextStyle(fontWeight: FontWeight.bold)),
+            content: SizedBox(
+              width: 800,
+              height: 500,
+              child: logs.isEmpty
+                  ? const Center(child: Text('Nessun accesso registrato.'))
+                  : SingleChildScrollView(
+                      child: DataTable(
+                        headingRowColor: WidgetStateProperty.all(const Color(0xFFE8EEF8)),
+                        columns: const [
+                          DataColumn(label: Text('Data e Ora', style: TextStyle(fontWeight: FontWeight.bold))),
+                          DataColumn(label: Text('Indirizzo IP', style: TextStyle(fontWeight: FontWeight.bold))),
+                          DataColumn(label: Text('Dispositivo/PC', style: TextStyle(fontWeight: FontWeight.bold))),
+                        ],
+                        rows: logs.map<DataRow>((log) {
+                          DateTime dt = DateTime.tryParse(log['timestamp'] ?? '') ?? DateTime.now();
+                          String formattedDate = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+                          return DataRow(cells: [
+                            DataCell(Text(formattedDate)),
+                            DataCell(Text(log['ip_address'] ?? 'N/A')),
+                            DataCell(Text(log['device_name'] ?? 'N/A')),
+                          ]);
+                        }).toList(),
+                      ),
+                    ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Chiudi'),
+              ),
+            ],
+          );
+        },
+      );
+    }
   }
 
   Future<void> _pickAndUploadJSON() async {
@@ -144,6 +239,95 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           const Text('Impostazioni di Sistema', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
           const SizedBox(height: 32),
+          
+          // Sezione Sicurezza e Accessi
+          if (!ApiService.isViewer) ...[
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Gestione Accessi e Sicurezza', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        ElevatedButton.icon(
+                          onPressed: _showViewerLogsDialog,
+                          icon: const Icon(Icons.list_alt_rounded),
+                          label: const Text('Registro Accessi Viewer'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE8EEF8),
+                            foregroundColor: Colors.black87,
+                            elevation: 0,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('Gestisci le credenziali di accesso per l\'Admin e per i Viewer.'),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _adminPwdController,
+                            decoration: const InputDecoration(
+                              labelText: 'Password Admin',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.admin_panel_settings),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextField(
+                            controller: _viewerPwdController,
+                            decoration: const InputDecoration(
+                              labelText: 'Password Viewer',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.visibility),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Switch(
+                          value: _viewerEnabled,
+                          onChanged: (val) {
+                            setState(() {
+                              _viewerEnabled = val;
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _viewerEnabled ? 'Accesso Viewer Abilitato' : 'Accesso Viewer Disabilitato',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: _viewerEnabled ? Colors.green[700] : Colors.red[700],
+                          ),
+                        ),
+                        const Spacer(),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(minimumSize: const Size(0, 56)),
+                          onPressed: _isAuthConfigLoading ? null : _saveAuthConfig,
+                          icon: _isAuthConfigLoading 
+                              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Icon(Icons.save),
+                          label: const Text('Salva Configurazione'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
           
           // Sezione Protocolli
           Card(

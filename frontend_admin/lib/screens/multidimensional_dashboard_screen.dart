@@ -1813,7 +1813,7 @@ class _AntigravityParticleLoaderState extends State<_AntigravityParticleLoader> 
       'Inizializzazione modulo psicometrico...',
       'Elaborazione correlazioni POS e San Martín...',
       'Definizione del profilo multidimensionale...',
-      'Generazione raccomandazioni cliniche ed educative...',
+      'Generazione raccomandazioni psico-educative...',
       'Stesura del referto di sintesi tramite IA...',
     ];
 

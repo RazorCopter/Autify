@@ -15,7 +15,7 @@ class ApiService {
         return stored;
       }
     } catch (_) {}
-    return cfg.kAdminPassword;
+    return ''; // Do not fallback to hardcoded
   }
 
   static bool get isViewer {
@@ -30,6 +30,77 @@ class ApiService {
   // potremmo aver bisogno dell'url completo se non passiamo da Nginx.
   // Assumiamo che in produzione sia /api/admin.
   static const String baseUrl = 'https://aut.ghome.it/api/admin';
+  
+  // --- AUTHENTICATION ---
+  
+  Future<Map<String, dynamic>?> login(String password, String deviceId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'password': password,
+          'device_id': deviceId,
+        }),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      print('Errore login: $e');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getAuthConfig() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/auth/config'),
+        headers: {'X-Admin-Password': kAdminPassword},
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      print('Errore caricamento auth config: $e');
+      return null;
+    }
+  }
+
+  Future<bool> updateAuthConfig(Map<String, dynamic> newConfig) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/auth/config'),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Password': kAdminPassword,
+        },
+        body: jsonEncode(newConfig),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Errore aggiornamento auth config: $e');
+      return false;
+    }
+  }
+
+  Future<List<dynamic>> getViewerLogs() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/auth/logs'),
+        headers: {'X-Admin-Password': kAdminPassword},
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return [];
+    } catch (e) {
+      print('Errore caricamento viewer logs: $e');
+      return [];
+    }
+  }
 
   Future<bool> uploadProtocolJSON(PlatformFile file) async {
     try {

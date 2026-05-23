@@ -1,6 +1,6 @@
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
-import '../config.dart';
+import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../main.dart';
 
@@ -13,20 +13,27 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
+  final ApiService _apiService = ApiService();
   bool _obscurePassword = true;
+  bool _isLoading = false;
   String? _errorMessage;
   bool _isShaking = false;
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     final enteredPassword = _passwordController.text;
-    String? role;
-    if (enteredPassword == kAdminPassword) {
-      role = 'admin';
-    } else if (enteredPassword == kViewerPassword) {
-      role = 'viewer';
-    }
+    if (enteredPassword.isEmpty) return;
 
-    if (role != null) {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final deviceId = html.window.navigator.userAgent;
+    final result = await _apiService.login(enteredPassword, deviceId);
+
+    if (result != null && result['role'] != null) {
+      final role = result['role'];
+      
       // Salva lo stato in localStorage
       try {
         html.window.localStorage['admin_authenticated'] = 'true';
@@ -34,24 +41,29 @@ class _LoginScreenState extends State<LoginScreen> {
         html.window.localStorage['auth_password'] = enteredPassword;
       } catch (_) {}
 
-      // Naviga alla Dashboard pulendo lo stack
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const AdminDashboard()),
-        (route) => false,
-      );
+      if (mounted) {
+        // Naviga alla Dashboard pulendo lo stack
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminDashboard()),
+          (route) => false,
+        );
+      }
     } else {
-      setState(() {
-        _errorMessage = 'Password errata. Riprova.';
-        _isShaking = true;
-      });
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          setState(() {
-            _isShaking = false;
-          });
-        }
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Credenziali non valide o accesso disabilitato.';
+          _isShaking = true;
+          _isLoading = false;
+        });
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            setState(() {
+              _isShaking = false;
+            });
+          }
+        });
+      }
     }
   }
 
@@ -226,18 +238,20 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           elevation: 0,
                         ),
-                        onPressed: _handleLogin,
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Accedi',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                        onPressed: _isLoading ? null : _handleLogin,
+                        child: _isLoading
+                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Accedi',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                                ),
+                                SizedBox(width: 8),
+                                Icon(Icons.arrow_forward_rounded, size: 18),
+                              ],
                             ),
-                            SizedBox(width: 8),
-                            Icon(Icons.arrow_forward_rounded, size: 18),
-                          ],
-                        ),
                       ),
                     ),
                   ],
