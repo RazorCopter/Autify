@@ -1504,6 +1504,13 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               ),
             ),
 
+          if (_isAnalyzing)
+            const Expanded(
+              child: Center(
+                child: _AntigravityParticleLoader(),
+              ),
+            ),
+
           if (_aiReport == null && _aiError == null && !_isAnalyzing)
             Expanded(
               child: Center(
@@ -1606,5 +1613,240 @@ class _RadarLabelsPainter extends CustomPainter {
   bool shouldRepaint(covariant _RadarLabelsPainter oldDelegate) {
     return oldDelegate.axisCount != axisCount ||
         oldDelegate.patientValues != patientValues;
+  }
+}
+
+class _AntigravityParticleLoader extends StatefulWidget {
+  const _AntigravityParticleLoader();
+
+  @override
+  State<_AntigravityParticleLoader> createState() => _AntigravityParticleLoaderState();
+}
+
+class _AntigravityParticleLoaderState extends State<_AntigravityParticleLoader> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final List<_LoadingParticle> _particles = [];
+  final math.Random _random = math.Random();
+  
+  int _textIndex = 0;
+  late final List<String> _loadingTexts;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadingTexts = [
+      'Inizializzazione modulo psicometrico...',
+      'Elaborazione correlazioni POS e San Martín...',
+      'Definizione del profilo multidimensionale...',
+      'Generazione raccomandazioni cliniche ed educative...',
+      'Stesura del referto di sintesi tramite IA...',
+    ];
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat();
+
+    // Inizializza 40 particelle
+    for (int i = 0; i < 40; i++) {
+      _particles.add(_LoadingParticle(
+        x: _random.nextDouble() * 320,
+        y: _random.nextDouble() * 240,
+        vx: (_random.nextDouble() - 0.5) * 0.4,
+        vy: -(_random.nextDouble() * 0.8 + 0.3), // Sempre verso l'alto (antigravità)
+        radius: _random.nextDouble() * 2.5 + 1.2,
+        opacity: _random.nextDouble() * 0.6 + 0.2,
+        color: _getRandomColor(),
+      ));
+    }
+
+    // Cambia il testo ciclicamente ogni 2.5 secondi
+    _cycleTexts();
+  }
+
+  void _cycleTexts() async {
+    while (mounted) {
+      await Future.delayed(const Duration(milliseconds: 2500));
+      if (mounted) {
+        setState(() {
+          _textIndex = (_textIndex + 1) % _loadingTexts.length;
+        });
+      }
+    }
+  }
+
+  Color _getRandomColor() {
+    final colors = [
+      const Color(0xFF8B5CF6), // Viola
+      const Color(0xFF6366F1), // Indaco
+      const Color(0xFF06B6D4), // Ciano
+      const Color(0xFFF59E0B), // Ambra
+    ];
+    return colors[_random.nextInt(colors.length)];
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 320,
+          height: 240,
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return CustomPaint(
+                painter: _AntigravityLoaderPainter(
+                  particles: _particles,
+                  animationValue: _controller.value,
+                  random: _random,
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 24),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 600),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0.0, 0.2),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: Text(
+            _loadingTexts[_textIndex],
+            key: ValueKey<String>(_loadingTexts[_textIndex]),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryColor,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LoadingParticle {
+  double x;
+  double y;
+  double vx;
+  double vy;
+  double radius;
+  double opacity;
+  final Color color;
+
+  _LoadingParticle({
+    required this.x,
+    required this.y,
+    required this.vx,
+    required this.vy,
+    required this.radius,
+    required this.opacity,
+    required this.color,
+  });
+}
+
+class _AntigravityLoaderPainter extends CustomPainter {
+  final List<_LoadingParticle> particles;
+  final double animationValue;
+  final math.Random random;
+
+  _AntigravityLoaderPainter({
+    required this.particles,
+    required this.animationValue,
+    required this.random,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    
+    // Aggiorna posizioni particelle
+    for (final p in particles) {
+      p.y += p.vy;
+      p.x += p.vx + math.sin(animationValue * 2 * math.pi + p.y * 0.04) * 0.15;
+
+      // Reset se esce sopra o lateralmente
+      if (p.y < 0) {
+        p.y = size.height;
+        p.x = random.nextDouble() * size.width;
+      }
+      if (p.x < 0) p.x = size.width;
+      if (p.x > size.width) p.x = 0;
+    }
+
+    // 1. Disegna il Glow centrale (Nebula ad impulsi)
+    final double pulse = 0.85 + math.sin(animationValue * 4 * math.pi) * 0.15;
+    
+    final glowPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xFF6366F1).withValues(alpha: 0.22 * pulse),
+          const Color(0xFF8B5CF6).withValues(alpha: 0.08 * pulse),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: 100.0));
+    canvas.drawCircle(center, 100.0, glowPaint);
+
+    final corePaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          Colors.white.withValues(alpha: 0.7 * pulse),
+          const Color(0xFF06B6D4).withValues(alpha: 0.25 * pulse),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: 35.0));
+    canvas.drawCircle(center, 35.0, corePaint);
+
+    // 2. Disegna connessioni tra particelle vicine (Costellazione/Rete Neurale)
+    for (int i = 0; i < particles.length; i++) {
+      for (int j = i + 1; j < particles.length; j++) {
+        final p1 = particles[i];
+        final p2 = particles[j];
+        final dx = p1.x - p2.x;
+        final dy = p1.y - p2.y;
+        final dist = math.sqrt(dx * dx + dy * dy);
+
+        if (dist < 45.0) {
+          final double alpha = (1.0 - (dist / 45.0)).clamp(0.0, 1.0) * 0.12;
+          final linePaint = Paint()
+            ..color = const Color(0xFF818CF8).withValues(alpha: alpha)
+            ..strokeWidth = 0.6
+            ..style = PaintingStyle.stroke;
+          canvas.drawLine(Offset(p1.x, p1.y), Offset(p2.x, p2.y), linePaint);
+        }
+      }
+    }
+
+    // 3. Disegna le particelle singole
+    for (final p in particles) {
+      final pPaint = Paint()
+        ..color = p.color.withValues(alpha: p.opacity)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(Offset(p.x, p.y), p.radius, pPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _AntigravityLoaderPainter oldDelegate) {
+    return true; // Continua ad animarsi
   }
 }
