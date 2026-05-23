@@ -1134,35 +1134,20 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 80,
-            child: Scrollbar(
-              thumbVisibility: true,
-              thickness: 4.0,
-              radius: const Radius.circular(8),
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.only(right: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: eval.domini.map((d) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        '${d.codice.toUpperCase()} = ${d.etichetta}: ${d.punteggio}',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 11.5,
-                          fontFamily: 'monospace',
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    );
-                  }).toList(),
+          Wrap(
+            spacing: 18,
+            runSpacing: 8,
+            children: eval.domini.map((d) {
+              return Text(
+                '${d.codice.toUpperCase()} = ${d.etichetta}: ${d.punteggio}',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 11.5,
+                  fontFamily: 'monospace',
+                  fontWeight: FontWeight.w500,
                 ),
-              ),
-            ),
+              );
+            }).toList(),
           ),
         ],
       ),
