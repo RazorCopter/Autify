@@ -18,11 +18,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final ApiService _apiService = ApiService();
   final TextEditingController _apiKeyController = TextEditingController();
   
-  // Auth Config
   final TextEditingController _adminPwdController = TextEditingController();
   final TextEditingController _viewerPwdController = TextEditingController();
   bool _viewerEnabled = true;
   bool _isAuthConfigLoading = false;
+  bool _obscureAdminPwd = true;
+  bool _obscureViewerPwd = true;
 
   bool _isLoading = false;
   bool _isExporting = false;
@@ -272,10 +273,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Expanded(
                           child: TextField(
                             controller: _adminPwdController,
-                            decoration: const InputDecoration(
+                            obscureText: _obscureAdminPwd,
+                            decoration: InputDecoration(
                               labelText: 'Password Admin',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.admin_panel_settings),
+                              border: const OutlineInputBorder(),
+                              prefixIcon: const Icon(Icons.admin_panel_settings),
+                              suffixIcon: IconButton(
+                                icon: Icon(_obscureAdminPwd ? Icons.visibility : Icons.visibility_off),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscureAdminPwd = !_obscureAdminPwd;
+                                  });
+                                },
+                              ),
                             ),
                           ),
                         ),
@@ -283,10 +293,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Expanded(
                           child: TextField(
                             controller: _viewerPwdController,
-                            decoration: const InputDecoration(
+                            obscureText: _obscureViewerPwd,
+                            decoration: InputDecoration(
                               labelText: 'Password Viewer',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.visibility),
+                              border: const OutlineInputBorder(),
+                              prefixIcon: const Icon(Icons.visibility_outlined),
+                              suffixIcon: IconButton(
+                                icon: Icon(_obscureViewerPwd ? Icons.visibility : Icons.visibility_off),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscureViewerPwd = !_obscureViewerPwd;
+                                  });
+                                },
+                              ),
                             ),
                           ),
                         ),
