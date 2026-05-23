@@ -5,7 +5,7 @@ from .routes import admin_router, client_router
 app = FastAPI(
     title="AutAnalysis API",
     description="API per la piattaforma Multi-Frontend (Admin/Client) di Valutazione Clinica.",
-    version="2.8.0"
+    version="2.8.1"
 )
 
 # Configurazione CORS per permettere le chiamate dai frontend (Admin e Client)
