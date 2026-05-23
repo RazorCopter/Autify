@@ -264,12 +264,14 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                         if (constraints.maxWidth > 800 && availableCards.length >= 2) {
                           // Side by side - equal height stretching
                           final cards = availableCards.map((scale) => _buildScalePanel(scale, useExpanded: true)).toList();
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: cards.map((c) => Expanded(child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              child: c,
-                            ))).toList(),
+                          return IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: cards.map((c) => Expanded(child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                child: c,
+                              ))).toList(),
+                            ),
                           );
                         }
                         // Stacked - mobile/narrow screen view
