@@ -4,7 +4,7 @@ from typing import List, Optional
 from bson import ObjectId
 from .models import Scale, Evaluation, Patient, AppSettings, Section, Question, Option, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest
 from .database import evaluations_collection, settings_collection, patients_collection, scales_collection, users_collection
-from .pdf_generator import generate_evaluation_pdf
+from .pdf_generator import generate_evaluation_pdf, generate_ai_analysis_pdf
 from .analytics import compute_psychometric_analysis, compute_direct_scores, build_domain_map
 from datetime import datetime, timezone
 import json
@@ -456,6 +456,19 @@ async def download_evaluation_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+class AiPdfRequest(BaseModel):
+    patient: dict
+    report: str
+
+@admin_router.post("/evaluations/ai-analysis-pdf", tags=["Admin - Evaluations"])
+async def download_ai_analysis_pdf(request: AiPdfRequest):
+    pdf_bytes = generate_ai_analysis_pdf(request.patient, request.report)
+    filename = f"analisi_ai_{request.patient.get('cognome', 'paziente')}.pdf"
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @admin_router.get("/evaluations/{evaluation_id}/analysis", tags=["Admin - Evaluations"])
@@ -578,11 +591,11 @@ async def update_settings(settings: AppSettings):
     return {"message": "Impostazioni salvate con successo"}
 
 @admin_router.get("/settings", response_model=AppSettings, tags=["Admin - Configuration"])
-async def get_settings(raw: bool = False):
+async def get_settings(role: str = Depends(verify_admin_auth)):
     doc = await settings_collection.find_one({"id": "global_settings"})
     if doc:
         settings = AppSettings(**doc)
-        if settings.gemini_api_key and not raw:
+        if settings.gemini_api_key and role == "viewer":
             settings.gemini_api_key = "***-HIDDEN"
         return settings
     return AppSettings()

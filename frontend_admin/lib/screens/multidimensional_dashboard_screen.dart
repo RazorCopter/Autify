@@ -1,3 +1,6 @@
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
+import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -36,6 +39,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   Map<String, PsychometricAnalysis?> _analyses = {};
   String? _aiReport;
   String? _aiError;
+
+  final TextEditingController _aiNotesController = TextEditingController();
+  PlatformFile? _aiAttachment;
+  bool _isExportingPdf = false;
 
   static const List<Color> _domainColors = [
     Color(0xFF60A5FA), Color(0xFFF59E0B), Color(0xFF34D399), Color(0xFFA78BFA),
@@ -131,14 +138,6 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
   Future<void> _runAiAnalysis() async {
     String? realKey = _geminiKey;
-    if (realKey == '***-HIDDEN') {
-      try {
-        final settings = await _apiService.getGeminiSettings(raw: true);
-        realKey = settings['key'];
-      } catch (_) {
-        realKey = null;
-      }
-    }
 
     if (realKey == null || realKey.isEmpty || realKey == '***-HIDDEN') {
       setState(() => _aiError = 'Chiave API Gemini mancante. Configurala in Impostazioni.');
@@ -157,11 +156,21 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     });
 
     try {
+      Map<String, dynamic>? attachmentData;
+      if (_aiAttachment != null && _aiAttachment!.bytes != null) {
+        attachmentData = {
+          'bytes': _aiAttachment!.bytes!,
+          'extension': _aiAttachment!.extension ?? 'txt',
+        };
+      }
+
       final report = await _geminiService.analyzePatientData(
         widget.patient,
         _latestEvaluations.values.toList(),
         realKey,
         _geminiModel,
+        notes: _aiNotesController.text,
+        attachment: attachmentData,
       );
       setState(() {
         _aiReport = report;
@@ -172,6 +181,46 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         _aiError = 'Errore durante l\'analisi: $e';
         _isAnalyzing = false;
       });
+    }
+  }
+
+  Future<void> _pickAiAttachment() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'txt', 'png', 'jpg', 'jpeg'],
+      withData: true,
+    );
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        _aiAttachment = result.files.first;
+      });
+    }
+  }
+
+  Future<void> _exportAiPdf() async {
+    if (_aiReport == null || _isExportingPdf) return;
+    setState(() => _isExportingPdf = true);
+    
+    try {
+      final bytes = await _apiService.downloadAiAnalysisPdf(
+        widget.patient,
+        _aiReport!,
+      );
+
+      if (bytes != null) {
+        final b64 = base64Encode(bytes);
+        final dataUrl = 'data:application/pdf;base64,$b64';
+        html.AnchorElement(href: dataUrl)
+          ..setAttribute(
+              'download', 'analisi_ai_${widget.patient.cognome}.pdf')
+          ..click();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Errore generazione PDF AI')));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore: $e')));
+    } finally {
+      if (mounted) setState(() => _isExportingPdf = false);
     }
   }
 
@@ -284,7 +333,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
                         if (constraints.maxWidth > 800 && availableCards.length >= 2) {
                           // Side by side - equal height stretching
-                          final cards = availableCards.map((scale) => _buildScalePanel(scale, useExpanded: true)).toList();
+                          final cards = availableCards.map((scale) => _buildScalePanel(scale, useExpanded: false)).toList();
                           return IntrinsicHeight(
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1130,11 +1179,11 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     }
 
     final legendWidget = Container(
-      margin: const EdgeInsets.only(top: 14),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
       child: Column(
@@ -1142,30 +1191,30 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         children: [
           const Row(
             children: [
-              Icon(Icons.legend_toggle_outlined, color: Colors.amberAccent, size: 15),
-              SizedBox(width: 8),
+              Icon(Icons.legend_toggle_outlined, color: Colors.amberAccent, size: 14),
+              SizedBox(width: 6),
               Text(
                 'Legenda Domini',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
-                  letterSpacing: 0.3,
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 4),
           Wrap(
-            spacing: 16,
-            runSpacing: 8,
+            spacing: 12,
+            runSpacing: 4,
             children: eval.domini.map((d) {
               return Text(
                 '${d.codice.toUpperCase()} = ${d.etichetta}: ${d.punteggio}',
                 style: const TextStyle(
                   color: Colors.white70,
-                  fontSize: 15.0,
+                  fontSize: 18.0,
                   fontFamily: 'monospace',
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               );
             }).toList(),
@@ -1175,7 +1224,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     );
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF0D47A1), Color(0xFF42A5F5)],
@@ -1453,8 +1502,97 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   label: Text(_isAnalyzing ? 'Analisi in corso...' : 'Analizza con IA',
                     style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
+                if (_aiReport != null) ...[
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple.shade900,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    onPressed: _isExportingPdf ? null : _exportAiPdf,
+                    icon: _isExportingPdf
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.picture_as_pdf),
+                    label: Text(_isExportingPdf ? 'Esportazione...' : 'Esporta PDF',
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ],
               ],
             ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Sezione Note e Allegati
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 2,
+                child: TextField(
+                  controller: _aiNotesController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    labelText: 'Note aggiuntive per l\'IA (opzionale)',
+                    hintText: 'Inserisci osservazioni, contesto familiare o scolastico...',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 1,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppTheme.primaryColor,
+                        side: const BorderSide(color: AppTheme.primaryColor),
+                      ),
+                      onPressed: _isAnalyzing ? null : _pickAiAttachment,
+                      icon: const Icon(Icons.attach_file),
+                      label: const Text('Allega Documento'),
+                    ),
+                    if (_aiAttachment != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.deepPurple.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.deepPurple.shade100),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.file_present, size: 16, color: Colors.deepPurple),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _aiAttachment!.name,
+                                style: const TextStyle(fontSize: 12, color: Colors.deepPurple),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            InkWell(
+                              onTap: () => setState(() => _aiAttachment = null),
+                              child: const Icon(Icons.close, size: 16, color: Colors.deepPurple),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ]
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 24),
 
@@ -1647,15 +1785,16 @@ class _AntigravityParticleLoaderState extends State<_AntigravityParticleLoader> 
       duration: const Duration(seconds: 10),
     )..repeat();
 
-    // Inizializza 40 particelle
-    for (int i = 0; i < 40; i++) {
+    // Inizializza 80 particelle per un effetto più denso e 3D
+    for (int i = 0; i < 80; i++) {
       _particles.add(_LoadingParticle(
         x: _random.nextDouble() * 320,
         y: _random.nextDouble() * 240,
-        vx: (_random.nextDouble() - 0.5) * 0.4,
-        vy: -(_random.nextDouble() * 0.8 + 0.3), // Sempre verso l'alto (antigravità)
-        radius: _random.nextDouble() * 2.5 + 1.2,
-        opacity: _random.nextDouble() * 0.6 + 0.2,
+        z: _random.nextDouble() * 100, // Z per profondità 3D (0-100)
+        vx: (_random.nextDouble() - 0.5) * 0.5,
+        vy: -(_random.nextDouble() * 0.8 + 0.2), // Antigravità
+        vz: (_random.nextDouble() - 0.5) * 0.2,
+        baseRadius: _random.nextDouble() * 2.5 + 1.2,
         color: _getRandomColor(),
       ));
     }
@@ -1747,19 +1886,21 @@ class _AntigravityParticleLoaderState extends State<_AntigravityParticleLoader> 
 class _LoadingParticle {
   double x;
   double y;
+  double z;
   double vx;
   double vy;
-  double radius;
-  double opacity;
+  double vz;
+  final double baseRadius;
   final Color color;
 
   _LoadingParticle({
     required this.x,
     required this.y,
+    required this.z,
     required this.vx,
     required this.vy,
-    required this.radius,
-    required this.opacity,
+    required this.vz,
+    required this.baseRadius,
     required this.color,
   });
 }
@@ -1779,23 +1920,8 @@ class _AntigravityLoaderPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     
-    // Aggiorna posizioni particelle
-    for (final p in particles) {
-      p.y += p.vy;
-      p.x += p.vx + math.sin(animationValue * 2 * math.pi + p.y * 0.04) * 0.15;
-
-      // Reset se esce sopra o lateralmente
-      if (p.y < 0) {
-        p.y = size.height;
-        p.x = random.nextDouble() * size.width;
-      }
-      if (p.x < 0) p.x = size.width;
-      if (p.x > size.width) p.x = 0;
-    }
-
     // 1. Disegna il Glow centrale (Nebula ad impulsi)
     final double pulse = 0.85 + math.sin(animationValue * 4 * math.pi) * 0.15;
-    
     final glowPaint = Paint()
       ..shader = RadialGradient(
         colors: [
@@ -1816,37 +1942,89 @@ class _AntigravityLoaderPainter extends CustomPainter {
       ).createShader(Rect.fromCircle(center: center, radius: 35.0));
     canvas.drawCircle(center, 35.0, corePaint);
 
-    // 2. Disegna connessioni tra particelle vicine (Costellazione/Rete Neurale)
-    for (int i = 0; i < particles.length; i++) {
-      for (int j = i + 1; j < particles.length; j++) {
-        final p1 = particles[i];
-        final p2 = particles[j];
+    // Aggiorna posizioni particelle con dinamica fluida 3D
+    for (final p in particles) {
+      // Movimento asse Z
+      p.z += p.vz;
+      if (p.z > 100) p.z = 0;
+      if (p.z < 0) p.z = 100;
+
+      // Scala e parallasse basati su Z
+      final double zScale = (p.z + 50) / 150; // Più grande = più vicino
+
+      // Fluidità usando multiple onde sinusoidali spaziali e temporali
+      final double time = animationValue * 2 * math.pi;
+      final double fluidX = math.sin(time + p.y * 0.03) * 0.3 + math.cos(time * 0.5 + p.z * 0.05) * 0.2;
+      final double fluidY = math.cos(time + p.x * 0.03) * 0.2;
+
+      p.y += (p.vy + fluidY) * zScale;
+      p.x += (p.vx + fluidX) * zScale;
+
+      // Reset continuo (vortice 3D senza bordi)
+      if (p.y < -20) {
+        p.y = size.height + 20;
+        p.x = random.nextDouble() * size.width;
+      } else if (p.y > size.height + 20) {
+        p.y = -20;
+      }
+      
+      if (p.x < -20) p.x = size.width + 20;
+      if (p.x > size.width + 20) p.x = -20;
+    }
+
+    // Ordina per z per depth sorting (painters algorithm)
+    final List<_LoadingParticle> sortedParticles = List.from(particles);
+    sortedParticles.sort((a, b) => a.z.compareTo(b.z));
+
+    // 2. Disegna connessioni a rete neurale 3D
+    for (int i = 0; i < sortedParticles.length; i++) {
+      for (int j = i + 1; j < sortedParticles.length; j++) {
+        final p1 = sortedParticles[i];
+        final p2 = sortedParticles[j];
+        
+        // Evita connessioni tra piani profondi diversi per realismo 3D
+        if ((p1.z - p2.z).abs() > 30) continue;
+
         final dx = p1.x - p2.x;
         final dy = p1.y - p2.y;
         final dist = math.sqrt(dx * dx + dy * dy);
 
-        if (dist < 45.0) {
-          final double alpha = (1.0 - (dist / 45.0)).clamp(0.0, 1.0) * 0.12;
+        if (dist < 50.0) {
+          final avgZ = (p1.z + p2.z) / 2;
+          final double zAlpha = (avgZ / 100).clamp(0.2, 1.0); // Connessioni lontane sbiadite
+          final double alpha = (1.0 - (dist / 50.0)).clamp(0.0, 1.0) * 0.15 * zAlpha;
+          
           final linePaint = Paint()
             ..color = const Color(0xFF818CF8).withValues(alpha: alpha)
-            ..strokeWidth = 0.6
+            ..strokeWidth = 0.8 * zAlpha
             ..style = PaintingStyle.stroke;
           canvas.drawLine(Offset(p1.x, p1.y), Offset(p2.x, p2.y), linePaint);
         }
       }
     }
 
-    // 3. Disegna le particelle singole
-    for (final p in particles) {
+    // 3. Disegna le particelle 3D
+    for (final p in sortedParticles) {
+      final double zScale = (p.z + 50) / 100;
+      final double projectedRadius = p.baseRadius * zScale;
+      // Fade out particelle lontane
+      final double opacity = (p.z / 100).clamp(0.2, 1.0);
+      
       final pPaint = Paint()
-        ..color = p.color.withValues(alpha: p.opacity)
+        ..color = p.color.withValues(alpha: opacity)
         ..style = PaintingStyle.fill;
-      canvas.drawCircle(Offset(p.x, p.y), p.radius, pPaint);
+        
+      if (zScale > 1.2) {
+        // Effetto bagliore per particelle molto vicine (Depth of field inverso)
+        pPaint.maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0);
+      }
+      
+      canvas.drawCircle(Offset(p.x, p.y), projectedRadius, pPaint);
     }
   }
 
   @override
   bool shouldRepaint(covariant _AntigravityLoaderPainter oldDelegate) {
-    return true; // Continua ad animarsi
+    return true; 
   }
 }

@@ -1169,3 +1169,78 @@ def generate_evaluation_pdf(
 
     doc.build(story)
     return buf.getvalue()
+
+def _parse_markdown_to_flowables(text: str, styles) -> list:
+    flowables = []
+    # Simplified bold replacement
+    def _bold(text: str) -> str:
+        parts = text.split('**')
+        res = ''
+        for i, part in enumerate(parts):
+            res += f'<b>{part}</b>' if i % 2 == 1 else part
+        return res
+
+    for line in text.split('\n'):
+        stripped = line.strip()
+        if not stripped:
+            flowables.append(Spacer(1, 6))
+            continue
+            
+        if stripped.startswith('# '):
+            flowables.append(Paragraph(_bold(stripped[2:]), styles['Heading1']))
+            flowables.append(Spacer(1, 12))
+        elif stripped.startswith('## '):
+            flowables.append(Paragraph(_bold(stripped[3:]), styles['Heading2']))
+            flowables.append(Spacer(1, 8))
+        elif stripped.startswith('### '):
+            flowables.append(Paragraph(_bold(stripped[4:]), styles['Heading3']))
+            flowables.append(Spacer(1, 6))
+        elif stripped.startswith('- ') or stripped.startswith('* '):
+            flowables.append(Paragraph(f'<bullet>•</bullet> {_bold(stripped[2:])}', styles['Normal']))
+        elif stripped[0].isdigit() and stripped[1:].startswith('. '):
+            flowables.append(Paragraph(f'<bullet>{stripped[0]}.</bullet> {_bold(stripped[3:])}', styles['Normal']))
+        else:
+            flowables.append(Paragraph(_bold(stripped), styles['Normal']))
+            flowables.append(Spacer(1, 6))
+    return flowables
+
+def generate_ai_analysis_pdf(patient: dict, report: str) -> bytes:
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4,
+        rightMargin=2*cm, leftMargin=2*cm,
+        topMargin=2*cm, bottomMargin=2*cm
+    )
+    
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=PRIMARY, spaceAfter=20, alignment=TA_CENTER))
+    styles.add(ParagraphStyle('PatientInfo', parent=styles['Normal'], fontSize=10, textColor=MID_GREY, spaceAfter=4))
+    
+    story = []
+    story.append(_make_letterhead(styles))
+    story.append(HRFlowable(width="100%", thickness=1, color=BORDER, spaceBefore=10, spaceAfter=20))
+    
+    story.append(Paragraph("Analisi Multidimensionale AI", styles['CustomTitle']))
+    
+    nome = patient.get("nome", "")
+    cognome = patient.get("cognome", "")
+    cf = patient.get("codiceFiscale", "N/D")
+    story.append(Paragraph(f"<b>Paziente:</b> {nome} {cognome} ({cf})", styles['PatientInfo']))
+    data_str = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M")
+    story.append(Paragraph(f"<b>Data Generazione:</b> {data_str}", styles['PatientInfo']))
+    story.append(HRFlowable(width="100%", thickness=1, color=BORDER, spaceBefore=10, spaceAfter=20))
+    
+    story.extend(_parse_markdown_to_flowables(report, styles))
+    
+    def add_footer(canvas, doc):
+        canvas.saveState()
+        canvas.setFont('Helvetica', 8)
+        canvas.setFillColor(MID_GREY)
+        canvas.drawString(2*cm, 1*cm, f"Generato il {data_str}")
+        canvas.drawRightString(A4[0] - 2*cm, 1*cm, f"Pagina {doc.page}")
+        canvas.restoreState()
+        
+    doc.build(story, onFirstPage=add_footer, onLaterPages=add_footer)
+    pdf_bytes = buffer.getvalue()
+    buffer.close()
+    return pdf_bytes

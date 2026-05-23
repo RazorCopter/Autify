@@ -118,22 +118,22 @@ class ApiService {
     }
   }
 
-  Future<Map<String, String?>> getGeminiSettings({bool raw = false}) async {
+  Future<Map<String, String?>> getGeminiSettings() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/settings?raw=$raw'),
+        Uri.parse('$baseUrl/settings'),
         headers: {'X-Admin-Password': kAdminPassword},
       );
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         return {
           'key': body['gemini_api_key'],
-          'model': body['gemini_model'] ?? 'gemini-2.5-pro',
+          'model': body['gemini_model'] ?? 'gemini-1.5-pro',
         };
       }
-      return {'key': null, 'model': 'gemini-2.5-pro'};
+      return {'key': null, 'model': 'gemini-1.5-pro'};
     } catch (e) {
-      return {'key': null, 'model': 'gemini-2.5-pro'};
+      return {'key': null, 'model': 'gemini-1.5-pro'};
     }
   }
 
@@ -394,6 +394,29 @@ class ApiService {
       return null;
     } catch (e) {
       print('Errore caricamento statistiche dashboard: $e');
+      return null;
+    }
+  }
+
+  Future<List<int>?> downloadAiAnalysisPdf(PatientModel patient, String report) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/evaluations/ai-analysis-pdf'),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Password': kAdminPassword,
+        },
+        body: jsonEncode({
+          'patient': patient.toJson(),
+          'report': report,
+        }),
+      );
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      }
+      return null;
+    } catch (e) {
+      print('Errore download PDF AI: $e');
       return null;
     }
   }

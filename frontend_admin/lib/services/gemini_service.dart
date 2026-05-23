@@ -11,8 +11,10 @@ class GeminiService {
     PatientModel patient,
     List<AggregatedEvaluation> evaluations,
     String apiKey,
-    String modelName,
-  ) async {
+    String modelName, {
+    String? notes,
+    Map<String, dynamic>? attachment, // { "bytes": Uint8List, "extension": "pdf" }
+  }) async {
     final url = Uri.parse('$_baseUrl/$modelName:generateContent?key=$apiKey');
 
     final systemPrompt = '''
@@ -22,7 +24,9 @@ Il tuo compito è analizzare in modo multidimensionale i dati quantitativi e qua
 OBIETTIVO DELL'ANALISI:
 1. Valutare l'andamento generale e il profilo dell'utente (punti di forza e aree di supporto nei vari domini).
 2. Evidenziare correlazioni significative tra le diverse scale somministrate (es. POS, San Martín).
-3. Proporre ipotesi e linee guida per progetti educativi e di supporto customizzati e ritagliati sartorialmente sulle specifiche esigenze dell'utente.
+3. Incrociare tutti i dati forniti, incluse le note aggiuntive e gli eventuali allegati documentali.
+4. Proporre ipotesi e linee guida per progetti educativi e di supporto customizzati e ritagliati sartorialmente sulle specifiche esigenze dell'utente.
+5. Riportare in forma di relazione chiara e coerente quanto emerge dall'incrocio di tutti i dati (scale, note, allegato).
 
 TONO E FORMATTAZIONE:
 - Tono: Professionale, rigoroso, empatico, fortemente orientato all'utilità educativa e di supporto.
@@ -30,6 +34,32 @@ TONO E FORMATTAZIONE:
 ''';
 
     final patientData = _serializePatientData(patient, evaluations);
+    
+    String promptText = "Ecco i dati estratti dalle valutazioni dell'utente:\n\n$patientData\n\n";
+    if (notes != null && notes.trim().isNotEmpty) {
+      promptText += "NOTE AGGIUNTIVE FORNITE DALL'OPERATORE:\n$notes\n\n";
+    }
+    promptText += "Procedi con l'analisi multidimensionale globale incrociando tutti i dati forniti.";
+
+    final parts = <Map<String, dynamic>>[
+      {"text": promptText}
+    ];
+
+    if (attachment != null) {
+      final ext = attachment['extension']?.toString().toLowerCase();
+      String mimeType = 'application/octet-stream';
+      if (ext == 'pdf') mimeType = 'application/pdf';
+      else if (ext == 'txt') mimeType = 'text/plain';
+      else if (ext == 'png') mimeType = 'image/png';
+      else if (ext == 'jpg' || ext == 'jpeg') mimeType = 'image/jpeg';
+      
+      parts.add({
+        "inlineData": {
+          "mimeType": mimeType,
+          "data": base64Encode(attachment['bytes'])
+        }
+      });
+    }
 
     final payload = {
       "system_instruction": {
@@ -39,9 +69,7 @@ TONO E FORMATTAZIONE:
       },
       "contents": [
         {
-          "parts": [
-            {"text": "Ecco i dati estratti dalle valutazioni dell'utente:\n\n$patientData\n\nProcedi con l'analisi multidimensionale globale."}
-          ]
+          "parts": parts
         }
       ]
     };
