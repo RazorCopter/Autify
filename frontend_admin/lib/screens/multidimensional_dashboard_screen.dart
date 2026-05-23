@@ -13,6 +13,8 @@ import '../theme/app_theme.dart';
 import 'evaluation_detail_screen.dart';
 import 'settings_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:typed_data';
 
 class MultidimensionalDashboardScreen extends StatefulWidget {
   final PatientModel patient;
