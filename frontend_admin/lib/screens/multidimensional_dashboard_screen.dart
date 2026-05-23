@@ -1526,75 +1526,110 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           ),
           const SizedBox(height: 16),
           
-          // Sezione Note e Allegati
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 2,
-                child: TextField(
-                  controller: _aiNotesController,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    labelText: 'Note aggiuntive per l\'IA (opzionale)',
-                    hintText: 'Inserisci osservazioni, contesto familiare o scolastico...',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                flex: 1,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+          // Sezione Note e Allegati - Design Premium
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
+              ],
+              border: Border.all(color: Colors.grey.shade100),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        backgroundColor: Colors.white,
-                        foregroundColor: AppTheme.primaryColor,
-                        side: const BorderSide(color: AppTheme.primaryColor),
-                      ),
-                      onPressed: _isAnalyzing ? null : _pickAiAttachment,
-                      icon: const Icon(Icons.attach_file),
-                      label: const Text('Allega Documento'),
-                    ),
-                    if (_aiAttachment != null) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.deepPurple.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.deepPurple.shade100),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.file_present, size: 16, color: Colors.deepPurple),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _aiAttachment!.name,
-                                style: const TextStyle(fontSize: 12, color: Colors.deepPurple),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            InkWell(
-                              onTap: () => setState(() => _aiAttachment = null),
-                              child: const Icon(Icons.close, size: 16, color: Colors.deepPurple),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ]
+                    Icon(Icons.add_circle_outline, color: Colors.deepPurple.shade400, size: 20),
+                    const SizedBox(width: 8),
+                    const Text('Dati Aggiuntivi per l\'IA (Opzionali)',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Note Field
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: _aiNotesController,
+                        maxLines: 4,
+                        decoration: InputDecoration(
+                          hintText: 'Inserisci osservazioni, contesto familiare o scolastico...',
+                          hintStyle: TextStyle(color: Colors.grey.shade400),
+                          filled: true,
+                          fillColor: Colors.grey.shade50,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.all(16),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Attachment Zone
+                    Expanded(
+                      flex: 1,
+                      child: InkWell(
+                        onTap: _isAnalyzing ? null : _pickAiAttachment,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          height: 105, // matches approx height of 4 lines textfield
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: _aiAttachment == null ? Colors.deepPurple.shade50.withOpacity(0.5) : Colors.deepPurple.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _aiAttachment == null ? Colors.deepPurple.shade100 : Colors.deepPurple.shade200,
+                              width: 1,
+                            ),
+                          ),
+                          child: _aiAttachment == null
+                              ? Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.cloud_upload_outlined, color: Colors.deepPurple.shade300, size: 28),
+                                    const SizedBox(height: 8),
+                                    const Text('Allega Documento', style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w600, fontSize: 13)),
+                                    const SizedBox(height: 4),
+                                    Text('PDF, TXT, Immagini', style: TextStyle(color: Colors.deepPurple.shade300, fontSize: 11)),
+                                  ],
+                                )
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.insert_drive_file, color: Colors.deepPurple, size: 24),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      _aiAttachment!.name,
+                                      style: const TextStyle(fontSize: 12, color: Colors.deepPurple, fontWeight: FontWeight.w500),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    InkWell(
+                                      onTap: () => setState(() => _aiAttachment = null),
+                                      child: const Text('Rimuovi', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 24),
 
