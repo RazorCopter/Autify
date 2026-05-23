@@ -8,6 +8,7 @@ from .pdf_generator import generate_evaluation_pdf, generate_ai_analysis_pdf
 from .analytics import compute_psychometric_analysis, compute_direct_scores, build_domain_map
 from datetime import datetime, timezone
 import json
+from pydantic import BaseModel
 import uuid
 import io
 import os
