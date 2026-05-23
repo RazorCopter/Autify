@@ -1682,7 +1682,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           if (_isAnalyzing)
             const Expanded(
               child: Center(
-                child: _SlothBubbleLoader(),
+                child: _SlothPuzzleLoader(),
               ),
             ),
 
@@ -1791,24 +1791,30 @@ class _RadarLabelsPainter extends CustomPainter {
   }
 }
 
-class _SlothBubbleLoader extends StatefulWidget {
-  const _SlothBubbleLoader();
+class _SlothPuzzleLoader extends StatefulWidget {
+  const _SlothPuzzleLoader();
 
   @override
-  State<_SlothBubbleLoader> createState() => _SlothBubbleLoaderState();
+  State<_SlothPuzzleLoader> createState() => _SlothPuzzleLoaderState();
 }
 
-class _SlothBubbleLoaderState extends State<_SlothBubbleLoader> with SingleTickerProviderStateMixin {
+class _SlothPuzzleLoaderState extends State<_SlothPuzzleLoader> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  final List<_BubbleParticle> _particles = [];
+  final List<_PuzzlePiece> _pieces = [];
   final math.Random _random = math.Random();
   
   int _textIndex = 0;
   late final List<String> _loadingTexts;
   
+  final int N = 5; // 5x5 grid = 25 pezzi
+  final double imageSize = 120.0;
+  late final double tileSize;
+  
   @override
   void initState() {
     super.initState();
+    tileSize = imageSize / N;
+
     _loadingTexts = [
       'Inizializzazione modulo psicometrico...',
       'Elaborazione correlazioni POS e San Martín...',
@@ -1822,25 +1828,18 @@ class _SlothBubbleLoaderState extends State<_SlothBubbleLoader> with SingleTicke
       duration: const Duration(seconds: 6),
     )..repeat();
 
-    // Inizializza bolle con i colori del bradipo/app
-    final colors = [
-      const Color(0xFF8B5CF6), // Purple
-      const Color(0xFF6366F1), // Indigo
-      const Color(0xFF06B6D4), // Cyan
-      const Color(0xFFF59E0B), // Amber
-      const Color(0xFF8D6E63), // Brown (Bradipo)
-      const Color(0xFFA1887F), // Light Brown
-    ];
-
-    for (int i = 0; i < 70; i++) {
-      _particles.add(_BubbleParticle(
-        baseX: (_random.nextDouble() - 0.5) * 300,
-        baseY: (_random.nextDouble() - 0.5) * 300,
-        speed: _random.nextDouble() * 2 + 1,
-        radius: _random.nextDouble() * 12 + 6,
-        color: colors[_random.nextInt(colors.length)],
-        offset: _random.nextDouble() * 2 * math.pi,
-      ));
+    // Inizializza i pezzi del puzzle
+    for (int i = 0; i < N; i++) {
+      for (int j = 0; j < N; j++) {
+        _pieces.add(_PuzzlePiece(
+          row: i,
+          col: j,
+          startDx: (_random.nextDouble() - 0.5) * 400, // Dispersione ampia
+          startDy: (_random.nextDouble() - 0.5) * 400,
+          startAngle: (_random.nextDouble() - 0.5) * 4 * math.pi, // Rotazione casuale
+          delay: _random.nextDouble() * 0.4, // Iniziano ad assemblarsi tra 0.0 e 0.4
+        ));
+      }
     }
 
     _cycleTexts();
@@ -1875,71 +1874,112 @@ class _SlothBubbleLoaderState extends State<_SlothBubbleLoader> with SingleTicke
             animation: _controller,
             builder: (context, child) {
               final double t = _controller.value;
-              // Calcola convergenza (0 -> 1)
-              double convergence = 0.0;
-              if (t < 0.4) {
-                // converge gradualmente
-                convergence = Curves.easeInOut.transform(t / 0.4);
-              } else if (t < 0.8) {
-                // resta converso
-                convergence = 1.0;
-              } else {
-                // diverge
-                convergence = Curves.easeInOut.transform((1.0 - t) / 0.2);
-              }
-
-              // Opacità dell'immagine del bradipo (appare quando convergono)
-              double imageOpacity = 0.0;
-              if (convergence > 0.8) {
-                imageOpacity = (convergence - 0.8) / 0.2;
-              }
-
-              // Scala dell'immagine (pulsazione)
-              double imageScale = 1.0;
-              if (t >= 0.4 && t <= 0.8) {
-                final pulse = math.sin((t - 0.4) * 5 * math.pi);
-                imageScale = 1.0 + pulse * 0.03;
+              
+              // Pulsazione e bagliore quando assemblato
+              double masterScale = 1.0;
+              double glowOpacity = 0.0;
+              if (t >= 0.7 && t <= 0.85) {
+                final pulse = math.sin((t - 0.7) / 0.15 * math.pi);
+                masterScale = 1.0 + pulse * 0.05;
+                glowOpacity = pulse;
               }
 
               return Stack(
                 alignment: Alignment.center,
                 children: [
-                  CustomPaint(
-                    size: const Size(240, 240),
-                    painter: _BubblePainter(
-                      particles: _particles,
-                      animationValue: t,
-                      convergence: convergence,
-                    ),
-                  ),
-                  if (imageOpacity > 0.01)
+                  // Bagliore dietro al puzzle
+                  if (glowOpacity > 0.01)
                     Opacity(
-                      opacity: imageOpacity,
-                      child: Transform.scale(
-                        scale: imageScale,
-                        child: Container(
-                          width: 110,
-                          height: 110,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.primaryColor.withValues(alpha: 0.4 * imageOpacity),
-                                blurRadius: 20,
-                                spreadRadius: 4,
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(55),
-                            child: Image.asset(
-                              'assets/images/logo_bradipo.png',
-                              fit: BoxFit.cover,
+                      opacity: glowOpacity * 0.4,
+                      child: Container(
+                        width: imageSize + 20,
+                        height: imageSize + 20,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primaryColor,
+                              blurRadius: 30,
+                              spreadRadius: 10,
                             ),
-                          ),
+                          ],
                         ),
                       ),
                     ),
+
+                  // Scala principale
+                  Transform.scale(
+                    scale: masterScale,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: _pieces.map((piece) {
+                        // Calcolo progresso pezzo (p)
+                        double p = 0.0;
+                        if (t < 0.7) {
+                           double start = piece.delay;
+                           double end = start + 0.3; // ogni pezzo ci mette 30% del tempo
+                           double localT = ((t - start) / (end - start)).clamp(0.0, 1.0);
+                           p = Curves.easeOutBack.transform(localT); // effetto aggancio magnetico
+                        } else if (t < 0.85) {
+                           p = 1.0;
+                        } else {
+                           double explodeT = ((t - 0.85) / 0.15).clamp(0.0, 1.0);
+                           p = 1.0 - Curves.easeInQuint.transform(explodeT); // esplosione veloce
+                        }
+
+                        // Posizione base (assemblata)
+                        final double baseX = (piece.col - (N - 1) / 2) * tileSize;
+                        final double baseY = (piece.row - (N - 1) / 2) * tileSize;
+
+                        // Posizione attuale (interpolata tra start e base)
+                        final double dx = piece.startDx * (1.0 - p);
+                        final double dy = piece.startDy * (1.0 - p);
+                        final double angle = piece.startAngle * (1.0 - p);
+
+                        // Opacità
+                        final double opacity = p < 0.1 ? (p / 0.1) : 1.0;
+
+                        // Bordo che svanisce quando agganciato
+                        final double borderOpacity = (1.0 - p).clamp(0.0, 1.0);
+
+                        return Transform.translate(
+                          offset: Offset(baseX + dx, baseY + dy),
+                          child: Transform.rotate(
+                            angle: angle,
+                            child: Opacity(
+                              opacity: opacity,
+                              child: Container(
+                                width: tileSize,
+                                height: tileSize,
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: borderOpacity * 0.5),
+                                    width: 1.0,
+                                  ),
+                                ),
+                                child: ClipRect(
+                                  child: OverflowBox(
+                                    maxWidth: imageSize,
+                                    maxHeight: imageSize,
+                                    alignment: Alignment(
+                                      -1.0 + (2.0 / (N - 1)) * piece.col,
+                                      -1.0 + (2.0 / (N - 1)) * piece.row,
+                                    ),
+                                    child: Image.asset(
+                                      'assets/images/logo_bradipo.png',
+                                      width: imageSize,
+                                      height: imageSize,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
                 ],
               );
             },
@@ -1977,65 +2017,20 @@ class _SlothBubbleLoaderState extends State<_SlothBubbleLoader> with SingleTicke
   }
 }
 
-class _BubbleParticle {
-  final double baseX;
-  final double baseY;
-  final double speed;
-  final double radius;
-  final Color color;
-  final double offset;
+class _PuzzlePiece {
+  final int row;
+  final int col;
+  final double startDx;
+  final double startDy;
+  final double startAngle;
+  final double delay;
 
-  _BubbleParticle({
-    required this.baseX,
-    required this.baseY,
-    required this.speed,
-    required this.radius,
-    required this.color,
-    required this.offset,
+  _PuzzlePiece({
+    required this.row,
+    required this.col,
+    required this.startDx,
+    required this.startDy,
+    required this.startAngle,
+    required this.delay,
   });
-}
-
-class _BubblePainter extends CustomPainter {
-  final List<_BubbleParticle> particles;
-  final double animationValue;
-  final double convergence;
-
-  _BubblePainter({
-    required this.particles,
-    required this.animationValue,
-    required this.convergence,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    
-    // Bubble fade out as they converge 
-    final bubbleOpacity = (1.0 - convergence * 0.5).clamp(0.0, 1.0);
-
-    for (final p in particles) {
-      // Movimento caotico
-      final time = animationValue * math.pi * 2;
-      final floatingX = p.baseX + math.cos(time * p.speed + p.offset) * 40;
-      final floatingY = p.baseY + math.sin(time * p.speed + p.offset) * 40;
-      
-      // Interpolazione verso il centro
-      final currentX = center.dx + floatingX * (1.0 - convergence);
-      final currentY = center.dy + floatingY * (1.0 - convergence);
-      
-      // Quando convergono, il raggio si addensa
-      final currentRadius = p.radius * (1.0 - convergence * 0.2);
-
-      final paint = Paint()
-        ..color = p.color.withValues(alpha: bubbleOpacity)
-        ..style = PaintingStyle.fill;
-        
-      canvas.drawCircle(Offset(currentX, currentY), currentRadius, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _BubblePainter oldDelegate) {
-    return true; 
-  }
 }
