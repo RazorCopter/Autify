@@ -1682,7 +1682,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           if (_isAnalyzing)
             const Expanded(
               child: Center(
-                child: _AntigravityParticleLoader(),
+                child: _SlothBubbleLoader(),
               ),
             ),
 
@@ -1791,16 +1791,16 @@ class _RadarLabelsPainter extends CustomPainter {
   }
 }
 
-class _AntigravityParticleLoader extends StatefulWidget {
-  const _AntigravityParticleLoader();
+class _SlothBubbleLoader extends StatefulWidget {
+  const _SlothBubbleLoader();
 
   @override
-  State<_AntigravityParticleLoader> createState() => _AntigravityParticleLoaderState();
+  State<_SlothBubbleLoader> createState() => _SlothBubbleLoaderState();
 }
 
-class _AntigravityParticleLoaderState extends State<_AntigravityParticleLoader> with SingleTickerProviderStateMixin {
+class _SlothBubbleLoaderState extends State<_SlothBubbleLoader> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  final List<_LoadingParticle> _particles = [];
+  final List<_BubbleParticle> _particles = [];
   final math.Random _random = math.Random();
   
   int _textIndex = 0;
@@ -1819,24 +1819,30 @@ class _AntigravityParticleLoaderState extends State<_AntigravityParticleLoader> 
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 10),
+      duration: const Duration(seconds: 6),
     )..repeat();
 
-    // Inizializza 80 particelle per un effetto più denso e 3D
-    for (int i = 0; i < 80; i++) {
-      _particles.add(_LoadingParticle(
-        x: _random.nextDouble() * 320,
-        y: _random.nextDouble() * 240,
-        z: _random.nextDouble() * 100, // Z per profondità 3D (0-100)
-        vx: (_random.nextDouble() - 0.5) * 0.5,
-        vy: -(_random.nextDouble() * 0.8 + 0.2), // Antigravità
-        vz: (_random.nextDouble() - 0.5) * 0.2,
-        baseRadius: _random.nextDouble() * 2.5 + 1.2,
-        color: _getRandomColor(),
+    // Inizializza bolle con i colori del bradipo/app
+    final colors = [
+      const Color(0xFF8B5CF6), // Purple
+      const Color(0xFF6366F1), // Indigo
+      const Color(0xFF06B6D4), // Cyan
+      const Color(0xFFF59E0B), // Amber
+      const Color(0xFF8D6E63), // Brown (Bradipo)
+      const Color(0xFFA1887F), // Light Brown
+    ];
+
+    for (int i = 0; i < 70; i++) {
+      _particles.add(_BubbleParticle(
+        baseX: (_random.nextDouble() - 0.5) * 300,
+        baseY: (_random.nextDouble() - 0.5) * 300,
+        speed: _random.nextDouble() * 2 + 1,
+        radius: _random.nextDouble() * 12 + 6,
+        color: colors[_random.nextInt(colors.length)],
+        offset: _random.nextDouble() * 2 * math.pi,
       ));
     }
 
-    // Cambia il testo ciclicamente ogni 2.5 secondi
     _cycleTexts();
   }
 
@@ -1851,16 +1857,6 @@ class _AntigravityParticleLoaderState extends State<_AntigravityParticleLoader> 
     }
   }
 
-  Color _getRandomColor() {
-    final colors = [
-      const Color(0xFF8B5CF6), // Viola
-      const Color(0xFF6366F1), // Indaco
-      const Color(0xFF06B6D4), // Ciano
-      const Color(0xFFF59E0B), // Ambra
-    ];
-    return colors[_random.nextInt(colors.length)];
-  }
-
   @override
   void dispose() {
     _controller.dispose();
@@ -1873,22 +1869,83 @@ class _AntigravityParticleLoaderState extends State<_AntigravityParticleLoader> 
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         SizedBox(
-          width: 320,
+          width: 240,
           height: 240,
           child: AnimatedBuilder(
             animation: _controller,
             builder: (context, child) {
-              return CustomPaint(
-                painter: _AntigravityLoaderPainter(
-                  particles: _particles,
-                  animationValue: _controller.value,
-                  random: _random,
-                ),
+              final double t = _controller.value;
+              // Calcola convergenza (0 -> 1)
+              double convergence = 0.0;
+              if (t < 0.4) {
+                // converge gradualmente
+                convergence = Curves.easeInOut.transform(t / 0.4);
+              } else if (t < 0.8) {
+                // resta converso
+                convergence = 1.0;
+              } else {
+                // diverge
+                convergence = Curves.easeInOut.transform((1.0 - t) / 0.2);
+              }
+
+              // Opacità dell'immagine del bradipo (appare quando convergono)
+              double imageOpacity = 0.0;
+              if (convergence > 0.8) {
+                imageOpacity = (convergence - 0.8) / 0.2;
+              }
+
+              // Scala dell'immagine (pulsazione)
+              double imageScale = 1.0;
+              if (t >= 0.4 && t <= 0.8) {
+                final pulse = math.sin((t - 0.4) * 5 * math.pi);
+                imageScale = 1.0 + pulse * 0.03;
+              }
+
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  CustomPaint(
+                    size: const Size(240, 240),
+                    painter: _BubblePainter(
+                      particles: _particles,
+                      animationValue: t,
+                      convergence: convergence,
+                    ),
+                  ),
+                  if (imageOpacity > 0.01)
+                    Opacity(
+                      opacity: imageOpacity,
+                      child: Transform.scale(
+                        scale: imageScale,
+                        child: Container(
+                          width: 110,
+                          height: 110,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.primaryColor.withValues(alpha: 0.4 * imageOpacity),
+                                blurRadius: 20,
+                                spreadRadius: 4,
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(55),
+                            child: Image.asset(
+                              'assets/images/logo_bradipo.png',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               );
             },
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 32),
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 600),
           transitionBuilder: (Widget child, Animation<double> animation) {
@@ -1920,148 +1977,65 @@ class _AntigravityParticleLoaderState extends State<_AntigravityParticleLoader> 
   }
 }
 
-class _LoadingParticle {
-  double x;
-  double y;
-  double z;
-  double vx;
-  double vy;
-  double vz;
-  final double baseRadius;
+class _BubbleParticle {
+  final double baseX;
+  final double baseY;
+  final double speed;
+  final double radius;
   final Color color;
+  final double offset;
 
-  _LoadingParticle({
-    required this.x,
-    required this.y,
-    required this.z,
-    required this.vx,
-    required this.vy,
-    required this.vz,
-    required this.baseRadius,
+  _BubbleParticle({
+    required this.baseX,
+    required this.baseY,
+    required this.speed,
+    required this.radius,
     required this.color,
+    required this.offset,
   });
 }
 
-class _AntigravityLoaderPainter extends CustomPainter {
-  final List<_LoadingParticle> particles;
+class _BubblePainter extends CustomPainter {
+  final List<_BubbleParticle> particles;
   final double animationValue;
-  final math.Random random;
+  final double convergence;
 
-  _AntigravityLoaderPainter({
+  _BubblePainter({
     required this.particles,
     required this.animationValue,
-    required this.random,
+    required this.convergence,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     
-    // 1. Disegna il Glow centrale (Nebula ad impulsi)
-    final double pulse = 0.85 + math.sin(animationValue * 4 * math.pi) * 0.15;
-    final glowPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          const Color(0xFF6366F1).withValues(alpha: 0.22 * pulse),
-          const Color(0xFF8B5CF6).withValues(alpha: 0.08 * pulse),
-          Colors.transparent,
-        ],
-      ).createShader(Rect.fromCircle(center: center, radius: 100.0));
-    canvas.drawCircle(center, 100.0, glowPaint);
+    // Bubble fade out as they converge 
+    final bubbleOpacity = (1.0 - convergence * 0.5).clamp(0.0, 1.0);
 
-    final corePaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          Colors.white.withValues(alpha: 0.7 * pulse),
-          const Color(0xFF06B6D4).withValues(alpha: 0.25 * pulse),
-          Colors.transparent,
-        ],
-      ).createShader(Rect.fromCircle(center: center, radius: 35.0));
-    canvas.drawCircle(center, 35.0, corePaint);
-
-    // Aggiorna posizioni particelle con dinamica fluida 3D
     for (final p in particles) {
-      // Movimento asse Z
-      p.z += p.vz;
-      if (p.z > 100) p.z = 0;
-      if (p.z < 0) p.z = 100;
-
-      // Scala e parallasse basati su Z
-      final double zScale = (p.z + 50) / 150; // Più grande = più vicino
-
-      // Fluidità usando multiple onde sinusoidali spaziali e temporali
-      final double time = animationValue * 2 * math.pi;
-      final double fluidX = math.sin(time + p.y * 0.03) * 0.3 + math.cos(time * 0.5 + p.z * 0.05) * 0.2;
-      final double fluidY = math.cos(time + p.x * 0.03) * 0.2;
-
-      p.y += (p.vy + fluidY) * zScale;
-      p.x += (p.vx + fluidX) * zScale;
-
-      // Reset continuo (vortice 3D senza bordi)
-      if (p.y < -20) {
-        p.y = size.height + 20;
-        p.x = random.nextDouble() * size.width;
-      } else if (p.y > size.height + 20) {
-        p.y = -20;
-      }
+      // Movimento caotico
+      final time = animationValue * math.pi * 2;
+      final floatingX = p.baseX + math.cos(time * p.speed + p.offset) * 40;
+      final floatingY = p.baseY + math.sin(time * p.speed + p.offset) * 40;
       
-      if (p.x < -20) p.x = size.width + 20;
-      if (p.x > size.width + 20) p.x = -20;
-    }
-
-    // Ordina per z per depth sorting (painters algorithm)
-    final List<_LoadingParticle> sortedParticles = List.from(particles);
-    sortedParticles.sort((a, b) => a.z.compareTo(b.z));
-
-    // 2. Disegna connessioni a rete neurale 3D
-    for (int i = 0; i < sortedParticles.length; i++) {
-      for (int j = i + 1; j < sortedParticles.length; j++) {
-        final p1 = sortedParticles[i];
-        final p2 = sortedParticles[j];
-        
-        // Evita connessioni tra piani profondi diversi per realismo 3D
-        if ((p1.z - p2.z).abs() > 30) continue;
-
-        final dx = p1.x - p2.x;
-        final dy = p1.y - p2.y;
-        final dist = math.sqrt(dx * dx + dy * dy);
-
-        if (dist < 50.0) {
-          final avgZ = (p1.z + p2.z) / 2;
-          final double zAlpha = (avgZ / 100).clamp(0.2, 1.0); // Connessioni lontane sbiadite
-          final double alpha = (1.0 - (dist / 50.0)).clamp(0.0, 1.0) * 0.15 * zAlpha;
-          
-          final linePaint = Paint()
-            ..color = const Color(0xFF818CF8).withValues(alpha: alpha)
-            ..strokeWidth = 0.8 * zAlpha
-            ..style = PaintingStyle.stroke;
-          canvas.drawLine(Offset(p1.x, p1.y), Offset(p2.x, p2.y), linePaint);
-        }
-      }
-    }
-
-    // 3. Disegna le particelle 3D
-    for (final p in sortedParticles) {
-      final double zScale = (p.z + 50) / 100;
-      final double projectedRadius = p.baseRadius * zScale;
-      // Fade out particelle lontane
-      final double opacity = (p.z / 100).clamp(0.2, 1.0);
+      // Interpolazione verso il centro
+      final currentX = center.dx + floatingX * (1.0 - convergence);
+      final currentY = center.dy + floatingY * (1.0 - convergence);
       
-      final pPaint = Paint()
-        ..color = p.color.withValues(alpha: opacity)
+      // Quando convergono, il raggio si addensa
+      final currentRadius = p.radius * (1.0 - convergence * 0.2);
+
+      final paint = Paint()
+        ..color = p.color.withValues(alpha: bubbleOpacity)
         ..style = PaintingStyle.fill;
         
-      if (zScale > 1.2) {
-        // Effetto bagliore per particelle molto vicine (Depth of field inverso)
-        pPaint.maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0);
-      }
-      
-      canvas.drawCircle(Offset(p.x, p.y), projectedRadius, pPaint);
+      canvas.drawCircle(Offset(currentX, currentY), currentRadius, paint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant _AntigravityLoaderPainter oldDelegate) {
+  bool shouldRepaint(covariant _BubblePainter oldDelegate) {
     return true; 
   }
 }
