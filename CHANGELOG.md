@@ -2,6 +2,20 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.7.2] - 2026-05-23
+
+### Modificato
+- **Ottimizzazione Layout "Analisi Utente"**:
+  - Equalizzate dinamicamente le altezze dei box "POS Eterovalutativo" e "San Martín" sopra i grafici utilizzando flexbox con allineamento stretched (`crossAxisAlignment: CrossAxisAlignment.stretch`) nella visualizzazione desktop, garantendo una perfetta simmetria visiva e l'assenza di spazi vuoti asimmetrici.
+  - Introdotto un sotto-box interno dedicato alla **Legenda dei Domini** all'interno del card POS, con scorrimento verticale personalizzato (`Scrollbar` + `SingleChildScrollView`), mostrando il mapping dinamico `[Sigla] = [Nome Esteso]: [Valore]` basato sui punteggi del paziente per massimizzare la leggibilità ed evitare di occupare spazio extra.
+  - Aggiornate le etichette delle colonne in accordo con la terminologia clinico-educativa inclusiva: POS rinominato in `"POS Eterovalutativo"` con sottotitolo `"Valutazione degli esiti personali e della QQdV percepita"`, e San Martín con sottotitolo `"Valutazione osservativa della qualità di vita"`.
+- **Evoluzione Data Visualization (Radar Chart)**:
+  - Esteso il grafico radar (`RadarChart` di `fl_chart`) per la scala San Martín incorporando due dataset di riferimento stabili:
+    - **Media normativa** (punteggio costante a 10.0) con linea tratteggiata rossa e riempimento rosso semi-trasparente ultra-soft.
+    - **Range medio** (punteggio costante a 12.0) con linea e riempimento verde semi-trasparente per identificare immediatamente il posizionamento clinico del paziente rispetto ai parametri standard.
+  - Sviluppato un custom painter premium (`_RadarLabelsPainter`) sovrapposto al grafico che disegna badge numerici eleganti e ad alto contrasto (sfondo arancione soft, bordo arancione e testo scuro) posizionati in modo intelligente sopra i punti dati del paziente, fornendo la lettura immediata ed esatta dei valori per ciascun dominio.
+- **Allineamento Versioni**: Incrementata la versione globale della suite a `2.7.2` in `app_version.dart`, `pubspec.yaml` (admin e client), `main.py` e `routes.py` (metadata backup).
+
 ## [2.7.1] - 2026-05-23
 
 ### Aggiunto

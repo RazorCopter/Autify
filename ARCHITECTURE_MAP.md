@@ -304,12 +304,15 @@ frontend_admin/
 
 #### 📄 [screens/multidimensional_dashboard_screen.dart](file:///home/gianvito/progetti/AutAnalysis/frontend_admin/lib/screens/multidimensional_dashboard_screen.dart)
 * **Path**: `frontend_admin/lib/screens/multidimensional_dashboard_screen.dart`
-* **Scopo Funzionale**: Cruscotto avanzato di analisi clinica longitudinale. Permette di confrontare più valutazioni dello stesso paziente nel tempo, evidenziando il trend di miglioramento o peggioramento delle singole aree della Qualità della Vita.
+* **Scopo Funzionale**: Cruscotto avanzato di analisi clinica longitudinale e visualizzazione dati multidimensionali. Offre una panoramica integrata delle scale POS e San Martín per il paziente selezionato.
 * **Dettagli Tecnici**:
-  * Disegna tracciati storici di andamento per ciascuno dei domini.
-  * Integra l'assistente basato su `GeminiService` per analizzare i grafici temporali del paziente selezionato e redigere una sintesi delle evoluzioni cliniche.
+  * **Layout Bilanciato**: Uniforma dinamicamente le altezze dei box "POS Eterovalutativo" e "San Martín" nella scheda di overview tramite flexbox `crossAxisAlignment: CrossAxisAlignment.stretch` in modalità desktop.
+  * **Legenda Domini Integrata**: Implementa un box legenda scorrevole (`Scrollbar` + `SingleChildScrollView`) all'interno del pannello POS che mostra dinamicamente le sigle dei domini mappate sui nomi estesi ed i punteggi attuali del paziente (`[Sigla] = [Nome Esteso]: [Valore]`).
+  * **Visualizzazione Avanzata Radar Chart**: Renderizza il grafico radar per la scala San Martín arricchendolo con quattro dataset sovrapposti: limite massimo (20), range medio (12, riempimento e bordo verdi semi-trasparenti), media normativa (10, riempimento e bordo rossi semi-trasparenti) e dati specifici del paziente.
+  * **Custom Value Labels Overlay**: Disegna badge numerici eleganti e ad alto contrasto adagiati sopra i punti del grafico radar del paziente usando la classe custom `_RadarLabelsPainter` per una lettura dei punteggi istantanea e di livello editoriale.
+  * **Integrazione IA**: Integra l'assistente basato su `GeminiService` per analizzare i grafici temporali del paziente selezionato e redigere una sintesi delle evoluzioni cliniche.
 * **Dipendenze/Relazioni**:
-  * Comunica intensamente con `ApiService` (per l'estrazione dello storico delle valutazioni) e con `GeminiService` (per la stesura dell'analisi evolutiva).
+  * Comunica intensamente con `ApiService` (per l'estrazione dello storico delle valutazioni e dati del paziente) e con `GeminiService` (per la stesura dell'analisi evolutiva). Reattivo ai controlli del layout responsivo (`LayoutBuilder`).
 
 ---
 

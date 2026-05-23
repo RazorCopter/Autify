@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../models/patient_model.dart';
@@ -256,23 +257,23 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   : LayoutBuilder(
                       key: const ValueKey('standard_panels'),
                       builder: (context, constraints) {
-                        final cards = <Widget>[];
-                        for (final scale in _availableScales) {
-                          if (!_latestEvaluations.containsKey(scale.id)) continue;
-                          cards.add(_buildScalePanel(scale));
-                        }
+                        final availableCards = _availableScales
+                            .where((scale) => _latestEvaluations.containsKey(scale.id))
+                            .toList();
 
-                        if (constraints.maxWidth > 800 && cards.length >= 2) {
-                          // Side by side
+                        if (constraints.maxWidth > 800 && availableCards.length >= 2) {
+                          // Side by side - equal height stretching
+                          final cards = availableCards.map((scale) => _buildScalePanel(scale, useExpanded: true)).toList();
                           return Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: cards.map((c) => Expanded(child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 8),
                               child: c,
                             ))).toList(),
                           );
                         }
-                        // Stacked
+                        // Stacked - mobile/narrow screen view
+                        final cards = availableCards.map((scale) => _buildScalePanel(scale, useExpanded: false)).toList();
                         return Column(
                           children: cards.map((c) => Padding(
                             padding: const EdgeInsets.only(bottom: 20),
@@ -767,7 +768,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   }
 
   // ── Scale Panel ──────────────────────────────────────────────────────────────
-  Widget _buildScalePanel(ScaleModel scale) {
+  Widget _buildScalePanel(ScaleModel scale, {bool useExpanded = false}) {
     final eval = _latestEvaluations[scale.id]!;
     final analysis = _analyses[scale.id];
     final isSM = _isSanMartinScale(scale.id, scale.nome);
@@ -775,93 +776,114 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         ? const [Color(0xFF1A237E), Color(0xFF3949AB)]
         : const [Color(0xFF0D47A1), Color(0xFF42A5F5)];
 
+    final headerWidget = Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: accentGradient),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isSM ? '🧩 San Martín' : '📊 POS Eterovalutativo',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isSM 
+                      ? 'Valutazione osservativa della qualità di vita' 
+                      : 'Valutazione degli esiti personali e della QQdV percepita',
+                  style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.7)),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton.icon(
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white,
+              backgroundColor: Colors.white.withValues(alpha: 0.15),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            ),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(
+              builder: (_) => EvaluationDetailScreen(patient: widget.patient, scale: scale),
+            )),
+            icon: const Icon(Icons.open_in_new, size: 16),
+            label: const Text('Dettaglio', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+
+    Widget indicatorsWidget;
+    if (isSM && analysis != null) {
+      indicatorsWidget = _buildSanMartinIndicators(analysis);
+    } else if (!isSM) {
+      indicatorsWidget = _buildPosIndicators(eval);
+    } else {
+      indicatorsWidget = const SizedBox.shrink();
+    }
+
+    final bodyContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // ── Metadata row ──
+        _buildMetaRow(eval),
+        const SizedBox(height: 20),
+
+        // ── Indicatori multidimensionali (POS o SM) ──
+        useExpanded ? Expanded(child: indicatorsWidget) : indicatorsWidget,
+
+        const SizedBox(height: 20),
+
+        // ── Chart ──
+        if (eval.domini.isNotEmpty)
+          SizedBox(
+            height: 250,
+            child: isSM && analysis != null && analysis.domini.isNotEmpty
+                ? _buildRadarChartForPanel(analysis)
+                : _buildBarChartForPanel(eval.domini, isSm: isSM),
+          ),
+      ],
+    );
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: const BorderSide(color: Color(0xFFE8EEF8)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Scale panel header
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: accentGradient),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: useExpanded
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                headerWidget,
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isSM ? '🧩 San Martín' : '📊 POS',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        scale.nome,
-                        style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.7)),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: bodyContent,
                   ),
-                ),
-                TextButton.icon(
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    backgroundColor: Colors.white.withValues(alpha: 0.15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  ),
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => EvaluationDetailScreen(patient: widget.patient, scale: scale),
-                  )),
-                  icon: const Icon(Icons.open_in_new, size: 16),
-                  label: const Text('Dettaglio', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                 ),
               ],
-            ),
-          ),
-
-          // Body
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ── Metadata row ──
-                _buildMetaRow(eval),
-                const SizedBox(height: 20),
-
-                // ── Indicatori multidimensionali (solo SM con analisi) ──
-                if (isSM && analysis != null)
-                  _buildSanMartinIndicators(analysis),
-
-                // ── Indicatori POS (punteggio semplice) ──
-                if (!isSM)
-                  _buildPosIndicators(eval),
-
-                const SizedBox(height: 20),
-
-                // ── Chart ──
-                if (eval.domini.isNotEmpty)
-                  SizedBox(
-                    height: 250,
-                    child: isSM && analysis != null && analysis.domini.isNotEmpty
-                        ? _buildRadarChartForPanel(analysis)
-                        : _buildBarChartForPanel(eval.domini, isSm: isSM),
-                  ),
+                headerWidget,
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: bodyContent,
+                ),
               ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1084,6 +1106,66 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       total += d.punteggio;
     }
 
+    final legendWidget = Container(
+      margin: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.legend_toggle_outlined, color: Colors.amberAccent, size: 15),
+              SizedBox(width: 8),
+              Text(
+                'Legenda Domini',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 80,
+            child: Scrollbar(
+              thumbVisibility: true,
+              thickness: 4.0,
+              radius: const Radius.circular(8),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.only(right: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: eval.domini.map((d) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        '${d.codice.toUpperCase()} = ${d.etichetta}: ${d.punteggio}',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11.5,
+                          fontFamily: 'monospace',
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1094,23 +1176,29 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         ),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(child: _indicatorTile(
-            title: 'Punteggio Totale',
-            value: total.toString(),
-            subtitle: '${eval.domini.length} domini analizzati',
-            icon: Icons.score,
-            color: Colors.amberAccent,
-          )),
-          const SizedBox(width: 16),
-          Expanded(child: _indicatorTile(
-            title: 'Media per Dominio',
-            value: eval.domini.isNotEmpty ? (total / eval.domini.length).toStringAsFixed(1) : '—',
-            subtitle: 'Valore medio calcolato',
-            icon: Icons.bar_chart,
-            color: const Color(0xFF90CAF9),
-          )),
+          Row(
+            children: [
+              Expanded(child: _indicatorTile(
+                title: 'Punteggio Totale',
+                value: total.toString(),
+                subtitle: '${eval.domini.length} domini analizzati',
+                icon: Icons.score,
+                color: Colors.amberAccent,
+              )),
+              const SizedBox(width: 16),
+              Expanded(child: _indicatorTile(
+                title: 'Media per Dominio',
+                value: eval.domini.isNotEmpty ? (total / eval.domini.length).toStringAsFixed(1) : '—',
+                subtitle: 'Valore medio calcolato',
+                icon: Icons.bar_chart,
+                color: const Color(0xFF90CAF9),
+              )),
+            ],
+          ),
+          legendWidget,
         ],
       ),
     );
@@ -1121,39 +1209,83 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     final domini = analysis.domini;
     if (domini.isEmpty) return const SizedBox();
 
-    return RadarChart(
-      RadarChartData(
-        radarShape: RadarShape.polygon,
-        tickCount: 4,
-        ticksTextStyle: const TextStyle(fontSize: 9, color: Color(0xFF64748B)),
-        tickBorderData: const BorderSide(color: Color(0xFFE2E8F0), width: 0.8),
-        gridBorderData: const BorderSide(color: Color(0xFFCBD5E1), width: 1.0),
-        radarBorderData: const BorderSide(color: Color(0xFF94A3B8), width: 1.5),
-        radarBackgroundColor: const Color(0xFFF8FAFC),
-        titlePositionPercentageOffset: 0.15,
-        titleTextStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-        getTitle: (index, _) {
-          if (index < 0 || index >= domini.length) return const RadarChartTitle(text: '');
-          return RadarChartTitle(text: domini[index].codice);
-        },
-        dataSets: [
-          // Max reference (20)
-          RadarDataSet(
-            dataEntries: List.generate(domini.length, (_) => const RadarEntry(value: 20)),
-            borderColor: Colors.transparent,
-            fillColor: Colors.transparent,
-            entryRadius: 0,
+    final patientValues = domini
+        .map((d) => ((d.punteggioStandard ?? d.punteggioDiretto ?? 0).clamp(0, 20)).toDouble())
+        .toList();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final chartSize = math.min(constraints.maxWidth, constraints.maxHeight);
+        return Center(
+          child: SizedBox(
+            width: chartSize,
+            height: chartSize,
+            child: Stack(
+              children: [
+                RadarChart(
+                  RadarChartData(
+                    radarShape: RadarShape.polygon,
+                    tickCount: 4,
+                    ticksTextStyle: const TextStyle(fontSize: 9, color: Color(0xFF64748B)),
+                    tickBorderData: const BorderSide(color: Color(0xFFE2E8F0), width: 0.8),
+                    gridBorderData: const BorderSide(color: Color(0xFFCBD5E1), width: 1.0),
+                    radarBorderData: const BorderSide(color: Color(0xFF94A3B8), width: 1.5),
+                    radarBackgroundColor: const Color(0xFFF8FAFC),
+                    titlePositionPercentageOffset: 0.15,
+                    titleTextStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                    getTitle: (index, _) {
+                      if (index < 0 || index >= domini.length) return const RadarChartTitle(text: '');
+                      return RadarChartTitle(text: domini[index].codice);
+                    },
+                    dataSets: [
+                      // Max reference (20)
+                      RadarDataSet(
+                        dataEntries: List.generate(domini.length, (_) => const RadarEntry(value: 20)),
+                        borderColor: Colors.transparent,
+                        fillColor: Colors.transparent,
+                        entryRadius: 0,
+                      ),
+                      // Range medio (12) - dataset green transparency
+                      RadarDataSet(
+                        dataEntries: List.generate(domini.length, (_) => const RadarEntry(value: 12)),
+                        borderColor: const Color(0xFF22C55E).withValues(alpha: 0.35),
+                        fillColor: const Color(0xFF22C55E).withValues(alpha: 0.08),
+                        borderWidth: 1.5,
+                        entryRadius: 0,
+                      ),
+                      // Media normativa (10) - dataset red transparency
+                      RadarDataSet(
+                        dataEntries: List.generate(domini.length, (_) => const RadarEntry(value: 10)),
+                        borderColor: const Color(0xFFEF4444).withValues(alpha: 0.35),
+                        fillColor: const Color(0xFFEF4444).withValues(alpha: 0.08),
+                        borderWidth: 1.5,
+                        entryRadius: 0,
+                      ),
+                      // Patient data
+                      RadarDataSet(
+                        dataEntries: domini.map((d) => RadarEntry(value: (d.punteggioStandard ?? d.punteggioDiretto).toDouble())).toList(),
+                        borderColor: const Color(0xFFF97316),
+                        fillColor: const Color(0xFFF97316).withValues(alpha: 0.2),
+                        borderWidth: 2.5,
+                        entryRadius: 4,
+                      ),
+                    ],
+                  ),
+                ),
+                IgnorePointer(
+                  child: CustomPaint(
+                    size: Size(chartSize, chartSize),
+                    painter: _RadarLabelsPainter(
+                      axisCount: domini.length,
+                      patientValues: patientValues,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          // Patient data
-          RadarDataSet(
-            dataEntries: domini.map((d) => RadarEntry(value: (d.punteggioStandard ?? d.punteggioDiretto).toDouble())).toList(),
-            borderColor: const Color(0xFFF97316),
-            fillColor: const Color(0xFFF97316).withValues(alpha: 0.2),
-            borderWidth: 2.5,
-            entryRadius: 4,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1381,5 +1513,90 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         ],
       ),
     );
+  }
+}
+
+class _RadarLabelsPainter extends CustomPainter {
+  final int axisCount;
+  final List<double> patientValues;
+
+  _RadarLabelsPainter({
+    required this.axisCount,
+    required this.patientValues,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (axisCount < 3) return;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    // Use 0.73 as maxRadius factor since titlePositionPercentageOffset is 0.15.
+    final maxRadius = (math.min(size.width, size.height) / 2) * 0.73;
+
+    for (var index = 0; index < axisCount; index++) {
+      final score = patientValues[index];
+      final valFraction = score / 20.0;
+      final valRadius = maxRadius * valFraction;
+      final angle = (-math.pi / 2) + (2 * math.pi * index / axisCount);
+
+      // Offset so we don't overlap the dots rendered by FL Chart
+      final double offsetVal;
+      if (score < 3) {
+        offsetVal = 13.0;
+      } else if (score > 18) {
+        offsetVal = -13.0;
+      } else {
+        offsetVal = 11.0;
+      }
+
+      final pText = Offset(
+        center.dx + ((valRadius + offsetVal) * math.cos(angle)),
+        center.dy + ((valRadius + offsetVal) * math.sin(angle)),
+      );
+
+      final tp = TextPainter(
+        text: TextSpan(
+          text: score.toInt().toString(),
+          style: const TextStyle(
+            color: Color(0xFFE65100), // Dark orange for maximum readability
+            fontSize: 9.0,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      tp.layout();
+
+      final rect = Rect.fromCenter(
+        center: pText,
+        width: tp.width + 8,
+        height: tp.height + 4,
+      );
+      final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(4));
+
+      // Badge background
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..color = const Color(0xFFFFF3E0) // Light orange background
+          ..style = PaintingStyle.fill,
+      );
+      // Badge border
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..color = const Color(0xFFFFB74D) // Amber/orange border
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.8,
+      );
+      // Paint text centered inside badge
+      tp.paint(canvas, Offset(pText.dx - tp.width / 2, pText.dy - tp.height / 2));
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RadarLabelsPainter oldDelegate) {
+    return oldDelegate.axisCount != axisCount ||
+        oldDelegate.patientValues != patientValues;
   }
 }
