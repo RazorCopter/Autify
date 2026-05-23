@@ -1156,14 +1156,14 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             ],
           ),
           Wrap(
-            spacing: 24,
-            runSpacing: 12,
+            spacing: 16,
+            runSpacing: 8,
             children: eval.domini.map((d) {
               return Text(
                 '${d.codice.toUpperCase()} = ${d.etichetta}: ${d.punteggio}',
                 style: const TextStyle(
                   color: Colors.white70,
-                  fontSize: 23.0,
+                  fontSize: 15.0,
                   fontFamily: 'monospace',
                   fontWeight: FontWeight.w500,
                 ),
