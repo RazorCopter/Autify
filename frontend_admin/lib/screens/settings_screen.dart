@@ -30,16 +30,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadSettings();
   }
 
-  String _selectedModel = 'gemini-1.5-pro';
+  String _selectedModel = 'gemini-2.5-pro';
 
   Future<void> _loadSettings() async {
     final settings = await _apiService.getGeminiSettings();
     if (settings['key'] != null && settings['key']!.isNotEmpty) {
-      setState(() {
-        _apiKeyController.text = settings['key']!;
-        _selectedModel = settings['model'] ?? 'gemini-1.5-pro';
-      });
+      _apiKeyController.text = settings['key']!;
     }
+    final rawModel = settings['model'] ?? 'gemini-2.5-pro';
+    setState(() {
+      if (rawModel.contains('1.5-pro') || rawModel == 'gemini-1.5-pro') {
+        _selectedModel = 'gemini-2.5-pro';
+      } else if (rawModel.contains('1.5-flash') || rawModel == 'gemini-1.5-flash') {
+        _selectedModel = 'gemini-2.5-flash';
+      } else {
+        if (rawModel != 'gemini-2.5-pro' && rawModel != 'gemini-2.5-flash' && rawModel != 'gemini-3.5-flash') {
+          _selectedModel = 'gemini-2.5-pro';
+        } else {
+          _selectedModel = rawModel;
+        }
+      }
+    });
   }
 
   Future<void> _pickAndUploadJSON() async {
@@ -210,8 +221,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             prefixIcon: Icon(Icons.psychology),
                           ),
                           items: const [
-                            DropdownMenuItem(value: 'gemini-1.5-pro', child: Text('1.5 Pro (Raccomandato)')),
-                            DropdownMenuItem(value: 'gemini-1.5-flash', child: Text('1.5 Flash (Veloce)')),
+                            DropdownMenuItem(value: 'gemini-2.5-pro', child: Text('Gemini 2.5 Pro (Consigliato)')),
+                            DropdownMenuItem(value: 'gemini-2.5-flash', child: Text('Gemini 2.5 Flash (Veloce)')),
+                            DropdownMenuItem(value: 'gemini-3.5-flash', child: Text('Gemini 3.5 Flash (Frontiera)')),
                           ],
                           onChanged: ApiService.isViewer ? null : (value) {
                             if (value != null) {

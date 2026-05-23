@@ -14,6 +14,13 @@ Tutte le modifiche significative a questo progetto saranno documentate in questo
     - **Media normativa** (punteggio costante a 10.0) con linea tratteggiata rossa e riempimento rosso semi-trasparente ultra-soft.
     - **Range medio** (punteggio costante a 12.0) con linea e riempimento verde semi-trasparente per identificare immediatamente il posizionamento clinico del paziente rispetto ai parametri standard.
   - Sviluppato un custom painter premium (`_RadarLabelsPainter`) sovrapposto al grafico che disegna badge numerici eleganti e ad alto contrasto (sfondo arancione soft, bordo arancione e testo scuro) posizionati in modo intelligente sopra i punti dati del paziente, fornendo la lettura immediata ed esatta dei valori per ciascun dominio.
+- **Gestione Sicura e Caricamento On-Demand delle Credenziali AI**:
+  - Risolto il problema del caricamento della chiave API di Gemini mascherata (`***-HIDDEN`) modificando l'endpoint `/settings` del backend per supportare un parametro query sicuro `raw=true` (riservato al ruolo Admin). L'interfaccia esegue ora il caricamento della chiave in chiaro in background solo all'effettivo tocco sul pulsante d'analisi.
+- **Raddoppio Dimensioni Caratteri della Legenda POS**:
+  - Raddoppiato il font delle scritte in legenda a `23.0` per una lettura ottimale e potenziata la spaziatura del `Wrap` (`spacing: 24`, `runSpacing: 12`).
+- **Migrazione Modelli Gemini Deprecati (Google AI Studio 2026)**:
+  - Disattivati i riferimenti predefiniti ai vecchi modelli dismessi `gemini-1.5-pro` e `gemini-1.5-flash` (che causavano errori 404/Not Found). Configurato come nuovo modello predefinito globale il capostipite stabile **`gemini-2.5-pro`**.
+  - Integrato nel menu a discesa delle impostazioni le opzioni attive di ultima generazione: `gemini-2.5-pro` (Consigliato), `gemini-2.5-flash` (Veloce) e `gemini-3.5-flash` (Frontiera), comprensive di migrazione e sanificazione automatica e reattiva dei dati legacy per evitare crash di layout nel frontend.
 - **Allineamento Versioni**: Incrementata la versione globale della suite a `2.7.2` in `app_version.dart`, `pubspec.yaml` (admin e client), `main.py` e `routes.py` (metadata backup).
 
 ## [2.7.1] - 2026-05-23

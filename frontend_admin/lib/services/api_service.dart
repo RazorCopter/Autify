@@ -128,12 +128,12 @@ class ApiService {
         final body = jsonDecode(response.body);
         return {
           'key': body['gemini_api_key'],
-          'model': body['gemini_model'] ?? 'gemini-1.5-pro',
+          'model': body['gemini_model'] ?? 'gemini-2.5-pro',
         };
       }
-      return {'key': null, 'model': 'gemini-1.5-pro'};
+      return {'key': null, 'model': 'gemini-2.5-pro'};
     } catch (e) {
-      return {'key': null, 'model': 'gemini-1.5-pro'};
+      return {'key': null, 'model': 'gemini-2.5-pro'};
     }
   }
 

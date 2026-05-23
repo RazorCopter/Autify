@@ -121,7 +121,7 @@ backend/
   * Basato interamente su **Pydantic v2** (`BaseModel`, `Field`).
   * Classi Chiave:
     * `Patient`: Gestisce il profilo anagrafico del paziente. Genera automaticamente ID con prefisso (`pat_` + UUID a 8 caratteri), traccia i dati biologici (`altezza`, `peso`, `sesso`, `data_nascita`) e gli indicatori delle ultime compilazioni effettuabili.
-    * `AppSettings`: Configurazione globale contenente `gemini_api_key` e `gemini_model` (default: `gemini-1.5-pro`).
+    * `AppSettings`: Configurazione globale contenente `gemini_api_key` e `gemini_model` (default: `gemini-2.5-pro`).
     * Struttura della Scala: `Scale` composta gerarchicamente da `Section` (es. sezione "SP" per Sviluppo Personale), che a sua volta contiene una lista di `Question`. Ogni domanda ha un elenco di risposte predefinite regolate dall'oggetto `Option` (testo + punteggio numerico).
     * `Evaluation`: Rappresenta una compilazione completata di un test. Include metadati (`nome_operatore`, `nome_intervistato`, `demographics` aggiuntivi come grado di parentela), l'anno di riferimento e la lista di risposte fornite (`List[Answer]`).
     * `DomainScore` e `AggregatedEvaluation`: Strutture utilizzate per veicolare l'aggregazione dei punteggi suddivisi per domini clinici.
@@ -270,7 +270,7 @@ frontend_admin/
 * **Dettagli Tecnici**:
   * Riceve in input i dati anagrafici del paziente e il dizionario completo dell'analisi psicometrica calcolata dal backend (punteggi standard, fasce, percentili).
   * Formula un prompt clinico strutturato richiedendo a Gemini di analizzare in modo asettico, scientifico ed empatico gli 8 domini della Qualità della Vita.
-  * Esegue la richiesta asincrona POST verso l'endpoint ufficiale delle API di Google Generative Language (`v1beta/models/gemini-1.5-pro:generateContent`), autenticandosi tramite la chiave API memorizzata nelle impostazioni locali di `AppSettings`.
+  * Esegue la richiesta asincrona POST verso l'endpoint ufficiale delle API di Google Generative Language (`v1beta/models/{gemini-model}:generateContent`), autenticandosi tramite la chiave API memorizzata nelle impostazioni locali di `AppSettings`.
   * Restituisce il testo strutturato in formato Markdown da mostrare al clinico.
 * **Dipendenze/Relazioni**:
   * Richiama le chiavi configurate e persistite nell'istanza globale di `AppSettings` per ottenere l'autorizzazione di rete.

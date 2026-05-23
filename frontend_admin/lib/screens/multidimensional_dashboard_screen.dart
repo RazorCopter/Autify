@@ -29,7 +29,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   bool _isCompareMode = false;
 
   String? _geminiKey;
-  String _geminiModel = 'gemini-1.5-pro';
+  String _geminiModel = 'gemini-2.5-pro';
 
   List<ScaleModel> _availableScales = [];
   Map<String, AggregatedEvaluation> _latestEvaluations = {};
@@ -69,7 +69,18 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     // 1. Carica configurazione AI
     final settings = await _apiService.getGeminiSettings();
     _geminiKey = settings['key'];
-    _geminiModel = settings['model'] ?? 'gemini-1.5-pro';
+    final rawModel = settings['model'] ?? 'gemini-2.5-pro';
+    if (rawModel.contains('1.5-pro') || rawModel == 'gemini-1.5-pro') {
+      _geminiModel = 'gemini-2.5-pro';
+    } else if (rawModel.contains('1.5-flash') || rawModel == 'gemini-1.5-flash') {
+      _geminiModel = 'gemini-2.5-flash';
+    } else {
+      if (rawModel != 'gemini-2.5-pro' && rawModel != 'gemini-2.5-flash' && rawModel != 'gemini-3.5-flash') {
+        _geminiModel = 'gemini-2.5-pro';
+      } else {
+        _geminiModel = rawModel;
+      }
+    }
 
     // 2. Carica scale disponibili
     _availableScales = await _apiService.getScales();
