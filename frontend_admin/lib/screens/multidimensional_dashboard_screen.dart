@@ -119,7 +119,17 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   }
 
   Future<void> _runAiAnalysis() async {
-    if (_geminiKey == null || _geminiKey!.isEmpty || _geminiKey == '***-HIDDEN') {
+    String? realKey = _geminiKey;
+    if (realKey == '***-HIDDEN') {
+      try {
+        final settings = await _apiService.getGeminiSettings(raw: true);
+        realKey = settings['key'];
+      } catch (_) {
+        realKey = null;
+      }
+    }
+
+    if (realKey == null || realKey.isEmpty || realKey == '***-HIDDEN') {
       setState(() => _aiError = 'Chiave API Gemini mancante. Configurala in Impostazioni.');
       return;
     }
@@ -139,7 +149,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       final report = await _geminiService.analyzePatientData(
         widget.patient,
         _latestEvaluations.values.toList(),
-        _geminiKey!,
+        realKey,
         _geminiModel,
       );
       setState(() {
@@ -1135,14 +1145,14 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             ],
           ),
           Wrap(
-            spacing: 18,
-            runSpacing: 8,
+            spacing: 24,
+            runSpacing: 12,
             children: eval.domini.map((d) {
               return Text(
                 '${d.codice.toUpperCase()} = ${d.etichetta}: ${d.punteggio}',
                 style: const TextStyle(
                   color: Colors.white70,
-                  fontSize: 11.5,
+                  fontSize: 23.0,
                   fontFamily: 'monospace',
                   fontWeight: FontWeight.w500,
                 ),

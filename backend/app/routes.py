@@ -578,11 +578,11 @@ async def update_settings(settings: AppSettings):
     return {"message": "Impostazioni salvate con successo"}
 
 @admin_router.get("/settings", response_model=AppSettings, tags=["Admin - Configuration"])
-async def get_settings():
+async def get_settings(raw: bool = False):
     doc = await settings_collection.find_one({"id": "global_settings"})
     if doc:
         settings = AppSettings(**doc)
-        if settings.gemini_api_key:
+        if settings.gemini_api_key and not raw:
             settings.gemini_api_key = "***-HIDDEN"
         return settings
     return AppSettings()

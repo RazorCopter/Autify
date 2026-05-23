@@ -118,10 +118,10 @@ class ApiService {
     }
   }
 
-  Future<Map<String, String?>> getGeminiSettings() async {
+  Future<Map<String, String?>> getGeminiSettings({bool raw = false}) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/settings'),
+        Uri.parse('$baseUrl/settings?raw=$raw'),
         headers: {'X-Admin-Password': kAdminPassword},
       );
       if (response.statusCode == 200) {
