@@ -23,6 +23,8 @@ class AppSettings(BaseModel):
     id: str = "global_settings"
     gemini_api_key: Optional[str] = None
     gemini_model: Optional[str] = "gemini-2.5-pro"
+    gemini_prompt: Optional[str] = None
+    viewer_ai_enabled: Optional[bool] = False
 
 # --- MODELLI SCALA (Scale Models) ---
 

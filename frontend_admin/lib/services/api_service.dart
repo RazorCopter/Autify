@@ -189,7 +189,7 @@ class ApiService {
     }
   }
 
-  Future<Map<String, String?>> getGeminiSettings() async {
+  Future<Map<String, dynamic>> getGeminiSettings() async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/settings'),
@@ -200,15 +200,27 @@ class ApiService {
         return {
           'key': body['gemini_api_key'],
           'model': body['gemini_model'] ?? 'gemini-1.5-pro',
+          'prompt': body['gemini_prompt'],
+          'viewer_ai_enabled': body['viewer_ai_enabled'] ?? false,
         };
       }
-      return {'key': null, 'model': 'gemini-1.5-pro'};
+      return {
+        'key': null,
+        'model': 'gemini-1.5-pro',
+        'prompt': null,
+        'viewer_ai_enabled': false,
+      };
     } catch (e) {
-      return {'key': null, 'model': 'gemini-1.5-pro'};
+      return {
+        'key': null,
+        'model': 'gemini-1.5-pro',
+        'prompt': null,
+        'viewer_ai_enabled': false,
+      };
     }
   }
 
-  Future<bool> saveGeminiSettings(String key, String model) async {
+  Future<bool> saveGeminiSettings(String key, String model, {String? prompt, bool? viewerAiEnabled}) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/settings'),
@@ -220,6 +232,8 @@ class ApiService {
           'id': 'global_settings',
           'gemini_api_key': key,
           'gemini_model': model,
+          'gemini_prompt': prompt,
+          'viewer_ai_enabled': viewerAiEnabled ?? false,
         }),
       );
       return response.statusCode == 200;

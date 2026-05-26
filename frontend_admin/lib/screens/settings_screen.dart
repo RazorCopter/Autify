@@ -17,6 +17,8 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final ApiService _apiService = ApiService();
   final TextEditingController _apiKeyController = TextEditingController();
+  final TextEditingController _promptController = TextEditingController();
+  bool _viewerAiEnabled = false;
   
   final TextEditingController _adminPwdController = TextEditingController();
   final TextEditingController _viewerPwdController = TextEditingController();
@@ -45,6 +47,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (settings['key'] != null && settings['key']!.isNotEmpty) {
       _apiKeyController.text = settings['key']!;
     }
+    _promptController.text = settings['prompt'] ?? '';
+    _viewerAiEnabled = settings['viewer_ai_enabled'] ?? false;
     final rawModel = settings['model'] ?? 'gemini-1.5-pro';
     setState(() {
       if (rawModel == 'gemini-1.5-pro' || rawModel == 'gemini-1.5-flash' || rawModel == 'gemini-1.5-pro-latest') {
@@ -221,12 +225,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _saveAIConfig() async {
     setState(() => _isLoading = true);
-    final success = await _apiService.saveGeminiSettings(_apiKeyController.text, _selectedModel);
+    final success = await _apiService.saveGeminiSettings(
+      _apiKeyController.text,
+      _selectedModel,
+      prompt: _promptController.text.trim().isEmpty ? null : _promptController.text.trim(),
+      viewerAiEnabled: _viewerAiEnabled,
+    );
     setState(() => _isLoading = false);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(success ? 'Configurazione AI salvata!' : 'Errore nel salvataggio')),
+      );
+    }
+  }
+
+  static const String _defaultSystemPrompt = '''
+Sei il massimo esperto e consulente di supporto specializzato nei percorsi per l'Autismo.
+Il tuo compito è analizzare in modo multidimensionale i dati quantitativi e qualitativi estratti dalle scale di valutazione dell'utente.
+
+OBIETTIVO DELL'ANALISI:
+1. Valutare l'andamento generale e il profilo dell'utente (punti di forza e aree di supporto nei vari domini).
+2. Evidenziare correlazioni significative tra le diverse scale somministrate (es. POS, San Martín).
+3. Incrociare tutti i dati forniti, incluse le note aggiuntive e gli eventuali allegati documentali.
+4. Proporre ipotesi e linee guida per progetti educativi e di supporto customizzati e ritagliati sartorialmente sulle specifiche esigenze dell'utente.
+5. Riportare in forma di relazione chiara e coerente quanto emerge dall'incrocio di tutti i dati (scale, note, allegato).
+
+TONO E FORMATTAZIONE:
+- Tono: Professionale, rigoroso, empatico, fortemente orientato all'utilità educativa e di supporto.
+- Formattazione: Usa il Markdown (titoli, liste, grassetti) per strutturare un referto elegante, chiaro e leggibile.
+''';
+
+  void _resetDefaultPrompt() {
+    setState(() {
+      _promptController.text = _defaultSystemPrompt;
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Prompt ripristinato al default! (Salva per rendere effettiva la modifica)')),
       );
     }
   }
@@ -240,336 +276,461 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           const Text('Impostazioni di Sistema', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
           const SizedBox(height: 32),
-          
-          // Sezione Sicurezza e Accessi
-          if (!ApiService.isViewer) ...[
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+
+          // 1. Gestione Accessi e Sicurezza
+          if (!ApiService.isViewer)
+            _buildPremiumExpansionTile(
+              context: context,
+              title: 'Gestione Accessi e Sicurezza',
+              subtitle: 'Gestisci le credenziali di accesso per l\'Admin e per i Viewer',
+              icon: Icons.security_rounded,
+              iconColor: Colors.blue.shade700,
+              initiallyExpanded: true,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Gestione Accessi e Sicurezza', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                        ElevatedButton.icon(
-                          onPressed: _showViewerLogsDialog,
-                          icon: const Icon(Icons.list_alt_rounded),
-                          label: const Text('Registro Accessi Viewer'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE8EEF8),
-                            foregroundColor: Colors.black87,
-                            elevation: 0,
-                          ),
-                        ),
-                      ],
+                    const Text(
+                      'Credenziali di Accesso',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 8),
-                    const Text('Gestisci le credenziali di accesso per l\'Admin e per i Viewer.'),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _adminPwdController,
-                            obscureText: _obscureAdminPwd,
-                            decoration: InputDecoration(
-                              labelText: 'Password Admin',
-                              border: const OutlineInputBorder(),
-                              prefixIcon: const Icon(Icons.admin_panel_settings),
-                              suffixIcon: IconButton(
-                                icon: Icon(_obscureAdminPwd ? Icons.visibility : Icons.visibility_off),
-                                onPressed: () {
-                                  setState(() {
-                                    _obscureAdminPwd = !_obscureAdminPwd;
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextField(
-                            controller: _viewerPwdController,
-                            obscureText: _obscureViewerPwd,
-                            decoration: InputDecoration(
-                              labelText: 'Password Viewer',
-                              border: const OutlineInputBorder(),
-                              prefixIcon: const Icon(Icons.visibility_outlined),
-                              suffixIcon: IconButton(
-                                icon: Icon(_obscureViewerPwd ? Icons.visibility : Icons.visibility_off),
-                                onPressed: () {
-                                  setState(() {
-                                    _obscureViewerPwd = !_obscureViewerPwd;
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Switch(
-                          value: _viewerEnabled,
-                          onChanged: (val) {
-                            setState(() {
-                              _viewerEnabled = val;
-                            });
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _viewerEnabled ? 'Accesso Viewer Abilitato' : 'Accesso Viewer Disabilitato',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: _viewerEnabled ? Colors.green[700] : Colors.red[700],
-                          ),
-                        ),
-                        const Spacer(),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(minimumSize: const Size(0, 56)),
-                          onPressed: _isAuthConfigLoading ? null : _saveAuthConfig,
-                          icon: _isAuthConfigLoading 
-                              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Icon(Icons.save),
-                          label: const Text('Salva Configurazione'),
-                        ),
-                      ],
+                    ElevatedButton.icon(
+                      onPressed: _showViewerLogsDialog,
+                      icon: const Icon(Icons.list_alt_rounded),
+                      label: const Text('Registro Accessi Viewer'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE8EEF8),
+                        foregroundColor: Colors.black87,
+                        elevation: 0,
+                      ),
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 8),
+                const Text('Configura password robuste per proteggere l\'integrità dei dati.'),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _adminPwdController,
+                        obscureText: _obscureAdminPwd,
+                        decoration: InputDecoration(
+                          labelText: 'Password Admin',
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.admin_panel_settings),
+                          suffixIcon: IconButton(
+                            icon: Icon(_obscureAdminPwd ? Icons.visibility : Icons.visibility_off),
+                            onPressed: () {
+                              setState(() {
+                                _obscureAdminPwd = !_obscureAdminPwd;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TextField(
+                        controller: _viewerPwdController,
+                        obscureText: _obscureViewerPwd,
+                        decoration: InputDecoration(
+                          labelText: 'Password Viewer',
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.visibility_outlined),
+                          suffixIcon: IconButton(
+                            icon: Icon(_obscureViewerPwd ? Icons.visibility : Icons.visibility_off),
+                            onPressed: () {
+                              setState(() {
+                                _obscureViewerPwd = !_obscureViewerPwd;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Switch(
+                      value: _viewerEnabled,
+                      onChanged: (val) {
+                        setState(() {
+                          _viewerEnabled = val;
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _viewerEnabled ? 'Accesso Viewer Abilitato' : 'Accesso Viewer Disabilitato',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: _viewerEnabled ? Colors.green[700] : Colors.red[700],
+                      ),
+                    ),
+                    const Spacer(),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(minimumSize: const Size(0, 56)),
+                      onPressed: _isAuthConfigLoading ? null : _saveAuthConfig,
+                      icon: _isAuthConfigLoading
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.save),
+                      label: const Text('Salva Configurazione'),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(height: 24),
-          ],
-          
-          // Sezione Protocolli
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+
+          // 2. Protocolli di Supporto
+          _buildPremiumExpansionTile(
+            context: context,
+            title: 'Protocolli di Supporto',
+            subtitle: 'Importa le scale di valutazione da file JSON',
+            icon: Icons.description_rounded,
+            iconColor: Colors.teal.shade600,
+            children: [
+              const Text('Importa nuovi protocolli clinici o scale di valutazione personalizzate nel sistema.'),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading || ApiService.isViewer ? null : _pickAndUploadJSON,
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('Carica Protocollo JSON'),
+                ),
+              ),
+              if (_uploadStatus != null) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    if (_isLoading) const CircularProgressIndicator(),
+                    if (_isLoading) const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        _uploadStatus!,
+                        style: TextStyle(
+                          color: _uploadStatus!.contains('Errore') ? Colors.red : Colors.green,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+
+          // 3. Configurazione AI (Gemini)
+          _buildPremiumExpansionTile(
+            context: context,
+            title: 'Configurazione AI (Gemini)',
+            subtitle: 'API Key, modelli e prompt personalizzato del consulente IA',
+            icon: Icons.psychology_rounded,
+            iconColor: Colors.purple.shade700,
+            initiallyExpanded: true,
+            children: [
+              const Text('Configura i parametri di connessione e il comportamento dell\'Intelligenza Artificiale per l\'analisi clinica.'),
+              const SizedBox(height: 20),
+              Row(
                 children: [
-                  const Text('Protocolli di Supporto', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  const Text('Importa le scale di valutazione da file JSON.'),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 56,
-                    child: ElevatedButton.icon(
-                      onPressed: _isLoading || ApiService.isViewer ? null : _pickAndUploadJSON,
-                      icon: const Icon(Icons.upload_file),
-                      label: const Text('Carica Protocollo JSON'),
+                  Expanded(
+                    flex: 2,
+                    child: TextField(
+                      controller: _apiKeyController,
+                      obscureText: true,
+                      enabled: !ApiService.isViewer,
+                      decoration: const InputDecoration(
+                        labelText: 'Gemini API Key',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.key),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      if (_isLoading) const CircularProgressIndicator(),
-                      if (_isLoading) const SizedBox(width: 16),
-                      if (_uploadStatus != null) 
-                        Expanded(child: Text(_uploadStatus!, style: TextStyle(color: _uploadStatus!.contains('Errore') ? Colors.red : Colors.green))),
-                    ],
+                  const SizedBox(width: 16),
+                  Expanded(
+                    flex: 1,
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedModel,
+                      decoration: const InputDecoration(
+                        labelText: 'Modello',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.psychology),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'gemini-1.5-pro', child: Text('Gemini 1.5 Pro')),
+                        DropdownMenuItem(value: 'gemini-1.5-flash', child: Text('Gemini 1.5 Flash')),
+                        DropdownMenuItem(value: 'gemini-1.5-pro-latest', child: Text('Gemini 1.5 Pro Latest')),
+                        DropdownMenuItem(value: 'gemini-2.5-pro', child: Text('Gemini 2.5 Pro (Consigliato)')),
+                        DropdownMenuItem(value: 'gemini-2.5-flash', child: Text('Gemini 2.5 Flash')),
+                        DropdownMenuItem(value: 'gemini-3.5-flash', child: Text('Gemini 3.5 Flash')),
+                      ],
+                      onChanged: ApiService.isViewer ? null : (value) {
+                        if (value != null) {
+                          setState(() {
+                            _selectedModel = value;
+                          });
+                        }
+                      },
+                    ),
                   ),
                 ],
               ),
-            ),
-          ),
-          
-          const SizedBox(height: 24),
-          
-          // Sezione AI
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
+              const SizedBox(height: 20),
+              
+              // Switch permessi IA ai viewer
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Consenti l\'uso dell\'IA ai Viewer', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Abilita le utenze Viewer a lanciare analisi IA consumando l\'API Key dell\'Admin.'),
+                value: _viewerAiEnabled,
+                activeColor: Colors.purple.shade700,
+                onChanged: ApiService.isViewer ? null : (val) {
+                  setState(() {
+                    _viewerAiEnabled = val;
+                  });
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // System Prompt di Gemini
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Configurazione AI (Gemini)', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  const Text('Inserisci la tua API Key e seleziona il modello per abilitare le funzionalità di analisi intelligente dei dati.'),
-                  const SizedBox(height: 16),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        flex: 2,
-                        child: TextField(
-                          controller: _apiKeyController,
-                          obscureText: true,
-                          enabled: !ApiService.isViewer,
-                          decoration: const InputDecoration(
-                            labelText: 'Gemini API Key',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.key),
-                          ),
-                        ),
+                      const Text(
+                        'System Prompt di Analisi (Consulente IA)',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        flex: 1,
-                        child: DropdownButtonFormField<String>(
-                          value: _selectedModel,
-                          decoration: const InputDecoration(
-                            labelText: 'Modello',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.psychology),
-                          ),
-                          items: const [
-                            DropdownMenuItem(value: 'gemini-1.5-pro', child: Text('Gemini 1.5 Pro (Consigliato)')),
-                            DropdownMenuItem(value: 'gemini-1.5-flash', child: Text('Gemini 1.5 Flash (Veloce)')),
-                            DropdownMenuItem(value: 'gemini-1.5-pro-latest', child: Text('Gemini 1.5 Pro Latest')),
-                          ],
-                          onChanged: ApiService.isViewer ? null : (value) {
-                            if (value != null) {
-                              setState(() {
-                                _selectedModel = value;
-                              });
-                            }
-                          },
+                      TextButton.icon(
+                        onPressed: ApiService.isViewer ? null : _resetDefaultPrompt,
+                        icon: const Icon(Icons.settings_backup_restore, size: 18),
+                        label: const Text('Ripristina Default'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.purple.shade700,
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(minimumSize: const Size(0, 56)),
-                        onPressed: _isLoading || ApiService.isViewer ? null : _saveAIConfig,
-                        icon: const Icon(Icons.save),
-                        label: const Text('Salva'),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _promptController,
+                    maxLines: 12,
+                    minLines: 5,
+                    enabled: !ApiService.isViewer,
+                    decoration: InputDecoration(
+                      hintText: 'Inserisci il prompt di sistema per personalizzare l\'analisi...',
+                      hintStyle: TextStyle(color: Colors.grey.shade400),
+                      border: const OutlineInputBorder(),
+                      fillColor: const Color(0xFFF8FAFC),
+                      filled: true,
+                    ),
+                    style: const TextStyle(
+                      fontFamily: 'Courier',
+                      fontSize: 13,
+                      height: 1.4,
+                      color: Color(0xFF334155),
+                    ),
+                  ),
                 ],
               ),
-            ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.purple.shade700,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(140, 56),
+                    ),
+                    onPressed: _isLoading || ApiService.isViewer ? null : _saveAIConfig,
+                    icon: const Icon(Icons.save),
+                    label: const Text('Salva Configurazione AI', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ],
           ),
-          
-          const SizedBox(height: 24),
 
-          // Sezione Parametri di Validità Scale (Gestione reattiva)
+          // 4. Parametri di Validità Scale
           Consumer<SettingsNotifier>(
             builder: (context, notifier, child) {
               final settings = notifier.settings;
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Parametri di Validità Scale',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Configura la validità temporale delle valutazioni e la soglia di preavviso per gli indicatori di scadenza.',
-                        style: TextStyle(color: Color(0xFF718096)),
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      // Validità POS Slider
-                      _buildSliderRow(
-                        title: 'Validità Scala POS',
-                        value: settings.validityMonthsPOS.toDouble(),
-                        min: 1,
-                        max: 24,
-                        unit: 'mesi',
-                        icon: Icons.calendar_month,
-                        onChanged: (val) {
-                          notifier.updateSettings(validityMonthsPOS: val.toInt());
-                        },
-                      ),
-                      const Divider(height: 32, color: Color(0xFFE8EEF8)),
-                      
-                      // Validità San Martín Slider
-                      _buildSliderRow(
-                        title: 'Validità Scala San Martín',
-                        value: settings.validityMonthsSanMartin.toDouble(),
-                        min: 1,
-                        max: 24,
-                        unit: 'mesi',
-                        icon: Icons.edit_calendar,
-                        onChanged: (val) {
-                          notifier.updateSettings(validityMonthsSanMartin: val.toInt());
-                        },
-                      ),
-                      const Divider(height: 32, color: Color(0xFFE8EEF8)),
-                      
-                      // Preavviso Alert Slider
-                      _buildSliderRow(
-                        title: 'Preavviso Alert di Scadenza',
-                        value: settings.alertThresholdDays.toDouble(),
-                        min: 0,
-                        max: 60,
-                        unit: 'giorni',
-                        icon: Icons.notification_important,
-                        onChanged: (val) {
-                          notifier.updateSettings(alertThresholdDays: val.toInt());
-                        },
-                      ),
-                    ],
+              return _buildPremiumExpansionTile(
+                context: context,
+                title: 'Parametri di Validità Scale',
+                subtitle: 'Configura la validità temporale delle valutazioni e la soglia di preavviso',
+                icon: Icons.calendar_month_rounded,
+                iconColor: Colors.orange.shade700,
+                children: [
+                  _buildSliderRow(
+                    title: 'Validità Scala POS',
+                    value: settings.validityMonthsPOS.toDouble(),
+                    min: 1,
+                    max: 24,
+                    unit: 'mesi',
+                    icon: Icons.calendar_month,
+                    onChanged: (val) {
+                      notifier.updateSettings(validityMonthsPOS: val.toInt());
+                    },
                   ),
-                ),
+                  const Divider(height: 32, color: Color(0xFFE8EEF8)),
+                  _buildSliderRow(
+                    title: 'Validità Scala San Martín',
+                    value: settings.validityMonthsSanMartin.toDouble(),
+                    min: 1,
+                    max: 24,
+                    unit: 'mesi',
+                    icon: Icons.edit_calendar,
+                    onChanged: (val) {
+                      notifier.updateSettings(validityMonthsSanMartin: val.toInt());
+                    },
+                  ),
+                  const Divider(height: 32, color: Color(0xFFE8EEF8)),
+                  _buildSliderRow(
+                    title: 'Preavviso Alert di Scadenza',
+                    value: settings.alertThresholdDays.toDouble(),
+                    min: 0,
+                    max: 60,
+                    unit: 'giorni',
+                    icon: Icons.notification_important,
+                    onChanged: (val) {
+                      notifier.updateSettings(alertThresholdDays: val.toInt());
+                    },
+                  ),
+                ],
               );
             },
           ),
-          
-          const SizedBox(height: 24),
-          
-          // Sezione Database
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+
+          // 5. Database
+          _buildPremiumExpansionTile(
+            context: context,
+            title: 'Database',
+            subtitle: 'Backup, esportazione e ripristino dell\'archivio clinico',
+            icon: Icons.storage_rounded,
+            iconColor: Colors.indigo.shade700,
+            children: [
+              const Text('Esporta l\'intero database in formato JSON per conservare un backup offline o ripristinare i dati precedenti.'),
+              const SizedBox(height: 20),
+              Row(
                 children: [
-                  const Text('Database', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  const Text('Esporta l\'intero database in un file JSON o ripristina un backup precedente.'),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      SizedBox(
-                        height: 56,
-                        child: ElevatedButton.icon(
-                          onPressed: _isExporting || _isImporting || ApiService.isViewer ? null : _exportDatabase,
-                          icon: _isExporting
-                              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                              : const Icon(Icons.download_rounded),
-                          label: Text(_isExporting ? 'Esportazione...' : 'Esporta Database'),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      SizedBox(
-                        height: 56,
-                        child: ElevatedButton.icon(
-                          onPressed: _isExporting || _isImporting || ApiService.isViewer ? null : _importDatabase,
-                          icon: _isImporting
-                              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                              : const Icon(Icons.upload_file),
-                          label: Text(_isImporting ? 'Importazione...' : 'Importa Database'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_dbStatus != null) ...[
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        if (_isImporting || _isExporting) const CircularProgressIndicator(),
-                        if (_isImporting || _isExporting) const SizedBox(width: 16),
-                        Expanded(child: Text(_dbStatus!, style: TextStyle(color: _dbStatus!.contains('Errore') ? Colors.red : Colors.green))),
-                      ],
+                  SizedBox(
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: _isExporting || _isImporting || ApiService.isViewer ? null : _exportDatabase,
+                      icon: _isExporting
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.download_rounded),
+                      label: Text(_isExporting ? 'Esportazione...' : 'Esporta Database'),
                     ),
-                  ],
+                  ),
+                  const SizedBox(width: 16),
+                  SizedBox(
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: _isExporting || _isImporting || ApiService.isViewer ? null : _importDatabase,
+                      icon: _isImporting
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.upload_file),
+                      label: Text(_isImporting ? 'Importazione...' : 'Importa Database'),
+                    ),
+                  ),
                 ],
               ),
-            ),
+              if (_dbStatus != null) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    if (_isImporting || _isExporting) const CircularProgressIndicator(),
+                    if (_isImporting || _isExporting) const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        _dbStatus!,
+                        style: TextStyle(
+                          color: _dbStatus!.contains('Errore') ? Colors.red : Colors.green,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPremiumExpansionTile({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color iconColor,
+    required List<Widget> children,
+    bool initiallyExpanded = false,
+  }) {
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.bottom(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFE8EEF8), width: 1.5),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Theme(
+          data: theme.copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            initiallyExpanded: initiallyExpanded,
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: iconColor, size: 24),
+            ),
+            title: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E293B),
+              ),
+            ),
+            subtitle: Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF64748B),
+              ),
+            ),
+            trailing: const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: Color(0xFF64748B),
+              size: 24,
+            ),
+            childrenPadding: const EdgeInsets.only(left: 24, right: 24, bottom: 24, top: 8),
+            children: children,
+          ),
+        ),
       ),
     );
   }

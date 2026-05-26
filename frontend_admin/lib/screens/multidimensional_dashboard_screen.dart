@@ -35,6 +35,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
   String? _geminiKey;
   String _geminiModel = 'gemini-2.5-pro';
+  bool _viewerAiEnabled = false;
+  String? _geminiPrompt;
 
   List<ScaleModel> _availableScales = [];
   Map<String, AggregatedEvaluation> _latestEvaluations = {};
@@ -78,7 +80,9 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     // 1. Carica configurazione AI
     final settings = await _apiService.getGeminiSettings();
     _geminiKey = settings['key'];
-    final rawModel = settings['model'] ?? 'gemini-2.5-pro';
+    _viewerAiEnabled = settings['viewer_ai_enabled'] ?? false;
+    _geminiPrompt = settings['prompt'];
+    final rawModel = settings['model'] ?? 'gemini-1.5-pro';
     if (rawModel.contains('1.5-pro') || rawModel == 'gemini-1.5-pro') {
       _geminiModel = 'gemini-2.5-pro';
     } else if (rawModel.contains('1.5-flash') || rawModel == 'gemini-1.5-flash') {
@@ -171,6 +175,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         _latestEvaluations.values.toList(),
         realKey,
         _geminiModel,
+        systemPrompt: _geminiPrompt,
         notes: _aiNotesController.text,
         attachment: attachmentData,
       );
@@ -1464,6 +1469,29 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (ApiService.isViewer && !_viewerAiEnabled) ...[
+            Container(
+              margin: const EdgeInsets.bottom(24),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.amber.shade800, size: 24),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      'L\'accesso alle funzionalità IA di analisi dei dati paziente è attualmente disabilitato per il profilo Viewer. Contatta un amministratore per abilitarlo.',
+                      style: TextStyle(color: Colors.amber.shade900, fontWeight: FontWeight.w500, fontSize: 14),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           // Header
           Container(
             padding: const EdgeInsets.all(24),
@@ -1497,12 +1525,18 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
-                  onPressed: _isAnalyzing ? null : _runAiAnalysis,
+                  onPressed: (_isAnalyzing || (ApiService.isViewer && !_viewerAiEnabled)) ? null : _runAiAnalysis,
                   icon: _isAnalyzing
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                       : const Icon(Icons.auto_awesome),
-                  label: Text(_isAnalyzing ? 'Analisi in corso...' : 'Analizza con IA',
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                  label: Text(
+                    _isAnalyzing 
+                        ? 'Analisi in corso...' 
+                        : (ApiService.isViewer && !_viewerAiEnabled) 
+                            ? 'AI non abilitata' 
+                            : 'Analizza con IA',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
                 if (_aiReport != null) ...[
                   const SizedBox(width: 12),

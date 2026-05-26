@@ -670,7 +670,8 @@ async def get_settings(role: str = Depends(verify_admin_auth)):
     if doc:
         settings = AppSettings(**doc)
         if settings.gemini_api_key and role == "viewer":
-            settings.gemini_api_key = "***-HIDDEN"
+            if not settings.viewer_ai_enabled:
+                settings.gemini_api_key = "***-HIDDEN"
         return settings
     return AppSettings()
 

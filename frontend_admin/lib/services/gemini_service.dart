@@ -12,12 +12,13 @@ class GeminiService {
     List<AggregatedEvaluation> evaluations,
     String apiKey,
     String modelName, {
+    String? systemPrompt,
     String? notes,
     Map<String, dynamic>? attachment, // { "bytes": Uint8List, "extension": "pdf" }
   }) async {
     final url = Uri.parse('$_baseUrl/$modelName:generateContent?key=$apiKey');
 
-    final systemPrompt = '''
+    final defaultPrompt = '''
 Sei il massimo esperto e consulente di supporto specializzato nei percorsi per l'Autismo.
 Il tuo compito è analizzare in modo multidimensionale i dati quantitativi e qualitativi estratti dalle scale di valutazione dell'utente.
 
@@ -32,6 +33,8 @@ TONO E FORMATTAZIONE:
 - Tono: Professionale, rigoroso, empatico, fortemente orientato all'utilità educativa e di supporto.
 - Formattazione: Usa il Markdown (titoli, liste, grassetti) per strutturare un referto elegante, chiaro e leggibile.
 ''';
+
+    final activeSystemPrompt = (systemPrompt != null && systemPrompt.trim().isNotEmpty) ? systemPrompt : defaultPrompt;
 
     final patientData = _serializePatientData(patient, evaluations);
     
@@ -64,7 +67,7 @@ TONO E FORMATTAZIONE:
     final payload = {
       "system_instruction": {
         "parts": [
-          {"text": systemPrompt}
+          {"text": activeSystemPrompt}
         ]
       },
       "contents": [
