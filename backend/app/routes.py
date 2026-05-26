@@ -356,6 +356,24 @@ async def save_patient_ai_analysis(id_patient: str, payload: AiAnalysisCreate):
     await ai_analyses_collection.insert_one(analysis_dict)
     return analysis
 
+class AiAnalysisUpdate(BaseModel):
+    notes: Optional[str] = None
+
+@admin_router.put("/patients/ai-analyses/{id_analysis}", tags=["Admin - AI Analyses"])
+async def update_ai_analysis(id_analysis: str, payload: AiAnalysisUpdate):
+    existing = await ai_analyses_collection.find_one({"id": id_analysis})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Analisi IA non trovata")
+    
+    update_data = {}
+    if payload.notes is not None:
+        update_data["notes"] = payload.notes
+        
+    if update_data:
+        await ai_analyses_collection.update_one({"id": id_analysis}, {"$set": update_data})
+        
+    return {"message": "Analisi IA aggiornata con successo"}
+
 @admin_router.delete("/patients/ai-analyses/{id_analysis}", tags=["Admin - AI Analyses"])
 async def delete_ai_analysis(id_analysis: str):
     result = await ai_analyses_collection.delete_one({"id": id_analysis})

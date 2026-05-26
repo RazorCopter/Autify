@@ -288,6 +288,63 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     }
   }
 
+  Future<void> _renameSavedAnalysisLabel(String id, String currentLabel) async {
+    final controller = TextEditingController(text: currentLabel);
+    final newLabel = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rinomina Nota Relazione'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Nota / Label Relazione',
+            hintText: 'Esempio: Inserimento scala 1a e 2a',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annulla', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Salva'),
+          ),
+        ],
+      ),
+    );
+
+    if (newLabel != null) {
+      try {
+        final success = await _apiService.updateAiAnalysisLabel(id, newLabel);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Nota della relazione aggiornata con successo.'),
+              backgroundColor: Colors.teal,
+            ),
+          );
+          await _loadSavedAnalyses();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Impossibile aggiornare la nota.'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Errore: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _deleteSavedAnalysis(String id) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -2138,6 +2195,11 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                               ),
                             );
                           },
+                        ),
+                        IconButton(
+                          tooltip: 'Rinomina Nota/Label',
+                          icon: Icon(Icons.edit_outlined, color: Colors.blue.shade700, size: 20),
+                          onPressed: () => _renameSavedAnalysisLabel(id, notes ?? ''),
                         ),
                         IconButton(
                           tooltip: 'Elimina Relazione',

@@ -2,6 +2,15 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.13.0] - 2026-05-26
+
+### Aggiunto
+- **Ridenominazione Note / Label delle Relazioni IA**:
+  - Aggiunto l'endpoint `PUT /patients/ai-analyses/{id_analysis}` nel backend FastAPI in `routes.py` per aggiornare le note (etichette) delle relazioni salvate.
+  - Implementato il metodo client `updateAiAnalysisLabel` in `api_service.dart`.
+  - Integrata l'azione di ridenominazione tramite una dialog interattiva di inserimento (`_renameSavedAnalysisLabel`) nel tab AI del frontend admin, con aggiornamento dinamico immediato dello storico.
+- **Aggiornamento Versione**: Incrementata la versione globale della suite a `2.13.0` in `app_version.dart` e `pubspec.yaml` (admin).
+
 ## [2.12.0] - 2026-05-26
 
 ### Aggiunto

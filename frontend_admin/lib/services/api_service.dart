@@ -494,6 +494,25 @@ class ApiService {
     }
   }
 
+  Future<bool> updateAiAnalysisLabel(String analysisId, String newLabel) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/patients/ai-analyses/$analysisId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Password': kAdminPassword,
+        },
+        body: jsonEncode({
+          'notes': newLabel,
+        }),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Errore aggiornamento label analisi IA: $e');
+      return false;
+    }
+  }
+
   // --- CLIENT-SIDE ENDPOINTS INTEGRATED ---
   static const String clientBaseUrl = 'https://aut.ghome.it/api/client';
 
