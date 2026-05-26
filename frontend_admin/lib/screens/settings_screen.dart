@@ -287,7 +287,7 @@ TONO E FORMATTAZIONE:
               subtitle: 'Gestisci le credenziali di accesso per l\'Admin e per i Viewer',
               icon: Icons.security_rounded,
               iconColor: Colors.blue.shade700,
-              initiallyExpanded: true,
+              initiallyExpanded: false,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -433,7 +433,7 @@ TONO E FORMATTAZIONE:
             subtitle: 'API Key, modelli e prompt personalizzato del consulente IA',
             icon: Icons.psychology_rounded,
             iconColor: Colors.purple.shade700,
-            initiallyExpanded: true,
+            initiallyExpanded: false,
             children: [
               const Text('Configura i parametri di connessione e il comportamento dell\'Intelligenza Artificiale per l\'analisi clinica.'),
               const SizedBox(height: 20),

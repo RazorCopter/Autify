@@ -2,6 +2,12 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.14.2] - 2026-05-26
+
+### Aggiunto
+- **Miglioramento dell'Usabilità dello Storico Report IA**: Inserito un banner informativo premium sopra la checklist dello storico per spiegare chiaramente lo scopo dei checkbox di selezione ("Seleziona per utilizzare questo report nella nuova analisi IA").
+- **Ottimizzazione Schermata Impostazioni**: Modificata l'apertura di default dei pannelli di espansione ("Gestione Accessi e Sicurezza" e "Configurazione AI (Gemini)"), ora impostati come chiusi all'avvio della pagina per una consultazione più ordinata e pulita.
+
 ## [2.14.1] - 2026-05-26
 
 ### Corretto
