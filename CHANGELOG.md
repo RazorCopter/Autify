@@ -2,6 +2,18 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.11.0] - 2026-05-26
+
+### Aggiunto
+- **Document Reader Clinico Virtuale (Fogli A4)**:
+  - Sviluppata la nuova schermata `DocumentReaderScreen` per la visualizzazione immersiva delle relazioni AI.
+  - Impaginazione ad alta fedeltà con fogli A4 virtuali, testata clinica personalizzata, margini reali e piè di pagina con numerazione automatica ("Pagina X di Y").
+  - Supporto alle interruzioni di pagina fisiche tramite il tag markdown standard `---`.
+  - Controlli premium nella toolbar: regolazione della dimensione del font, zoom dei fogli, copia testo rapida ed esportazione PDF integrata.
+  - Switch interattivo tra tre temi colore: *Clinical* (bianco/slate), *Warm* (avorio/crema) e *Dark* (antracite/scuro).
+  - Collegamento diretto in `MultidimensionalDashboardScreen` tramite pulsante "Modalità Lettura" e pulsante rapido "Schermo Intero / Lettura A4" all'interno della Card di sintesi clinica.
+- **Allineamento Versioni**: Incrementata la versione globale della suite a `2.11.0` in `app_version.dart` e `pubspec.yaml` (admin).
+
 ## [2.7.2] - 2026-05-23
 
 ### Modificato
