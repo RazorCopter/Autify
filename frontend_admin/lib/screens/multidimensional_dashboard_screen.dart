@@ -12,6 +12,7 @@ import '../services/gemini_service.dart';
 import '../theme/app_theme.dart';
 import 'evaluation_detail_screen.dart';
 import 'settings_screen.dart';
+import 'document_reader_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:typed_data';
@@ -1542,6 +1543,31 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   const SizedBox(width: 12),
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.indigo.shade600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DocumentReaderScreen(
+                            patient: widget.patient,
+                            report: _aiReport!,
+                            onExportPdf: _exportAiPdf,
+                            isExportingPdf: _isExportingPdf,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.chrome_reader_mode_outlined),
+                    label: const Text('Modalità Lettura',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.deepPurple.shade900,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -1697,18 +1723,64 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   borderRadius: BorderRadius.circular(16),
                   side: BorderSide(color: Colors.grey.shade200),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Markdown(
-                    data: _aiReport!,
-                    selectable: true,
-                    styleSheet: MarkdownStyleSheet(
-                      h1: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 24),
-                      h2: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 20),
-                      h3: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
-                      p: const TextStyle(fontSize: 15, height: 1.6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 24.0, right: 16.0, top: 16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.description_outlined, color: AppTheme.primaryColor, size: 20),
+                              SizedBox(width: 8),
+                              Text(
+                                'Referto di Sintesi Clinica',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.textPrimary),
+                              ),
+                            ],
+                          ),
+                          TextButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => DocumentReaderScreen(
+                                    patient: widget.patient,
+                                    report: _aiReport!,
+                                    onExportPdf: _exportAiPdf,
+                                    isExportingPdf: _isExportingPdf,
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.fullscreen_rounded, size: 20),
+                            label: const Text('Schermo Intero / Lettura A4'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppTheme.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                    const Divider(height: 16),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 24.0, right: 24.0, bottom: 24.0),
+                        child: Markdown(
+                          data: _aiReport!,
+                          selectable: true,
+                          styleSheet: MarkdownStyleSheet(
+                            h1: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 24),
+                            h2: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 20),
+                            h3: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
+                            p: const TextStyle(fontSize: 15, height: 1.6),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
