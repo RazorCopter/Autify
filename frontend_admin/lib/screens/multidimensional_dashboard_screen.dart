@@ -1471,7 +1471,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         children: [
           if (ApiService.isViewer && !_viewerAiEnabled) ...[
             Container(
-              margin: const EdgeInsets.bottom(24),
+              margin: const EdgeInsets.only(bottom: 24),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
                 color: Colors.amber.shade50,

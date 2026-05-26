@@ -681,7 +681,7 @@ TONO E FORMATTAZIONE:
   }) {
     final theme = Theme.of(context);
     return Container(
-      margin: const EdgeInsets.bottom(20),
+      margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
