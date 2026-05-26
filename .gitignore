@@ -27,3 +27,8 @@ __pycache__/
 
 # Node
 node_modules/
+
+# Local runtime auth credentials and connection logs
+backend/app/auth_config.json
+backend/app/viewer_logs.json
+

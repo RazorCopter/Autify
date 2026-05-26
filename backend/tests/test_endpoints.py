@@ -443,7 +443,7 @@ def test_create_patient_duplicate_id(client, setup_mock_db):
     }
     response = client.post("/api/admin/patients", json=duplicate_payload)
     assert response.status_code == 400
-    assert "Paziente con questo ID" in response.json()["detail"]
+    assert "Utente con questo ID" in response.json()["detail"]
 
 
 def test_import_scale_file_size_exceeded(client, setup_mock_db):
