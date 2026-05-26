@@ -2,6 +2,18 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.12.0] - 2026-05-26
+
+### Aggiunto
+- **Storico Relazioni Multidimensionali e Iniezione Contesto**:
+  - Creata la nuova collezione MongoDB `ai_analyses` e definiti i relativi endpoint API REST (`GET`, `POST`, `DELETE`) asincroni e protetti da RBAC nel backend.
+  - Implementati i corrispondenti metodi del client HTTP del frontend in `api_service.dart`.
+  - Integrata in `GeminiService` la capacità di ricevere ed iniettare lo storico selezionato delle relazioni precedenti all'interno del prompt di Gemini, per un'analisi evolutiva longitudinale.
+  - Aggiunta l'opzione grafica "Salva in Storico" a fianco dei comandi del report generato con indicatori reattivi di caricamento.
+  - Inserito il pannello premium *"Storico Relazioni IA e Iniezione Contesto"* con checklist di selezione, pulsante per leggere al volo qualsiasi relazione precedente nel `DocumentReaderScreen` e comandi di eliminazione sicura con modal di conferma.
+  - Eseguita una bonifica meticolosa e sistematica del vocabolario, sostituendo i riferimenti clinici con termini inclusivi di supporto ed educativi (es. `"andamento educativo e di supporto nel tempo"` al posto di `"evoluzione clinico-funzionale"`).
+- **Allineamento Versioni**: Incrementata la versione globale della suite a `2.12.0` in `app_version.dart` e `pubspec.yaml` (admin).
+
 ## [2.11.0] - 2026-05-26
 
 ### Aggiunto
