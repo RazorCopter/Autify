@@ -104,3 +104,18 @@ class EvaluationUpdateRequest(BaseModel):
     risposte: List[Answer]
     nome_operatore: Optional[str] = None
     nome_intervistato: Optional[str] = None
+
+# --- MODELLI STORICO ANALISI IA (AI History Models) ---
+
+class AiAnalysis(BaseModel):
+    id: str = Field(default_factory=lambda: f"an_{uuid.uuid4().hex[:8]}")
+    id_paziente: str
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    report: str
+    notes: Optional[str] = None
+    evaluations_used: List[str] = []
+
+class AiAnalysisCreate(BaseModel):
+    report: str
+    notes: Optional[str] = None
+    evaluations_used: List[str] = []

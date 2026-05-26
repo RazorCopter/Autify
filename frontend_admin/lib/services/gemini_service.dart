@@ -15,6 +15,7 @@ class GeminiService {
     String? systemPrompt,
     String? notes,
     Map<String, dynamic>? attachment, // { "bytes": Uint8List, "extension": "pdf" }
+    List<Map<String, dynamic>>? historyToInclude,
   }) async {
     final url = Uri.parse('$_baseUrl/$modelName:generateContent?key=$apiKey');
 
@@ -39,10 +40,21 @@ TONO E FORMATTAZIONE:
     final patientData = _serializePatientData(patient, evaluations);
     
     String promptText = "Ecco i dati estratti dalle valutazioni dell'utente:\n\n$patientData\n\n";
+    
+    if (historyToInclude != null && historyToInclude.isNotEmpty) {
+      promptText += "STORICO ANALISI E SINTESI PRECEDENTI DELL'UTENTE (utilizzalo per valutare l'evoluzione nel tempo e garantire la continuità dei supporti):\n";
+      for (final hist in historyToInclude) {
+        final ts = hist['timestamp']?.toString().split('T')[0] ?? '';
+        final n = (hist['notes'] != null && hist['notes'].toString().trim().isNotEmpty) ? " (Note: ${hist['notes']})" : "";
+        promptText += "\n--- Sintesi del $ts$n ---\n${hist['report']}\n";
+      }
+      promptText += "\n";
+    }
+
     if (notes != null && notes.trim().isNotEmpty) {
       promptText += "NOTE AGGIUNTIVE FORNITE DALL'OPERATORE:\n$notes\n\n";
     }
-    promptText += "Procedi con l'analisi multidimensionale globale incrociando tutti i dati forniti.";
+    promptText += "Procedi con l'analisi multidimensionale globale incrociando tutti i dati forniti (comprese le valutazioni attuale, lo storico precedente, le note e gli allegati).";
 
     final parts = <Map<String, dynamic>>[
       {"text": promptText}

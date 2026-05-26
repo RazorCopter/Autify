@@ -437,6 +437,63 @@ class ApiService {
     }
   }
 
+  // --- AI HISTORICAL ANALYSES ---
+
+  Future<List<Map<String, dynamic>>> getPatientAiAnalyses(String patientId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/patients/$patientId/ai-analyses'),
+        headers: {'X-Admin-Password': kAdminPassword},
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> body = jsonDecode(response.body);
+        return body.map((item) => item as Map<String, dynamic>).toList();
+      }
+      return [];
+    } catch (e) {
+      print('Errore caricamento storico analisi IA: $e');
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>?> savePatientAiAnalysis(
+      String patientId, String report, {String? notes, List<String>? evaluationsUsed}) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/patients/$patientId/ai-analyses'),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Password': kAdminPassword,
+        },
+        body: jsonEncode({
+          'report': report,
+          'notes': notes,
+          'evaluations_used': evaluationsUsed ?? [],
+        }),
+      );
+      if (response.statusCode == 201) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      print('Errore salvataggio analisi IA: $e');
+      return null;
+    }
+  }
+
+  Future<bool> deleteAiAnalysis(String analysisId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/patients/ai-analyses/$analysisId'),
+        headers: {'X-Admin-Password': kAdminPassword},
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Errore eliminazione analisi IA: $e');
+      return false;
+    }
+  }
+
   // --- CLIENT-SIDE ENDPOINTS INTEGRATED ---
   static const String clientBaseUrl = 'https://aut.ghome.it/api/client';
 

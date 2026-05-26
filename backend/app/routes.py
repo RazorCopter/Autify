@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException, status, UploadFile, File, Header, 
 from fastapi.responses import StreamingResponse
 from typing import List, Optional
 from bson import ObjectId
-from .models import Scale, Evaluation, Patient, AppSettings, Section, Question, Option, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest
-from .database import evaluations_collection, settings_collection, patients_collection, scales_collection, users_collection
+from .models import Scale, Evaluation, Patient, AppSettings, Section, Question, Option, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest, AiAnalysis, AiAnalysisCreate
+from .database import evaluations_collection, settings_collection, patients_collection, scales_collection, users_collection, ai_analyses_collection
 from .pdf_generator import generate_evaluation_pdf, generate_ai_analysis_pdf
 from .analytics import compute_psychometric_analysis, compute_direct_scores, build_domain_map
 from datetime import datetime, timezone
@@ -330,6 +330,38 @@ async def delete_patient(id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Utente non trovato")
     return {"message": "Utente e le relative valutazioni eliminati con successo"}
+
+@admin_router.get("/patients/{id_patient}/ai-analyses", response_model=List[AiAnalysis], tags=["Admin - AI Analyses"])
+async def get_patient_ai_analyses(id_patient: str):
+    cursor = ai_analyses_collection.find({"id_paziente": id_patient}).sort("timestamp", -1)
+    analyses = await cursor.to_list(length=100)
+    return analyses
+
+@admin_router.post("/patients/{id_patient}/ai-analyses", response_model=AiAnalysis, status_code=status.HTTP_201_CREATED, tags=["Admin - AI Analyses"])
+async def save_patient_ai_analysis(id_patient: str, payload: AiAnalysisCreate):
+    patient = await patients_collection.find_one({"id": id_patient})
+    if not patient:
+        raise HTTPException(status_code=404, detail="Utente non trovato")
+    
+    analysis = AiAnalysis(
+        id_paziente=id_patient,
+        report=payload.report,
+        notes=payload.notes,
+        evaluations_used=payload.evaluations_used
+    )
+    analysis_dict = analysis.model_dump()
+    # Pydantic datetime conversion support for motor/mongodb insertion
+    if isinstance(analysis_dict.get("timestamp"), datetime) and analysis_dict["timestamp"].tzinfo is None:
+        analysis_dict["timestamp"] = analysis_dict["timestamp"].replace(tzinfo=timezone.utc)
+    await ai_analyses_collection.insert_one(analysis_dict)
+    return analysis
+
+@admin_router.delete("/patients/ai-analyses/{id_analysis}", tags=["Admin - AI Analyses"])
+async def delete_ai_analysis(id_analysis: str):
+    result = await ai_analyses_collection.delete_one({"id": id_analysis})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Analisi IA non trovata")
+    return {"message": "Analisi IA eliminata con successo"}
 
 @admin_router.get("/evaluations/{id_patient}", response_model=List[Evaluation], tags=["Admin - Evaluations"])
 async def get_evaluations(id_patient: str):

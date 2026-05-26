@@ -49,6 +49,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   PlatformFile? _aiAttachment;
   bool _isExportingPdf = false;
 
+  List<Map<String, dynamic>> _savedAnalyses = [];
+  final List<String> _selectedAnalysesIdsForContext = [];
+  bool _isSavingAnalysis = false;
+
   static const List<Color> _domainColors = [
     Color(0xFF60A5FA), Color(0xFFF59E0B), Color(0xFF34D399), Color(0xFFA78BFA),
     Color(0xFFF87171), Color(0xFF38BDF8), Color(0xFF86EFAC), Color(0xFFFB923C),
@@ -115,6 +119,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       }
     }
 
+    await _loadSavedAnalyses();
+
     setState(() => _isLoading = false);
   }
 
@@ -171,6 +177,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         };
       }
 
+      final List<Map<String, dynamic>> historyToInclude = _savedAnalyses
+          .where((analysis) => _selectedAnalysesIdsForContext.contains(analysis['id']))
+          .toList();
+
       final report = await _geminiService.analyzePatientData(
         widget.patient,
         _latestEvaluations.values.toList(),
@@ -179,6 +189,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         systemPrompt: _geminiPrompt,
         notes: _aiNotesController.text,
         attachment: attachmentData,
+        historyToInclude: historyToInclude,
       );
       setState(() {
         _aiReport = report;
@@ -202,6 +213,109 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       setState(() {
         _aiAttachment = result.files.first;
       });
+    }
+  }
+
+  Future<void> _loadSavedAnalyses() async {
+    try {
+      final analyses = await _apiService.getPatientAiAnalyses(widget.patient.id);
+      setState(() {
+        _savedAnalyses = analyses;
+      });
+    } catch (e) {
+      debugPrint('Errore caricamento storico analisi: $e');
+    }
+  }
+
+  Future<void> _saveCurrentAnalysis() async {
+    if (_aiReport == null || _isSavingAnalysis) return;
+    setState(() => _isSavingAnalysis = true);
+    try {
+      final result = await _apiService.savePatientAiAnalysis(
+        widget.patient.id,
+        _aiReport!,
+        notes: _aiNotesController.text,
+        evaluationsUsed: _latestEvaluations.values.map((e) => e.idValutazione).toList(),
+      );
+      if (result != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Analisi salvata nello storico con successo!'),
+            backgroundColor: Colors.teal,
+          ),
+        );
+        await _loadSavedAnalyses();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Errore durante il salvataggio dell\'analisi.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Errore: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      setState(() => _isSavingAnalysis = false);
+    }
+  }
+
+  Future<void> _deleteSavedAnalysis(String id) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Conferma Eliminazione'),
+        content: const Text('Sei sicuro di voler eliminare questa analisi dallo storico? Questa azione non può essere annullata.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annulla', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Elimina'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        final success = await _apiService.deleteAiAnalysis(id);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Analisi eliminata con successo.'),
+              backgroundColor: Colors.teal,
+            ),
+          );
+          _selectedAnalysesIdsForContext.remove(id);
+          await _loadSavedAnalyses();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Impossibile eliminare l\'analisi.'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Errore: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
@@ -1568,6 +1682,21 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   const SizedBox(width: 12),
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.teal.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    onPressed: _isSavingAnalysis ? null : _saveCurrentAnalysis,
+                    icon: _isSavingAnalysis
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.archive_outlined),
+                    label: Text(_isSavingAnalysis ? 'Salvataggio...' : 'Salva in Storico',
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.deepPurple.shade900,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -1691,6 +1820,187 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               ],
             ),
           ),
+
+          // Storico Analisi IA (Checklist)
+          if (_savedAnalyses.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ],
+                border: Border.all(color: Colors.grey.shade100),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.history_toggle_off_rounded, color: Colors.teal.shade700, size: 22),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Storico Relazioni IA e Iniezione Contesto',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                      ),
+                      const Spacer(),
+                      if (_selectedAnalysesIdsForContext.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.teal.shade50,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.teal.shade200),
+                          ),
+                          child: Text(
+                            '${_selectedAnalysesIdsForContext.length} selezionate per contesto',
+                            style: TextStyle(color: Colors.teal.shade800, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Seleziona le relazioni passate dell\'utente per iniettarle come contesto nella prossima analisi di Gemini, valutando l\'andamento educativo e di supporto nel tempo.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 16),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _savedAnalyses.length,
+                    separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                    itemBuilder: (context, index) {
+                      final analysis = _savedAnalyses[index];
+                      final String id = analysis['id']?.toString() ?? '';
+                      final String report = analysis['report']?.toString() ?? '';
+                      final String? notes = analysis['notes']?.toString();
+                      final String rawTimestamp = analysis['timestamp']?.toString() ?? '';
+                      
+                      // Timestamp formatting: e.g. 26/05/2026 16:30
+                      String formattedTimestamp = rawTimestamp;
+                      try {
+                        final parsed = DateTime.parse(rawTimestamp);
+                        final day = parsed.day.toString().padLeft(2, '0');
+                        final month = parsed.month.toString().padLeft(2, '0');
+                        final year = parsed.year;
+                        final hour = parsed.hour.toString().padLeft(2, '0');
+                        final minute = parsed.minute.toString().padLeft(2, '0');
+                        formattedTimestamp = '$day/$month/$year $hour:$minute';
+                      } catch (_) {}
+
+                      final isChecked = _selectedAnalysesIdsForContext.contains(id);
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: isChecked,
+                              activeColor: Colors.teal.shade700,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                              onChanged: (bool? val) {
+                                setState(() {
+                                  if (val == true) {
+                                    _selectedAnalysesIdsForContext.add(id);
+                                  } else {
+                                    _selectedAnalysesIdsForContext.remove(id);
+                                  }
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Relazione del $formattedTimestamp',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                      color: AppTheme.textPrimary,
+                                    ),
+                                  ),
+                                  if (notes != null && notes.trim().isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Note: $notes',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            // Leggi button
+                            IconButton(
+                              tooltip: 'Leggi Relazione',
+                              icon: Icon(Icons.chrome_reader_mode_outlined, color: Colors.indigo.shade600),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => DocumentReaderScreen(
+                                      patient: widget.patient,
+                                      report: report,
+                                      onExportPdf: () async {
+                                        if (_isExportingPdf) return;
+                                        setState(() => _isExportingPdf = true);
+                                        try {
+                                          final bytes = await _apiService.downloadAiAnalysisPdf(
+                                            widget.patient,
+                                            report,
+                                          );
+                                          if (bytes != null) {
+                                            final b64 = base64Encode(bytes);
+                                            final dataUrl = 'data:application/pdf;base64,$b64';
+                                            html.AnchorElement(href: dataUrl)
+                                              ..setAttribute(
+                                                  'download', 'analisi_ai_${widget.patient.cognome}_$formattedTimestamp.pdf')
+                                              ..click();
+                                          } else {
+                                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Errore generazione PDF AI')));
+                                          }
+                                        } catch (e) {
+                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore: $e')));
+                                        } finally {
+                                          setState(() => _isExportingPdf = false);
+                                        }
+                                      },
+                                      isExportingPdf: _isExportingPdf,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            // Elimina button
+                            IconButton(
+                              tooltip: 'Elimina Relazione',
+                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                              onPressed: () => _deleteSavedAnalysis(id),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
 
           if (_aiError != null)
