@@ -3,6 +3,7 @@ FROM ghcr.io/cirruslabs/flutter:stable AS build
 WORKDIR /app
 COPY . .
 RUN flutter pub get
+RUN dart run tools/update_version.dart
 RUN flutter build web --release -O 2
 
 # Stage 2: Serve with Nginx
