@@ -2,6 +2,17 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.14.0] - 2026-05-26
+
+### Aggiunto
+- **Archiviazione Utenti e Filtri di Stato nell'Anagrafica**:
+  - Aggiunto l'attributo booleano `attivo` al modello backend `Patient` in `models.py` (con default `True`).
+  - Creata una migrazione asincrona e silenziosa nel database MongoDB all'interno del metodo `get_patients` in `routes.py`, per popolare tutti i vecchi documenti sprovvisti di `attivo` impostandoli a `True`.
+  - Aggiornato il modello client `PatientModel` in `patient_model.dart` per supportare la deserializzazione e la serializzazione del campo `attivo`.
+  - Ristrutturata la schermata `AnagraficaScreen` in `anagrafica_screen.dart` aggiungendo un dropdown di selezione filtri ("Solo Attivi", "Archiviati", "Tutti gli utenti") a fianco della barra di ricerca, con filtraggio istantaneo lato client.
+  - Integrato un `StatefulBuilder` e un widget `SwitchListTile` nel dialog di modifica dell'anagrafica utente per consentire l'archiviazione (disattivazione) o il ripristino istantaneo dello stato dell'utente.
+- **Aggiornamento Versione**: Incrementata la versione globale della suite a `2.14.0` in `app_version.dart` e `pubspec.yaml` (admin).
+
 ## [2.13.0] - 2026-05-26
 
 ### Aggiunto

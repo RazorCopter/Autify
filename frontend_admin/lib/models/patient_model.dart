@@ -7,6 +7,7 @@ class PatientModel {
   String? dataNascita;
   String? sesso;
   String? note;
+  bool attivo;
   String? ultimoPosCompilato;
   String? ultimoSanMartinCompilato;
 
@@ -19,6 +20,7 @@ class PatientModel {
     this.dataNascita,
     this.sesso,
     this.note,
+    this.attivo = true,
     this.ultimoPosCompilato,
     this.ultimoSanMartinCompilato,
   });
@@ -33,6 +35,7 @@ class PatientModel {
       dataNascita: json['data_nascita'],
       sesso: json['sesso'],
       note: json['note'],
+      attivo: json['attivo'] ?? true,
       ultimoPosCompilato: json['ultimo_pos_compilato'],
       ultimoSanMartinCompilato: json['ultimo_san_martin_compilato'],
     );
@@ -48,6 +51,7 @@ class PatientModel {
       'data_nascita': dataNascita,
       'sesso': sesso,
       'note': note,
+      'attivo': attivo,
       'ultimo_pos_compilato': ultimoPosCompilato,
       'ultimo_san_martin_compilato': ultimoSanMartinCompilato,
     };

@@ -27,6 +27,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
   List<ScaleModel> _availableScales = [];
   bool _isLoading = false;
   bool _isGridView = true;
+  String _statusFilter = 'active'; // 'active', 'archived', 'all'
 
   @override
   void initState() {
@@ -60,6 +61,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
     final dataNascitaController = TextEditingController(text: patient?.dataNascita != null ? _formatDateString(patient!.dataNascita!) : '');
     String? selectedSesso = patient?.sesso;
     final noteController = TextEditingController(text: patient?.note ?? '');
+    bool attivoVal = patient?.attivo ?? true;
 
     final _formKey = GlobalKey<FormState>();
 
@@ -72,189 +74,211 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
           padding: const EdgeInsets.all(28),
           child: Form(
             key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+            child: StatefulBuilder(
+              builder: (ctx, setStateDialog) => SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(isEdit ? Icons.edit : Icons.person_add, color: AppTheme.primaryColor, size: 22),
-                    ),
-                    const SizedBox(width: 14),
-                    Text(isEdit ? 'Modifica Utente' : 'Nuovo Utente',
-                      style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: nomeController,
-                        decoration: const InputDecoration(labelText: 'Nome', prefixIcon: Icon(Icons.person_outline)),
-                        validator: (v) => v == null || v.isEmpty ? 'Campo richiesto' : null,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: cognomeController,
-                        decoration: const InputDecoration(labelText: 'Cognome'),
-                        validator: (v) => v == null || v.isEmpty ? 'Campo richiesto' : null,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: altezzaController,
-                        decoration: const InputDecoration(labelText: 'Altezza (cm)', prefixIcon: Icon(Icons.height)),
-                        keyboardType: TextInputType.number,
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return null;
-                          final n = int.tryParse(v.trim());
-                          if (n == null || n <= 0) return 'Valore non valido';
-                          return null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: pesoController,
-                        decoration: const InputDecoration(labelText: 'Peso (kg)', prefixIcon: Icon(Icons.monitor_weight_outlined)),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return null;
-                          final n = double.tryParse(v.trim().replaceAll(',', '.'));
-                          if (n == null || n <= 0) return 'Valore non valido';
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: TextFormField(
-                        controller: dataNascitaController,
-                        readOnly: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Data di Nascita',
-                          prefixIcon: Icon(Icons.cake_outlined),
-                          hintText: 'Seleziona...',
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(isEdit ? Icons.edit : Icons.person_add, color: AppTheme.primaryColor, size: 22),
                         ),
-                        onTap: () async {
-                          DateTime initialDate = DateTime(1990);
-                          if (dataNascitaController.text.isNotEmpty) {
-                            try {
-                              final parts = dataNascitaController.text.split('/');
-                              if (parts.length == 3) {
-                                initialDate = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+                        const SizedBox(width: 14),
+                        Text(isEdit ? 'Modifica Utente' : 'Nuovo Utente',
+                          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: nomeController,
+                            decoration: const InputDecoration(labelText: 'Nome', prefixIcon: Icon(Icons.person_outline)),
+                            validator: (v) => v == null || v.isEmpty ? 'Campo richiesto' : null,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: cognomeController,
+                            decoration: const InputDecoration(labelText: 'Cognome'),
+                            validator: (v) => v == null || v.isEmpty ? 'Campo richiesto' : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: altezzaController,
+                            decoration: const InputDecoration(labelText: 'Altezza (cm)', prefixIcon: Icon(Icons.height)),
+                            keyboardType: TextInputType.number,
+                            validator: (v) {
+                              if (v == null || v.isEmpty) return null;
+                              final n = int.tryParse(v.trim());
+                              if (n == null || n <= 0) return 'Valore non valido';
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: pesoController,
+                            decoration: const InputDecoration(labelText: 'Peso (kg)', prefixIcon: Icon(Icons.monitor_weight_outlined)),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: (v) {
+                              if (v == null || v.isEmpty) return null;
+                              final n = double.tryParse(v.trim().replaceAll(',', '.'));
+                              if (n == null || n <= 0) return 'Valore non valido';
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: TextFormField(
+                            controller: dataNascitaController,
+                            readOnly: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Data di Nascita',
+                              prefixIcon: Icon(Icons.cake_outlined),
+                              hintText: 'Seleziona...',
+                            ),
+                            onTap: () async {
+                              DateTime initialDate = DateTime(1990);
+                              if (dataNascitaController.text.isNotEmpty) {
+                                try {
+                                  final parts = dataNascitaController.text.split('/');
+                                  if (parts.length == 3) {
+                                    initialDate = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+                                  }
+                                } catch (_) {}
                               }
-                            } catch (_) {}
-                          }
-                          final DateTime? picked = await showDatePicker(
-                            context: context,
-                            initialDate: initialDate,
-                            firstDate: DateTime(1900),
-                            lastDate: DateTime.now(),
-                          );
-                          if (picked != null) {
-                            final day = picked.day.toString().padLeft(2, '0');
-                            final month = picked.month.toString().padLeft(2, '0');
-                            final year = picked.year.toString();
-                            dataNascitaController.text = '$day/$month/$year';
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      flex: 2,
-                      child: DropdownButtonFormField<String>(
-                        initialValue: selectedSesso,
-                        decoration: const InputDecoration(
-                          labelText: 'Sesso',
-                          prefixIcon: Icon(Icons.wc_outlined),
+                              final DateTime? picked = await showDatePicker(
+                                context: context,
+                                initialDate: initialDate,
+                                firstDate: DateTime(1900),
+                                lastDate: DateTime.now(),
+                              );
+                              if (picked != null) {
+                                final day = picked.day.toString().padLeft(2, '0');
+                                final month = picked.month.toString().padLeft(2, '0');
+                                final year = picked.year.toString();
+                                dataNascitaController.text = '$day/$month/$year';
+                              }
+                            },
+                          ),
                         ),
-                        items: const [
-                          DropdownMenuItem(value: 'M', child: Text('M')),
-                          DropdownMenuItem(value: 'F', child: Text('F')),
-                        ],
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 2,
+                          child: DropdownButtonFormField<String>(
+                            initialValue: selectedSesso,
+                            decoration: const InputDecoration(
+                              labelText: 'Sesso',
+                              prefixIcon: Icon(Icons.wc_outlined),
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: 'M', child: Text('M')),
+                              DropdownMenuItem(value: 'F', child: Text('F')),
+                            ],
+                            onChanged: (val) {
+                              setStateDialog(() {
+                                selectedSesso = val;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: noteController,
+                      decoration: const InputDecoration(labelText: 'Note', prefixIcon: Icon(Icons.notes)),
+                      maxLines: 3,
+                    ),
+                    if (isEdit) ...[
+                      const SizedBox(height: 16),
+                      SwitchListTile(
+                        title: const Text('Utente Attivo', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                        subtitle: const Text('Disattiva per archiviare l\'utente e rimuoverlo dalla lista attiva', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                        value: attivoVal,
+                        activeColor: AppTheme.primaryColor,
+                        contentPadding: EdgeInsets.zero,
                         onChanged: (val) {
-                          selectedSesso = val;
+                          setStateDialog(() {
+                            attivoVal = val;
+                          });
                         },
                       ),
+                    ],
+                    const SizedBox(height: 28),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Annulla'),
+                        ),
+                        const SizedBox(width: 12),
+                        FilledButton.icon(
+                          onPressed: () async {
+                            if (_formKey.currentState!.validate()) {
+                              final newPatient = PatientModel(
+                                id: patient?.id ?? '', // backend generates if empty and creating
+                                nome: nomeController.text.trim(),
+                                cognome: cognomeController.text.trim(),
+                                altezza: int.tryParse(altezzaController.text.trim()),
+                                peso: double.tryParse(pesoController.text.trim().replaceAll(',', '.')),
+                                dataNascita: _parseDateString(dataNascitaController.text.trim()),
+                                sesso: selectedSesso,
+                                note: noteController.text.trim(),
+                                attivo: attivoVal,
+                              );
+
+                              setState(() => _isLoading = true);
+                              bool success;
+                              if (isEdit) {
+                                success = await _apiService.updatePatient(newPatient);
+                              } else {
+                                success = await _apiService.createPatient(newPatient);
+                              }
+                              setState(() => _isLoading = false);
+
+                              if (success && mounted) {
+                                Navigator.pop(ctx);
+                                _refreshPatients();
+                                _showSnack(isEdit ? 'Utente aggiornato' : 'Utente creato', isError: false);
+                              } else if (mounted) {
+                                _showSnack('Errore di salvataggio', isError: true);
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.check, size: 18),
+                          label: const Text('Salva'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: noteController,
-                  decoration: const InputDecoration(labelText: 'Note', prefixIcon: Icon(Icons.notes)),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 28),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Annulla'),
-                    ),
-                    const SizedBox(width: 12),
-                    FilledButton.icon(
-                      onPressed: () async {
-                        if (_formKey.currentState!.validate()) {
-                          final newPatient = PatientModel(
-                            id: patient?.id ?? '', // backend generates if empty and creating
-                            nome: nomeController.text.trim(),
-                            cognome: cognomeController.text.trim(),
-                            altezza: int.tryParse(altezzaController.text.trim()),
-                            peso: double.tryParse(pesoController.text.trim().replaceAll(',', '.')),
-                            dataNascita: _parseDateString(dataNascitaController.text.trim()),
-                            sesso: selectedSesso,
-                            note: noteController.text.trim(),
-                          );
-
-                          setState(() => _isLoading = true);
-                          bool success;
-                          if (isEdit) {
-                            success = await _apiService.updatePatient(newPatient);
-                          } else {
-                            success = await _apiService.createPatient(newPatient);
-                          }
-                          setState(() => _isLoading = false);
-
-                          if (success && mounted) {
-                            Navigator.pop(ctx);
-                            _refreshPatients();
-                            _showSnack(isEdit ? 'Utente aggiornato' : 'Utente creato', isError: false);
-                          } else if (mounted) {
-                            _showSnack('Errore di salvataggio', isError: true);
-                          }
-                        }
-                      },
-                      icon: const Icon(Icons.check, size: 18),
-                      label: const Text('Salva'),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -457,6 +481,34 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: const Color(0xFFE8EEF8)),
                     ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _statusFilter,
+                        icon: const Icon(Icons.filter_list_rounded, color: AppTheme.textSecondary),
+                        dropdownColor: Colors.white,
+                        items: const [
+                          DropdownMenuItem(value: 'active', child: Text('Solo Attivi', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary))),
+                          DropdownMenuItem(value: 'archived', child: Text('Archiviati', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary))),
+                          DropdownMenuItem(value: 'all', child: Text('Tutti gli utenti', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary))),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() {
+                              _statusFilter = val;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE8EEF8)),
+                    ),
                     padding: const EdgeInsets.all(4),
                     child: Row(
                       children: [
@@ -505,16 +557,26 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                       );
                     }
 
-                    // Filtra gli utenti in base alla query
+                    // Filtra gli utenti in base alla query e allo stato attivo/archiviato
                     final query = _searchController.text.toLowerCase().trim();
-                    final filteredList = query.isEmpty
-                        ? List<PatientModel>.from(snapshot.data!)
-                        : snapshot.data!.where((p) {
-                            final matchNome = p.nome.toLowerCase().contains(query);
-                            final matchCognome = p.cognome.toLowerCase().contains(query);
-                            final matchNote = (p.note ?? '').toLowerCase().contains(query);
-                            return matchNome || matchCognome || matchNote;
-                          }).toList();
+                    var filteredList = List<PatientModel>.from(snapshot.data!);
+
+                    // Filtro per stato attivo/archiviato
+                    if (_statusFilter == 'active') {
+                      filteredList = filteredList.where((p) => p.attivo).toList();
+                    } else if (_statusFilter == 'archived') {
+                      filteredList = filteredList.where((p) => !p.attivo).toList();
+                    }
+
+                    // Filtro per ricerca
+                    if (query.isNotEmpty) {
+                      filteredList = filteredList.where((p) {
+                        final matchNome = p.nome.toLowerCase().contains(query);
+                        final matchCognome = p.cognome.toLowerCase().contains(query);
+                        final matchNote = (p.note ?? '').toLowerCase().contains(query);
+                        return matchNome || matchCognome || matchNote;
+                      }).toList();
+                    }
 
                     // Ordina per Cognome (Primario) e Nome (Secondario)
                     filteredList.sort((a, b) {

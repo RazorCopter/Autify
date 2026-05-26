@@ -237,6 +237,9 @@ async def get_viewer_logs(role: str = Depends(verify_admin_auth)):
 
 @admin_router.get("/patients", response_model=List[Patient], tags=["Admin - Patients"])
 async def get_patients():
+    # Migrazione automatica dei vecchi documenti sprovvisti del campo 'attivo'
+    await patients_collection.update_many({"attivo": {"$exists": False}}, {"$set": {"attivo": True}})
+
     cursor = patients_collection.find({})
     patients = await cursor.to_list(length=1000)
     

@@ -14,6 +14,7 @@ class Patient(BaseModel):
     data_nascita: Optional[str] = None
     sesso: Optional[str] = None
     note: Optional[str] = None
+    attivo: bool = True
     ultimo_pos_compilato: Optional[str] = None
     ultimo_san_martin_compilato: Optional[str] = None
 
