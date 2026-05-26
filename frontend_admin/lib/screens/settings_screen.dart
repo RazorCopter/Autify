@@ -44,12 +44,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     final settings = await _apiService.getGeminiSettings();
-    if (settings['key'] != null && settings['key']!.isNotEmpty) {
-      _apiKeyController.text = settings['key']!;
+    final String? key = settings['key'] as String?;
+    if (key != null && key.isNotEmpty) {
+      _apiKeyController.text = key;
     }
-    _promptController.text = settings['prompt'] ?? '';
-    _viewerAiEnabled = settings['viewer_ai_enabled'] ?? false;
-    final rawModel = settings['model'] ?? 'gemini-1.5-pro';
+    _promptController.text = (settings['prompt'] as String?) ?? '';
+    _viewerAiEnabled = (settings['viewer_ai_enabled'] as bool?) ?? false;
+    final String rawModel = (settings['model'] as String?) ?? 'gemini-1.5-pro';
     setState(() {
       if (rawModel == 'gemini-1.5-pro' || rawModel == 'gemini-1.5-flash' || rawModel == 'gemini-1.5-pro-latest') {
         _selectedModel = rawModel;

@@ -79,10 +79,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
     // 1. Carica configurazione AI
     final settings = await _apiService.getGeminiSettings();
-    _geminiKey = settings['key'];
-    _viewerAiEnabled = settings['viewer_ai_enabled'] ?? false;
-    _geminiPrompt = settings['prompt'];
-    final rawModel = settings['model'] ?? 'gemini-1.5-pro';
+    _geminiKey = settings['key'] as String?;
+    _viewerAiEnabled = (settings['viewer_ai_enabled'] as bool?) ?? false;
+    _geminiPrompt = settings['prompt'] as String?;
+    final String rawModel = (settings['model'] as String?) ?? 'gemini-1.5-pro';
     if (rawModel.contains('1.5-pro') || rawModel == 'gemini-1.5-pro') {
       _geminiModel = 'gemini-2.5-pro';
     } else if (rawModel.contains('1.5-flash') || rawModel == 'gemini-1.5-flash') {
