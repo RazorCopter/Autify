@@ -48,7 +48,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (key != null && key.isNotEmpty) {
       _apiKeyController.text = key;
     }
-    _promptController.text = (settings['prompt'] as String?) ?? '';
+    final String loadedPrompt = (settings['prompt'] as String?) ?? '';
+    _promptController.text = loadedPrompt.isNotEmpty ? loadedPrompt : _defaultSystemPrompt;
     _viewerAiEnabled = (settings['viewer_ai_enabled'] as bool?) ?? false;
     final String rawModel = (settings['model'] as String?) ?? 'gemini-1.5-pro';
     setState(() {
