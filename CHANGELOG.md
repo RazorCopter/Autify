@@ -2,6 +2,11 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.14.3] - 2026-05-26
+
+### Ottimizzato
+- **Razionalizzazione Testi Storico IA**: Spostata la descrizione estesa dell'iniezione del contesto nello storico direttamente all'interno del banner verde premium di informazioni (tooltip) e rimossa la precedente etichetta descrittiva duplicata per eliminare ridondanze visive e rendere il layout più compatto ed elegante.
+
 ## [2.14.2] - 2026-05-26
 
 ### Aggiunto

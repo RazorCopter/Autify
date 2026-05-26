@@ -2053,12 +2053,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Seleziona le relazioni passate dell\'utente per iniettarle come contesto nella prossima analisi di Gemini, valutando l\'andamento educativo e di supporto nel tempo.',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.4),
-            ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             if (_savedAnalyses.isEmpty) ...[
               Center(
                 child: Padding(
@@ -2097,11 +2092,12 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Seleziona per utilizzare questo report nella nuova analisi IA',
+                        'Seleziona le relazioni passate dell\'utente per iniettarle come contesto nella prossima analisi di Gemini, valutando l\'andamento educativo e di supporto nel tempo.',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: Colors.teal.shade900,
+                          height: 1.4,
                         ),
                       ),
                     ),
