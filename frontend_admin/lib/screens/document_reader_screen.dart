@@ -168,7 +168,7 @@ class _DocumentReaderScreenState extends State<DocumentReaderScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Lettore Relazione Clinica',
+            'Lettore Relazione Multidimensionale',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
           Text(
@@ -457,7 +457,7 @@ class _DocumentReaderScreenState extends State<DocumentReaderScreen> {
             Row(
               children: [
                 Icon(
-                  Icons.local_hospital_outlined,
+                  Icons.extension_outlined,
                   color: AppTheme.primaryColor,
                   size: 16 * _zoom,
                 ),
@@ -474,7 +474,7 @@ class _DocumentReaderScreenState extends State<DocumentReaderScreen> {
               ],
             ),
             Text(
-              'Relazione Clinica: ${widget.patient.cognome.toUpperCase()} ${widget.patient.nome}',
+              'Relazione Multidimensionale: ${widget.patient.cognome.toUpperCase()} ${widget.patient.nome}',
               style: TextStyle(
                 fontSize: 10 * _zoom,
                 fontWeight: FontWeight.bold,

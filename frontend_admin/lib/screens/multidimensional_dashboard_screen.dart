@@ -1736,7 +1736,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                               Icon(Icons.description_outlined, color: AppTheme.primaryColor, size: 20),
                               SizedBox(width: 8),
                               Text(
-                                'Referto di Sintesi Clinica',
+                                'Referto di Sintesi Multidimensionale',
                                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.textPrimary),
                               ),
                             ],
