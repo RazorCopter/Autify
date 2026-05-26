@@ -1746,7 +1746,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   spacing: 24,
                   runSpacing: 16,
                   children: [
-                    _buildPatientDetailItem('Sesso', widget.patient.sesso),
+                    _buildPatientDetailItem('Sesso', widget.patient.sesso ?? 'Non specificato'),
                     _buildPatientDetailItem(
                       'Età',
                       _calculateAge() != null ? '${_calculateAge()} anni' : 'Non specificata',

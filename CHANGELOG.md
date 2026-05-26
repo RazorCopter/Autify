@@ -2,6 +2,11 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.14.1] - 2026-05-26
+
+### Corretto
+- Risolto un errore di compilazione sul client Flutter admin in `multidimensional_dashboard_screen.dart` correlato alla nullabilità dell'attributo `sesso` dell'utente (`String?`), che impediva il corretto completamento della build Docker nel container di produzione.
+
 ## [2.14.0] - 2026-05-26
 
 ### Aggiunto
