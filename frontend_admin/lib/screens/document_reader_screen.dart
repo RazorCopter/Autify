@@ -282,7 +282,7 @@ class _DocumentReaderScreenState extends State<DocumentReaderScreen> {
               _buildThemeButton(
                 theme: ReaderTheme.clinical,
                 icon: Icons.brightness_high,
-                label: 'Clinical',
+                label: 'Chiaro',
               ),
               const SizedBox(width: 8),
               _buildThemeButton(

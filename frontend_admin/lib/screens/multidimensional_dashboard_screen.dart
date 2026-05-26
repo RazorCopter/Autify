@@ -150,56 +150,117 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   }
 
   Future<void> _runAiAnalysis() async {
-    String? realKey = _geminiKey;
-
-    if (realKey == null || realKey.isEmpty || realKey == '***-HIDDEN') {
-      setState(() => _aiError = 'Chiave API Gemini mancante. Configurala in Impostazioni.');
-      return;
-    }
-
-    if (_latestEvaluations.isEmpty) {
-      setState(() => _aiError = 'Nessuna valutazione disponibile per l\'analisi.');
+    if (_geminiKey == null || _geminiKey!.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Chiave API Gemini non configurata nelle impostazioni.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
       return;
     }
 
     setState(() {
       _isAnalyzing = true;
-      _aiError = null;
       _aiReport = null;
+      _aiError = null;
     });
 
     try {
-      Map<String, dynamic>? attachmentData;
+      final evaluations = _latestEvaluations.values.toList();
+      if (evaluations.isEmpty) {
+        throw Exception('Nessuna valutazione disponibile per l\'analisi.');
+      }
+
+      Map<String, dynamic>? attachmentMap;
       if (_aiAttachment != null && _aiAttachment!.bytes != null) {
-        attachmentData = {
+        attachmentMap = {
           'bytes': _aiAttachment!.bytes!,
-          'extension': _aiAttachment!.extension ?? 'txt',
+          'extension': _aiAttachment!.extension ?? 'pdf',
         };
       }
 
-      final List<Map<String, dynamic>> historyToInclude = _savedAnalyses
-          .where((analysis) => _selectedAnalysesIdsForContext.contains(analysis['id']))
+      final historyToInclude = _savedAnalyses
+          .where((a) => _selectedAnalysesIdsForContext.contains(a['id']?.toString()))
           .toList();
 
       final report = await _geminiService.analyzePatientData(
         widget.patient,
-        _latestEvaluations.values.toList(),
-        realKey,
+        evaluations,
+        _geminiKey!,
         _geminiModel,
         systemPrompt: _geminiPrompt,
         notes: _aiNotesController.text,
-        attachment: attachmentData,
+        attachment: attachmentMap,
         historyToInclude: historyToInclude,
       );
+
       setState(() {
         _aiReport = report;
-        _isAnalyzing = false;
       });
+
+      // Auto-salvataggio in background
+      await _autoSaveAnalysis();
+
     } catch (e) {
       setState(() {
-        _aiError = 'Errore durante l\'analisi: $e';
+        _aiError = e.toString();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Errore durante l\'analisi IA: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      setState(() {
         _isAnalyzing = false;
       });
+    }
+  }
+
+  Future<void> _autoSaveAnalysis() async {
+    if (_aiReport == null || _isSavingAnalysis) return;
+    setState(() => _isSavingAnalysis = true);
+    try {
+      final notes = _aiNotesController.text;
+      
+      final result = await _apiService.savePatientAiAnalysis(
+        widget.patient.id,
+        _aiReport!,
+        notes: notes,
+        evaluationsUsed: _latestEvaluations.values.map((e) => e.idValutazione).toList(),
+      );
+      if (result != null) {
+        // Puliamo i campi temporanei
+        _aiNotesController.clear();
+        _aiAttachment = null;
+        _selectedAnalysesIdsForContext.clear();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Relazione elaborata e salvata automaticamente!'),
+            backgroundColor: Colors.teal,
+          ),
+        );
+        await _loadSavedAnalyses();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Errore durante il salvataggio automatico della relazione.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Errore auto-salvataggio: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      setState(() => _isSavingAnalysis = false);
     }
   }
 
@@ -224,44 +285,6 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       });
     } catch (e) {
       debugPrint('Errore caricamento storico analisi: $e');
-    }
-  }
-
-  Future<void> _saveCurrentAnalysis() async {
-    if (_aiReport == null || _isSavingAnalysis) return;
-    setState(() => _isSavingAnalysis = true);
-    try {
-      final result = await _apiService.savePatientAiAnalysis(
-        widget.patient.id,
-        _aiReport!,
-        notes: _aiNotesController.text,
-        evaluationsUsed: _latestEvaluations.values.map((e) => e.idValutazione).toList(),
-      );
-      if (result != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Analisi salvata nello storico con successo!'),
-            backgroundColor: Colors.teal,
-          ),
-        );
-        await _loadSavedAnalyses();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Errore durante il salvataggio dell\'analisi.'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Errore: $e'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-    } finally {
-      setState(() => _isSavingAnalysis = false);
     }
   }
 
@@ -1578,9 +1601,562 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   // TAB 2: ANALISI IA
   // ════════════════════════════════════════════════════════════════════════════
 
+  Widget _buildPatientDetailItem(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildAiTab() {
-    return Padding(
-      padding: const EdgeInsets.all(32.0),
+    final Widget leftColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Profilo Utente Card (Dati dell'utente) ──
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFFE8EEF8)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.account_circle_outlined,
+                        color: AppTheme.primaryColor,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Profilo Utente',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          Text(
+                            '${widget.patient.cognome} ${widget.patient.nome}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 24,
+                  runSpacing: 16,
+                  children: [
+                    _buildPatientDetailItem('Sesso', widget.patient.sesso),
+                    _buildPatientDetailItem(
+                      'Età',
+                      _calculateAge() != null ? '${_calculateAge()} anni' : 'Non specificata',
+                    ),
+                    _buildPatientDetailItem(
+                      'Data di Nascita',
+                      widget.patient.dataNascita != null
+                          ? widget.patient.dataNascita!.split('T')[0]
+                          : 'Non specificata',
+                    ),
+                  ],
+                ),
+                if (widget.patient.note != null && widget.patient.note!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Note Generali dell\'utente:',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textSecondary),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.patient.note!,
+                    style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary, height: 1.4),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // ── Input: Note e Allegato ──
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFFE8EEF8)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.add_circle_outline, color: Colors.deepPurple.shade400, size: 20),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Dati Aggiuntivi per l\'IA (Opzionali)',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _aiNotesController,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText: 'Inserisci osservazioni, contesto familiare o scolastico...',
+                    hintStyle: TextStyle(color: Colors.grey.shade400),
+                    filled: true,
+                    fillColor: Colors.grey.shade50,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.all(16),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                InkWell(
+                  onTap: _isAnalyzing ? null : _pickAiAttachment,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: _aiAttachment == null
+                          ? Colors.deepPurple.shade50.withValues(alpha: 0.3)
+                          : Colors.deepPurple.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _aiAttachment == null
+                            ? Colors.deepPurple.shade100
+                            : Colors.deepPurple.shade200,
+                        width: 1,
+                      ),
+                    ),
+                    child: _aiAttachment == null
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.cloud_upload_outlined, color: Colors.deepPurple.shade300, size: 24),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'Allega Documentazione (PDF, TXT, Immagini)',
+                                style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w600, fontSize: 13),
+                              ),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              const Icon(Icons.insert_drive_file, color: Colors.deepPurple, size: 24),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _aiAttachment!.name,
+                                  style: const TextStyle(fontSize: 13, color: Colors.deepPurple, fontWeight: FontWeight.w500),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                onPressed: () => setState(() => _aiAttachment = null),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // ── Pulsante Principale di Generazione o Loader ──
+        if (_isAnalyzing)
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Color(0xFFE8EEF8)),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+              child: Center(
+                child: _SlothPuzzleLoader(),
+              ),
+            ),
+          )
+        else
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: (_isAnalyzing || (ApiService.isViewer && !_viewerAiEnabled))
+                    ? [Colors.grey.shade400, Colors.grey.shade400]
+                    : [Colors.deepPurple.shade700, Colors.indigo.shade600],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.deepPurple.withValues(alpha: 0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              onPressed: (ApiService.isViewer && !_viewerAiEnabled) ? null : _runAiAnalysis,
+              icon: const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
+              label: const Text(
+                'Avvia Analisi con IA',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+          ),
+        const SizedBox(height: 24),
+
+        // ── Premium Success State Card ──
+        if (_aiReport != null && !_isAnalyzing) ...[
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: Colors.teal.shade200, width: 1.5),
+            ),
+            color: Colors.teal.shade50.withValues(alpha: 0.3),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.teal.shade100,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.check, color: Colors.teal, size: 24),
+                      ),
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Text(
+                          'Sintesi Multidimensionale Generata!',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.teal,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'La nuova relazione è stata completata con successo ed è stata salvata automaticamente nello storico.',
+                    style: TextStyle(fontSize: 13, color: AppTheme.textPrimary, height: 1.4),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.indigo.shade600,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DocumentReaderScreen(
+                                  patient: widget.patient,
+                                  report: _aiReport!,
+                                  onExportPdf: _exportAiPdf,
+                                  isExportingPdf: _isExportingPdf,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.chrome_reader_mode_outlined),
+                          label: const Text(
+                            'Apri Relazione (Lettura A4)',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      IconButton.filled(
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.deepPurple.shade900,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.all(16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: _isExportingPdf ? null : _exportAiPdf,
+                        icon: _isExportingPdf
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.picture_as_pdf),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+
+    final Widget rightColumn = Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFFE8EEF8)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.history_toggle_off_rounded, color: Colors.teal.shade700, size: 22),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Storico Relazioni IA',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                  ),
+                ),
+                if (_selectedAnalysesIdsForContext.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.teal.shade50,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.teal.shade200),
+                    ),
+                    child: Text(
+                      '${_selectedAnalysesIdsForContext.length} selezionate',
+                      style: TextStyle(color: Colors.teal.shade800, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Seleziona le relazioni passate dell\'utente per iniettarle come contesto nella prossima analisi di Gemini, valutando l\'andamento educativo e di supporto nel tempo.',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.4),
+            ),
+            const SizedBox(height: 20),
+            if (_savedAnalyses.isEmpty) ...[
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 48.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.archive_outlined, size: 48, color: Colors.grey.shade300),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Nessuna relazione in archivio.',
+                        style: TextStyle(fontSize: 13, color: AppTheme.textSecondary, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'I report generati appariranno qui automaticamente.',
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ] else ...[
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _savedAnalyses.length,
+                separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                itemBuilder: (context, index) {
+                  final analysis = _savedAnalyses[index];
+                  final String id = analysis['id']?.toString() ?? '';
+                  final String report = analysis['report']?.toString() ?? '';
+                  final String? notes = analysis['notes']?.toString();
+                  final String rawTimestamp = analysis['timestamp']?.toString() ?? '';
+
+                  String formattedTimestamp = rawTimestamp;
+                  try {
+                    final parsed = DateTime.parse(rawTimestamp);
+                    final day = parsed.day.toString().padLeft(2, '0');
+                    final month = parsed.month.toString().padLeft(2, '0');
+                    final year = parsed.year;
+                    final hour = parsed.hour.toString().padLeft(2, '0');
+                    final minute = parsed.minute.toString().padLeft(2, '0');
+                    formattedTimestamp = '$day/$month/$year $hour:$minute';
+                  } catch (_) {}
+
+                  final isChecked = _selectedAnalysesIdsForContext.contains(id);
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: isChecked,
+                          activeColor: Colors.teal.shade700,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                          onChanged: (bool? val) {
+                            setState(() {
+                              if (val == true) {
+                                _selectedAnalysesIdsForContext.add(id);
+                              } else {
+                                _selectedAnalysesIdsForContext.remove(id);
+                              }
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Relazione del $formattedTimestamp',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                              if (notes != null && notes.trim().isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Note: $notes',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          tooltip: 'Leggi Relazione',
+                          icon: Icon(Icons.chrome_reader_mode_outlined, color: Colors.indigo.shade600, size: 20),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DocumentReaderScreen(
+                                  patient: widget.patient,
+                                  report: report,
+                                  onExportPdf: () async {
+                                    if (_isExportingPdf) return;
+                                    setState(() => _isExportingPdf = true);
+                                    try {
+                                      final bytes = await _apiService.downloadAiAnalysisPdf(
+                                        widget.patient,
+                                        report,
+                                      );
+                                      if (bytes != null) {
+                                        final b64 = base64Encode(bytes);
+                                        final dataUrl = 'data:application/pdf;base64,$b64';
+                                        html.AnchorElement(href: dataUrl)
+                                          ..setAttribute(
+                                              'download', 'analisi_ai_${widget.patient.cognome}_$formattedTimestamp.pdf')
+                                          ..click();
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Errore generazione PDF AI')));
+                                      }
+                                    } catch (e) {
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore: $e')));
+                                    } finally {
+                                      setState(() => _isExportingPdf = false);
+                                    }
+                                  },
+                                  isExportingPdf: _isExportingPdf,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        IconButton(
+                          tooltip: 'Elimina Relazione',
+                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                          onPressed: () => _deleteSavedAnalysis(id),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1599,7 +2175,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   const SizedBox(width: 16),
                   Expanded(
                     child: Text(
-                      'L\'accesso alle funzionalità IA di analisi dei dati paziente è attualmente disabilitato per il profilo Viewer. Contatta un amministratore per abilitarlo.',
+                      'L\'accesso alle funzionalità IA di analisi dei dati utente è attualmente disabilitato per il profilo Viewer. Contatta un amministratore per abilitarlo.',
                       style: TextStyle(color: Colors.amber.shade900, fontWeight: FontWeight.w500, fontSize: 14),
                     ),
                   ),
@@ -1616,396 +2192,35 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               ),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Row(
+            child: const Row(
               children: [
-                const Icon(Icons.psychology, color: Colors.white, size: 40),
+                Icon(Icons.psychology, color: Colors.white, size: 40),
                 const SizedBox(width: 20),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Analisi Multidimensionale con Intelligenza Artificiale',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                      Text(
+                        'Analisi Multidimensionale con Intelligenza Artificiale',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
                       SizedBox(height: 6),
-                      Text('L\'IA analizza le valutazioni aggregate per individuare correlazioni, punti di forza/debolezza e suggerire linee guida di supporto personalizzate.',
-                        style: TextStyle(fontSize: 13, color: Colors.white70)),
+                      Text(
+                        'L\'IA analizza le valutazioni aggregate per individuare correlazioni, punti di forza/debolezza e suggerire linee guida di supporto personalizzate.',
+                        style: TextStyle(fontSize: 13, color: Colors.white70),
+                      ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 20),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.deepPurple,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  onPressed: (_isAnalyzing || (ApiService.isViewer && !_viewerAiEnabled)) ? null : _runAiAnalysis,
-                  icon: _isAnalyzing
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.auto_awesome),
-                  label: Text(
-                    _isAnalyzing 
-                        ? 'Analisi in corso...' 
-                        : (ApiService.isViewer && !_viewerAiEnabled) 
-                            ? 'AI non abilitata' 
-                            : 'Analizza con IA',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                if (_aiReport != null) ...[
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.indigo.shade600,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DocumentReaderScreen(
-                            patient: widget.patient,
-                            report: _aiReport!,
-                            onExportPdf: _exportAiPdf,
-                            isExportingPdf: _isExportingPdf,
-                          ),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.chrome_reader_mode_outlined),
-                    label: const Text('Modalità Lettura',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal.shade700,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    onPressed: _isSavingAnalysis ? null : _saveCurrentAnalysis,
-                    icon: _isSavingAnalysis
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.archive_outlined),
-                    label: Text(_isSavingAnalysis ? 'Salvataggio...' : 'Salva in Storico',
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple.shade900,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    onPressed: _isExportingPdf ? null : _exportAiPdf,
-                    icon: _isExportingPdf
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.picture_as_pdf),
-                    label: Text(_isExportingPdf ? 'Esportazione...' : 'Esporta PDF',
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          
-          // Sezione Note e Allegati - Design Premium
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                )
-              ],
-              border: Border.all(color: Colors.grey.shade100),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.add_circle_outline, color: Colors.deepPurple.shade400, size: 20),
-                    const SizedBox(width: 8),
-                    const Text('Dati Aggiuntivi per l\'IA (Opzionali)',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Note Field
-                    Expanded(
-                      flex: 2,
-                      child: TextField(
-                        controller: _aiNotesController,
-                        maxLines: 4,
-                        decoration: InputDecoration(
-                          hintText: 'Inserisci osservazioni, contesto familiare o scolastico...',
-                          hintStyle: TextStyle(color: Colors.grey.shade400),
-                          filled: true,
-                          fillColor: Colors.grey.shade50,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.all(16),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    // Attachment Zone
-                    Expanded(
-                      flex: 1,
-                      child: InkWell(
-                        onTap: _isAnalyzing ? null : _pickAiAttachment,
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          height: 105, // matches approx height of 4 lines textfield
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: _aiAttachment == null ? Colors.deepPurple.shade50.withOpacity(0.5) : Colors.deepPurple.shade50,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: _aiAttachment == null ? Colors.deepPurple.shade100 : Colors.deepPurple.shade200,
-                              width: 1,
-                            ),
-                          ),
-                          child: _aiAttachment == null
-                              ? Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.cloud_upload_outlined, color: Colors.deepPurple.shade300, size: 28),
-                                    const SizedBox(height: 8),
-                                    const Text('Allega Documento', style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w600, fontSize: 13)),
-                                    const SizedBox(height: 4),
-                                    Text('PDF, TXT, Immagini', style: TextStyle(color: Colors.deepPurple.shade300, fontSize: 11)),
-                                  ],
-                                )
-                              : Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(Icons.insert_drive_file, color: Colors.deepPurple, size: 24),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      _aiAttachment!.name,
-                                      style: const TextStyle(fontSize: 12, color: Colors.deepPurple, fontWeight: FontWeight.w500),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    InkWell(
-                                      onTap: () => setState(() => _aiAttachment = null),
-                                      child: const Text('Rimuovi', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
-                                    ),
-                                  ],
-                                ),
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
           ),
-
-          // Storico Analisi IA (Checklist)
-          if (_savedAnalyses.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  )
-                ],
-                border: Border.all(color: Colors.grey.shade100),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.history_toggle_off_rounded, color: Colors.teal.shade700, size: 22),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Storico Relazioni IA e Iniezione Contesto',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-                      ),
-                      const Spacer(),
-                      if (_selectedAnalysesIdsForContext.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.teal.shade50,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.teal.shade200),
-                          ),
-                          child: Text(
-                            '${_selectedAnalysesIdsForContext.length} selezionate per contesto',
-                            style: TextStyle(color: Colors.teal.shade800, fontSize: 12, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Seleziona le relazioni passate dell\'utente per iniettarle come contesto nella prossima analisi di Gemini, valutando l\'andamento educativo e di supporto nel tempo.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                  ),
-                  const SizedBox(height: 16),
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _savedAnalyses.length,
-                    separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                    itemBuilder: (context, index) {
-                      final analysis = _savedAnalyses[index];
-                      final String id = analysis['id']?.toString() ?? '';
-                      final String report = analysis['report']?.toString() ?? '';
-                      final String? notes = analysis['notes']?.toString();
-                      final String rawTimestamp = analysis['timestamp']?.toString() ?? '';
-                      
-                      // Timestamp formatting: e.g. 26/05/2026 16:30
-                      String formattedTimestamp = rawTimestamp;
-                      try {
-                        final parsed = DateTime.parse(rawTimestamp);
-                        final day = parsed.day.toString().padLeft(2, '0');
-                        final month = parsed.month.toString().padLeft(2, '0');
-                        final year = parsed.year;
-                        final hour = parsed.hour.toString().padLeft(2, '0');
-                        final minute = parsed.minute.toString().padLeft(2, '0');
-                        formattedTimestamp = '$day/$month/$year $hour:$minute';
-                      } catch (_) {}
-
-                      final isChecked = _selectedAnalysesIdsForContext.contains(id);
-
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: Row(
-                          children: [
-                            Checkbox(
-                              value: isChecked,
-                              activeColor: Colors.teal.shade700,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                              onChanged: (bool? val) {
-                                setState(() {
-                                  if (val == true) {
-                                    _selectedAnalysesIdsForContext.add(id);
-                                  } else {
-                                    _selectedAnalysesIdsForContext.remove(id);
-                                  }
-                                });
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Relazione del $formattedTimestamp',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                      color: AppTheme.textPrimary,
-                                    ),
-                                  ),
-                                  if (notes != null && notes.trim().isNotEmpty) ...[
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Note: $notes',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade600,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            // Leggi button
-                            IconButton(
-                              tooltip: 'Leggi Relazione',
-                              icon: Icon(Icons.chrome_reader_mode_outlined, color: Colors.indigo.shade600),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => DocumentReaderScreen(
-                                      patient: widget.patient,
-                                      report: report,
-                                      onExportPdf: () async {
-                                        if (_isExportingPdf) return;
-                                        setState(() => _isExportingPdf = true);
-                                        try {
-                                          final bytes = await _apiService.downloadAiAnalysisPdf(
-                                            widget.patient,
-                                            report,
-                                          );
-                                          if (bytes != null) {
-                                            final b64 = base64Encode(bytes);
-                                            final dataUrl = 'data:application/pdf;base64,$b64';
-                                            html.AnchorElement(href: dataUrl)
-                                              ..setAttribute(
-                                                  'download', 'analisi_ai_${widget.patient.cognome}_$formattedTimestamp.pdf')
-                                              ..click();
-                                          } else {
-                                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Errore generazione PDF AI')));
-                                          }
-                                        } catch (e) {
-                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore: $e')));
-                                        } finally {
-                                          setState(() => _isExportingPdf = false);
-                                        }
-                                      },
-                                      isExportingPdf: _isExportingPdf,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                            // Elimina button
-                            IconButton(
-                              tooltip: 'Elimina Relazione',
-                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                              onPressed: () => _deleteSavedAnalysis(id),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
           const SizedBox(height: 24),
-
-          if (_aiError != null)
+          
+          if (_aiError != null) ...[
             Container(
               padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 24),
               decoration: BoxDecoration(
                 color: Colors.red.shade50,
                 borderRadius: BorderRadius.circular(12),
@@ -2015,7 +2230,12 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 children: [
                   const Icon(Icons.error_outline, color: Colors.red),
                   const SizedBox(width: 12),
-                  Expanded(child: Text(_aiError!, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500))),
+                  Expanded(
+                    child: Text(
+                      _aiError!,
+                      style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
+                    ),
+                  ),
                   if (_aiError!.contains('mancante'))
                     TextButton(
                       onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
@@ -2024,98 +2244,39 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 ],
               ),
             ),
+          ],
 
-          if (_aiReport != null)
-            Expanded(
-              child: Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: Colors.grey.shade200),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth > 1000) {
+                // Desktop two-column layout
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 24.0, right: 16.0, top: 16.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.description_outlined, color: AppTheme.primaryColor, size: 20),
-                              SizedBox(width: 8),
-                              Text(
-                                'Referto di Sintesi Multidimensionale',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.textPrimary),
-                              ),
-                            ],
-                          ),
-                          TextButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => DocumentReaderScreen(
-                                    patient: widget.patient,
-                                    report: _aiReport!,
-                                    onExportPdf: _exportAiPdf,
-                                    isExportingPdf: _isExportingPdf,
-                                  ),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.fullscreen_rounded, size: 20),
-                            label: const Text('Schermo Intero / Lettura A4'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppTheme.primaryColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 16),
                     Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 24.0, right: 24.0, bottom: 24.0),
-                        child: Markdown(
-                          data: _aiReport!,
-                          selectable: true,
-                          styleSheet: MarkdownStyleSheet(
-                            h1: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 24),
-                            h2: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 20),
-                            h3: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
-                            p: const TextStyle(fontSize: 15, height: 1.6),
-                          ),
-                        ),
-                      ),
+                      flex: 3,
+                      child: leftColumn,
+                    ),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      flex: 2,
+                      child: rightColumn,
                     ),
                   ],
-                ),
-              ),
-            ),
-
-          if (_isAnalyzing)
-            const Expanded(
-              child: Center(
-                child: _SlothPuzzleLoader(),
-              ),
-            ),
-
-          if (_aiReport == null && _aiError == null && !_isAnalyzing)
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                );
+              } else {
+                // Mobile single-column layout
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.auto_awesome_outlined, size: 64, color: Colors.deepPurple.shade100),
-                    const SizedBox(height: 16),
-                    const Text('Premi "Analizza con IA" per generare il report multidimensionale.',
-                      style: TextStyle(fontSize: 16, color: AppTheme.textSecondary)),
+                    leftColumn,
+                    const SizedBox(height: 24),
+                    rightColumn,
                   ],
-                ),
-              ),
-            ),
+                );
+              }
+            },
+          ),
         ],
       ),
     );
