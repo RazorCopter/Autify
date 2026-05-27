@@ -2,6 +2,11 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.16.1] - 2026-05-27
+
+### Corretto
+- **Bug calcolo direct scores per risposte tridimensionali (SIS)**: Risolto il 500 errore (Internal Server Error) riscontrato accedendo alla pagina dell'analisi/storico dopo aver compilato e salvato una scala SIS. La funzione `compute_direct_scores` in `analytics.py` ora gestisce in modo sicuro sia punteggi numerici classici (POS, San Martín) che dizionari tridimensionali `{"F": x, "D": y, "T": z}` calcolando la somma corretta di F+D+T, evitando eccezioni di cast di tipo `TypeError`.
+
 ## [2.16.0] - 2026-05-27
 
 ### Aggiunto

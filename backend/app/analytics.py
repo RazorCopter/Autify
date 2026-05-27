@@ -179,9 +179,21 @@ def compute_direct_scores(risposte: list, domain_map: Dict[str, str]) -> List[di
 
     for r in risposte:
         codice = r.get("codice_domanda", "")
+        punteggio = r.get("punteggio", 0)
+        
+        # Gestione robusta per punteggi tridimensionali (SIS) o normali interi
+        if isinstance(punteggio, dict):
+            # Gestione caso speciale A3: F max = 3
+            f_val = min(int(punteggio.get("F", 0)), 3) if codice.upper() == "A3" else int(punteggio.get("F", 0))
+            d_val = int(punteggio.get("D", 0))
+            t_val = int(punteggio.get("T", 0))
+            valore = f_val + d_val + t_val
+        else:
+            valore = int(punteggio) if isinstance(punteggio, (int, float)) else 0
+
         for prefix in sorted_prefixes:
             if codice.upper().startswith(prefix.upper()):
-                aggregated[prefix]["punteggio_totale"] += r.get("punteggio", 0)
+                aggregated[prefix]["punteggio_totale"] += valore
                 aggregated[prefix]["num_domande"] += 1
                 break
 
