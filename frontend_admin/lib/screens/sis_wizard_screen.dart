@@ -133,6 +133,28 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
       // Pre-compila nome operatore di default se noto
       _operatoreController.text = "Operatore AutAnalysis";
 
+      // Correggi i codici di SEZ3C per evitare la collisione con la Sottoscala C
+      if (_scale != null) {
+        for (final sec in _scale!.sezioni) {
+          if (sec.codiceSezione == 'SEZ3C') {
+            for (int i = 0; i < sec.domande.length; i++) {
+              final q = sec.domande[i];
+              final cod = q.codice ?? q.idDomanda;
+              if (cod.startsWith('C') && !cod.startsWith('BC')) {
+                final newCod = 'BC${cod.substring(1)}';
+                sec.domande[i] = Question(
+                  idDomanda: newCod,
+                  codice: newCod,
+                  testoDomanda: q.testoDomanda,
+                  note: q.note,
+                  opzioni: q.opzioni,
+                );
+              }
+            }
+          }
+        }
+      }
+
       // Pre-inizializza TUTTE le risposte SEZ3M e SEZ3C a 0 ("Assente").
       // Il valore 0 è una risposta valida e deve essere incluso nel salvataggio.
       // Questo evita il bug per cui la sezione appare come "0/N completata"

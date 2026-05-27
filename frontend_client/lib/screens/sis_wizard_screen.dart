@@ -130,6 +130,47 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
 
       // Pre-compila nome operatore di default se noto
       _operatoreController.text = "Operatore AutAnalysis";
+
+      // Correggi i codici di SEZ3C per evitare la collisione con la Sottoscala C
+      if (_scale != null) {
+        for (final sec in _scale!.sezioni) {
+          // Identifichiamo SEZ3C per indice (8) o per titolo o sezioni
+          // Nel client non c'è sec.codiceSezione. Identifichiamo l'indice della sezione.
+          // Le sezioni del client: A(0), B(1), C(2), D(3), E(4), F(5), SEZ2(6), SEZ3M(7), SEZ3C(8)
+          final sIdx = _scale!.sezioni.indexOf(sec);
+          if (sIdx == 8) {
+            for (int i = 0; i < sec.domande.length; i++) {
+              final q = sec.domande[i];
+              final cod = q.codice ?? q.idDomanda;
+              if (cod.startsWith('C') && !cod.startsWith('BC')) {
+                final newCod = 'BC${cod.substring(1)}';
+                sec.domande[i] = QuestionModel(
+                  idDomanda: newCod,
+                  codice: newCod,
+                  testoDomanda: q.testoDomanda,
+                  note: q.note,
+                  opzioni: q.opzioni,
+                );
+              }
+            }
+          }
+        }
+      }
+
+      // Pre-inizializza TUTTE le risposte SEZ3M e SEZ3C a 0 ("Assente").
+      if (_scale != null) {
+        for (int sIdx = 0; sIdx < _scale!.sezioni.length; sIdx++) {
+          if (sIdx == 7 || sIdx == 8) { // SEZ3M o SEZ3C
+            final sec = _scale!.sezioni[sIdx];
+            for (final q in sec.domande) {
+              final k = q.codice ?? q.idDomanda;
+              if (!_answers.containsKey(k)) {
+                _answers[k] = 0;
+              }
+            }
+          }
+        }
+      }
     } catch (e) {
       print("Errore caricamento wizard: $e");
     } finally {
