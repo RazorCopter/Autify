@@ -495,11 +495,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     );
   }
 
-  bool get _isSisScale {
-    final name = _normalizeScaleIdentifier(widget.scale.nome);
-    final id = _normalizeScaleIdentifier(widget.scale.id);
-    return name.contains('sis') || id.contains('sis');
-  }
+
 
   Widget _buildContent() {
     final isSis = _isSisScale;

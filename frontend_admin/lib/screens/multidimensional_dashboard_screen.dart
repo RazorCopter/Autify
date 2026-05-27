@@ -1516,7 +1516,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                             Expanded(
                               child: RichText(
                                 text: TextSpan(
-                                  style: const TextStyle(color: Colors.white90, fontSize: 11, height: 1.2),
+                                  style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.2),
                                   children: [
                                     TextSpan(
                                       text: '${d.codice.toUpperCase()}: ',
@@ -1668,7 +1668,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                             Expanded(
                               child: RichText(
                                 text: TextSpan(
-                                  style: const TextStyle(color: Colors.white90, fontSize: 11, height: 1.2),
+                                  style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.2),
                                   children: [
                                     TextSpan(
                                       text: '${d.codice.toUpperCase()}: ',
