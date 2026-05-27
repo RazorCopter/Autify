@@ -3,6 +3,8 @@ import 'theme/app_theme.dart';
 import 'models/models.dart';
 import 'services/api_service.dart';
 import 'screens/wizard_screen.dart';
+import 'screens/sis_wizard_screen.dart';
+
 
 void main() {
   runApp(const ClientApp());
@@ -143,16 +145,23 @@ class _SelectionScreenState extends State<SelectionScreen> {
                             child: FilledButton.icon(
                               onPressed: (_selectedPatientId != null && _selectedScaleId != null) 
                                   ? () {
+                                      final isSis = _selectedScaleId!.toLowerCase().contains('sis');
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (_) => WizardScreen(
-                                            patientId: _selectedPatientId!,
-                                            scaleId: _selectedScaleId!,
-                                          ),
+                                          builder: (_) => isSis
+                                              ? SisWizardScreen(
+                                                  patientId: _selectedPatientId!,
+                                                  scaleId: _selectedScaleId!,
+                                                )
+                                              : WizardScreen(
+                                                  patientId: _selectedPatientId!,
+                                                  scaleId: _selectedScaleId!,
+                                                ),
                                         ),
                                       );
                                     } 
+
                                   : null,
                               icon: const Icon(Icons.play_circle_outline, size: 24),
                               label: const Text(

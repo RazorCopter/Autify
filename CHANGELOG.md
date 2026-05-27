@@ -1,6 +1,18 @@
 # Changelog
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
+
+## [2.16.0] - 2026-05-27
+
+### Aggiunto
+- **Wizard Clinico Orchestratore SIS (Supports Intensity Scale)**: Sviluppato `sis_wizard_screen.dart` da zero sia per `frontend_admin` che per `frontend_client`.
+  - **State Management**: Gestione dello stato integrata per mantenere l'intero set di risposte tridimensionali (`F`, `D`, `T`) e non perdere dati cambiando Tab o premendo "Indietro".
+  - **Layout Adattivo e Bento Design**: Menu di navigazione a sinistra (`NavigationRail` su tablet/web >800px) e barra in basso / horizontal tabs scrollabili su smartphone.
+  - **Sub-Navigatore Orizzontale per Sottoscale**: Menu secondario (horizontal `TabBar`) per scorrere rapidamente tra le Sottoscale A-F riducendo il carico cognitivo dell'operatore.
+  - **Integrazione Dati Intake**: Form di configurazione per date, operatori, e il set completo di informatori e condizioni socio-demografiche del soggetto.
+  - **Estrazione e Drag & Drop Ranking**: Integrazione di `SisRankingWidget` nello step di riepilogo per ordinare interattivamente le prime 4 priorità di tutela legale, e di `SisMedicalList` per la compilazione dei bisogni eccezionali con calcolo real-time degli alert di soglia.
+- **Sincronizzazione Versioni**: Incrementata la versione globale della suite a `2.16.0` (backend API, app_version.dart, admin pubspec.yaml, client pubspec.yaml).
+
 ## [2.15.2] - 2026-05-27
 
 ### Aggiunto

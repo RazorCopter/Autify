@@ -4,6 +4,8 @@ import '../models/scale_model.dart';
 import '../models/patient_model.dart';
 import '../services/api_service.dart';
 import 'wizard_screen.dart';
+import 'sis_wizard_screen.dart';
+
 
 class SelectionScreen extends StatefulWidget {
   const SelectionScreen({super.key});
@@ -128,13 +130,19 @@ class _SelectionScreenState extends State<SelectionScreen> {
                                   ? null
                                   : (_selectedPatientId != null && _selectedScaleId != null) 
                                       ? () {
+                                          final isSis = _selectedScaleId!.toLowerCase().contains('sis');
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                              builder: (_) => WizardScreen(
-                                                patientId: _selectedPatientId!,
-                                                scaleId: _selectedScaleId!,
-                                              ),
+                                              builder: (_) => isSis
+                                                  ? SisWizardScreen(
+                                                      patientId: _selectedPatientId!,
+                                                      scaleId: _selectedScaleId!,
+                                                    )
+                                                  : WizardScreen(
+                                                      patientId: _selectedPatientId!,
+                                                      scaleId: _selectedScaleId!,
+                                                    ),
                                             ),
                                           );
                                         } 

@@ -21,6 +21,7 @@ class SettingsNotifier extends ChangeNotifier {
   Future<void> updateSettings({
     int? validityMonthsSanMartin,
     int? validityMonthsPOS,
+    int? validityMonthsSIS,
     int? alertThresholdDays,
   }) async {
     if (validityMonthsSanMartin != null) {
@@ -28,6 +29,9 @@ class SettingsNotifier extends ChangeNotifier {
     }
     if (validityMonthsPOS != null) {
       _settings.validityMonthsPOS = validityMonthsPOS;
+    }
+    if (validityMonthsSIS != null) {
+      _settings.validityMonthsSIS = validityMonthsSIS;
     }
     if (alertThresholdDays != null) {
       _settings.alertThresholdDays = alertThresholdDays;

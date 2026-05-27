@@ -97,6 +97,9 @@ class PsychometricAnalysis {
   final int? indiceQv;
   final int? percentile;
   final String? fasciaQv;
+  final bool? alertMedico;
+  final bool? alertComportamentale;
+  final List<Map<String, dynamic>>? sezione2Top4;
 
   PsychometricAnalysis({
     required this.idValutazione,
@@ -108,6 +111,9 @@ class PsychometricAnalysis {
     this.indiceQv,
     this.percentile,
     this.fasciaQv,
+    this.alertMedico,
+    this.alertComportamentale,
+    this.sezione2Top4,
   });
 
   factory PsychometricAnalysis.fromJson(Map<String, dynamic> json) {
@@ -117,9 +123,14 @@ class PsychometricAnalysis {
       idScala: json['id_scala'] ?? '',
       scalaNome: json['scala_nome'] ?? '',
       sommaPunteggiStandard: _parseNullableInt(json['somma_punteggi_standard']),
-      indiceQv: _parseNullableInt(json['indice_qv']),
+      indiceQv: _parseNullableInt(json['indice_qv']) ?? _parseNullableInt(json['indice_sis']),
       percentile: _parseNullableInt(json['percentile']),
-      fasciaQv: json['fascia_qv'] as String?,
+      fasciaQv: (json['fascia_qv'] ?? json['classificazione_intensita']) as String?,
+      alertMedico: json['alert_medico'] as bool?,
+      alertComportamentale: json['alert_comportamentale'] as bool?,
+      sezione2Top4: (json['sezione_2_top4'] as List?)
+          ?.map((e) => Map<String, dynamic>.from(e as Map))
+          .toList(),
       domini: (json['domini'] as List?)
               ?.map((e) => DomainAnalysis.fromJson(e as Map<String, dynamic>))
               .toList() ??

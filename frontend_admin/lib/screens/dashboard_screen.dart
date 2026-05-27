@@ -263,6 +263,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final coveragePercent = (coverage['coperti_percentuale'] ?? 0.0).toDouble();
     final posMancanti = coverage['pos_mancanti'] ?? 0;
     final sanMartinMancanti = coverage['san_martin_mancanti'] ?? 0;
+    final sisMancanti = coverage['sis_mancanti'] ?? 0;
 
     final alertList = (_stats?['ultimi_alert'] as List<dynamic>?) ?? [];
     final distributions = (_stats?['distribuzione_scale'] as List<dynamic>?) ?? [];
@@ -310,7 +311,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       icon: Icons.warning_amber_rounded,
                       gradientColors: const [Color(0xFF9A3412), Color(0xFFF97316)],
                       onTap: () => widget.onNavigate(2), // Vai a Utenza
-                      tooltip: 'Scale Mancanti o Scadute:\n\nPOS: $posMancanti\nSan Martín: $sanMartinMancanti',
+                      tooltip: 'Scale Mancanti o Scadute:\n\nPOS: $posMancanti\nSan Martín: $sanMartinMancanti\nSIS: $sisMancanti',
                     ),
                   ),
                 ],
@@ -344,7 +345,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     icon: Icons.warning_amber_rounded,
                     gradientColors: const [Color(0xFF9A3412), Color(0xFFF97316)],
                     onTap: () => widget.onNavigate(2),
-                    tooltip: 'Scale Mancanti o Scadute:\n\nPOS: $posMancanti\nSan Martín: $sanMartinMancanti',
+                    tooltip: 'Scale Mancanti o Scadute:\n\nPOS: $posMancanti\nSan Martín: $sanMartinMancanti\nSIS: $sisMancanti',
                   ),
                 ],
               ),

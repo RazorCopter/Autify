@@ -963,8 +963,10 @@ async def get_dashboard_stats():
         # 4. Calcolo dello stato di copertura di ciascun utente (POS e San Martin valutati individualmente)
         pos_attivi = 0
         san_martin_attivi = 0
+        sis_attivi = 0
         pos_scaduti = 0
         san_martin_scaduti = 0
+        sis_scaduti = 0
         alert_candidates = []
         
         for pat in patients:
@@ -985,9 +987,10 @@ async def get_dashboard_stats():
             elif p_id2_str and p_id2_str in evals_by_patient:
                 pat_evals = evals_by_patient[p_id2_str]
             
-            # Dividi le valutazioni in POS e San Martín
+            # Dividi le valutazioni in POS, San Martín e SIS
             pat_pos_evals = []
             pat_sm_evals = []
+            pat_sis_evals = []
             
             for ev in pat_evals:
                 scale_id = ev.get("id_scala")
@@ -1000,6 +1003,8 @@ async def get_dashboard_stats():
                     pat_pos_evals.append(ev)
                 elif "martin" in scale_name_clean or "martin" in scale_id_str.lower():
                     pat_sm_evals.append(ev)
+                elif "sis" in scale_name or "sis" in scale_id_str.lower():
+                    pat_sis_evals.append(ev)
             
             # --- Valuta POS ---
             has_valid_pos = False
@@ -1031,8 +1036,23 @@ async def get_dashboard_stats():
             else:
                 san_martin_scaduti += 1
                 
-            # Alert candidates: se non ha POS valida o non ha San Martín valida
-            if not has_valid_pos or not has_valid_sm:
+            # --- Valuta SIS ---
+            has_valid_sis = False
+            if pat_sis_evals:
+                sorted_sis = sorted(pat_sis_evals, key=parse_eval_date, reverse=True)
+                latest_sis = sorted_sis[0]
+                latest_sis_date = parse_eval_date(latest_sis)
+                days_since_sis = (now - latest_sis_date).days
+                if days_since_sis <= 365:
+                    has_valid_sis = True
+                    sis_attivi += 1
+                else:
+                    sis_scaduti += 1
+            else:
+                sis_scaduti += 1
+                
+            # Alert candidates: se non ha POS valida o non ha San Martín valida o non ha SIS valida
+            if not has_valid_pos or not has_valid_sm or not has_valid_sis:
                 if not pat_evals:
                     alert_candidates.append({
                         "paziente_id": pat_display_id,
@@ -1063,9 +1083,9 @@ async def get_dashboard_stats():
 
         # Calcolo percentuale di copertura
         totale_pazienti = len(patients)
-        coperti_count = pos_attivi + san_martin_attivi
-        scaduti_count = pos_scaduti + san_martin_scaduti
-        max_scale_teoriche = 2 * totale_pazienti
+        coperti_count = pos_attivi + san_martin_attivi + sis_attivi
+        scaduti_count = pos_scaduti + san_martin_scaduti + sis_scaduti
+        max_scale_teoriche = 3 * totale_pazienti
         copertura_percentuale = (coperti_count / max_scale_teoriche * 100) if max_scale_teoriche > 0 else 0.0
         
         # 5. Ordina gli alert: prima chi non ne ha mai fatte, poi chi ha valutazioni scadute da più tempo
@@ -1152,8 +1172,10 @@ async def get_dashboard_stats():
                 "scaduti_count": scaduti_count,
                 "pos_mancanti": pos_scaduti,
                 "san_martin_mancanti": san_martin_scaduti,
+                "sis_mancanti": sis_scaduti,
                 "pos_attivi": pos_attivi,
-                "san_martin_attivi": san_martin_attivi
+                "san_martin_attivi": san_martin_attivi,
+                "sis_attivi": sis_attivi
             },
             "distribuzione_scale": distribuzione_scale,
             "trend_somministrazioni": trend_dati,
@@ -1173,8 +1195,10 @@ async def get_dashboard_stats():
                 "scaduti_count": 0,
                 "pos_mancanti": 0,
                 "san_martin_mancanti": 0,
+                "sis_mancanti": 0,
                 "pos_attivi": 0,
-                "san_martin_attivi": 0
+                "san_martin_attivi": 0,
+                "sis_attivi": 0
             },
             "distribuzione_scale": [],
             "trend_somministrazioni": [],

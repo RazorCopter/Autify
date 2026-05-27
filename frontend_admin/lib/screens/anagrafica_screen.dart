@@ -703,6 +703,8 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                     _buildScaleIndicator(patient.ultimoPosCompilato, "POS"),
                     const SizedBox(width: 6),
                     _buildScaleIndicator(patient.ultimoSanMartinCompilato, "SanMartín"),
+                    const SizedBox(width: 6),
+                    _buildScaleIndicator(patient.ultimoSisCompilato, "SIS"),
                   ],
                 ),
                 // Pulsanti Azione
@@ -797,7 +799,11 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
-          scaleName == "SanMartín" ? "SM" : "POS",
+          scaleName == "SanMartín"
+              ? "SM"
+              : scaleName == "SIS"
+                  ? "SIS"
+                  : "POS",
           style: TextStyle(
             fontSize: 9,
             fontWeight: FontWeight.w900,
@@ -869,6 +875,8 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                           _buildScaleIndicator(p.ultimoPosCompilato, "POS"),
                           const SizedBox(width: 6),
                           _buildScaleIndicator(p.ultimoSanMartinCompilato, "SanMartín"),
+                          const SizedBox(width: 6),
+                          _buildScaleIndicator(p.ultimoSisCompilato, "SIS"),
                         ],
                       ),
                     ),

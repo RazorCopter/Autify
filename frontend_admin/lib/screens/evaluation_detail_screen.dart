@@ -42,6 +42,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
   final Map<String, TextEditingController> _noteControllers = {};
   
   bool _isEditMode = false;
+  bool _showPercentilesInSisChart = false;
   final TextEditingController _operatoreController = TextEditingController();
   final TextEditingController _intervistatoController = TextEditingController();
 
@@ -482,7 +483,14 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     );
   }
 
+  bool get _isSisScale {
+    final name = _normalizeScaleIdentifier(widget.scale.nome);
+    final id = _normalizeScaleIdentifier(widget.scale.id);
+    return name.contains('sis') || id.contains('sis');
+  }
+
   Widget _buildContent() {
+    final isSis = _isSisScale;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Center(
@@ -493,23 +501,551 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
             children: [
               _buildHistoryCard(),
               const SizedBox(height: 20),
-              if (_shouldUseSanMartinUi) ...[
-                _buildQvSummaryCard(),
-                const SizedBox(height: 20),
-                _buildQvGraphicTable(),
-                const SizedBox(height: 20),
-              ],
               _buildMetaCard(),
               const SizedBox(height: 20),
               _buildClinicalCard(),
               const SizedBox(height: 20),
-              _buildChartCard(),
-              const SizedBox(height: 20),
+              if (isSis && _analysis != null) ...[
+                _buildSisDashboard(),
+                const SizedBox(height: 20),
+              ] else ...[
+                if (_shouldUseSanMartinUi) ...[
+                  _buildQvSummaryCard(),
+                  const SizedBox(height: 20),
+                  _buildQvGraphicTable(),
+                  const SizedBox(height: 20),
+                ],
+                _buildChartCard(),
+                const SizedBox(height: 20),
+              ],
               _buildDomainTable(),
               const SizedBox(height: 20),
               _buildAnswersList(),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  String _getQuestionText(String questionId) {
+    for (final sec in widget.scale.sezioni) {
+      for (final q in sec.domande) {
+        final qCode = q.codice ?? q.idDomanda;
+        if (qCode.toUpperCase() == questionId.toUpperCase()) {
+          return q.testoDomanda;
+        }
+      }
+    }
+    return questionId;
+  }
+
+  Widget _buildSisDashboard() {
+    final a = _analysis!;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isTablet = constraints.maxWidth > 780;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildSisHeaderKPI(a, isTablet),
+            const SizedBox(height: 20),
+            if (isTablet)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: _buildSisProfileChart(a),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    flex: 2,
+                    child: _buildSisTop4List(a),
+                  ),
+                ],
+              )
+            else ...[
+              _buildSisProfileChart(a),
+              const SizedBox(height: 20),
+              _buildSisTop4List(a),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSisHeaderKPI(PsychometricAnalysis a, bool isTablet) {
+    final indexValue = a.indiceQv ?? 0;
+    final level = a.fasciaQv ?? 'N/A';
+    final percentile = a.percentile ?? 0;
+
+    final headerKPI = Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0, end: indexValue.toDouble()),
+              duration: const Duration(milliseconds: 1000),
+              builder: (context, value, child) {
+                final progress = (value / 150.0).clamp(0.0, 1.0);
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 120,
+                      height: 120,
+                      child: CircularProgressIndicator(
+                        value: progress,
+                        strokeWidth: 10,
+                        backgroundColor: const Color(0xFFE2E8F0),
+                        color: const Color(0xFF6366F1), // Indigo Premium
+                        strokeCap: StrokeCap.round,
+                      ),
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${value.toInt()}',
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF1E293B),
+                          ),
+                        ),
+                        const Text(
+                          'INDICE SIS',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF64748B),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Percentile: $percentile°  •  $level',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF475569),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final alertMedico = _buildAlertCard(
+      title: 'BISOGNI MEDICI',
+      alert: a.alertMedico ?? false,
+      icon: Icons.health_and_safety_outlined,
+      alertText: 'Attenzione: Bisogni Medici Elevati',
+      stableText: 'Bisogni Medici Stabili',
+    );
+
+    final alertComportamentale = _buildAlertCard(
+      title: 'BISOGNI COMPORTAMENTALI',
+      alert: a.alertComportamentale ?? false,
+      icon: Icons.psychology_outlined,
+      alertText: 'Attenzione: Supporto Elevato',
+      stableText: 'Bisogni Comportamentali Stabili',
+    );
+
+    if (isTablet) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          headerKPI,
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              children: [
+                alertMedico,
+                const SizedBox(height: 14),
+                alertComportamentale,
+              ],
+            ),
+          ),
+        ],
+      );
+    } else {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          headerKPI,
+          const SizedBox(height: 16),
+          alertMedico,
+          const SizedBox(height: 12),
+          alertComportamentale,
+        ],
+      );
+    }
+  }
+
+  Widget _buildAlertCard({
+    required String title,
+    required bool alert,
+    required IconData icon,
+    required String alertText,
+    required String stableText,
+  }) {
+    final bgColor = alert ? const Color(0xFFFEF2F2) : const Color(0xFFECFDF5);
+    final borderColor = alert ? const Color(0xFFFCA5A5) : const Color(0xFFA7F3D0);
+    final iconColor = alert ? const Color(0xFFEF4444) : const Color(0xFF10B981);
+    final textColor = alert ? const Color(0xFF991B1B) : const Color(0xFF065F46);
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 1.5),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: iconColor, size: 24),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: textColor.withOpacity(0.8),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  alert ? alertText : stableText,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: textColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSisProfileChart(PsychometricAnalysis a) {
+    final yMax = _showPercentilesInSisChart ? 100.0 : 20.0;
+    
+    // Filtra per domini A-F
+    final sisDomains = a.domini.where((d) => 'ABCDEF'.contains(d.codice.toUpperCase())).toList();
+    sisDomains.sort((x, y) => x.codice.toUpperCase().compareTo(y.codice.toUpperCase()));
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Profilo dei Bisogni di Sostegno',
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Support Needs Profile per i 6 domini principali',
+                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                    ),
+                  ],
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.all(4),
+                  child: Row(
+                    children: [
+                      _chartToggleButton('Punt. Standard', !_showPercentilesInSisChart),
+                      _chartToggleButton('Percentili', _showPercentilesInSisChart),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 36),
+            SizedBox(
+              height: 320,
+              child: BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceAround,
+                  maxY: yMax,
+                  minY: 0,
+                  barTouchData: BarTouchData(
+                    touchTooltipData: BarTouchTooltipData(
+                      getTooltipColor: (_) => AppTheme.textPrimary,
+                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                        final domain = sisDomains[groupIndex];
+                        final score = rod.toY.toInt();
+                        final type = _showPercentilesInSisChart ? 'Percentile' : 'Punt. Standard';
+                        return BarTooltipItem(
+                          '${domain.etichetta}\n$type: $score',
+                          const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                        );
+                      },
+                    ),
+                  ),
+                  titlesData: FlTitlesData(
+                    show: true,
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          final idx = value.toInt();
+                          if (idx >= 0 && idx < sisDomains.length) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                sisDomains[idx].codice.toUpperCase(),
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                              ),
+                            );
+                          }
+                          return const Text('');
+                        },
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 28,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            value.toInt().toString(),
+                            style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary),
+                          );
+                        },
+                      ),
+                    ),
+                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  ),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    getDrawingHorizontalLine: (value) => const FlLine(
+                      color: Color(0xFFF1F5F9),
+                      strokeWidth: 1.5,
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  extraLinesData: ExtraLinesData(
+                    horizontalLines: [
+                      HorizontalLine(
+                        y: _showPercentilesInSisChart ? 50.0 : 10.0,
+                        color: const Color(0xFFEF4444).withOpacity(0.5),
+                        strokeWidth: 2,
+                        dashArray: [6, 4],
+                        label: HorizontalLineLabel(
+                          show: true,
+                          alignment: Alignment.topRight,
+                          style: TextStyle(
+                            color: const Color(0xFFEF4444).withOpacity(0.8),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                          labelResolver: (line) =>
+                              _showPercentilesInSisChart ? 'Media (50° perc.)' : 'Media Normativa (10)',
+                        ),
+                      ),
+                    ],
+                  ),
+                  barGroups: List.generate(sisDomains.length, (index) {
+                    final domain = sisDomains[index];
+                    final score = _showPercentilesInSisChart
+                        ? (domain.percentileDominio ?? 0).toDouble()
+                        : (domain.punteggioStandard ?? 0).toDouble();
+
+                    final color = _domainColors[index % _domainColors.length];
+
+                    return BarChartGroupData(
+                      x: index,
+                      barRods: [
+                        BarChartRodData(
+                          toY: score,
+                          gradient: LinearGradient(
+                            colors: [color.withOpacity(0.7), color],
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                          ),
+                          width: 22,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(8),
+                            topRight: Radius.circular(8),
+                          ),
+                          backDrawRodData: BackgroundBarChartRodData(
+                            show: true,
+                            toY: yMax,
+                            color: const Color(0xFFF8FAFC),
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                ),
+                swapAnimationDuration: const Duration(milliseconds: 300),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _chartToggleButton(String text, bool active) {
+    return GestureDetector(
+      onTap: () => setState(() => _showPercentilesInSisChart = text.contains('Percentili')),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: active ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : null,
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: active ? AppTheme.primaryColor : AppTheme.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSisTop4List(PsychometricAnalysis a) {
+    final top4 = a.sezione2Top4 ?? [];
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.shield_outlined, color: AppTheme.primaryColor, size: 22),
+                const SizedBox(width: 10),
+                const Text(
+                  'Top 4: Tutela e Protezione',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Attività a tutela del soggetto con maggior necessità di sostegno',
+              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+            ),
+            const SizedBox(height: 20),
+            if (top4.isEmpty)
+              const Center(
+                child: Text('Nessun dato registrato per la sezione 2.',
+                    style: TextStyle(fontSize: 14, color: AppTheme.textSecondary, fontStyle: FontStyle.italic)),
+              )
+            else
+              ...List.generate(top4.length, (idx) {
+                final item = top4[idx];
+                final qText = _getQuestionText(item['id'] ?? '');
+                final grezzo = item['punteggio_grezzo'] ?? 0;
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFF1F5F9)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: const BoxDecoration(
+                          color: AppTheme.primaryColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${idx + 1}',
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          qText,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF64B5F6).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Grezzo: $grezzo',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E88E5)),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+          ],
         ),
       ),
     );

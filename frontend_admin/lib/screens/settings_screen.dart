@@ -596,6 +596,18 @@ TONO E FORMATTAZIONE:
                   ),
                   const Divider(height: 32, color: Color(0xFFE8EEF8)),
                   _buildSliderRow(
+                    title: 'Validità Scala SIS',
+                    value: settings.validityMonthsSIS.toDouble(),
+                    min: 1,
+                    max: 24,
+                    unit: 'mesi',
+                    icon: Icons.calendar_today_rounded,
+                    onChanged: (val) {
+                      notifier.updateSettings(validityMonthsSIS: val.toInt());
+                    },
+                  ),
+                  const Divider(height: 32, color: Color(0xFFE8EEF8)),
+                  _buildSliderRow(
                     title: 'Preavviso Alert di Scadenza',
                     value: settings.alertThresholdDays.toDouble(),
                     min: 0,

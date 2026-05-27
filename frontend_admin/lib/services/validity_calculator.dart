@@ -16,6 +16,8 @@ class ValidityCalculator {
     final typeLower = scaleType.toLowerCase();
     if (typeLower.contains('martin') || typeLower.contains('san')) {
       monthsValidity = currentSettings.validityMonthsSanMartin;
+    } else if (typeLower.contains('sis')) {
+      monthsValidity = currentSettings.validityMonthsSIS;
     } else {
       monthsValidity = currentSettings.validityMonthsPOS;
     }
