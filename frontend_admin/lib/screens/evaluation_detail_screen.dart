@@ -1988,8 +1988,25 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
   Widget _buildAnswerRow(int idx) {
     final answer = _editableAnswers[idx];
     final question = _findQuestion(answer.codiceDomanda);
+    final section = _findSectionForQuestion(answer.codiceDomanda);
     final availableScores = _getAvailableScores(answer.codiceDomanda);
-    final isTridimensional = answer.punteggio is Map;
+
+    // Una domanda è tridimensionale se:
+    // 1. Il punteggio salvato è effettivamente una Map (caso normale)
+    // 2. OPPURE la sezione appartiene alle sottoscale 3D della SIS (A-F e SEZ2)
+    //    anche se il dato storico è stato salvato erroneamente come int.
+    final String? sectionCode = section?.codiceSezione?.toUpperCase();
+    final bool sectionIs3D = sectionCode != null &&
+        (sectionCode == 'A' || sectionCode == 'B' || sectionCode == 'C' ||
+         sectionCode == 'D' || sectionCode == 'E' || sectionCode == 'F' ||
+         sectionCode == 'SEZ2');
+    final bool isTridimensional = (answer.punteggio is Map) || sectionIs3D;
+
+    // Se la sezione è 3D ma il punteggio salvato è un int (dato storico corrotto),
+    // creiamo un fallback Map per evitare errori di rendering.
+    final dynamic effectivePunteggio = isTridimensional && answer.punteggio is! Map
+        ? {'F': 0, 'D': 0, 'T': 0}
+        : answer.punteggio;
 
     return ExpansionTile(
       tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -2018,7 +2035,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
           : null,
       title: Builder(builder: (context) {
         if (isTridimensional) {
-          final Map<String, dynamic> map = Map<String, dynamic>.from(answer.punteggio as Map);
+          final Map<String, dynamic> map = Map<String, dynamic>.from(effectivePunteggio as Map);
           final fVal = map['F'] ?? 0;
           final dVal = map['D'] ?? 0;
           final tVal = map['T'] ?? 0;
@@ -2140,7 +2157,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
       }),
       children: [
         if (isTridimensional)
-          _buildSisTridimensionalSelectors(idx, Map<String, dynamic>.from(answer.punteggio as Map)),
+          _buildSisTridimensionalSelectors(idx, Map<String, dynamic>.from(effectivePunteggio as Map)),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           child: TextField(
@@ -2311,6 +2328,18 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
       for (final question in section.domande) {
         if (question.codice == codiceDomanda) {
           return question;
+        }
+      }
+    }
+    return null;
+  }
+
+  /// Restituisce la sezione a cui appartiene la domanda con il dato codice.
+  Section? _findSectionForQuestion(String codiceDomanda) {
+    for (final section in widget.scale.sezioni) {
+      for (final question in section.domande) {
+        if (question.codice == codiceDomanda) {
+          return section;
         }
       }
     }
