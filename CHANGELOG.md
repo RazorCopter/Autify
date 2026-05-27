@@ -2,6 +2,13 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.16.8] - 2026-05-28
+
+### Corretto
+- **Comparazione Multidimensionale (Dashboard Admin)**:
+  - Risolto il bug per cui in presenza di 3 scale compilate (es. POS, San Martín e SIS), la scala SIS veniva erroneamente assegnata come "posEval" sovrascrivendo la scala POS originale e restituendo l'errore "Nessun dominio in comune trovato tra le scale."
+  - Esclusa in modo esplicito la scala SIS dal ciclo di assegnazione per la comparazione in `multidimensional_dashboard_screen.dart`, garantendo che il confronto e il relativo grafico a barre normalizzato (0-100%) avvengano **solo ed esclusivamente tra le scale POS e San Martín (SM)** come richiesto.
+
 ## [2.16.7] - 2026-05-28
 
 ### Ottimizzato
