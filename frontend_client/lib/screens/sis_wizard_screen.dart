@@ -1290,6 +1290,7 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
         // List of questions for the selected subscale
         Expanded(
           child: ListView.builder(
+            key: ValueKey(_activeSubscaleIndex),
             itemCount: questions.length,
             padding: const EdgeInsets.only(bottom: 40),
             itemBuilder: (context, index) {
