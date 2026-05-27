@@ -384,7 +384,7 @@ void main() {
       expect(saveBtnWidgetEnabled.enabled, isTrue);
 
       // Aggiunge una nota alla domanda per verificare la sezione note opzionale
-      final addNoteToggle = find.text('📝  Aggiungi nota (opzionale)');
+      final addNoteToggle = find.text('Aggiungi nota (opzionale)');
       expect(addNoteToggle, findsOneWidget);
       await tester.tap(addNoteToggle);
       await tester.pumpAndSettle(); // Espande il campo di testo per la nota

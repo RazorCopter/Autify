@@ -1264,7 +1264,7 @@ class _WizardScreenState extends State<WizardScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _noteVisible ? 'Nascondi nota' : '📝  Aggiungi nota (opzionale)',
+                  _noteVisible ? 'Nascondi nota' : 'Aggiungi nota (opzionale)',
                   style: const TextStyle(
                     color: AppTheme.primaryColor,
                     fontWeight: FontWeight.w600,
