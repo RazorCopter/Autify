@@ -32,6 +32,7 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
   final Map<String, dynamic> _answers = {};
   final Map<String, String> _notes = {}; // codice_domanda -> nota text
   List<String> _customTop4Ranking = [];
+  bool _sez3Confermata = false;
 
   // --- NAVIGATION STATE ---
   int _activeMacroStep = 0; // 0: Intake, 1: Sez 1 (A-F), 2: Sez 2 (Protezione), 3: Sez 3 (Eccezionali), 4: Riepilogo
@@ -553,7 +554,8 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
     }
 
     final hasProgress = total > 0;
-    final isDone = hasProgress && completed == total;
+    final isSez3DaVerificare = progressCode == "SEZ3" && !_sez3Confermata;
+    final isDone = hasProgress && (progressCode == "SEZ3" ? (completed == total && _sez3Confermata) : (completed == total));
 
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
@@ -573,9 +575,11 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
                 icon,
                 color: isActive
                     ? AppTheme.primaryColor
-                    : isDone
-                        ? const Color(0xFF16A34A)
-                        : AppTheme.textSecondary,
+                    : isSez3DaVerificare
+                        ? const Color(0xFFF97316)
+                        : isDone
+                            ? const Color(0xFF16A34A)
+                            : AppTheme.textSecondary,
                 size: 20,
               ),
               const SizedBox(width: 12),
@@ -595,10 +599,14 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
                     if (hasProgress) ...[
                       const SizedBox(height: 2),
                       Text(
-                        isDone ? "Completato" : "$completed / $total comp.",
+                        isSez3DaVerificare
+                            ? "$completed / $total Da verificare.."
+                            : (isDone ? "Completato" : "$completed / $total comp."),
                         style: TextStyle(
                           fontSize: 11,
-                          color: isDone ? const Color(0xFF16A34A) : AppTheme.textSecondary,
+                          color: isSez3DaVerificare
+                              ? const Color(0xFFF97316)
+                              : (isDone ? const Color(0xFF16A34A) : AppTheme.textSecondary),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -607,7 +615,9 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
                 ),
               ),
               if (isDone)
-                const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 16),
+                const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 16)
+              else if (isSez3DaVerificare)
+                const Icon(Icons.pending_actions_rounded, color: Color(0xFFF97316), size: 16),
             ],
           ),
         ),
@@ -1473,11 +1483,105 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
             onSelectionChanged: (key, val) {
               setState(() {
                 _answers[key] = val;
+                // Se l'utente modifica una risposta dopo la conferma, sblocchiamo per sicurezza
+                _sez3Confermata = false;
               });
             },
             sectionTitle: "Sezione 3B: Eccezionali bisogni di sostegno di tipo comportamentale",
             sectionNote: "Seleziona 0 (Assente), 1 (Parziale) o 2 (Estensivo) per ciascun bisogno comportamentale.",
           ),
+          const SizedBox(height: 40),
+          
+          // Banner e pulsante di conferma per la validazione della Sezione 3
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: _sez3Confermata ? const Color(0xFFF0FDF4) : const Color(0xFFFFF7ED),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _sez3Confermata ? const Color(0xFFBBF7D0) : const Color(0xFFFED7AA),
+                width: 1.5,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      _sez3Confermata ? Icons.check_circle_rounded : Icons.pending_actions_rounded,
+                      color: _sez3Confermata ? const Color(0xFF16A34A) : const Color(0xFFEA580C),
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _sez3Confermata
+                            ? "Risposte della Sezione 3 confermate e validate!"
+                            : "Risposte preimpostate a 0 (Assente) da verificare",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: _sez3Confermata ? const Color(0xFF14532D) : const Color(0xFF7C2D12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _sez3Confermata
+                      ? "Hai confermato che tutte le selezioni (compresi i valori preimpostati) sono corrette. La sezione è ora completata (verde)."
+                      : "Le risposte sono state precompilate automaticamente a 0 per velocizzare l'inserimento. Rivedi la lista e clicca sul pulsante sotto per validare le scelte e contrassegnare la sezione come completata.",
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: _sez3Confermata ? const Color(0xFF15803D) : const Color(0xFF9A3412),
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (!_sez3Confermata)
+                  FilledButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _sez3Confermata = true;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Bisogni Eccezionali confermati con successo!"),
+                          backgroundColor: Color(0xFF16A34A),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.check_rounded, size: 18),
+                    label: const Text("CONFERMA E VALIDA RISPOSTE"),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFEA580C), // Arancione
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  )
+                else
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _sez3Confermata = false;
+                      });
+                    },
+                    icon: const Icon(Icons.lock_open_rounded, size: 18),
+                    label: const Text("SBLOCCA PER APPORTARE MODIFICHE"),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF15803D),
+                      side: const BorderSide(color: Color(0xFF86EFAC)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
         ],
       ),
     );
