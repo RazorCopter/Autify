@@ -2,6 +2,14 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.16.9] - 2026-05-28
+
+### Aggiunto
+- **Integrazione Dati SIS nell'Analisi IA (Gemini)**:
+  - Esteso il servizio di generazione report IA (`GeminiService`) ed il modello di visualizzazione dei domini per includere i dati clinici e psicometrici completi della scala **SIS (Supports Intensity Scale)** nel contesto inviato all'IA.
+  - Vengono ora forniti a Gemini: Punteggi Standard e Percentili per le 6 Sottoscale (Domini A-F), la Somma dei Punteggi Standard, l'Indice SIS Globale e la relativa Classificazione dell'Intensità dei Supporti (Fascia di bisogno), le Top 4 priorità di tutela individuate nella Sezione 2, e lo stato dettagliato degli Alert Medici (Sezione 3A) e Alert Comportamentali (Sezione 3B).
+  - Questo allineamento permette all'IA di formulare valutazioni evolutive e cliniche premium integrando pienamente la SIS alle scale POS e San Martín.
+
 ## [2.16.8] - 2026-05-28
 
 ### Corretto

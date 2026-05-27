@@ -218,6 +218,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         notes: _aiNotesController.text,
         attachment: attachmentMap,
         historyToInclude: historyToInclude,
+        analyses: _analyses,
       );
 
       setState(() {

@@ -78,9 +78,12 @@ class DomainAnalysis {
     return DomainAnalysis(
       codice: json['codice'] ?? '',
       etichetta: json['etichetta'] ?? '',
-      punteggioDiretto: _parseNullableInt(json['punteggio_diretto']) ?? 0,
+      punteggioDiretto: _parseNullableInt(json['punteggio_diretto']) ??
+          _parseNullableInt(json['punteggio_grezzo']) ??
+          0,
       punteggioStandard: _parseNullableInt(json['punteggio_standard']),
-      percentileDominio: _parseNullableInt(json['percentile_dominio']),
+      percentileDominio: _parseNullableInt(json['percentile_dominio']) ??
+          _parseNullableInt(json['percentile']),
       fascia: json['fascia'] as String?,
       numDomande: _parseNullableInt(json['num_domande']) ?? 0,
     );

@@ -16,28 +16,30 @@ class GeminiService {
     String? notes,
     Map<String, dynamic>? attachment, // { "bytes": Uint8List, "extension": "pdf" }
     List<Map<String, dynamic>>? historyToInclude,
+    Map<String, PsychometricAnalysis?>? analyses,
   }) async {
     final url = Uri.parse('$_baseUrl/$modelName:generateContent?key=$apiKey');
 
     final defaultPrompt = '''
-Sei il massimo esperto e consulente di supporto specializzato nei percorsi per l'Autismo.
+Sei il massimo esperto e consulente di supporto specializzato nei percorsi per l'Autismo e disabilità intellettive/evolutive.
 Il tuo compito è analizzare in modo multidimensionale i dati quantitativi e qualitativi estratti dalle scale di valutazione dell'utente.
 
 OBIETTIVO DELL'ANALISI:
 1. Valutare l'andamento generale e il profilo dell'utente (punti di forza e aree di supporto nei vari domini).
-2. Evidenziare correlazioni significative tra le diverse scale somministrate (es. POS, San Martín).
-3. Incrociare tutti i dati forniti, incluse le note aggiuntive e gli eventuali allegati documentali.
-4. Proporre ipotesi e linee guida per progetti educativi e di supporto customizzati e ritagliati sartorialmente sulle specifiche esigenze dell'utente.
-5. Riportare in forma di relazione chiara e coerente quanto emerge dall'incrocio di tutti i dati (scale, note, allegato).
+2. Evidenziare correlazioni significative tra le diverse scale somministrate (es. POS, San Martín, SIS - Supports Intensity Scale).
+3. Per la scala SIS, analizzare approfonditamente l'intensità dei bisogni di supporto (Sezione 1 - Domini A-F), le priorità di tutela (Sezione 2) ed i bisogni eccezionali/alert (Sezione 3).
+4. Incrociare tutti i dati forniti, incluse le note aggiuntive e gli eventuali allegati documentali.
+5. Proporre ipotesi e linee guida per progetti educativi e di supporto customizzati e ritagliati sartorialmente sulle specifiche esigenze dell'utente.
+6. Riportare in forma di relazione chiara e coerente quanto emerge dall'incrocio di tutti i dati (scale, note, allegato).
 
 TONO E FORMATTAZIONE:
 - Tono: Professionale, rigoroso, empatico, fortemente orientato all'utilità educativa e di supporto.
-- Formattazione: Usa il Markdown (titoli, liste, grassetti) per strutturare un referto elegante, chiaro e leggibile.
+- Formattazione: Usa il Markdown (titoli, lists, grassetti) per strutturare un referto elegante, chiaro e leggibile.
 ''';
 
     final activeSystemPrompt = (systemPrompt != null && systemPrompt.trim().isNotEmpty) ? systemPrompt : defaultPrompt;
 
-    final patientData = _serializePatientData(patient, evaluations);
+    final patientData = _serializePatientData(patient, evaluations, analyses);
     
     String promptText = "Ecco i dati estratti dalle valutazioni dell'utente:\n\n$patientData\n\n";
     
@@ -108,7 +110,11 @@ TONO E FORMATTAZIONE:
     }
   }
 
-  String _serializePatientData(PatientModel patient, List<AggregatedEvaluation> evals) {
+  String _serializePatientData(
+    PatientModel patient,
+    List<AggregatedEvaluation> evals,
+    Map<String, PsychometricAnalysis?>? analyses,
+  ) {
     final buffer = StringBuffer();
     buffer.writeln("Dati Anagrafici:");
     buffer.writeln("- ID Utente: ${patient.id}");
@@ -122,17 +128,62 @@ TONO E FORMATTAZIONE:
 
     buffer.writeln("\nCronologia Valutazioni:");
     for (final eval in evals) {
-      buffer.writeln("\nScala: ${eval.idScala}");
+      final isSis = eval.idScala.toLowerCase().contains('sis');
+      buffer.writeln("\nScala: ${eval.idScala} (${isSis ? 'Supports Intensity Scale' : 'Standard QV'})");
       buffer.writeln("Data Compilazione: ${eval.dataCompilazione}");
       
-      if (eval.domini.isNotEmpty) {
-        buffer.writeln("Dettaglio Domini:");
-        int totale = 0;
-        for (final d in eval.domini) {
-          totale += d.punteggio;
-          buffer.writeln("  - [${d.codice}] ${d.etichetta}: Punteggio ${d.punteggio}");
+      final analysis = analyses?[eval.idScala];
+      
+      if (isSis) {
+        // SIS Specific Serialization
+        if (analysis != null) {
+          buffer.writeln("Indici Globali SIS:");
+          buffer.writeln("  - Somma dei Punteggi Standard: ${analysis.sommaPunteggiStandard ?? 'N/D'}");
+          buffer.writeln("  - Indice SIS Globale: ${analysis.indiceQv ?? 'N/D'}");
+          buffer.writeln("  - Percentile Globale SIS: ${analysis.percentile != null ? '${analysis.percentile}°' : 'N/D'}");
+          buffer.writeln("  - Classificazione dell'Intensità dei Supporti: ${analysis.fasciaQv ?? 'N/D'}");
+          
+          if (analysis.domini.isNotEmpty) {
+            buffer.writeln("Sottoscale di Supporto (Sezione 1 - Domini A-F):");
+            for (final d in analysis.domini) {
+              buffer.writeln("  - [${d.codice}] ${d.etichetta}:");
+              buffer.writeln("    * Punteggio Grezzo: ${d.punteggioDiretto}");
+              buffer.writeln("    * Punteggio Standard: ${d.punteggioStandard ?? 'N/D'}");
+              buffer.writeln("    * Percentile di Dominio: ${d.percentileDominio != null ? '${d.percentileDominio}°' : 'N/D'}");
+            }
+          }
+          
+          if (analysis.sezione2Top4 != null && analysis.sezione2Top4!.isNotEmpty) {
+            buffer.writeln("Sezione 2 - Top 4 Priorità di Tutela e Sostegno:");
+            for (final p in analysis.sezione2Top4!) {
+              buffer.writeln("  - Item ${p['id']}: Punteggio di Priorità ${p['punteggio_grezzo']}");
+            }
+          }
+          
+          buffer.writeln("Sezione 3 - Alert e Bisogni Eccezionali:");
+          buffer.writeln("  - Alert Medico (Sezione 3A): ${analysis.alertMedico == true ? 'SÌ (Presenza di bisogni medici eccezionali)' : 'NO'}");
+          buffer.writeln("  - Alert Comportamentale (Sezione 3B): ${analysis.alertComportamentale == true ? 'SÌ (Presenza di bisogni comportamentali eccezionali)' : 'NO'}");
+        } else {
+          buffer.writeln("  * Dati analitici non ancora calcolati per la scala SIS.");
         }
-        buffer.writeln("Punteggio Totale Stimato: $totale");
+      } else {
+        // Standard (POS, San Martín)
+        if (eval.domini.isNotEmpty) {
+          buffer.writeln("Dettaglio Domini:");
+          int totale = 0;
+          for (final d in eval.domini) {
+            totale += d.punteggio;
+            buffer.writeln("  - [${d.codice}] ${d.etichetta}: Punteggio ${d.punteggio}");
+          }
+          buffer.writeln("Punteggio Totale Stimato: $totale");
+        }
+        if (analysis != null) {
+          buffer.writeln("Indici Analitici:");
+          buffer.writeln("  - Somma Punteggi Standard: ${analysis.sommaPunteggiStandard ?? 'N/D'}");
+          buffer.writeln("  - Indice QV: ${analysis.indiceQv ?? 'N/D'}");
+          buffer.writeln("  - Percentile: ${analysis.percentile != null ? '${analysis.percentile}°' : 'N/D'}");
+          buffer.writeln("  - Fascia QV: ${analysis.fasciaQv ?? 'N/D'}");
+        }
       }
     }
 
