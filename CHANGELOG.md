@@ -1,9 +1,16 @@
 # Changelog
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
-## [2.15.0] - 2026-05-27
+## [2.15.1] - 2026-05-27
 
 ### Aggiunto
+- **Widget Personalizzati Premium per la Scala SIS**:
+  - Sviluppato `Sis3DItemCard` (`sis_3d_item_card.dart`): Card premium in Material 3 e Bento style per i 57 item tridimensionali, con layout responsivi adattivi, tooltips operativi, gestione disabilitazione e feedback leggende in tempo reale.
+  - Sviluppato `SisMedicalList` (`sis_medical_list.dart`): Lista semantica per Sezione 3 medica e comportamentale con pulsanti a colori semantici ad alto impatto visivo [0, 1, 2] e banner di Warning animato integrato in real-time.
+  - Sviluppato `SisRankingWidget` (`sis_ranking_widget.dart`): Componente asincrono per l'estrazione automatica dei Top 4 bisogni di Protezione (Sezione 2) e riordinamento interattivo tramite trascinamento drag & drop (`ReorderableListView`).
+- **Allineamento Versioni**: Incrementata la versione della suite a `2.15.1` in `app_version.dart`, `pubspec.yaml` (admin), `pubspec.yaml` (client a `2.7.3`) e `main.py` (FastAPI backend).
+
+## [2.15.0] - 2026-05-27
 - **Integrazione completa del nuovo protocollo "Supports Intensity Scale (SIS)" (Frontend & Backend)**:
   - **Motore di calcolo Backend**: Implementato in `analytics.py` il motore psicometrico tridimensionale (Frequenza, Durata, Tipo di sostegno: range 0-4) con tabelle `SIS_DOMAIN_RANGES`, `SIS_INDEX_TABLE`, gestione eccezione item A3 (F_max=3), estrazione Top 4 bisogni di protezione (Sezione 2) ed alert medici/comportamentali (Sezione 3).
   - **Modelli Dati Flessibili**: Aggiornato `AnswerModel` in `models.py` (backend) e nei modelli del frontend (`evaluation_model.dart` per Admin e `models.dart` per Client) per consentire al campo `punteggio` di accettare dinamici `Map<String, int>` (payload tridimensionali `{"F": x, "D": y, "T": z}`) senza provocare conflitti di compilazione.
