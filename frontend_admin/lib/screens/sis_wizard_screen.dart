@@ -132,6 +132,23 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
 
       // Pre-compila nome operatore di default se noto
       _operatoreController.text = "Operatore AutAnalysis";
+
+      // Pre-inizializza TUTTE le risposte SEZ3M e SEZ3C a 0 ("Assente").
+      // Il valore 0 è una risposta valida e deve essere incluso nel salvataggio.
+      // Questo evita il bug per cui la sezione appare come "0/N completata"
+      // se l'utente non tocca nessun bottone.
+      if (_scale != null) {
+        for (final sec in _scale!.sezioni) {
+          if (sec.codiceSezione == 'SEZ3M' || sec.codiceSezione == 'SEZ3C') {
+            for (final q in sec.domande) {
+              final k = q.codice ?? q.idDomanda;
+              if (!_answers.containsKey(k)) {
+                _answers[k] = 0;
+              }
+            }
+          }
+        }
+      }
     } catch (e) {
       print("Errore caricamento wizard: $e");
     } finally {
@@ -166,16 +183,20 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
 
   int _getSezioneCompletedCount(String sectionCode) {
     final questions = _getQuestionsForSubscale(sectionCode);
+    // SEZ3M e SEZ3C: il valore 0 ("Assente") è una risposta valida;
+    // pre-inizializziamo tutte le domande a 0 al caricamento, quindi
+    // contiamo semplicemente quante chiavi esistono in _answers.
+    // In questo modo la sezione è sempre considerata completa non appena
+    // la scala è caricata (comportamento corretto per la SIS).
+    if (sectionCode == 'SEZ3M' || sectionCode == 'SEZ3C') {
+      return questions.length; // Sempre completata
+    }
     int count = 0;
     for (final q in questions) {
       final key = q.codice ?? q.idDomanda;
-      if (sectionCode == 'SEZ3M' || sectionCode == 'SEZ3C') {
-        if (_answers.containsKey(key)) count++;
-      } else {
-        final ans = _answers[key];
-        if (ans is Map && ans['F'] != null && ans['D'] != null && ans['T'] != null) {
-          count++;
-        }
+      final ans = _answers[key];
+      if (ans is Map && ans['F'] != null && ans['D'] != null && ans['T'] != null) {
+        count++;
       }
     }
     return count;
