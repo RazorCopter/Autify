@@ -2,6 +2,16 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.16.3] - 2026-05-28
+
+### Corretto
+- **Gestione e validazione Bisogni Eccezionali (Sezione 3)**:
+  - Pre-inizializzate le risposte a 0 sia per la Sezione 3 Medica (SEZ3M) che per la Sezione 3 Comportamentale (SEZ3C) per evitare che la sottoscala C risulti incompilata o ingrigita all'avvio.
+  - Modificato il conteggio di completamento in `sis_wizard_screen.dart` in modo che la sezione 3 restituisca sempre 29/29 elementi completati se inizializzata.
+- **Rendering Tridimensionale Sottoscale SIS C1-C9**:
+  - Corretto il bug in `evaluation_detail_screen.dart` integrando la mappatura `_findSectionForQuestion` per determinare correttamente la tridimensionalità in base al codice sezione anziché solo al tipo di punteggio.
+  - Aggiunto un fallback robusto per la conversione tridimensionale in presenza di dati storici incompleti.
+
 ## [2.16.2] - 2026-05-27
 
 ### Corretto
