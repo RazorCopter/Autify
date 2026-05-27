@@ -9,6 +9,7 @@ import '../models/patient_model.dart';
 import '../models/scale_model.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/sis_3d_item_card.dart';
 
 /// ─── Entry point: naviga qui passando paziente e scala ───────────────────────
 class EvaluationDetailScreen extends StatefulWidget {
@@ -77,6 +78,17 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
         normalizedId.contains('sanmartin');
   }
 
+  bool get _isSisScale {
+    final normalizedName =
+        _normalizeScaleIdentifier(_analysis?.scalaNome ?? widget.scale.nome);
+    final normalizedId =
+        _normalizeScaleIdentifier(_analysis?.idScala ?? widget.scale.id);
+    return normalizedName.contains('sis') ||
+        normalizedId.contains('sis') ||
+        normalizedName.contains('supportsintensity') ||
+        normalizedId.contains('supportsintensity');
+  }
+
   bool get _hasStandardProfile =>
       _analysis?.domini.any((domain) => domain.punteggioStandard != null) ?? false;
 
@@ -86,7 +98,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
           _analysis!.percentile != null ||
           (_analysis!.fasciaQv?.isNotEmpty ?? false));
 
-  bool get _forceSanMartinLayout => _isSanMartinScale || _hasQvSummary;
+  bool get _forceSanMartinLayout => _isSanMartinScale || _isSisScale || _hasQvSummary;
 
   bool get _shouldUseSanMartinUi =>
       _forceSanMartinLayout || _showSanMartinProfile;
@@ -1774,11 +1786,29 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
           displayLabel = 'Inclus. Soc.';
         } else if (upperCode == 'RI') {
           displayLabel = 'Relaz. Interp.';
+        } else if (upperCode == 'A') {
+          displayLabel = 'A - Domestico';
+        } else if (upperCode == 'B') {
+          displayLabel = 'B - Comunità';
+        } else if (upperCode == 'C') {
+          displayLabel = 'C - Apprend.';
+        } else if (upperCode == 'D') {
+          displayLabel = 'D - Occupaz.';
+        } else if (upperCode == 'E') {
+          displayLabel = 'E - Salute/Sic.';
+        } else if (upperCode == 'F') {
+          displayLabel = 'F - Sociale';
+        } else if (upperCode == 'SEZ2' || upperCode == 'P') {
+          displayLabel = 'SEZ2 - Protez.';
+        } else if (upperCode == 'SEZ3M' || upperCode == 'M') {
+          displayLabel = 'SEZ3M - Medico';
+        } else if (upperCode == 'SEZ3C' || upperCode == 'BC') {
+          displayLabel = 'SEZ3C - Comport.';
         }
 
         return DataColumn(
           label: SizedBox(
-            width: 80,
+            width: 95,
             child: Text(
               displayLabel,
               softWrap: true,
@@ -1963,6 +1993,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     final answer = _editableAnswers[idx];
     final question = _findQuestion(answer.codiceDomanda);
     final availableScores = _getAvailableScores(answer.codiceDomanda);
+    final isTridimensional = answer.punteggio is Map;
 
     return ExpansionTile(
       tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1989,85 +2020,131 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               style: const TextStyle(color: AppTheme.textSecondary),
             )
           : null,
-      title: Row(
-        children: [
-          ...availableScores.map((score) {
-            final isSelected = answer.punteggio == score;
-            return Padding(
-              padding: const EdgeInsets.only(right: 6),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: _isEditMode ? () => setState(() => _editableAnswers[idx].punteggio = score) : null,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppTheme.primaryColor : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isSelected ? AppTheme.primaryColor : const Color(0xFFDDE7F8),
-                      width: 1.5,
-                    ),
+      title: Builder(builder: (context) {
+        if (isTridimensional) {
+          final Map<String, dynamic> map = Map<String, dynamic>.from(answer.punteggio as Map);
+          final fVal = map['F'] ?? 0;
+          final dVal = map['D'] ?? 0;
+          final tVal = map['T'] ?? 0;
+          
+          Widget badge(String label, int val, Color color) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              margin: const EdgeInsets.only(right: 4),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$label: ',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color),
                   ),
-                  child: Center(
-                    child: Text(
-                      score.toString(),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: isSelected ? Colors.white : AppTheme.textSecondary,
+                  Text(
+                    '$val',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: color),
+                  ),
+                ],
+              ),
+            );
+          }
+          
+          return Row(
+            children: [
+              badge('F', fVal, const Color(0xFF1E88E5)),
+              badge('D', dVal, const Color(0xFFFB8C00)),
+              badge('T', tVal, const Color(0xFF43A047)),
+              const Spacer(),
+              if (answer.nota != null && answer.nota!.isNotEmpty)
+                const Icon(Icons.notes_rounded, size: 16, color: AppTheme.textSecondary),
+            ],
+          );
+        }
+        
+        return Row(
+          children: [
+            ...availableScores.map((score) {
+              final isSelected = answer.punteggio == score;
+              return Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: _isEditMode ? () => setState(() => _editableAnswers[idx].punteggio = score) : null,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected ? AppTheme.primaryColor : const Color(0xFFDDE7F8),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        score.toString(),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: isSelected ? Colors.white : AppTheme.textSecondary,
+                        ),
                       ),
                     ),
                   ),
                 ),
+              );
+            }),
+            if (question != null) ...[
+              const SizedBox(width: 8),
+              const Text('—', style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Builder(builder: (context) {
+                  final selectedOption = question.opzioni
+                      .cast<Option?>()
+                      .firstWhere(
+                        (o) => o?.punteggio == answer.punteggio,
+                        orElse: () => null,
+                      );
+                  if (selectedOption == null) return const SizedBox.shrink();
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppTheme.primaryColor.withValues(alpha: 0.20),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      selectedOption.testoRisposta,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.primaryColor,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }),
               ),
-            );
-          }),
-          // Etichetta testuale della risposta selezionata
-          if (question != null) ...[
+            ],
             const SizedBox(width: 8),
-            const Text('—', style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Builder(builder: (context) {
-                final selectedOption = question.opzioni
-                    .cast<Option?>()
-                    .firstWhere(
-                      (o) => o?.punteggio == answer.punteggio,
-                      orElse: () => null,
-                    );
-                if (selectedOption == null) return const SizedBox.shrink();
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.20),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    selectedOption.testoRisposta,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.primaryColor,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                );
-              }),
-            ),
+            if (answer.nota != null && answer.nota!.isNotEmpty)
+              const Icon(Icons.notes_rounded, size: 16, color: AppTheme.textSecondary),
           ],
-          const SizedBox(width: 8),
-          if (answer.nota != null && answer.nota!.isNotEmpty)
-            const Icon(Icons.notes_rounded, size: 16, color: AppTheme.textSecondary),
-        ],
-      ),
+        );
+      }),
       children: [
+        if (isTridimensional)
+          _buildSisTridimensionalSelectors(idx, Map<String, dynamic>.from(answer.punteggio as Map)),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           child: TextField(
@@ -2105,6 +2182,130 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               ),
             ),
           ),
+      ],
+    );
+  }
+
+  Widget _buildSisTridimensionalSelectors(int idx, Map<String, dynamic> map) {
+    Widget dimensionRow(
+      String label,
+      String key,
+      Color color,
+      IconData icon,
+      Map<int, String> legends,
+    ) {
+      final selectedVal = map[key] ?? 0;
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: color, size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '— ${legends[selectedVal] ?? ""}',
+                    style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: color),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: List.generate(5, (index) {
+                final isSelected = selectedVal == index;
+                final isDisabled = _editableAnswers[idx].codiceDomanda.toUpperCase() == 'A3' && key == 'F' && index == 4;
+
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: (_isEditMode && !isDisabled)
+                        ? () {
+                            final newMap = Map<String, dynamic>.from(_editableAnswers[idx].punteggio as Map);
+                            newMap[key] = index;
+                            setState(() {
+                              _editableAnswers[idx].punteggio = newMap;
+                            });
+                          }
+                        : null,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isDisabled
+                            ? const Color(0xFFF1F5F9)
+                            : isSelected
+                                ? color
+                                : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isDisabled
+                              ? const Color(0xFFE2E8F0)
+                              : isSelected
+                                  ? color
+                                  : const Color(0xFFDDE7F8),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '$index',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: isDisabled
+                                ? const Color(0xFF94A3B8)
+                                : isSelected
+                                    ? Colors.white
+                                    : AppTheme.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        dimensionRow(
+          'Frequenza',
+          'F',
+          const Color(0xFF1E88E5),
+          Icons.access_time_filled_rounded,
+          Sis3DItemCard.legendaFrequenza,
+        ),
+        dimensionRow(
+          'Durata quotidiana',
+          'D',
+          const Color(0xFFFB8C00),
+          Icons.hourglass_full_rounded,
+          Sis3DItemCard.legendaDurata,
+        ),
+        dimensionRow(
+          'Tipo di sostegno',
+          'T',
+          const Color(0xFF43A047),
+          Icons.front_hand_rounded,
+          Sis3DItemCard.legendaTipo,
+        ),
+        const SizedBox(height: 12),
       ],
     );
   }

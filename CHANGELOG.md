@@ -2,6 +2,16 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.16.2] - 2026-05-27
+
+### Corretto
+- **Bug visualizzazione ed elaborazione SIS (Supports Intensity Scale)**:
+  - **ISSUE 1 (Scheda Analisi)**: Sostituito il titolo hardcoded "POS Eterovalutativo" con "Supports Intensity Scale (SIS)" associato a un gradiente Teal premium e accenti cromatici dedicati.
+  - **ISSUE 2 (Legenda Domini)**: Sostituita la visualizzazione orizzontale a capo con un layout a colonne ordinato e puntato (2 colonne per POS, 3 colonne per SIS) ad alto contrasto visivo.
+  - **ISSUE 3 (Evidenziamento Dettaglio Risposte)**: Risolto il mancato evidenziamento e il limite dei soli 3 punteggi (1, 2, 3) per gli item tridimensionali. Sviluppato un visualizzatore/selettore compatto e dinamico (Freq/Durata/Tipo) per ciascun item con scala 0-4 e codice colore.
+  - **ISSUE 4 (Percentili e Fascia a zero/vuoti)**: Risolto il bug allineando il dizionario ritornato dal motore di calcolo backend `calcola_punteggi_sis` per esportare i campi standard `"punteggio_diretto"`, `"percentile_dominio"` e `"fascia"` attesi dai modelli Flutter.
+  - **Riepilogo Tabellare (Intestazioni colonne tagliate)**: Aggiunte abbreviazioni grafiche concise per ciascuno dei domini e sezioni della scala SIS e aumentata la larghezza massima a 95px per evitare testi incompleti.
+
 ## [2.16.1] - 2026-05-27
 
 ### Corretto

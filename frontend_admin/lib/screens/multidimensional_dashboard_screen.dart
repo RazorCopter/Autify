@@ -149,6 +149,31 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         normalizedName.contains('martin');
   }
 
+  bool _isSisScale(String scaleId, [String? scaleName]) {
+    String normalize(String s) {
+      return s.toLowerCase()
+          .replaceAll(' ', '')
+          .replaceAll('-', '')
+          .replaceAll('_', '')
+          .replaceAll('à', 'a')
+          .replaceAll('á', 'a')
+          .replaceAll('è', 'e')
+          .replaceAll('é', 'e')
+          .replaceAll('ì', 'i')
+          .replaceAll('í', 'i')
+          .replaceAll('ò', 'o')
+          .replaceAll('ó', 'o')
+          .replaceAll('ù', 'u')
+          .replaceAll('ú', 'u');
+    }
+    final normalizedId = normalize(scaleId);
+    final normalizedName = normalize(scaleName ?? '');
+    return normalizedId.contains('sis') ||
+        normalizedName.contains('sis') ||
+        normalizedId.contains('supportsintensity') ||
+        normalizedName.contains('supportsintensity');
+  }
+
   Future<void> _runAiAnalysis() async {
     if (_geminiKey == null || _geminiKey!.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1046,9 +1071,13 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     final eval = _latestEvaluations[scale.id]!;
     final analysis = _analyses[scale.id];
     final isSM = _isSanMartinScale(scale.id, scale.nome);
-    final accentGradient = isSM
-        ? const [Color(0xFF1A237E), Color(0xFF3949AB)]
-        : const [Color(0xFF0D47A1), Color(0xFF42A5F5)];
+    final isSis = _isSisScale(scale.id, scale.nome);
+
+    final accentGradient = isSis
+        ? const [Color(0xFF00695C), Color(0xFF26A69A)] // Teal premium per la scala SIS
+        : (isSM
+            ? const [Color(0xFF1A237E), Color(0xFF3949AB)]
+            : const [Color(0xFF0D47A1), Color(0xFF42A5F5)]);
 
     final headerWidget = Container(
       decoration: BoxDecoration(
@@ -1064,14 +1093,16 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isSM ? '🧩 San Martín' : '📊 POS Eterovalutativo',
+                  isSis ? '📊 Supports Intensity Scale (SIS)' : (isSM ? '🧩 San Martín' : '📊 POS Eterovalutativo'),
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  isSM 
-                      ? 'Valutazione osservativa della qualità di vita' 
-                      : 'Valutazione degli esiti personali e della QQdV percepita',
+                  isSis
+                      ? 'Valutazione dell\'intensità dei bisogni di sostegno'
+                      : (isSM 
+                          ? 'Valutazione osservativa della qualità di vita' 
+                          : 'Valutazione degli esiti personali e della QQdV percepita'),
                   style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.7)),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -1098,7 +1129,9 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     );
 
     Widget indicatorsWidget;
-    if (isSM && analysis != null) {
+    if (isSis) {
+      indicatorsWidget = _buildSisIndicators(eval, analysis);
+    } else if (isSM && analysis != null) {
       indicatorsWidget = _buildSanMartinIndicators(analysis);
     } else if (!isSM) {
       indicatorsWidget = _buildPosIndicators(eval);
@@ -1113,7 +1146,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         _buildMetaRow(eval),
         const SizedBox(height: 20),
 
-        // ── Indicatori multidimensionali (POS o SM) ──
+        // ── Indicatori multidimensionali ──
         useExpanded ? Expanded(child: indicatorsWidget) : indicatorsWidget,
 
         const SizedBox(height: 20),
@@ -1124,7 +1157,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             height: 250,
             child: isSM && analysis != null && analysis.domini.isNotEmpty
                 ? _buildRadarChartForPanel(analysis)
-                : _buildBarChartForPanel(eval.domini, isSm: isSM),
+                : _buildBarChartForPanel(eval.domini, isSm: isSM, isSis: isSis),
           ),
       ],
     );
@@ -1380,51 +1413,6 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       total += d.punteggio;
     }
 
-    final legendWidget = Container(
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.legend_toggle_outlined, color: Colors.amberAccent, size: 14),
-              SizedBox(width: 6),
-              Text(
-                'Legenda Domini',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Wrap(
-            spacing: 12,
-            runSpacing: 4,
-            children: eval.domini.map((d) {
-              return Text(
-                '${d.codice.toUpperCase()} = ${d.etichetta}: ${d.punteggio}',
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 18.0,
-                  fontFamily: 'monospace',
-                  fontWeight: FontWeight.w600,
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1457,7 +1445,256 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               )),
             ],
           ),
-          legendWidget,
+          _buildPosLegend(eval),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPosLegend(AggregatedEvaluation eval) {
+    final domains = eval.domini;
+    if (domains.isEmpty) return const SizedBox.shrink();
+
+    // Dividiamo i domini in 2 colonne
+    final int itemsPerCol = (domains.length / 2).ceil();
+    final List<List<DomainScore>> columns = [[], []];
+    
+    for (int i = 0; i < domains.length; i++) {
+      final colIndex = i ~/ itemsPerCol;
+      if (colIndex < 2) {
+        columns[colIndex].add(domains[i]);
+      } else {
+        columns[1].add(domains[i]);
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.legend_toggle_outlined, color: Colors.amberAccent, size: 14),
+              SizedBox(width: 6),
+              Text(
+                'Legenda Domini',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: List.generate(2, (colIdx) {
+              final colItems = columns[colIdx];
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: colItems.map((d) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '• ',
+                              style: TextStyle(color: Colors.amberAccent, fontSize: 13, fontWeight: FontWeight.bold),
+                            ),
+                            Expanded(
+                              child: RichText(
+                                text: TextSpan(
+                                  style: const TextStyle(color: Colors.white90, fontSize: 11, height: 1.2),
+                                  children: [
+                                    TextSpan(
+                                      text: '${d.codice.toUpperCase()}: ',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                                    ),
+                                    TextSpan(text: d.etichetta),
+                                    TextSpan(
+                                      text: ' (${d.punteggio})',
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.7),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── SIS indicators ───────────────────────────────────────────────────────────
+  Widget _buildSisIndicators(AggregatedEvaluation eval, PsychometricAnalysis? analysis) {
+    int totalGrezzo = 0;
+    for (final d in eval.domini) {
+      totalGrezzo += d.punteggio;
+    }
+    
+    final String mainTitle1 = analysis != null ? 'Indice SIS' : 'Punteggio Grezzo';
+    final String mainValue1 = analysis != null && analysis.indiceQv != null ? analysis.indiceQv.toString() : totalGrezzo.toString();
+    final String sub1 = analysis != null ? 'Somma standard: ${analysis.sommaPunteggiStandard ?? 0}' : '${eval.domini.length} domini analizzati';
+    
+    final String mainTitle2 = analysis != null ? 'Percentile Globale' : 'Media per Dominio';
+    final String mainValue2 = analysis != null && analysis.percentile != null 
+        ? '${analysis.percentile}°' 
+        : (eval.domini.isNotEmpty ? (totalGrezzo / eval.domini.length).toStringAsFixed(1) : '—');
+    final String sub2 = analysis != null && analysis.fasciaQv != null ? 'Intensità: ${analysis.fasciaQv}' : 'Valore medio calcolato';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF004D40), Color(0xFF00897B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(child: _indicatorTile(
+                title: mainTitle1,
+                value: mainValue1,
+                subtitle: sub1,
+                icon: Icons.analytics,
+                color: Colors.amberAccent,
+              )),
+              const SizedBox(width: 16),
+              Expanded(child: _indicatorTile(
+                title: mainTitle2,
+                value: mainValue2,
+                subtitle: sub2,
+                icon: Icons.speed,
+                color: const Color(0xFF80CBC4),
+              )),
+            ],
+          ),
+          _buildSisLegend(eval),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSisLegend(AggregatedEvaluation eval) {
+    final domains = eval.domini;
+    if (domains.isEmpty) return const SizedBox.shrink();
+
+    // Dividiamo i domini in 3 colonne
+    final int itemsPerCol = (domains.length / 3).ceil();
+    final List<List<DomainScore>> columns = [[], [], []];
+    
+    for (int i = 0; i < domains.length; i++) {
+      final colIndex = i ~/ itemsPerCol;
+      if (colIndex < 3) {
+        columns[colIndex].add(domains[i]);
+      } else {
+        columns[2].add(domains[i]);
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.legend_toggle_outlined, color: Colors.amberAccent, size: 14),
+              SizedBox(width: 6),
+              Text(
+                'Legenda Domini e Sezioni',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: List.generate(3, (colIdx) {
+              final colItems = columns[colIdx];
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: colItems.map((d) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '• ',
+                              style: TextStyle(color: Colors.amberAccent, fontSize: 13, fontWeight: FontWeight.bold),
+                            ),
+                            Expanded(
+                              child: RichText(
+                                text: TextSpan(
+                                  style: const TextStyle(color: Colors.white90, fontSize: 11, height: 1.2),
+                                  children: [
+                                    TextSpan(
+                                      text: '${d.codice.toUpperCase()}: ',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                                    ),
+                                    TextSpan(text: d.etichetta),
+                                    TextSpan(
+                                      text: ' (${d.punteggio})',
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.7),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              );
+            }),
+          ),
         ],
       ),
     );
@@ -1548,14 +1785,14 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     );
   }
 
-  // ── Bar Chart (POS) ─────────────────────────────────────────────────────────
-  Widget _buildBarChartForPanel(List<DomainScore> domini, {bool isSm = false}) {
+  Widget _buildBarChartForPanel(List<DomainScore> domini, {bool isSm = false, bool isSis = false}) {
     if (domini.isEmpty) return const SizedBox();
 
     // Calcola il maxY dinamico basato sui dati reali
     double dynamicMaxY = 0;
     for (final d in domini) {
-      final maxScore = d.numDomande * (isSm ? 4 : 3);
+      final int maxValPerQuestion = isSis ? 12 : (isSm ? 4 : 3);
+      final maxScore = d.numDomande * maxValPerQuestion;
       final score = d.punteggio.toDouble();
       if (maxScore > dynamicMaxY) dynamicMaxY = maxScore.toDouble();
       if (score > dynamicMaxY) dynamicMaxY = score.toDouble();

@@ -976,9 +976,12 @@ def calcola_punteggi_sis(
             "codice": dom_code,
             "etichetta": _SIS_DOMAIN_LABELS.get(dom_code, dom_code),
             "punteggio_grezzo": grezzo_dominio,
+            "punteggio_diretto": grezzo_dominio,
             "punteggio_standard": std,
             "percentile": perc,
+            "percentile_dominio": perc,
             "num_domande": len(items),
+            "fascia": _std_to_fascia(std) if std is not None else None,
         })
 
     # --- Indice SIS globale ---
