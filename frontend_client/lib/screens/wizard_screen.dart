@@ -98,10 +98,12 @@ class _WizardScreenState extends State<WizardScreen>
     _dataController.text = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     _loadScale();
     WidgetsBinding.instance.addPostFrameCallback((_) => _requestKeyboardFocus());
+    HardwareKeyboard.instance.addHandler(_handleGlobalKeyEvent);
   }
 
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleGlobalKeyEvent);
     _focusNode.dispose();
     _noteController.dispose();
     _pageController.dispose();
@@ -174,12 +176,120 @@ class _WizardScreenState extends State<WizardScreen>
     _navigate(_currentIndex - 1);
   }
 
+  bool _handleGlobalKeyEvent(KeyEvent event) {
+    if (!mounted) return false;
+    final route = ModalRoute.of(context);
+    if (route == null || !route.isCurrent) return false;
+    final result = _handleKeyEvent(_focusNode, event);
+    return result == KeyEventResult.handled;
+  }
+
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
     if (_isLoading || !_preliminaryDone || _questions.isEmpty) {
       return KeyEventResult.ignored;
     }
     if (_isTypingInTextField()) {
+      return KeyEventResult.ignored;
+    }
+
+    final is3D = _isSis3DQuestion(widget.scaleId, _currentKey);
+    
+    if (is3D) {
+      final sisHotkeys = <LogicalKeyboardKey, int>{
+        LogicalKeyboardKey.digit0: 0,
+        LogicalKeyboardKey.numpad0: 0,
+        LogicalKeyboardKey.digit1: 1,
+        LogicalKeyboardKey.numpad1: 1,
+        LogicalKeyboardKey.digit2: 2,
+        LogicalKeyboardKey.numpad2: 2,
+        LogicalKeyboardKey.digit3: 3,
+        LogicalKeyboardKey.numpad3: 3,
+        LogicalKeyboardKey.digit4: 4,
+        LogicalKeyboardKey.numpad4: 4,
+      };
+
+      final pressedValue = sisHotkeys[event.logicalKey];
+      if (pressedValue != null) {
+        final isA3 = _currentKey.toUpperCase() == 'A3';
+        
+        final current = _answers[_currentKey];
+        int? f;
+        int? d;
+        int? t;
+        if (current is Map) {
+          f = current['F'] as int?;
+          d = current['D'] as int?;
+          t = current['T'] as int?;
+        }
+
+        setState(() {
+          if (f == null) {
+            if (isA3 && pressedValue > 3) {
+              f = 3;
+            } else {
+              f = pressedValue;
+            }
+          } else if (d == null) {
+            d = pressedValue;
+          } else if (t == null) {
+            t = pressedValue;
+          } else {
+            if (isA3 && pressedValue > 3) {
+              f = 3;
+            } else {
+              f = pressedValue;
+            }
+            d = null;
+            t = null;
+          }
+          _answers[_currentKey] = {'F': f, 'D': d, 'T': t};
+        });
+        _requestKeyboardFocus();
+        return KeyEventResult.handled;
+      }
+
+      if (event.logicalKey == LogicalKeyboardKey.backspace) {
+        final current = _answers[_currentKey];
+        if (current is Map) {
+          int? f = current['F'] as int?;
+          int? d = current['D'] as int?;
+          int? t = current['T'] as int?;
+
+          setState(() {
+            if (t != null) {
+              t = null;
+            } else if (d != null) {
+              d = null;
+            } else if (f != null) {
+              f = null;
+            }
+            _answers[_currentKey] = {'F': f, 'D': d, 'T': t};
+          });
+          _requestKeyboardFocus();
+          return KeyEventResult.handled;
+        }
+      }
+
+      if (event.logicalKey == LogicalKeyboardKey.enter ||
+          event.logicalKey == LogicalKeyboardKey.numpadEnter) {
+        final current = _answers[_currentKey];
+        final hasAll3 = current is Map &&
+            current['F'] != null &&
+            current['D'] != null &&
+            current['T'] != null;
+        if (hasAll3) {
+          _goForward();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      }
+
+      if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+        _goBack();
+        return KeyEventResult.handled;
+      }
+
       return KeyEventResult.ignored;
     }
 
@@ -443,7 +553,6 @@ class _WizardScreenState extends State<WizardScreen>
           body: Focus(
             focusNode: _focusNode,
             autofocus: true,
-            onKeyEvent: _handleKeyEvent,
             child: Container(
               decoration: _gradientDecoration(),
               child: const Center(child: CircularProgressIndicator()),
@@ -457,7 +566,6 @@ class _WizardScreenState extends State<WizardScreen>
           body: Focus(
             focusNode: _focusNode,
             autofocus: true,
-            onKeyEvent: _handleKeyEvent,
             child: Container(
               decoration: _gradientDecoration(),
               child: SafeArea(
@@ -501,7 +609,6 @@ class _WizardScreenState extends State<WizardScreen>
           body: Focus(
             focusNode: _focusNode,
             autofocus: true,
-            onKeyEvent: _handleKeyEvent,
             child: Container(
               decoration: _gradientDecoration(),
               child: const Center(
@@ -527,7 +634,6 @@ class _WizardScreenState extends State<WizardScreen>
         body: Focus(
           focusNode: _focusNode,
           autofocus: true,
-          onKeyEvent: _handleKeyEvent,
           child: Container(
             decoration: _gradientDecoration(),
             child: SafeArea(

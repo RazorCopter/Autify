@@ -1,6 +1,12 @@
 # Changelog
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
+## [2.15.2] - 2026-05-27
+
+### Aggiunto
+- **Gestione Globale Hotkeys via HardwareKeyboard**: Risolto il problema del focus della tastiera nel Wizard di compilazione (sia nell'Admin che nel Client). Ora le scorciatoie sequenziali tridimensionali (digitando ad esempio `123` per Frequenza=1, Durata=2, Tipo=3 e premendo `Enter` per avanzare) rimangono attive ed estremamente reattive in qualunque situazione di navigazione, anche dopo aver cliccato con il mouse sulle opzioni o sullo sfondo. La gestione controlla inoltre lo stato del navigatore (`ModalRoute.isCurrent`) per disattivarsi automaticamente quando compaiono dialog o popup sovrapposti.
+- **Allineamento Versioni**: Incrementata la versione globale della suite a `2.15.2` (backend, app_version.dart, admin pubspec.yaml) e della versione del client a `2.7.4`.
+
 ## [2.15.1] - 2026-05-27
 
 ### Aggiunto
