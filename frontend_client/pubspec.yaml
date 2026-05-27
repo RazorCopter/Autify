@@ -1,7 +1,7 @@
 name: frontend_client
 description: App Client per AutAnalysis (Data Entry)
 publish_to: 'none'
-version: 2.16.6+1
+version: 2.16.7+1
 
 environment:
   sdk: '>=3.2.0 <4.0.0'

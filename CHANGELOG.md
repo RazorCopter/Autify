@@ -2,6 +2,13 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.16.7] - 2026-05-28
+
+### Ottimizzato
+- **User Experience (UX) Sottoscale SIS**:
+  - Risolto il problema del mancato riposizionamento dello scorrimento quando si cambia sottoscala (es. passando da "Vita Domestica" a "Comunità").
+  - Integrata una `ValueKey` legata all'indice della sottoscala attiva (`_activeSubscaleIndex`) su `ListView.builder` sia nella Dashboard Admin che nel Client. Questo fa sì che lo scroll state della lista venga ricreato pulito ad ogni cambio di tab, riposizionando l'utente **sempre all'inizio della lista (in testa alla pagina)** in modo nativo ed istantaneo.
+
 ## [2.16.6] - 2026-05-28
 
 ### Aggiunto
