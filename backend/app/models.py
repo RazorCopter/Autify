@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Union
 from datetime import datetime, timezone
 import uuid
 
@@ -17,6 +17,7 @@ class Patient(BaseModel):
     attivo: bool = True
     ultimo_pos_compilato: Optional[str] = None
     ultimo_san_martin_compilato: Optional[str] = None
+    ultimo_sis_compilato: Optional[str] = None
 
 # --- MODELLI SETTINGS (Config Models) ---
 
@@ -54,9 +55,24 @@ class Scale(BaseModel):
     sezioni: List[Section]
 
 
+# --- MODELLI RISPOSTA (flessibile per POS/SanMartín e SIS) ---
+
+class SISItemResponse(BaseModel):
+    """Risposta tridimensionale per un item SIS (sottoscale A-F e sezione 2)."""
+    F: int = Field(..., ge=0, le=4, description="Frequenza (0-4)")
+    D: int = Field(..., ge=0, le=4, description="Durata quotidiana (0-4)")
+    T: int = Field(..., ge=0, le=4, description="Tipo di sostegno (0-4)")
+
 class Answer(BaseModel):
+    """
+    Modello di risposta flessibile.
+
+    - Per POS / San Martín: punteggio è un int (es. 3)
+    - Per SIS (sottoscale A-F e sezione 2): punteggio è un dict {"F": 2, "D": 3, "T": 1}
+    - Per SIS (sezione 3 medica/comportamentale): punteggio è un int (0, 1 o 2)
+    """
     codice_domanda: str
-    punteggio: int
+    punteggio: Union[int, dict] = 0
     nota: Optional[str] = None
 
 class Evaluation(BaseModel):
@@ -120,3 +136,30 @@ class AiAnalysisCreate(BaseModel):
     report: str
     notes: Optional[str] = None
     evaluations_used: List[str] = []
+
+# --- MODELLI OUTPUT SIS ---
+
+class SISDomainResult(BaseModel):
+    """Risultato calcolato per un singolo dominio SIS (A-F)."""
+    codice: str
+    etichetta: str
+    punteggio_grezzo: int
+    punteggio_standard: Optional[int] = None
+    percentile: Optional[int] = None
+    num_domande: int = 0
+
+class SISSezione3Detail(BaseModel):
+    """Dettaglio alert per sezione 3 (medica o comportamentale)."""
+    alert: bool = False
+    count_parziale: int = 0
+    count_estensivo: int = 0
+    totale: int = 0
+    items_segnalati: List[dict] = []
+
+class SISSupplementaryResult(BaseModel):
+    """Risultati delle sezioni supplementari SIS."""
+    sezione_2_top4: List[dict] = []
+    alert_medico: bool = False
+    alert_comportamentale: bool = False
+    dettaglio_medico: SISSezione3Detail = SISSezione3Detail()
+    dettaglio_comportamentale: SISSezione3Detail = SISSezione3Detail()
