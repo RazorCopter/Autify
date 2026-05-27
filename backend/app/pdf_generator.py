@@ -849,6 +849,229 @@ def _make_san_martin_domain_table(analysis: dict) -> Table:
     return table
 
 
+# ─── Generazione elementi specifici per la scala SIS ─────────────────────────
+
+def _make_sis_summary_table(analysis: dict, styles) -> Table:
+    summary_title = Paragraph(
+        "Indice e Profilo Psicometrico SIS",
+        ParagraphStyle(
+            "SisSummaryTitle",
+            parent=styles["BodyText"],
+            fontSize=12,
+            leading=14,
+            textColor=white,
+            fontName="Helvetica-Bold",
+        ),
+    )
+    classif_val = _safe_text(analysis.get("classificazione_intensita"))
+
+    rows = [
+        [
+            summary_title,
+            Paragraph(
+                f"<b>Indice SIS</b><br/><font size='18'>{_safe_text(analysis.get('indice_sis'))}</font>",
+                ParagraphStyle(
+                    "SisMetricValue",
+                    parent=styles["BodyText"],
+                    fontName="Helvetica",
+                    fontSize=10,
+                    leading=22,
+                    alignment=TA_CENTER,
+                    textColor=white,
+                ),
+            ),
+            Paragraph(
+                f"<b>Percentile</b><br/><font size='18'>{_safe_text(analysis.get('percentile'))}</font>",
+                ParagraphStyle(
+                    "SisPercentileValue",
+                    parent=styles["BodyText"],
+                    fontName="Helvetica",
+                    fontSize=10,
+                    leading=22,
+                    alignment=TA_CENTER,
+                    textColor=HexColor('#80CBC4'),
+                ),
+            ),
+        ],
+        [
+            Paragraph(
+                f"Somma punteggi standard: <b>{_safe_text(analysis.get('somma_punteggi_standard'))}</b>",
+                ParagraphStyle(
+                    "SisSecondaryMetric",
+                    parent=styles["BodyText"],
+                    fontSize=10,
+                    leading=12,
+                    textColor=white,
+                    fontName="Helvetica",
+                ),
+            ),
+            Paragraph(
+                f"Intensità: <font color='#FFFFFF'><b>{classif_val}</b></font>",
+                ParagraphStyle(
+                    "SisFasciaMetric",
+                    parent=styles["BodyText"],
+                    fontSize=10,
+                    leading=12,
+                    textColor=white,
+                    fontName="Helvetica",
+                    alignment=TA_CENTER,
+                ),
+            ),
+            Paragraph("", styles["BodyText"]),
+        ],
+    ]
+
+    table = Table(rows, colWidths=[8.2 * cm, 4.5 * cm, 4.7 * cm])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), HexColor('#00695C')),
+        ('BOX', (0, 0), (-1, -1), 0, HexColor('#00695C')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 7),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
+        ('SPAN', (1, 1), (2, 1)),
+    ]))
+    return table
+
+
+def _make_sis_domain_table(analysis: dict) -> Table:
+    from reportlab.lib import colors
+    
+    domini_map = {}
+    for d in analysis.get("domini", []):
+        code = d.get("codice")
+        if code:
+            domini_map[code] = d
+            
+    codes = ["A", "B", "C", "D", "E", "F"]
+    
+    grezzi = []
+    standard = []
+    percentili = []
+    fascie = []
+    
+    for code in codes:
+        d = domini_map.get(code, {})
+        g = d.get("punteggio_grezzo")
+        grezzi.append(_safe_text(g))
+        s = d.get("punteggio_standard")
+        standard.append(_safe_text(s))
+        p = d.get("percentile")
+        p_str = f"{p}°" if p is not None else "—"
+        percentili.append(p_str)
+        f = d.get("fascia")
+        fascie.append(_safe_text(f))
+        
+    table_data = [
+        ["Codice", "A", "B", "C", "D", "E", "F"],
+        ["Sottoscala", "Vita\nDomestica", "Vita\nComunitaria", "Apprendimento\nPermanente", "Attività\nLavorative", "Salute e\nSicurezza", "Attività\nSociali"],
+        ["P. Grezzo (F+D+T)", ] + grezzi,
+        ["P. Standard", ] + standard,
+        ["Percentile", ] + percentili,
+        ["Fascia", ] + fascie
+    ]
+    
+    col_widths = [124, 75, 75, 75, 75, 75, 75]
+    
+    table = Table(table_data, colWidths=col_widths)
+    
+    style = TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('FONTNAME', (0,0), (0,-1), 'Helvetica-Bold'),
+        ('FONTNAME', (0,0), (-1,1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 8.5),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('BACKGROUND', (0,0), (-1,1), HexColor('#E0F2F1')),
+        ('BACKGROUND', (0,2), (0,-1), colors.whitesmoke),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+    ])
+    
+    table.setStyle(style)
+    return table
+
+
+def _make_sis_bar_chart(domains: List[dict], score_min: int = 0, score_max: int = 20) -> io.BytesIO:
+    labels    = [_wrap_label(d['etichetta'], max_chars=14) for d in domains]
+    scores    = [d.get("punteggio_standard") or 0 for d in domains]
+    n         = len(labels)
+
+    SIS_THEME_COLORS = [
+        '#004D40',
+        '#00695C',
+        '#00897B',
+        '#009688',
+        '#26A69A',
+        '#4DB6AC',
+    ]
+
+    fig, ax = plt.subplots(figsize=(max(9.0, n * 1.3), 5.5), dpi=150)
+    fig.patch.set_facecolor('#FFFFFF')
+    ax.set_facecolor('#FFFFFF')
+
+    x = np.arange(n)
+    bar_w = 0.52
+
+    for idx in range(n):
+        color = SIS_THEME_COLORS[idx % len(SIS_THEME_COLORS)]
+        score = scores[idx]
+
+        ax.bar(
+            x[idx], score_max,
+            width=bar_w,
+            color=color,
+            alpha=0.08,
+            zorder=2,
+        )
+
+        ax.bar(
+            x[idx], score,
+            width=bar_w,
+            color=color,
+            alpha=0.9,
+            zorder=3,
+            linewidth=0,
+        )
+
+        ax.text(
+            x[idx], score + 0.35,
+            str(score),
+            ha='center', va='bottom',
+            fontsize=10.5, fontweight='bold',
+            color=color,
+            zorder=4,
+        )
+
+    ax.axhline(10, color='#E57373', linestyle='--', linewidth=1.5, alpha=0.8, zorder=1, label='Media Normativa (10)')
+    ax.legend(loc='upper right', framealpha=0.9, fontsize=9)
+
+    ax.set_xlim(-0.6, n - 0.4)
+    ax.set_ylim(0, score_max + 2.0)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, fontsize=8.5, color='#1E293B', fontweight='bold',
+                       ha='center', va='top', multialignment='center')
+    ax.set_yticks(range(0, score_max + 1, 2))
+    ax.tick_params(axis='y', colors='#64748B', labelsize=9)
+    ax.tick_params(axis='x', bottom=False)
+
+    ax.yaxis.grid(True, color='#E2E8F0', linestyle='-', linewidth=0.8, zorder=1)
+
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+    ax.set_title('Diagramma Punteggi Standard Sottoscale SIS', fontsize=12,
+                 fontweight='bold', color='#0F172A', pad=16)
+
+    plt.tight_layout()
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight', facecolor='#FFFFFF', dpi=150)
+    plt.close(fig)
+    buf.seek(0)
+    return buf
+
+
 # ─── Generazione PDF completo ────────────────────────────────────────────────
 
 def generate_evaluation_pdf(
@@ -886,10 +1109,10 @@ def generate_evaluation_pdf(
         spaceBefore=12, spaceAfter=6,
     )
 
-    has_analysis = analysis is not None and analysis.get("indice_qv") is not None
     scala_nome = scale.get("nome", "")
     scale_id = scale.get("id", "").lower()
     scale_nome_lower = str(scala_nome).lower()
+    
     is_sanmartin = (
         "sanmartin" in scale_id or
         "san_martin" in scale_id or
@@ -901,6 +1124,14 @@ def generate_evaluation_pdf(
         ))
     )
 
+    is_sis = (
+        "sis" in scale_id or
+        "sis" in scale_nome_lower or
+        (analysis is not None and (
+            analysis.get("indice_sis") is not None
+        ))
+    )
+
     # ── Header ─────────────────────────────────────────────────────────────
     story.append(_make_letterhead(styles))
     story.append(Spacer(1, 0.3 * cm))
@@ -908,6 +1139,8 @@ def generate_evaluation_pdf(
     
     if is_sanmartin:
         story.append(Paragraph("SCALA SAN MARTÍN", title_style))
+    elif is_sis:
+        story.append(Paragraph("SUPPORTS INTENSITY SCALE (SIS)", title_style))
     else:
         story.append(Paragraph("POS ETEROVALUTATIVA", title_style))
     
@@ -966,9 +1199,12 @@ def generate_evaluation_pdf(
         story.append(meta_table)
     story.append(Spacer(1, 0.2 * cm))
 
-    # ── Riepilogo QV (solo San Martín) ───────────────────────────────────────
+    # ── Riepilogo QV o SIS (solo San Martín o SIS) ───────────────────────────────────
     if is_sanmartin and analysis is not None:
         story.append(_make_qv_summary_table(analysis, styles))
+        story.append(Spacer(1, 0.25 * cm))
+    elif is_sis and analysis is not None:
+        story.append(_make_sis_summary_table(analysis, styles))
         story.append(Spacer(1, 0.25 * cm))
 
     # ── Grafico ─────────────────────────────────────────────────────────────
@@ -978,6 +1214,10 @@ def generate_evaluation_pdf(
         chart_domains = analysis.get("domini", [])
         chart_buf = _make_radar_chart(chart_domains)
         chart_img = RLImage(chart_buf, width=10.2 * cm, height=10.2 * cm)
+    elif is_sis and analysis is not None:
+        chart_domains = analysis.get("domini", [])
+        chart_buf = _make_sis_bar_chart(chart_domains)
+        chart_img = RLImage(chart_buf, width=17 * cm, height=10.5 * cm)
     else:
         chart_buf = _make_bar_chart(domains)
         chart_img = RLImage(chart_buf, width=17 * cm, height=10.5 * cm)
@@ -986,7 +1226,7 @@ def generate_evaluation_pdf(
     story.append(Spacer(1, 0.2 * cm))
 
     # ── Legenda fasce ───────────────────────────────────────────────────────
-    if is_sanmartin and analysis is not None:
+    if (is_sanmartin or is_sis) and analysis is not None:
         story.append(Paragraph("Fasce Interpretative (Punteggi Standard)",
                                ParagraphStyle('LegendTitle', parent=styles['Normal'],
                                               fontSize=9, textColor=MID_GREY,
@@ -1024,6 +1264,7 @@ def generate_evaluation_pdf(
         ]))
         story.append(legend_table)
         story.append(Spacer(1, 0.25 * cm))
+        
     # ── Tabella riepilogo domìni ─────────────────────────────────────────────
     story.append(PageBreak())
     
@@ -1036,6 +1277,9 @@ def generate_evaluation_pdf(
         
         story.append(Paragraph("Riepilogo per Dominio", section_header))
         domain_table = _make_san_martin_domain_table(analysis)
+    elif is_sis and analysis is not None:
+        story.append(Paragraph("Riepilogo per Sottoscala SIS", section_header))
+        domain_table = _make_sis_domain_table(analysis)
     else:
         story.append(Paragraph("Riepilogo per Dominio", section_header))
         domain_headers = ["Cod.", "Dominio", "Punteggio Totale", "N° Domande"]
@@ -1053,6 +1297,100 @@ def generate_evaluation_pdf(
         )
     story.append(domain_table)
     story.append(Spacer(1, 0.5 * cm))
+
+    # ── Sezione 2 e Sezione 3 per SIS (Dati Clinici Aggiuntivi) ───────────────
+    if is_sis and analysis is not None:
+        story.append(PageBreak())
+        
+        # --- SEZIONE 2: ATTIVITÀ DI TUTELA E RAPPRESENTANZA ---
+        story.append(Paragraph("Sezione 2: Attività di Tutela e Rappresentanza (Priorità)", section_header))
+        story.append(Paragraph("Le 4 attività prioritarie individuate per la tutela legale e l'advocacy dell'utente:", ParagraphStyle('SubSectionText', parent=styles['Normal'], fontSize=9, textColor=MID_GREY, spaceAfter=8)))
+        
+        p_texts = {
+            "P1": "Sostenere la persona nel difendere i propri diritti / autosostenersi",
+            "P2": "Sostenere la persona nel gestire il denaro / finanze",
+            "P3": "Sostenere la persona nel proteggersi da situazioni di abuso o sfruttamento",
+            "P4": "Sostenere la persona nell'esercitare responsabilità legali",
+            "P5": "Sostenere la persona nel compiere scelte e prendere decisioni sulla propria vita",
+            "P6": "Sostenere la persona nel far valere i propri diritti civili / voto",
+            "P7": "Sostenere la persona nell'accedere a servizi di tutela giuridica o advocacy",
+            "P8": "Sostenere la persona nell'assumere ruoli di rappresentanza o leadership"
+        }
+        
+        top4 = analysis.get("sezione_2_top4", [])
+        if top4:
+            top4_rows = []
+            for rank, item in enumerate(top4, 1):
+                item_id = item.get("id")
+                score = item.get("punteggio_grezzo")
+                desc = p_texts.get(item_id, f"Attività di tutela {item_id}")
+                top4_rows.append([
+                    Paragraph(f"<b>{rank}°</b>", ParagraphStyle('RankStyle', parent=styles['Normal'], fontSize=9, alignment=TA_CENTER)),
+                    Paragraph(f"<b>{item_id}</b>", ParagraphStyle('ItemIdStyle', parent=styles['Normal'], fontSize=9, alignment=TA_CENTER)),
+                    Paragraph(desc, ParagraphStyle('ItemDescStyle', parent=styles['Normal'], fontSize=9)),
+                    Paragraph(f"Punteggio: <b>{score}</b>", ParagraphStyle('ScoreStyle', parent=styles['Normal'], fontSize=9, alignment=TA_CENTER))
+                ])
+            t2 = Table(top4_rows, colWidths=[1.5*cm, 1.8*cm, 10.1*cm, 4*cm])
+            t2.setStyle(TableStyle([
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('BACKGROUND', (0,0), (-1,-1), white),
+                ('ROWBACKGROUNDS', (0,0), (-1,-1), [LIGHT_GREY, white]),
+                ('BOX', (0,0), (-1,-1), 0.5, BORDER),
+                ('INNERGRID', (0,0), (-1,-1), 0.3, BORDER),
+                ('TOPPADDING', (0,0), (-1,-1), 5),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+            ]))
+            story.append(t2)
+        else:
+            story.append(Paragraph("Nessuna priorità inserita.", ParagraphStyle('NoPriorities', parent=styles['Normal'], fontSize=9, textColor=MID_GREY)))
+            
+        story.append(Spacer(1, 0.5 * cm))
+        
+        # --- SEZIONE 3: BISOGNI ECCEZIONALI DI SOSTEGNO ---
+        story.append(Paragraph("Sezione 3: Bisogni Eccezionali di Sostegno", section_header))
+        
+        med_alert = analysis.get("alert_medico", False)
+        comp_alert = analysis.get("alert_comportamentale", False)
+        
+        det_med = analysis.get("dettaglio_medico", {})
+        det_comp = analysis.get("dettaglio_comportamentale", {})
+        
+        alert_style = ParagraphStyle('AlertText', parent=styles['Normal'], fontSize=9, fontName='Helvetica-Bold', textColor=white)
+        no_alert_style = ParagraphStyle('NoAlertText', parent=styles['Normal'], fontSize=9, textColor=DARK_TEXT)
+        
+        s3_data = [
+            [
+                Paragraph("<b>Ambito</b>", ParagraphStyle('S3Head', parent=styles['Normal'], fontSize=9, fontName='Helvetica-Bold')),
+                Paragraph("<b>Sostegni Parziali (1)</b>", ParagraphStyle('S3Head', parent=styles['Normal'], fontSize=9, fontName='Helvetica-Bold', alignment=TA_CENTER)),
+                Paragraph("<b>Sostegni Estensivi (2)</b>", ParagraphStyle('S3Head', parent=styles['Normal'], fontSize=9, fontName='Helvetica-Bold', alignment=TA_CENTER)),
+                Paragraph("<b>Alert Clinico</b>", ParagraphStyle('S3Head', parent=styles['Normal'], fontSize=9, fontName='Helvetica-Bold', alignment=TA_CENTER))
+            ],
+            [
+                Paragraph("<b>3A: Bisogni Medici Eccezionali</b>", ParagraphStyle('S3Body', parent=styles['Normal'], fontSize=9)),
+                Paragraph(str(det_med.get("count_parziale", 0)), ParagraphStyle('S3BodyC', parent=styles['Normal'], fontSize=9, alignment=TA_CENTER)),
+                Paragraph(str(det_med.get("count_estensivo", 0)), ParagraphStyle('S3BodyC', parent=styles['Normal'], fontSize=9, alignment=TA_CENTER)),
+                Paragraph("ATTIVO (Soglia superata)" if med_alert else "REGOLARE", alert_style if med_alert else no_alert_style)
+            ],
+            [
+                Paragraph("<b>3B: Bisogni Comportamentali Eccezionali</b>", ParagraphStyle('S3Body', parent=styles['Normal'], fontSize=9)),
+                Paragraph(str(det_comp.get("count_parziale", 0)), ParagraphStyle('S3BodyC', parent=styles['Normal'], fontSize=9, alignment=TA_CENTER)),
+                Paragraph(str(det_comp.get("count_estensivo", 0)), ParagraphStyle('S3BodyC', parent=styles['Normal'], fontSize=9, alignment=TA_CENTER)),
+                Paragraph("ATTIVO (Soglia superata)" if comp_alert else "REGOLARE", alert_style if comp_alert else no_alert_style)
+            ]
+        ]
+        
+        t3 = Table(s3_data, colWidths=[6.5*cm, 3.5*cm, 3.5*cm, 3.9*cm])
+        t3.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('GRID', (0,0), (-1,-1), 0.5, BORDER),
+            ('BACKGROUND', (0,0), (-1,0), LIGHT_GREY),
+            ('ALIGN', (3,1), (3,2), 'CENTER'),
+            ('TOPPADDING', (0,0), (-1,-1), 6),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+            ('BACKGROUND', (3,1), (3,1), HexColor('#D32F2F') if med_alert else HexColor('#E0F2F1')),
+            ('BACKGROUND', (3,2), (3,2), HexColor('#D32F2F') if comp_alert else HexColor('#E0F2F1')),
+        ]))
+        story.append(t3)
 
     # ── Tabella dettaglio risposte ───────────────────────────────────────────
     story.append(PageBreak())
@@ -1119,13 +1457,20 @@ def generate_evaluation_pdf(
             q_text = q_info["testo"] if q_info else "—"
             
             opt_label = ""
-            if q_info and punteggio is not None:
-                opt_label = q_info["opzioni"].get(str(punteggio), "")
-            
-            if opt_label:
-                risposta_display = f"{opt_label} ({punteggio})"
+            if isinstance(punteggio, dict):
+                f = punteggio.get("F", 0)
+                d = punteggio.get("D", 0)
+                t = punteggio.get("T", 0)
+                tot = f + d + t
+                risposta_display = f"Freq: {f} | Durata: {d} | Tipo: {t} (Tot: {tot})"
             else:
-                risposta_display = str(punteggio)
+                if q_info and punteggio is not None:
+                    opt_label = q_info["opzioni"].get(str(punteggio), "")
+                
+                if opt_label:
+                    risposta_display = f"{opt_label} ({punteggio})"
+                else:
+                    risposta_display = str(punteggio)
 
             resp_rows.append([
                 Paragraph(q_code, cell_style_bold),
@@ -1143,17 +1488,27 @@ def generate_evaluation_pdf(
     else:
         # Fallback if no questions are found in scale definition
         resp_headers = ["Codice", "Punteggio", "Nota"]
-        resp_rows = [
-            [
+        resp_rows = []
+        for r in evaluation.get("risposte", []):
+            punteggio = r.get("punteggio", "-")
+            if isinstance(punteggio, dict):
+                f = punteggio.get("F", 0)
+                d = punteggio.get("D", 0)
+                t = punteggio.get("T", 0)
+                tot = f + d + t
+                risposta_display = f"Freq: {f} | Durata: {d} | Tipo: {t} (Tot: {tot})"
+            else:
+                risposta_display = str(punteggio)
+                
+            resp_rows.append([
                 r.get("codice_domanda", "-"),
-                str(r.get("punteggio", "-")),
+                risposta_display,
                 r.get("nota") or "",
-            ]
-            for r in evaluation.get("risposte", [])
-        ]
+            ])
+            
         resp_table = _make_table(
-            resp_headers, resp_rows, [2.5*cm, 2.5*cm, 14.5*cm], SECONDARY,
-            [('ALIGN', (1, 0), (1, -1), 'CENTER'),
+            resp_headers, resp_rows, [2.5*cm, 4.5*cm, 10.4*cm], SECONDARY,
+            [('ALIGN', (1, 0), (1, -1), 'LEFT'),
              ('WORDWRAP', (2, 0), (2, -1), True)]
         )
     story.append(resp_table)
