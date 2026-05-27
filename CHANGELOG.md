@@ -2,6 +2,14 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.16.5] - 2026-05-28
+
+### Corretto
+- **Bug Rendering e Incompilabilità Sottoscala C nel Wizard SIS (Frontend Admin & Client)**:
+  - Risolto il crash visualizzato come area grigia vuota dovuto a un `minified:TypeError` (cast non valido da `int` a `Map`) per gli item `C1`-`C9` della Sottoscala C.
+  - Il bug era generato dalla collisione dei codici della Sezione 3 Comportamentale (SEZ3C) che nel database condividevano gli stessi identificativi `C1`...`C13`. La pre-inizializzazione a `0` (valore intero) per SEZ3C sovrascriveva le chiavi tridimensionali (che richiedono una `Map` `{"F": x, "D": y, "T": z}`) della Sottoscala C.
+  - Implementata la mappatura automatica correttiva a livello di caricamento dati (`_loadData()`) che converte e isola i codici della sezione comportamentale SEZ3C nel formato `BC1`...`BC13`, eliminando all'origine la collisione e allineandosi al motore di calcolo del backend FastAPI.
+
 ## [2.16.4] - 2026-05-28
 
 ### Aggiunto
