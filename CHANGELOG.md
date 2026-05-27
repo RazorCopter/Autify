@@ -2,6 +2,15 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.16.6] - 2026-05-28
+
+### Aggiunto
+- **Stato di Validazione e Pulsante di Conferma per i Bisogni Eccezionali (Sezione 3)**:
+  - Sviluppato un meccanismo di validazione attiva per il Tab 4 (Bisogni Eccezionali) sia nella Dashboard Admin che nel Client.
+  - Finché l'utente non convalida esplicitamente le risposte, la sezione mostra la dicitura **"X/X Da verificare.." in arancione** con una specifica icona di stato di attenzione (sia nel menu laterale `NavigationRail` che nelle horizontal tabs).
+  - Integrato un banner clinico premium in fondo al Tab 4 con il pulsante **"CONFERMA E VALIDA RISPOSTE"** in arancione. Cliccando sul pulsante, lo stato si convalida, il progresso diventa verde e visualizza **"Completato"** (o "29/29 Completato"), e compare un'icona di spunta verde.
+  - Implementato lo sblocco dinamico: se l'utente decide di modificare una qualsiasi risposta della Sezione 3 dopo aver validato, il sistema reimposta automaticamente lo stato su "Da verificare.." finché non viene cliccato nuovamente il pulsante di conferma o sblocco manuale.
+
 ## [2.16.5] - 2026-05-28
 
 ### Corretto
