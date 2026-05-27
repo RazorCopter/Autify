@@ -32,12 +32,11 @@ class _WizardScreenState extends State<WizardScreen>
   final PageController _pageController = PageController();
   final TextEditingController _noteController = TextEditingController();
   final FocusNode _focusNode = FocusNode(debugLabel: 'wizard_keyboard_focus');
-
   bool _allowPop = false;
   bool _isLoading = true;
   String? _scaleNome;
   List<_WizardItem> _questions = [];
-  Map<String, int> _answers = {};   // codice_domanda -> punteggio
+  Map<String, dynamic> _answers = {};   // codice_domanda -> punteggio
   Map<String, String> _notes = {};  // codice_domanda -> nota
   bool _noteVisible = false;
 
@@ -513,10 +512,15 @@ class _WizardScreenState extends State<WizardScreen>
           ),
         );
       }
-
       final currentQ = _questions[_currentIndex];
       final isLast = _currentIndex == _questions.length - 1;
-      final hasAnswered = _answers.containsKey(_currentKey);
+      final is3D = _isSis3DQuestion(widget.scaleId, _currentKey);
+      final hasAnswered = is3D
+          ? (_answers[_currentKey] is Map &&
+              _answers[_currentKey]['F'] != null &&
+              _answers[_currentKey]['D'] != null &&
+              _answers[_currentKey]['T'] != null)
+          : _answers.containsKey(_currentKey);
       final totalQ = _questions.length;
 
       return Scaffold(
@@ -892,9 +896,222 @@ class _WizardScreenState extends State<WizardScreen>
       ),
     );
   }
+  bool _isSis3DQuestion(String scaleId, String questionId) {
+    final isSis = scaleId.toLowerCase().contains('sis');
+    if (!isSis) return false;
+    final id = questionId.toUpperCase();
+    return id.startsWith('A') ||
+        id.startsWith('B') ||
+        (id.startsWith('C') && !id.startsWith('BC')) ||
+        id.startsWith('D') ||
+        id.startsWith('E') ||
+        id.startsWith('F') ||
+        id.startsWith('P');
+  }
+
+  void _updateSis3DAnswer(String dim, int value) {
+    setState(() {
+      final current = _answers[_currentKey];
+      Map<String, int> map;
+      if (current is Map) {
+        map = Map<String, int>.from(current);
+      } else {
+        map = {};
+      }
+      map[dim] = value;
+      _answers[_currentKey] = map;
+    });
+    _requestKeyboardFocus();
+  }
+
+  Widget _buildSis3DSelector(bool isTablet) {
+    final currentVal = _answers[_currentKey];
+    int? selF;
+    int? selD;
+    int? selT;
+
+    if (currentVal is Map) {
+      selF = currentVal['F'] as int?;
+      selD = currentVal['D'] as int?;
+      selT = currentVal['T'] as int?;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildSisDimensionRow('F', 'Frequenza', selF, Icons.access_time_filled_rounded, isTablet),
+        const SizedBox(height: 16),
+        _buildSisDimensionRow('D', 'Durata quotidiana', selD, Icons.hourglass_full_rounded, isTablet),
+        const SizedBox(height: 16),
+        _buildSisDimensionRow('T', 'Tipo di sostegno', selT, Icons.front_hand_rounded, isTablet),
+      ],
+    );
+  }
+
+  Widget _buildSisDimensionRow(
+    String dim,
+    String label,
+    int? selectedValue,
+    IconData icon,
+    bool isTablet,
+  ) {
+    // Gestione eccezione A3: F_max = 3
+    final isA3 = _currentKey.toUpperCase() == 'A3';
+    final maxVal = (dim == 'F' && isA3) ? 3 : 4;
+
+    final legends = dim == 'F'
+        ? _sisLegendaFrequenza
+        : dim == 'D'
+            ? _sisLegendaDurata
+            : _sisLegendaTipo;
+
+    final dimColor = dim == 'F'
+        ? const Color(0xFF1E88E5)
+        : dim == 'D'
+            ? const Color(0xFFFB8C00)
+            : const Color(0xFF43A047);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFDDE7F8), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: dimColor, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: isTablet ? 16 : 14,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const Spacer(),
+              if (selectedValue != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: dimColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    'Punteggio: $selectedValue',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: dimColor,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(maxVal + 1, (index) {
+              final isSelected = selectedValue == index;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: GestureDetector(
+                    onTap: () => _updateSis3DAnswer(dim, index),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isSelected ? dimColor : Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isSelected ? dimColor : const Color(0xFFDDE7F8),
+                          width: isSelected ? 2.5 : 1.5,
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: dimColor.withValues(alpha: 0.35),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                )
+                              ]
+                            : null,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '$index',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected ? Colors.white : AppTheme.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+          if (selectedValue != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              legends[selectedValue] ?? '',
+              style: TextStyle(
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+                color: dimColor,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static const _sisLegendaFrequenza = {
+    0: "Nessuna o meno di una volta al mese",
+    1: "Almeno una volta al mese, ma meno di una volta alla settimana",
+    2: "Almeno una volta alla settimana, ma meno di una volta al giorno",
+    3: "Almeno una volta al giorno, ma meno di una volta all'ora",
+    4: "Ogni ora o con maggior frequenza",
+  };
+
+  static const _sisLegendaDurata = {
+    0: "Nessuno",
+    1: "Meno di 30 minuti",
+    2: "Da 30 minuti a meno di 2 ore",
+    3: "Da 2 ore a meno di 4 ore",
+    4: "4 ore o più",
+  };
+
+  static const _sisLegendaTipo = {
+    0: "Nessuno",
+    1: "Monitoraggio",
+    2: "Prompt verbale o gestuale",
+    3: "Assistenza fisica parziale",
+    4: "Assistenza fisica totale",
+  };
 
   // ─── Options list (dynamic & animated) ────────────────────────────────────
   Widget _buildOptionsList(_WizardItem item, bool isTablet) {
+    if (_isSis3DQuestion(widget.scaleId, _currentKey)) {
+      return _buildSis3DSelector(isTablet);
+    }
+
     if (item.domanda.opzioni.isEmpty) {
       return const Text(
         'Nessuna opzione disponibile per questa domanda.',

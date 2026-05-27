@@ -6,10 +6,9 @@ int? _parseNullableInt(dynamic value) {
     return null;
   }
 }
-
 class AnswerModel {
   final String codiceDomanda;
-  int punteggio;
+  dynamic punteggio;
   String? nota;
 
   AnswerModel({

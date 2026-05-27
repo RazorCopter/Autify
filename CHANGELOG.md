@@ -1,19 +1,15 @@
 # Changelog
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
-
 ## [2.15.0] - 2026-05-27
 
 ### Aggiunto
-- **Integrazione del nuovo protocollo "Supports Intensity Scale (SIS)" nel Backend**:
-  - Implementazione completa del motore di calcolo psicometrico tridimensionale (Frequenza, Durata, Tipo di sostegno: range 0-4) in `analytics.py`.
-  - Gestione dell'eccezione dell'item A3 con clamp del valore F_max a 3.
-  - Tabelle di conversione integrate in formato Python: `SIS_DOMAIN_RANGES` per i 6 domini A-F e `SIS_INDEX_TABLE` per il calcolo dell'Indice SIS globale.
-  - Estrazione e ordinamento automatico dei primi 4 bisogni di protezione e tutela (Sezione 2) in base al punteggio grezzo decrescente.
-  - Calcolo ed emissione di alert medici e comportamentali (Sezione 3) se il totale supera 5 o se un item presenta supporto estensivo.
-  - Dispatch automatico della valutazione in `compute_psychometric_analysis()`.
-  - Aggiornamento dell'endpoint `/import-scale` e della logica di salvataggio in `routes.py` per supportare la scala SIS ed il tracciamento di `ultimo_sis_compilato` sull'utente.
-  - Creazione di una suite completa di test unitari asincroni (`test_sis.py`) che valida tutti gli aspetti del motore di calcolo con 10/10 test superati con successo.
+- **Integrazione completa del nuovo protocollo "Supports Intensity Scale (SIS)" (Frontend & Backend)**:
+  - **Motore di calcolo Backend**: Implementato in `analytics.py` il motore psicometrico tridimensionale (Frequenza, Durata, Tipo di sostegno: range 0-4) con tabelle `SIS_DOMAIN_RANGES`, `SIS_INDEX_TABLE`, gestione eccezione item A3 (F_max=3), estrazione Top 4 bisogni di protezione (Sezione 2) ed alert medici/comportamentali (Sezione 3).
+  - **Modelli Dati Flessibili**: Aggiornato `AnswerModel` in `models.py` (backend) e nei modelli del frontend (`evaluation_model.dart` per Admin e `models.dart` per Client) per consentire al campo `punteggio` di accettare dinamici `Map<String, int>` (payload tridimensionali `{"F": x, "D": y, "T": z}`) senza provocare conflitti di compilazione.
+  - **Interfaccia Grafica Tridimensionale nel Wizard**: Rilevazione automatica delle sezioni SIS tridimensionali nel wizard (`wizard_screen.dart` sia nell'Admin che nel Client) per sostituire la visualizzazione classica con tre eleganti selettori reattivi e animati in stile premium (Frequenza, Durata e Tipo di sostegno) comprensivi di badge e descrizioni testuali dinamiche delle leggende in tempo reale.
+  - **Validità dei Dati**: La navigazione tra le domande richiede obbligatoriamente il completamento di tutte e tre le dimensioni di risposta prima di poter cliccare su "Avanti" o salvare.
+  - **Test Suite**: Realizzata la suite `test_sis.py` per validare asincronamente tutti i test del backend superando 10/10 test con successo.
 - **Aggiornamento Versione**: Incrementata la versione globale della suite a `2.15.0` in `app_version.dart`, `pubspec.yaml` (admin) e `main.py` (FastAPI backend).
 
 ## [2.14.3] - 2026-05-26

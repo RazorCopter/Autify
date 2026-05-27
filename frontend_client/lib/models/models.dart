@@ -81,10 +81,9 @@ class ScaleModel {
     );
   }
 }
-
 class AnswerModel {
   final String codiceDomanda;
-  final int punteggio;
+  final dynamic punteggio;
   final String? nota;
 
   AnswerModel({required this.codiceDomanda, required this.punteggio, this.nota});
