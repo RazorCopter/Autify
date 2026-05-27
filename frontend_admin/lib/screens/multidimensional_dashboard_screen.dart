@@ -493,10 +493,11 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     for (final scale in _availableScales) {
       if (!_latestEvaluations.containsKey(scale.id)) continue;
       final isSM = _isSanMartinScale(scale.id, scale.nome);
+      final isSis = _isSisScale(scale.id, scale.nome);
       if (isSM) {
         smEval = _latestEvaluations[scale.id];
         smScale = scale;
-      } else {
+      } else if (!isSis) {
         posEval = _latestEvaluations[scale.id];
         posScale = scale;
       }
