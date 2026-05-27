@@ -2,6 +2,17 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.16.4] - 2026-05-28
+
+### Aggiunto
+- **Esportazione PDF Premium per la Scala SIS (Supports Intensity Scale)**:
+  - **Titolo Dinamico**: Sostituito il titolo hardcoded "POS ETEROVALUTATIVA" con il titolo formale "SUPPORTS INTENSITY SCALE (SIS)" per valutazioni SIS.
+  - **Riepilogo Metriche Psicometriche**: Sviluppato un box di sintesi clinico premium con sfondo Teal dedicato che mostra in evidenza l'Indice SIS globale, il Percentile, la Somma dei Punteggi Standard e la Classificazione dell'Intensità.
+  - **Grafico a Barre Standardizzato**: Disegnato un grafico a barre ad hoc per i 6 domini principali (sottoscale A-F) tarato sul range dei punteggi standard (0-20) e arricchito con la linea della media normativa (= 10) per una lettura clinica immediata.
+  - **Tabella Riepilogativa SIS**: Creata una tabella specifica per i 6 domini SIS con punteggi grezzi (somma F+D+T), punteggi standard e percentili.
+  - **Sezioni Specialistiche Aggiuntive**: Aggiunta una pagina intera per i risultati della Sezione 2 (le prime 4 priorità di tutela con testi parlanti) e della Sezione 3 (medica/comportamentale con i relativi alert clinici e conteggi di risposte parziali ed estensive).
+  - **Supporto Risposte Tridimensionali**: Corretta la visualizzazione delle risposte tridimensionali nel dettaglio risposte del PDF, mostrando ora il formato leggibile `Freq: X | Durata: Y | Tipo: Z (Tot: T)` per ciascun elemento.
+
 ## [2.16.3] - 2026-05-28
 
 ### Corretto
