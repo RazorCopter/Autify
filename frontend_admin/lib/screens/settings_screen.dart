@@ -199,7 +199,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _apiKeyController.text,
       _selectedModel,
       prompt: _promptController.text.trim().isEmpty ? null : _promptController.text.trim(),
-      viewerAiEnabled: _viewerAiEnabled,
     );
     setState(() => _isLoading = false);
 
