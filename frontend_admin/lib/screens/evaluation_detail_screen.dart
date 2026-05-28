@@ -2435,7 +2435,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                       ],
                       onChanged: (val) {
                         setState(() {
-                          demo!['persona']['livello_assistenza'] = val;
+                          persona['livello_assistenza'] = val;
+                          demo!['persona'] = persona;
                         });
                       },
                     ),
@@ -2452,7 +2453,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                       ],
                       onChanged: (val) {
                         setState(() {
-                          demo!['persona']['livello_dipendenza'] = val;
+                          persona['livello_dipendenza'] = val;
+                          demo!['persona'] = persona;
                         });
                       },
                     ),
@@ -2468,7 +2470,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                       decoration: const InputDecoration(labelText: 'Percentuale Invalidità / Disabilità (%)', border: OutlineInputBorder()),
                       keyboardType: TextInputType.number,
                       onChanged: (val) {
-                        demo!['persona']['percentuale_disabilita'] = int.tryParse(val);
+                        persona['percentuale_disabilita'] = int.tryParse(val);
+                        demo!['persona'] = persona;
                       },
                     ),
                   ),
@@ -2479,7 +2482,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                       decoration: const InputDecoration(labelText: 'Anno Certificazione Invalidità', border: OutlineInputBorder()),
                       keyboardType: TextInputType.number,
                       onChanged: (val) {
-                        demo!['persona']['anno_certificato'] = int.tryParse(val);
+                        persona['anno_certificato'] = int.tryParse(val);
+                        demo!['persona'] = persona;
                       },
                     ),
                   ),
@@ -2492,19 +2496,58 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                 spacing: 12,
                 runSpacing: 4,
                 children: [
-                  _conditionCheckbox('Disabilità Fisica', condizioni, 'disabilita_fisica'),
-                  _conditionCheckbox('Lim. Arti Superiori', condizioni, 'lim_arti_superiori'),
-                  _conditionCheckbox('Lim. Arti Inferiori', condizioni, 'lim_arti_inferiori'),
-                  _conditionCheckbox('Disabilità Sensoriale', condizioni, 'disabilita_sensoriale'),
-                  _conditionCheckbox('Udito / Sordità', condizioni, 'udito_sordita'),
-                  _conditionCheckbox('Visiva', condizioni, 'visiva'),
-                  _conditionCheckbox('Paralisi Cerebrale', condizioni, 'paralisi_cerebrale'),
-                  _conditionCheckbox('Epilessia', condizioni, 'epilessia'),
-                  _conditionCheckbox('Salute Mentale', condizioni, 'salute_mentale'),
-                  _conditionCheckbox('Spettro Autistico', condizioni, 'spettro_autistico'),
-                  _conditionCheckbox('Sindrome di Down', condizioni, 'sindrome_down'),
-                  _conditionCheckbox('Gravi Problemi Salute', condizioni, 'gravi_problemi_salute'),
-                  _conditionCheckbox('Disturbi Condotta', condizioni, 'disturbi_condotta'),
+                  _conditionCheckbox('Disabilità Fisica', condizioni, 'disabilita_fisica', () {
+                    persona['condizioni'] = condizioni;
+                    demo!['persona'] = persona;
+                  }),
+                  _conditionCheckbox('Lim. Arti Superiori', condizioni, 'lim_arti_superiori', () {
+                    persona['condizioni'] = condizioni;
+                    demo!['persona'] = persona;
+                  }),
+                  _conditionCheckbox('Lim. Arti Inferiori', condizioni, 'lim_arti_inferiori', () {
+                    persona['condizioni'] = condizioni;
+                    demo!['persona'] = persona;
+                  }),
+                  _conditionCheckbox('Disabilità Sensoriale', condizioni, 'disabilita_sensoriale', () {
+                    persona['condizioni'] = condizioni;
+                    demo!['persona'] = persona;
+                  }),
+                  _conditionCheckbox('Udito / Sordità', condizioni, 'udito_sordita', () {
+                    persona['condizioni'] = condizioni;
+                    demo!['persona'] = persona;
+                  }),
+                  _conditionCheckbox('Visiva', condizioni, 'visiva', () {
+                    persona['condizioni'] = condizioni;
+                    demo!['persona'] = persona;
+                  }),
+                  _conditionCheckbox('Paralisi Cerebrale', condizioni, 'paralisi_cerebrale', () {
+                    persona['condizioni'] = condizioni;
+                    demo!['persona'] = persona;
+                  }),
+                  _conditionCheckbox('Epilessia', condizioni, 'epilessia', () {
+                    persona['condizioni'] = condizioni;
+                    demo!['persona'] = persona;
+                  }),
+                  _conditionCheckbox('Salute Mentale', condizioni, 'salute_mentale', () {
+                    persona['condizioni'] = condizioni;
+                    demo!['persona'] = persona;
+                  }),
+                  _conditionCheckbox('Spettro Autistico', condizioni, 'spettro_autistico', () {
+                    persona['condizioni'] = condizioni;
+                    demo!['persona'] = persona;
+                  }),
+                  _conditionCheckbox('Sindrome di Down', condizioni, 'sindrome_down', () {
+                    persona['condizioni'] = condizioni;
+                    demo!['persona'] = persona;
+                  }),
+                  _conditionCheckbox('Gravi Problemi Salute', condizioni, 'gravi_problemi_salute', () {
+                    persona['condizioni'] = condizioni;
+                    demo!['persona'] = persona;
+                  }),
+                  _conditionCheckbox('Disturbi Condotta', condizioni, 'disturbi_condotta', () {
+                    persona['condizioni'] = condizioni;
+                    demo!['persona'] = persona;
+                  }),
                 ],
               ),
               const SizedBox(height: 12),
@@ -2513,6 +2556,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                 decoration: const InputDecoration(labelText: 'Altre condizioni (specifica)', border: OutlineInputBorder()),
                 onChanged: (val) {
                   condizioni['altro_specifica'] = val;
+                  persona['condizioni'] = condizioni;
+                  demo!['persona'] = persona;
                 },
               ),
               const SizedBox(height: 20),
@@ -2526,6 +2571,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                       decoration: const InputDecoration(labelText: 'Nome e Cognome', border: OutlineInputBorder()),
                       onChanged: (val) {
                         inf1['nome_cognome'] = val;
+                        demo!['informatore1'] = inf1;
                       },
                     ),
                   ),
@@ -2545,6 +2591,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                       onChanged: (val) {
                         setState(() {
                           inf1['relazione'] = val;
+                          demo!['informatore1'] = inf1;
                         });
                       },
                     ),
@@ -2558,6 +2605,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                   decoration: const InputDecoration(labelText: 'Specifica Relazione Altro', border: OutlineInputBorder()),
                   onChanged: (val) {
                     inf1['relazione_altro'] = val;
+                    demo!['informatore1'] = inf1;
                   },
                 ),
               ],
@@ -2571,6 +2619,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                       keyboardType: TextInputType.number,
                       onChanged: (val) {
                         inf1['contatto_anni'] = int.tryParse(val);
+                        demo!['informatore1'] = inf1;
                       },
                     ),
                   ),
@@ -2582,6 +2631,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                       keyboardType: TextInputType.number,
                       onChanged: (val) {
                         inf1['contatto_mesi'] = int.tryParse(val);
+                        demo!['informatore1'] = inf1;
                       },
                     ),
                   ),
@@ -2599,6 +2649,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                       onChanged: (val) {
                         setState(() {
                           inf1['frequenza_contatto'] = val;
+                          demo!['informatore1'] = inf1;
                         });
                       },
                     ),
@@ -2633,7 +2684,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                         initialValue: inf2['nome_cognome']?.toString() ?? '',
                         decoration: const InputDecoration(labelText: 'Nome e Cognome 2', border: OutlineInputBorder()),
                         onChanged: (val) {
-                          demo!['informatore2']['nome_cognome'] = val;
+                          inf2['nome_cognome'] = val;
+                          demo!['informatore2'] = inf2;
                         },
                       ),
                     ),
@@ -2652,7 +2704,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                         ],
                         onChanged: (val) {
                           setState(() {
-                            demo!['informatore2']['relazione'] = val;
+                            inf2['relazione'] = val;
+                            demo!['informatore2'] = inf2;
                           });
                         },
                       ),
@@ -2665,7 +2718,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                     initialValue: inf2['relazione_altro']?.toString() ?? '',
                     decoration: const InputDecoration(labelText: 'Specifica Relazione Altro 2', border: OutlineInputBorder()),
                     onChanged: (val) {
-                      demo!['informatore2']['relazione_altro'] = val;
+                      inf2['relazione_altro'] = val;
+                      demo!['informatore2'] = inf2;
                     },
                   ),
                 ],
@@ -2678,7 +2732,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                         decoration: const InputDecoration(labelText: 'Anni di conoscenza 2', border: OutlineInputBorder()),
                         keyboardType: TextInputType.number,
                         onChanged: (val) {
-                          demo!['informatore2']['contatto_anni'] = int.tryParse(val);
+                          inf2['contatto_anni'] = int.tryParse(val);
+                          demo!['informatore2'] = inf2;
                         },
                       ),
                     ),
@@ -2689,7 +2744,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                         decoration: const InputDecoration(labelText: 'Mesi 2', border: OutlineInputBorder()),
                         keyboardType: TextInputType.number,
                         onChanged: (val) {
-                          demo!['informatore2']['contatto_mesi'] = int.tryParse(val);
+                          inf2['contatto_mesi'] = int.tryParse(val);
+                          demo!['informatore2'] = inf2;
                         },
                       ),
                     ),
@@ -2706,7 +2762,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                         ],
                         onChanged: (val) {
                           setState(() {
-                            demo!['informatore2']['frequenza_contatto'] = val;
+                            inf2['frequenza_contatto'] = val;
+                            demo!['informatore2'] = inf2;
                           });
                         },
                       ),
@@ -2793,7 +2850,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     );
   }
 
-  Widget _conditionCheckbox(String label, Map<String, dynamic> condizioni, String key) {
+  Widget _conditionCheckbox(String label, Map<String, dynamic> condizioni, String key, VoidCallback onChanged) {
     return FilterChip(
       label: Text(label, style: TextStyle(fontSize: 12, color: condizioni[key] == true ? Colors.white : AppTheme.textPrimary)),
       selected: condizioni[key] == true,
@@ -2802,6 +2859,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
       onSelected: (selected) {
         setState(() {
           condizioni[key] = selected;
+          onChanged();
         });
       },
     );

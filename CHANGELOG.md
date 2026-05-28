@@ -2,6 +2,14 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.16.13] - 2026-05-28
+
+### Corretto
+- **Salvataggio Dati Socio-Demografici nel Dettaglio Valutazione**:
+  - Risolto il problema per cui le modifiche ai dati di "Informatore 1", "Informatore 2" e "Condizioni / Diagnosi" non venivano persistite dopo il salvataggio in modalità Edit.
+  - Le mappe secondarie (`inf1`, `inf2`, `condizioni`, `persona`) venivano copiate ed eseguito il cast con `Map.from()` per sicurezza in ambiente Flutter Web, ma le modifiche dell'utente non venivano poi riscritte indietro nella mappa di stato globale `_editableDemographics`.
+  - Implementata la riscrittura esplicita dei dizionari modificati all'interno degli eventi `onChanged` dei rispettivi moduli di input della UI, garantendo il corretto salvataggio e allineamento dati con il backend.
+
 ## [2.16.12] - 2026-05-28
 
 ### Corretto
