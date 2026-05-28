@@ -2,6 +2,13 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.16.14] - 2026-05-28
+
+### Modificato
+- **Flusso di Modifica ed Edit UX (Dettaglio Valutazione)**:
+  - Modificato il pulsante d'azione di salvataggio in **"Salva ed esci"** (precedentemente "Salva modifiche").
+  - Ottimizzato il comportamento di salvataggio: ora al click su "Salva ed esci", una volta completato il salvataggio con successo sul backend, l'applicazione esce automaticamente dalla modalità di edit (`_isEditMode = false`), portando la UI di nuovo in stato di sola lettura protetta.
+
 ## [2.16.13] - 2026-05-28
 
 ### Corretto

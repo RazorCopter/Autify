@@ -252,6 +252,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
         }
         _selectEvaluation(updated);
         _isSaving = false;
+        _isEditMode = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -474,7 +475,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               TextButton.icon(
                 onPressed: _saveChanges,
                 icon: const Icon(Icons.save_outlined, size: 18),
-                label: const Text('Salva modifiche'),
+                label: const Text('Salva ed esci'),
               ),
           ],
         ],
