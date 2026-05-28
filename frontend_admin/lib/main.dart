@@ -216,28 +216,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildLogo() {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-          child: Image.asset(
-            'assets/images/logo_autify_int.png',
-            height: 48,
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const Icon(Icons.psychology, color: AppTheme.primaryColor, size: 32),
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Autify',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.primaryColor,
-            letterSpacing: 0.2,
-          ),
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      child: Image.asset(
+        'assets/images/logo_autify_int.png',
+        height: 72,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => const Icon(Icons.psychology, color: AppTheme.primaryColor, size: 32),
+      ),
     );
   }
 
