@@ -236,15 +236,6 @@ TONO E FORMATTAZIONE:
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(32.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Impostazioni di Sistema', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 32),
 
   // --- GESTIONE UTENTI ---
 
@@ -691,6 +682,19 @@ TONO E FORMATTAZIONE:
       child: child,
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(32.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Impostazioni di Sistema', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 32),
+
+          if (ApiService.isAdmin) _buildUserManagementSection(),
+          if (ApiService.isAdmin) const SizedBox(height: 32),
 
 
           // 2. Protocolli di Supporto
