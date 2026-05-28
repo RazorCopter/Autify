@@ -176,7 +176,9 @@ class AggregatedEvaluation {
       dataCompilazione: json['data_compilazione']?.toString() ?? '',
       nomeOperatore: json['nome_operatore'] ?? '',
       nomeIntervistato: json['nome_intervistato'] as String?,
-      demographics: json['demographics'] as Map<String, dynamic>?,
+      demographics: json['demographics'] != null
+          ? Map<String, dynamic>.from(json['demographics'] as Map)
+          : null,
       domini: (json['domini'] as List?)
               ?.map((e) => DomainScore.fromJson(e as Map<String, dynamic>))
               .toList() ??

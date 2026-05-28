@@ -2,6 +2,14 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.16.12] - 2026-05-28
+
+### Corretto
+- **Gestione Dati Socio-Demografici nel Dettaglio Valutazione**:
+  - Risolto l'errore a runtime (`TypeError: Instance of 'minified:it<dynamic, dynamic>': type 'minified:it<dynamic, dynamic>' is not a subtype of type 'Map<String, dynamic>'`) visualizzato come schermata grigia all'accesso del dettaglio di una valutazione (es. scala POS).
+  - Il crash era causato dai casting diretti con l'operatore `as Map<String, dynamic>?` applicati alle sotto-mappe (`persona`, `informatore1`, `informatore2`, `condizioni`) della struttura `demographics` all'interno di `_buildDemographicsCard()` in `evaluation_detail_screen.dart`. In ambiente Flutter Web, le sotto-mappe decodificate sono istanze di `Map<dynamic, dynamic>` e non consentono il cast diretto.
+  - Implementata la conversione sicura tramite `Map<String, dynamic>.from(...)` e controlli di tipo `is Map` sia per i campi di rendering in `evaluation_detail_screen.dart` sia per la deserializzazione dei metadati nel modello `AggregatedEvaluation` in `evaluation_model.dart`, garantendo robustezza e compatibilità totale.
+
 ## [2.16.9] - 2026-05-28
 
 ### Aggiunto

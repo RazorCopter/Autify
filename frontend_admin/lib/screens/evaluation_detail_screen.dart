@@ -2379,11 +2379,11 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
       return const SizedBox.shrink();
     }
 
-    final persona = demo?['persona'] as Map<String, dynamic>? ?? {};
-    final inf1 = demo?['informatore1'] as Map<String, dynamic>? ?? {};
-    final inf2 = demo?['informatore2'] as Map<String, dynamic>?;
+    final persona = demo?['persona'] is Map ? Map<String, dynamic>.from(demo!['persona'] as Map) : <String, dynamic>{};
+    final inf1 = demo?['informatore1'] is Map ? Map<String, dynamic>.from(demo!['informatore1'] as Map) : <String, dynamic>{};
+    final inf2 = demo?['informatore2'] is Map ? Map<String, dynamic>.from(demo!['informatore2'] as Map) : null;
 
-    final condizioni = persona['condizioni'] as Map<String, dynamic>? ?? {};
+    final condizioni = persona['condizioni'] is Map ? Map<String, dynamic>.from(persona['condizioni'] as Map) : <String, dynamic>{};
 
     Widget buildField(String label, String value) {
       return Padding(
