@@ -207,7 +207,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: Image.asset(
-              'assets/images/Logo_Autify_dark.png',
+              'assets/images/logoAutify.png',
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => const Icon(Icons.psychology, color: Colors.white, size: 32),
             ),

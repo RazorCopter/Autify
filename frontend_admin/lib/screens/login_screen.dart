@@ -184,8 +184,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                           ),
                           child: Image.asset(
-                            'assets/images/Logo_Autify_dark.png',
-                            height: 100,
+                            'assets/images/logoAutify.png',
+                            height: 120,
                             fit: BoxFit.contain,
                             errorBuilder: (_, __, ___) => const Icon(Icons.psychology, color: Colors.white, size: 72),
                           ),
