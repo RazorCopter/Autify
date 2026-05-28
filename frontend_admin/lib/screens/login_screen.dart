@@ -170,52 +170,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Logo Bradipo Utenza con alone di luce soffuso
+                        // Logo Autify Premium
                         Container(
-                          width: 84,
-                          height: 84,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.white.withOpacity(0.12),
-                                blurRadius: 20,
+                                color: Colors.white.withOpacity(0.08),
+                                blurRadius: 40,
+                                spreadRadius: 5,
                                 offset: const Offset(0, 4),
                               ),
                             ],
                           ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(42),
-                            child: Image.asset(
-                              'assets/images/autify_logo.png',
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => const CircleAvatar(
-                                backgroundColor: AppTheme.primaryColor,
-                                child: Icon(Icons.psychology, color: Colors.white, size: 42),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        // Titolo Premium in Bianco
-                        const Text(
-                          'Autify',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        // Sottotitolo semi-trasparente
-                        Text(
-                          'Centro di Controllo Documentale',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.white.withOpacity(0.65),
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.2,
+                          child: Image.asset(
+                            'assets/images/autify_logo.png',
+                            height: 100,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => const Icon(Icons.psychology, color: Colors.white, size: 72),
                           ),
                         ),
                         const SizedBox(height: 32),
