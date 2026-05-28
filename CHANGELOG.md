@@ -2,6 +2,13 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.16.17] - 2026-05-28
+
+### Modificato
+- **Nuovo Logo / Avatar Bradipo HD**:
+  - Sostituito il precedente logo a bassa risoluzione `logo_bradipo.png` con la nuova risorsa premium ad alta definizione `avatar_bradipo_hd..png` (a doppia estensione) caricata su Git.
+  - Aggiornati i riferimenti in tutta l'applicazione, inclusa la schermata di login, l'header principale del dashboard e l'animazione di caricamento IA a puzzle.
+
 ## [2.16.16] - 2026-05-28
 
 ### Modificato

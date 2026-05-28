@@ -193,7 +193,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(42),
                             child: Image.asset(
-                              'assets/images/logo_bradipo.png',
+                              'assets/images/avatar_bradipo_hd..png',
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => const CircleAvatar(
                                 backgroundColor: AppTheme.primaryColor,
