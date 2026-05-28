@@ -122,8 +122,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
             tooltip: 'Esci',
             onPressed: () {
               try {
-                html.window.localStorage.remove('admin_authenticated');
+                html.window.localStorage.remove('jwt_token');
                 html.window.localStorage.remove('auth_role');
+                html.window.localStorage.remove('auth_username');
+                html.window.localStorage.remove('ai_enabled');
+                html.window.localStorage.remove('admin_authenticated');
                 html.window.localStorage.remove('auth_password');
               } catch (_) {}
               Navigator.pushAndRemoveUntil(

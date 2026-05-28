@@ -72,7 +72,7 @@ class AboutTermsDialog extends StatelessWidget {
                     _buildText('Autify si riserva il diritto di aggiornare o modificare i presenti Termini in qualsiasi momento. Le modifiche sostanziali verranno notificate all\'utente tramite avviso all\'interno dell\'App o via email. L\'uso continuato dell\'App dopo tale notifica costituisce accettazione dei Termini modificati.\n'),
 
                     _buildSectionTitle('8. Contatti e Supporto'),
-                    _buildText('Per qualsiasi domanda, segnalazione di bug, richiesta di supporto o per fornire feedback sulla versione pilota, l\'utente può contattarci all\'indirizzo: [Inserisci la tua email di supporto]\n'),
+                    _buildText('Per qualsiasi domanda, segnalazione di bug, richiesta di supporto o per fornire feedback sulla versione pilota, l\'utente può contattarci all\'indirizzo: gianvito.bleve@gmail.com\n'),
                   ],
                 ),
               ),
