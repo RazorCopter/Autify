@@ -2,6 +2,13 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.16.16] - 2026-05-28
+
+### Modificato
+- **Sfondo Watermark Bradipo HD post-login**:
+  - Sostituito il precedente sfondo watermark `light_neural_bg.jpg` con la nuova risorsa premium `bradipo_hd_BG.png` ad alta definizione.
+  - Regolata l'opacità dello sfondo in overlay all'**8%** (`0.08`) per un watermark elegante e discreto che garantisce la perfetta leggibilità dei testi e delle schede informative in tutto il portale amministrativo.
+
 ## [2.16.15] - 2026-05-28
 
 ### Corretto

@@ -74,13 +74,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 Positioned.fill(
                   child: _buildBody(),
                 ),
-                // Sfondo Watermark Neural Network Premium post-login (in overlay sopra il body per aggirare gli sfondi coprenti delle schede)
+                // Sfondo Watermark Bradipo HD Premium post-login (in overlay sopra il body per aggirare gli sfondi coprenti delle schede)
                 Positioned.fill(
                   child: IgnorePointer(
                     child: Opacity(
-                      opacity: 0.12, // Trasparenza soft ottimizzata al 12% per una visibilità premium bilanciata
+                      opacity: 0.08, // Trasparenza soft ottimizzata all'8% per un watermark elegante e discreto
                       child: Image.asset(
-                        'assets/images/light_neural_bg.jpg',
+                        'assets/images/bradipo_hd_BG.png',
                         fit: BoxFit.cover,
                       ),
                     ),
