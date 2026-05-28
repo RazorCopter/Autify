@@ -2,6 +2,19 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.17.1] - 2026-05-28
+
+### Modificato
+- **Ridenominazione Brand del Progetto in "Autify"**:
+  - Transizione nominale completa dell'intero sistema multi-frontend e dell'infrastruttura di rete (servizi e container Docker, proxy Nginx, MaterialApp title, intestazioni e scritte grafiche) da **AutAnalysis** al nuovo brand **Autify**.
+  - **Decisione Architetturale (Opzione B)**: Mantenuto il nome del database MongoDB esistente a `autanalysis` per prevenire regressioni strutturali ed evitare la perdita di dati clinici storici in ambiente di sviluppo e produzione. Decisione formalizzata nella mappa architetturale.
+  - **Nuovo Logo Autify**: Integrata la risorsa grafica premium ad alta definizione `autify_logo.png` a sostituzione del logo bradipo.
+- **Risoluzione Typo clinico POS**:
+  - Corretta la dicitura `QQdV` (con doppia Q) nel termine corretto **QdV** (*Qualità di Vita*) all'interno della dashboard multidimensionale dell'applicazione amministrativa.
+- **Tracciabilità Avanzata del Registro Accessi**:
+  - Estesa la persistenza del registro accessi su file (`viewer_logs.json`) per tracciare lo `username` ed il `role` di tutti gli operatori (sia `admin` che `viewer`) che eseguono correttamente la procedura di login.
+  - Sviluppata l'interfaccia di visualizzazione dei log in *Impostazioni* introducendo un pannello di filtri interattivi (`ChoiceChip`), badge grafici colorati distinti per i ruoli ed il troncamento intelligente dei dispositivi lunghi (user-agent) tramite `Tooltip` al passaggio del mouse.
+
 ## [2.17.0] - 2026-05-28
 
 ### Aggiunto

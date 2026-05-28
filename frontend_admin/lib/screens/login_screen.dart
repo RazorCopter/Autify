@@ -187,7 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(42),
                             child: Image.asset(
-                              'assets/images/avatar_bradipo_hd..png',
+                              'assets/images/autify_logo.png',
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => const CircleAvatar(
                                 backgroundColor: AppTheme.primaryColor,
@@ -199,7 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 24),
                         // Titolo Premium in Bianco
                         const Text(
-                          'AutAnalysis',
+                          'Autify',
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w900,

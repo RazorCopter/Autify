@@ -1288,7 +1288,7 @@ async def export_database():
     }
     json_bytes = json.dumps(db_dump, ensure_ascii=False, indent=2, default=str).encode('utf-8')
 
-    filename = f"autanalysis_backup_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
+    filename = f"autify_backup_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
     return StreamingResponse(
         io.BytesIO(json_bytes),
         media_type="application/json",

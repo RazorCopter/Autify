@@ -2,48 +2,48 @@ version: '3.8'
 
 services:
   # BACKEND API
-  autanalysis-api:
+  autify-api:
     build:
       context: https://github.com/RazorCopter/AutAnalysis.git#main:backend
-    container_name: AutAnalysis-API
+    container_name: Autify-API
     environment:
-      - MONGODB_URL=mongodb://autanalysis-db:27017
+      - MONGODB_URL=mongodb://autify-db:27017
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - TZ=Europe/Rome
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
     depends_on:
-      - autanalysis-db
+      - autify-db
     restart: unless-stopped
 
   # FRONTEND ADMIN (porta 8090)
-  autanalysis-admin:
+  autify-admin:
     build:
       context: https://github.com/RazorCopter/AutAnalysis.git#main:frontend_admin
-    container_name: AutAnalysis-Admin
+    container_name: Autify-Admin
     ports:
       - "8090:80"
     depends_on:
-      - autanalysis-api
+      - autify-api
     restart: unless-stopped
 
   # FRONTEND CLIENT (porta 8091)
-  autanalysis-client:
+  autify-client:
     build:
       context: https://github.com/RazorCopter/AutAnalysis.git#main:frontend_client
-    container_name: AutAnalysis-Client
+    container_name: Autify-Client
     ports:
       - "8091:80"
     depends_on:
-      - autanalysis-api
+      - autify-api
     restart: unless-stopped
 
   # DATABASE
-  autanalysis-db:
+  autify-db:
     image: mongo:latest
-    container_name: AutAnalysis_MongoDB
+    container_name: Autify_MongoDB
     restart: unless-stopped
     volumes:
-      - autanalysis_data:/data/db
+      - autify_data:/data/db
 
 volumes:
-  autanalysis_data:
+  autify_data:

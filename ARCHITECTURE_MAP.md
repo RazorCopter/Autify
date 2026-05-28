@@ -1,13 +1,20 @@
-# MAPPA TECNICO-FUNZIONALE: AutAnalysis
+# MAPPA TECNICO-FUNZIONALE: Autify
 *Single Source of Truth (SSOT) del Progetto*
 
-Il presente documento costituisce la Knowledge Base (KB) ufficiale e definitiva del sistema **AutAnalysis**. È progettato per fungere da guida tecnica e funzionale per sviluppatori e software architect, permettendo di individuare a colpo sicuro i punti di modifica e comprendere le interazioni tra i diversi componenti del sistema senza dover svolgere attività di *code discovery*.
+> [!IMPORTANT]
+> **DECISIONE ARCHITETTURALE: RIDENOMINAZIONE IN "AUTIFY" & OPZIONE B (DATABASE MONGODB)**
+> Il progetto è stato interamente rinominato da **AutAnalysis** a **Autify** in data 28/05/2026.
+> Al fine di preservare l'integrità dei dati storici ed evitare rischiose procedure di migrazione o regressioni di database e seed, è stata adottata l'**Opzione B**:
+> * Il nome del database MongoDB rimane invariato a livello di driver ed host a **`autanalysis`** (`client.autanalysis` nel codice backend).
+> * Tutte le altre componenti infrastrutturali (servizi Docker, proxy pass Nginx, anagrafiche, interfacce utente, loghi, PDF generati e scritte) adottano permanentemente il nuovo brand **`Autify`**.
+
+Il presente documento costituisce la Knowledge Base (KB) ufficiale e definitiva del sistema **Autify**. È progettato per fungere da guida tecnica e funzionale per sviluppatori e software architect, permettendo di individuare a colpo sicuro i punti di modifica e comprendere le interazioni tra i diversi componenti del sistema senza dover svolgere attività di *code discovery*.
 
 ---
 
 ## 1. OVERVIEW DEL PROGETTO E STACK TECNOLOGICO
 
-**AutAnalysis** è una piattaforma clinica multi-frontend progettata per la **Fondazione Il Tiglio Onlus**. Il suo scopo principale è digitalizzare, somministrare, calcolare e analizzare test e scale multidimensionali per la valutazione della qualità della vita (QoL) e dello sviluppo di pazienti con disturbo dello spettro autistico e altre disabilità intellettive.
+**Autify** è una piattaforma clinica multi-frontend progettata per la **Fondazione Il Tiglio Onlus**. Il suo scopo principale è digitalizzare, somministrare, calcolare e analizzare test e scale multidimensionali per la valutazione della qualità della vita (QoL) e dello sviluppo di pazienti con disturbo dello spettro autistico e altre disabilità intellettive.
 
 Il sistema supporta principalmente due scale cliniche:
 1. **Scala POS (Personal Outcomes Scale) Eterovalutativa**: Valutazione della qualità della vita strutturata su 8 domini fondamentali, con un'aggregazione diretta dei punteggi grezzi.
@@ -506,7 +513,7 @@ frontend_client/
 
 ## 3. FLUSSI PRINCIPALI DI DATI (DATA FLOW)
 
-Di seguito sono descritti i 4 flussi operativi fondamentali che governano il sistema AutAnalysis.
+Di seguito sono descritti i 4 flussi operativi fondamentali che governano il sistema Autify.
 
 ### Flusso 1: Creazione e Sincronizzazione dell'Anagrafica Paziente
 Questo flusso registra un nuovo profilo clinico e lo rende disponibile per le valutazioni.
@@ -654,7 +661,7 @@ Ad ogni sviluppo completato, prima di effettuare il commit, lancia questo prompt
 
 ```bash
 #!/bin/bash
-# AutAnalysis Automated Architecture Map Updater
+# Autify Automated Architecture Map Updater
 # Questo hook rileva le modifiche, le invia ad un modello di linguaggio locale o remoto
 # per aggiornare ARCHITECTURE_MAP.md in modo trasparente ad ogni commit.
 
@@ -677,7 +684,7 @@ GIT_DIFF=$(git diff --cached)
 if command -v ollama &> /dev/null; then
     RESPONSE=$(curl -s -X POST http://localhost:11434/api/generate -d "{
       \"model\": \"qwen2.5-coder:latest\",
-      \"prompt\": \"Sei un Software Architect. Ti fornisco il contenuto attuale del file ARCHITECTURE_MAP.md del progetto AutAnalysis ed il Git Diff delle nuove modifiche in corso di commit. Riscrivi l'intero file ARCHITECTURE_MAP.md aggiornandolo affinché rifletta fedelmente il nuovo stato dei file modificati. Mantieni l'esatta struttura originale e non aggiungere commenti esterni alla risposta. Restituisci SOLO il codice markdown del file aggiornato.\n\n=== CONTENUTO CORRENTE ARCHITECTURE_MAP.md ===\n$(cat ARCHITECTURE_MAP.md)\n\n=== GIT DIFF ===\n$GIT_DIFF\",
+      \"prompt\": \"Sei un Software Architect. Ti fornisco il contenuto attuale del file ARCHITECTURE_MAP.md del progetto Autify ed il Git Diff delle nuove modifiche in corso di commit. Riscrivi l'intero file ARCHITECTURE_MAP.md aggiornandolo affinché rifletta fedelmente il nuovo stato dei file modificati. Mantieni l'esatta struttura originale e non aggiungere commenti esterni alla risposta. Restituisci SOLO il codice markdown del file aggiornato.\n\n=== CONTENUTO CORRENTE ARCHITECTURE_MAP.md ===\n$(cat ARCHITECTURE_MAP.md)\n\n=== GIT DIFF ===\n$GIT_DIFF\",
       \"stream\": false
     }")
     

@@ -498,7 +498,7 @@ class _DocumentReaderScreenState extends State<DocumentReaderScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'AutAnalysis - Modulo AI Support',
+              'Autify - Modulo AI Support',
               style: TextStyle(
                 fontSize: 9 * _zoom,
                 color: _headerFooterColor,

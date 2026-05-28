@@ -16,7 +16,7 @@ class ClientApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AutAnalysis - Valutazione',
+      title: 'Autify - Valutazione',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: const SelectionScreen(),
@@ -277,7 +277,7 @@ class _SelectionScreenState extends State<SelectionScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'AutAnalysis',
+                'Autify',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,

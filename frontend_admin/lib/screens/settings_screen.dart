@@ -279,7 +279,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final dataUrl = 'data:application/json;base64,$b64';
       final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:.]'), '-').substring(0, 19);
       html.AnchorElement(href: dataUrl)
-        ..setAttribute('download', 'autanalysis_backup_$timestamp.json')
+        ..setAttribute('download', 'autify_backup_$timestamp.json')
         ..click();
       setState(() => _dbStatus = 'Backup esportato con successo!');
     } else {

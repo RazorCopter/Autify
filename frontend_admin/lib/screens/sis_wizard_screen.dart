@@ -132,7 +132,7 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
       _patient = patients.firstWhere((p) => p.id == widget.patientId);
 
       // Pre-compila nome operatore di default se noto
-      _operatoreController.text = "Operatore AutAnalysis";
+      _operatoreController.text = "Operatore Autify";
 
       // Correggi i codici di SEZ3C per evitare la collisione con la Sottoscala C
       if (_scale != null) {

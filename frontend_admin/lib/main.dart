@@ -33,7 +33,7 @@ class AdminApp extends StatelessWidget {
     } catch (_) {}
 
     return MaterialApp(
-      title: 'AutAnalysis Admin v$kFrontendVersion',
+      title: 'Autify Admin v$kFrontendVersion',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: isAuthenticated ? const AdminDashboard() : const LoginScreen(),
@@ -207,7 +207,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: Image.asset(
-              'assets/images/avatar_bradipo_hd..png',
+              'assets/images/autify_logo.png',
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => const Icon(Icons.psychology, color: Colors.white, size: 32),
             ),
@@ -215,7 +215,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         const SizedBox(height: 8),
         const Text(
-          'AutAnalysis',
+          'Autify',
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w800,

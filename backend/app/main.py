@@ -4,8 +4,8 @@ from .routes import admin_router, client_router, public_admin_router
 from . import auth as auth_module
 
 app = FastAPI(
-    title="AutAnalysis API",
-    description="API per la piattaforma Multi-Frontend (Admin/Client) di Valutazione Multidimensionale.",
+    title="Autify API",
+    description="API per la piattaforma Multi-Frontend (Admin/Client) Autify di Valutazione Multidimensionale.",
     version="2.17.0"
 )
 
@@ -30,4 +30,4 @@ app.include_router(client_router, prefix="/api/client")
 
 @app.get("/", tags=["Health"])
 async def health_check():
-    return {"status": "ok", "message": "AutAnalysis Backend is running"}
+    return {"status": "ok", "message": "Autify Backend is running"}

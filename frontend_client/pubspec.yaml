@@ -1,5 +1,5 @@
 name: frontend_client
-description: App Client per AutAnalysis (Data Entry)
+description: App Client per Autify (Data Entry)
 publish_to: 'none'
 version: 2.16.9+1
 

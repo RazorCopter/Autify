@@ -1519,7 +1519,7 @@ def generate_evaluation_pdf(
     story.append(Spacer(1, 0.8 * cm))
     story.append(HRFlowable(width="100%", thickness=0.5, color=BORDER))
     story.append(Paragraph(
-        f"Generato da AutAnalysis il {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M')} UTC",
+        f"Generato da Autify il {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M')} UTC",
         ParagraphStyle('Footer', parent=styles['Normal'], fontSize=8,
                        textColor=MID_GREY, fontName='Helvetica', alignment=TA_RIGHT)
     ))

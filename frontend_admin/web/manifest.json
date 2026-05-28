@@ -1,6 +1,6 @@
 {
-    "name": "AutAnalysis",
-    "short_name": "AutAnalysis",
+    "name": "Autify",
+    "short_name": "Autify",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#1E3A8A",

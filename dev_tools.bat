@@ -1,11 +1,11 @@
 @echo off
-title AutAnalysis Dev Tools
+title Autify Dev Tools
 color 0B
 
 :menu
 cls
 echo ========================================================
-echo               AutAnalysis Dev Tools Menu
+echo               Autify Dev Tools Menu
 echo ========================================================
 echo.
 echo  [1] Avvia Backend (Docker Compose Up)

@@ -132,7 +132,7 @@ async def ensure_default_admin():
             "created_at": now,
             "updated_at": now,
         })
-        print("[AutAnalysis] Bootstrap: utente admin/admin creato (cambia la password al primo accesso).")
+        print("[Autify] Bootstrap: utente admin/admin creato (cambia la password al primo accesso).")
     else:
         # Migrazione: assicura che il documento admin abbia is_default=True
         await users_collection.update_one(
