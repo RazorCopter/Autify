@@ -181,7 +181,7 @@ class ApiService {
         'POST',
         Uri.parse('$baseUrl/import-scale'),
       );
-      request.headers['X-Admin-Password'] = kAdminPassword;
+      request.headers['Authorization'] = 'Bearer $kAuthToken';
       
       // In Flutter Web, il file ha i bytes esposti direttamente se letto con withData: true
       if (file.bytes != null) {
@@ -493,7 +493,7 @@ class ApiService {
         'POST',
         Uri.parse('$baseUrl/import-db'),
       );
-      request.headers['X-Admin-Password'] = kAdminPassword;
+      request.headers['Authorization'] = 'Bearer $kAuthToken';
       if (file.bytes != null) {
         request.files.add(http.MultipartFile.fromBytes(
           'file',
