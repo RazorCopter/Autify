@@ -71,18 +71,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
           Expanded(
             child: Stack(
               children: [
-                // Filigrana/Background Bradipo Stilizzato
-                Positioned(
-                  bottom: -60,
-                  right: -60,
-                  width: 480,
-                  height: 480,
+                // Sfondo Watermark Neural Network Premium post-login
+                Positioned.fill(
                   child: IgnorePointer(
                     child: Opacity(
-                      opacity: 0.06,
+                      opacity: 0.08, // Ottimale trasparenza soft per non disturbare la lettura dei testi
                       child: Image.asset(
-                        'assets/images/sloth_cool_bg.png',
-                        fit: BoxFit.contain,
+                        'assets/images/light_neural_bg.jpg',
+                        fit: BoxFit.cover,
                       ),
                     ),
                   ),
