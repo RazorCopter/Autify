@@ -46,12 +46,14 @@ def get_viewer_logs():
     except Exception:
         return []
 
-def log_viewer_connection(ip_address: str, device_name: str):
+def log_viewer_connection(username: str, role: str, ip_address: str, device_name: str):
     logs = get_viewer_logs()
     
     # Crea il nuovo record (datetime ISO)
     new_log = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "username": username,
+        "role": role,
         "ip_address": ip_address,
         "device_name": device_name
     }

@@ -1104,7 +1104,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                       ? 'Valutazione dell\'intensità dei bisogni di sostegno'
                       : (isSM 
                           ? 'Valutazione osservativa della qualità di vita' 
-                          : 'Valutazione degli esiti personali e della QQdV percepita'),
+                          : 'Valutazione degli esiti personali e della QdV percepita'),
                   style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.7)),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

@@ -188,13 +188,17 @@ async def auth_login(payload: LoginRequest, request: Request):
     role = user_doc.get("role", "viewer")
     ai_enabled = user_doc.get("ai_enabled", False)
 
-    # Log accesso viewer (mantiene il log su file per backward-compat)
-    if role == "viewer":
-        client_ip = request.client.host if request.client else "Sconosciuto"
-        x_forwarded_for = request.headers.get("X-Forwarded-For")
-        if x_forwarded_for:
-            client_ip = x_forwarded_for.split(",")[0].strip()
-        auth_manager.log_viewer_connection(ip_address=client_ip, device_name=payload.device_id)
+    # Log accesso operatore (mantiene il log su file per backward-compat ed estende a tutti)
+    client_ip = request.client.host if request.client else "Sconosciuto"
+    x_forwarded_for = request.headers.get("X-Forwarded-For")
+    if x_forwarded_for:
+        client_ip = x_forwarded_for.split(",")[0].strip()
+    auth_manager.log_viewer_connection(
+        username=user_doc["username"],
+        role=role,
+        ip_address=client_ip,
+        device_name=payload.device_id
+    )
 
     token = auth_module.create_access_token(
         username=user_doc["username"],

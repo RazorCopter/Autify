@@ -77,42 +77,162 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) Navigator.pop(context);
 
     if (mounted) {
+      String selectedRole = 'all';
+
       showDialog(
         context: context,
         builder: (context) {
-          return AlertDialog(
-            title: const Text('Registro Accessi Viewer', style: TextStyle(fontWeight: FontWeight.bold)),
-            content: SizedBox(
-              width: 800,
-              height: 500,
-              child: logs.isEmpty
-                  ? const Center(child: Text('Nessun accesso registrato.'))
-                  : SingleChildScrollView(
-                      child: DataTable(
-                        headingRowColor: WidgetStateProperty.all(const Color(0xFFE8EEF8)),
-                        columns: const [
-                          DataColumn(label: Text('Data e Ora', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Indirizzo IP', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Dispositivo/PC', style: TextStyle(fontWeight: FontWeight.bold))),
+          return StatefulBuilder(
+            builder: (context, setStateDialog) {
+              final filteredLogs = logs.where((log) {
+                if (selectedRole == 'all') return true;
+                final role = (log['role'] ?? 'viewer').toString().toLowerCase();
+                return role == selectedRole;
+              }).toList();
+
+              return AlertDialog(
+                title: const Text('Registro Accessi Operatori', style: TextStyle(fontWeight: FontWeight.bold)),
+                content: SizedBox(
+                  width: 900,
+                  height: 600,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Filtro per Ruolo
+                      Row(
+                        children: [
+                          const Text('Filtra per ruolo: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          const SizedBox(width: 12),
+                          ChoiceChip(
+                            selectedColor: const Color(0xFFE8EEF8),
+                            checkmarkColor: const Color(0xFF1E3A8A),
+                            labelStyle: TextStyle(
+                              color: selectedRole == 'all' ? const Color(0xFF1E3A8A) : Colors.black87,
+                              fontWeight: selectedRole == 'all' ? FontWeight.bold : FontWeight.normal,
+                            ),
+                            selected: selectedRole == 'all',
+                            label: const Text('Tutti'),
+                            onSelected: (selected) {
+                              if (selected) setStateDialog(() => selectedRole = 'all');
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          ChoiceChip(
+                            selectedColor: Colors.blue.withValues(alpha: 0.15),
+                            checkmarkColor: Colors.blue,
+                            labelStyle: TextStyle(
+                              color: selectedRole == 'admin' ? Colors.blue : Colors.black87,
+                              fontWeight: selectedRole == 'admin' ? FontWeight.bold : FontWeight.normal,
+                            ),
+                            selected: selectedRole == 'admin',
+                            label: const Text('Admin'),
+                            onSelected: (selected) {
+                              if (selected) setStateDialog(() => selectedRole = 'admin');
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          ChoiceChip(
+                            selectedColor: Colors.green.withValues(alpha: 0.15),
+                            checkmarkColor: Colors.green,
+                            labelStyle: TextStyle(
+                              color: selectedRole == 'viewer' ? Colors.green : Colors.black87,
+                              fontWeight: selectedRole == 'viewer' ? FontWeight.bold : FontWeight.normal,
+                            ),
+                            selected: selectedRole == 'viewer',
+                            label: const Text('Viewer'),
+                            onSelected: (selected) {
+                              if (selected) setStateDialog(() => selectedRole = 'viewer');
+                            },
+                          ),
                         ],
-                        rows: logs.map<DataRow>((log) {
-                          DateTime dt = DateTime.tryParse(log['timestamp'] ?? '') ?? DateTime.now();
-                          String formattedDate = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-                          return DataRow(cells: [
-                            DataCell(Text(formattedDate)),
-                            DataCell(Text(log['ip_address'] ?? 'N/A')),
-                            DataCell(Text(log['device_name'] ?? 'N/A')),
-                          ]);
-                        }).toList(),
                       ),
-                    ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Chiudi'),
-              ),
-            ],
+                      const SizedBox(height: 16),
+                      // Tabella
+                      Expanded(
+                        child: filteredLogs.isEmpty
+                            ? const Center(child: Text('Nessun accesso registrato per questo filtro.'))
+                            : Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: const Color(0xFFE8EEF8)),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: SingleChildScrollView(
+                                    child: DataTable(
+                                      headingRowColor: WidgetStateProperty.all(const Color(0xFFE8EEF8)),
+                                      columns: const [
+                                        DataColumn(label: Text('Data e Ora', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        DataColumn(label: Text('Utenza', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        DataColumn(label: Text('Ruolo', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        DataColumn(label: Text('Indirizzo IP', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        DataColumn(label: Text('Dispositivo/PC', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      ],
+                                      rows: filteredLogs.map<DataRow>((log) {
+                                        DateTime dt = DateTime.tryParse(log['timestamp'] ?? '') ?? DateTime.now();
+                                        String formattedDate = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+                                        
+                                        final username = log['username'] ?? 'Legacy (N/A)';
+                                        final role = (log['role'] ?? 'viewer').toString().toLowerCase();
+                                        final isRoleAdmin = role == 'admin';
+
+                                        // Dispositivo troncato con tooltip
+                                        final deviceName = log['device_name'] ?? 'N/A';
+                                        final displayDevice = deviceName.length > 40 
+                                            ? '${deviceName.substring(0, 37)}...' 
+                                            : deviceName;
+
+                                        return DataRow(cells: [
+                                          DataCell(Text(formattedDate)),
+                                          DataCell(Text(
+                                            username, 
+                                            style: const TextStyle(fontWeight: FontWeight.w600)
+                                          )),
+                                          DataCell(
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: isRoleAdmin ? Colors.blue.withValues(alpha: 0.1) : Colors.green.withValues(alpha: 0.1),
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: isRoleAdmin ? Colors.blue.withValues(alpha: 0.4) : Colors.green.withValues(alpha: 0.4),
+                                                ),
+                                              ),
+                                              child: Text(
+                                                role.toUpperCase(),
+                                                style: TextStyle(
+                                                  color: isRoleAdmin ? Colors.blue.shade800 : Colors.green.shade800,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          DataCell(Text(log['ip_address'] ?? 'N/A')),
+                                          DataCell(
+                                            Tooltip(
+                                              message: deviceName,
+                                              child: Text(displayDevice),
+                                            ),
+                                          ),
+                                        ]);
+                                      }).toList(),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Chiudi'),
+                  ),
+                ],
+              );
+            },
           );
         },
       );
