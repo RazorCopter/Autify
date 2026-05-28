@@ -193,6 +193,17 @@ class _WizardScreenState extends State<WizardScreen>
       return KeyEventResult.ignored;
     }
 
+    final isSanMartin = widget.scaleId.toLowerCase().contains('martin') ||
+        widget.scaleId.toLowerCase().contains('san') ||
+        widget.scaleId.toLowerCase().contains('sanmartin') ||
+        (_scaleNome ?? '').toLowerCase().contains('martin') ||
+        (_scaleNome ?? '').toLowerCase().contains('san') ||
+        (_scaleNome ?? '').toLowerCase().contains('sanmartin');
+
+    if (isSanMartin && !_demographicsDone) {
+      return KeyEventResult.ignored;
+    }
+
     final is3D = _isSis3DQuestion(widget.scaleId, _currentKey);
     
     if (is3D) {

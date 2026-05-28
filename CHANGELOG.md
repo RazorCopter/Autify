@@ -2,6 +2,15 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.17.2] - 2026-05-28
+
+### Corretto
+- **Risoluzione Encoding e Tastiera Dati Socio-Demografici (San Martín)**:
+  - Risolti gli errori di codifica dei caratteri accentati ("à", "í") all'interno della scheda dei dati socio-demografici del frontend admin.
+  - Disabilitato il listener globale dei tasti numerici rapidi (da 1 a 4) durante la compilazione della scheda dei dati socio-demografici sia per il client che per l'admin, impedendo che i tasti venissero intercettati a livello globale e ripristinando la normale digitazione numerica.
+- **Sincronizzazione Versioni**:
+  - Incrementata la versione globale della suite a `2.17.2` (backend API, frontend_admin, frontend_client).
+
 ## [2.17.1] - 2026-05-28
 
 ### Modificato

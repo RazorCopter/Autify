@@ -199,6 +199,17 @@ class _WizardScreenState extends State<WizardScreen>
       return KeyEventResult.ignored;
     }
 
+    final isSanMartin = widget.scaleId.toLowerCase().contains('martin') ||
+        widget.scaleId.toLowerCase().contains('san') ||
+        widget.scaleId.toLowerCase().contains('sanmartin') ||
+        (_scaleNome ?? '').toLowerCase().contains('martin') ||
+        (_scaleNome ?? '').toLowerCase().contains('san') ||
+        (_scaleNome ?? '').toLowerCase().contains('sanmartin');
+
+    if (isSanMartin && !_demographicsDone) {
+      return KeyEventResult.ignored;
+    }
+
     final is3D = _isSis3DQuestion(widget.scaleId, _currentKey);
     
     if (is3D) {
@@ -412,7 +423,7 @@ class _WizardScreenState extends State<WizardScreen>
       );
     }).toList();
 
-    // Raccoglie i dati socio-demografici se la scala Ã¨ San MartÃ­n
+    // Raccoglie i dati socio-demografici se la scala è San Martín
     Map<String, dynamic>? demographicsData;
     final isSanMartin = widget.scaleId.toLowerCase().contains('martin') ||
         widget.scaleId.toLowerCase().contains('san') ||
@@ -1581,7 +1592,7 @@ class _WizardScreenState extends State<WizardScreen>
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Informazioni richieste dal protocollo Scala San MartÃ­n',
+                    'Informazioni richieste dal protocollo Scala San Martín',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
                   ),
@@ -1593,7 +1604,7 @@ class _WizardScreenState extends State<WizardScreen>
                   
                   DropdownButtonFormField<String>(
                     value: _livelloAssistenza,
-                    decoration: _inputDecoration('Livello di necessitÃ  di assistenza', Icons.assistant_direction_outlined),
+                    decoration: _inputDecoration('Livello di necessità di assistenza', Icons.assistant_direction_outlined),
                     items: const [
                       DropdownMenuItem(value: 'Esteso', child: Text('Esteso')),
                       DropdownMenuItem(value: 'Generalizzato', child: Text('Generalizzato')),
@@ -1622,7 +1633,7 @@ class _WizardScreenState extends State<WizardScreen>
                         child: TextFormField(
                           controller: _percentualeDisabilitaController,
                           keyboardType: TextInputType.number,
-                          decoration: _inputDecoration('DisabilitÃ  (%)', Icons.percent),
+                          decoration: _inputDecoration('Disabilità (%)', Icons.percent),
                           validator: (val) {
                             if (val == null || val.isEmpty) return 'Richiesto';
                             final n = int.tryParse(val);
@@ -1655,7 +1666,7 @@ class _WizardScreenState extends State<WizardScreen>
                   ),
                   const SizedBox(height: 8),
 
-                  _buildModernCheckbox('DisabilitÃ  fisica', _disFisica, (val) {
+                  _buildModernCheckbox('Disabilità fisica', _disFisica, (val) {
                     setState(() {
                       _disFisica = val ?? false;
                       if (!_disFisica) {
@@ -1680,7 +1691,7 @@ class _WizardScreenState extends State<WizardScreen>
                     ),
                   ],
 
-                  _buildModernCheckbox('DisabilitÃ  sensoriale', _disSensoriale, (val) {
+                  _buildModernCheckbox('Disabilità sensoriale', _disSensoriale, (val) {
                     setState(() {
                       _disSensoriale = val ?? false;
                       if (!_disSensoriale) {
@@ -1694,7 +1705,7 @@ class _WizardScreenState extends State<WizardScreen>
                       padding: const EdgeInsets.only(left: 24.0, bottom: 8),
                       child: Column(
                         children: [
-                          _buildModernCheckbox('Uditiva/sorditÃ ', _uditoSordita, (val) {
+                          _buildModernCheckbox('Uditiva/sordità', _uditoSordita, (val) {
                             setState(() => _uditoSordita = val ?? false);
                           }),
                           _buildModernCheckbox('Visiva', _visiva, (val) {

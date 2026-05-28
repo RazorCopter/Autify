@@ -1,7 +1,7 @@
 name: frontend_client
 description: App Client per Autify (Data Entry)
 publish_to: 'none'
-version: 2.16.9+1
+version: 2.17.2
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
