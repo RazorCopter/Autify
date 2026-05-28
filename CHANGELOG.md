@@ -2,6 +2,12 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.17.4] - 2026-05-28
+
+### Corretto
+- **Risoluzione Problema Caching Build Docker su Portainer**: Sostituiti gli URL Git di GitHub all'interno del parametro `context` di `docker-compose.yml` con percorsi relativi locali (`./backend`, `./frontend_admin`, `./frontend_client`). Questo impedisce a Docker di riutilizzare check-out obsoleti memorizzati nella cache interna e lo costringe ad utilizzare direttamente i file fisici aggiornati da Portainer sul disco dell'host.
+- **Sincronizzazione e Cache Busting**: Incrementata la versione globale a `2.17.4` e configurato `CACHE_BUST=2.17.4` su tutti i moduli per forzare la ricompilazione completa ed escludere qualsiasi persistenza di cache obsoleta.
+
 ## [2.17.3] - 2026-05-28
 
 ### Modificato

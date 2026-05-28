@@ -4,9 +4,9 @@ services:
   # BACKEND API
   autify-api:
     build:
-      context: https://github.com/RazorCopter/AutAnalysis.git#main:backend
+      context: ./backend
       args:
-        - CACHE_BUST=2.17.3
+        - CACHE_BUST=2.17.4
     container_name: Autify-API
     environment:
       - MONGODB_URL=mongodb://autify-db:27017
@@ -20,9 +20,9 @@ services:
   # FRONTEND ADMIN (porta 8090)
   autify-admin:
     build:
-      context: https://github.com/RazorCopter/AutAnalysis.git#main:frontend_admin
+      context: ./frontend_admin
       args:
-        - CACHE_BUST=2.17.3
+        - CACHE_BUST=2.17.4
     container_name: Autify-Admin
     ports:
       - "8090:80"
@@ -33,9 +33,9 @@ services:
   # FRONTEND CLIENT (porta 8091)
   autify-client:
     build:
-      context: https://github.com/RazorCopter/AutAnalysis.git#main:frontend_client
+      context: ./frontend_client
       args:
-        - CACHE_BUST=2.17.3
+        - CACHE_BUST=2.17.4
     container_name: Autify-Client
     ports:
       - "8091:80"
