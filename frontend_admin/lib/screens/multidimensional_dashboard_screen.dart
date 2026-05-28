@@ -2865,7 +2865,7 @@ class _SlothPuzzleLoaderState extends State<_SlothPuzzleLoader> with SingleTicke
                                       -1.0 + (2.0 / (N - 1)) * piece.row,
                                     ),
                                     child: Image.asset(
-                                      'assets/images/avatar_bradipo_hd..png',
+                                      'assets/images/logo_autify_int.png',
                                       width: imageSize,
                                       height: imageSize,
                                       fit: BoxFit.cover,

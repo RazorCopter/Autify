@@ -219,23 +219,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Column(
       children: [
         Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: const LinearGradient(
-              colors: [AppTheme.primaryColor, AppTheme.purpleColor],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Image.asset(
-              'assets/images/avatar_bradipo_hd..png',
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const Icon(Icons.psychology, color: Colors.white, size: 32),
-            ),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+          child: Image.asset(
+            'assets/images/logo_autify_int.png',
+            height: 48,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const Icon(Icons.psychology, color: AppTheme.primaryColor, size: 32),
           ),
         ),
         const SizedBox(height: 8),
