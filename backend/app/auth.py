@@ -7,7 +7,7 @@ from .database import users_collection
 
 # ── Configurazione JWT ──────────────────────────────────────────────────────
 
-JWT_SECRET = os.getenv("JWT_SECRET_KEY", "change_me_in_production_please")
+JWT_SECRET = os.getenv("JWT_SECRET_KEY", "").strip() or "change_me_in_production_please"
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_HOURS = 8
 
@@ -36,15 +36,18 @@ def verify_password(plain: str, hashed: str) -> bool:
 # ── JWT ─────────────────────────────────────────────────────────────────────
 
 def create_access_token(username: str, role: str, ai_enabled: bool) -> str:
-    """Genera un JWT firmato con scadenza di JWT_EXPIRY_HOURS ore."""
+    """Genera un JWT firmato con scadenza di JWT_EXPIRY_HOURS ore (epoch integer timestamp)."""
     payload = {
         "sub": username,
         "role": role,
         "ai_enabled": ai_enabled,
-        "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRY_HOURS),
-        "iat": datetime.now(timezone.utc),
+        "exp": int((datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRY_HOURS)).timestamp()),
+        "iat": int(datetime.now(timezone.utc).timestamp()),
     }
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    if isinstance(token, bytes):
+        return token.decode("utf-8")
+    return token
 
 
 def decode_access_token(token: str) -> dict:
