@@ -906,9 +906,13 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
                   const Text("Condizioni cliniche associate (Selezionare tutte quelle applicabili):",
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textPrimary)),
                   const SizedBox(height: 10),
-                  GridView.count(
-                    crossAxisCount: isTablet ? 3 : 2,
-                    childAspectRatio: 4.5,
+                  GridView(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: isTablet ? 3 : 2,
+                      mainAxisExtent: 36,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 4,
+                    ),
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     children: [

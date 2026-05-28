@@ -2,6 +2,12 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.17.6] - 2026-05-28
+
+### Ottimizzato
+- **Razionalizzazione Spazi Dati Socio-Demografici (Wizard SIS)**: Ottimizzato il layout del grid delle condizioni cliniche associate all'interno dello step di Intake della scala SIS sia per `frontend_admin` che per `frontend_client`. Sostituito il precedente `GridView.count` (che introduceva enormi spazi vuoti verticali su schermi desktop/tablet a causa del `childAspectRatio` fisso) con un `GridView` flessibile guidato da `SliverGridDelegateWithFixedCrossAxisCount` ed un `mainAxisExtent` bloccato a `36`. Questo garantisce una corretta spaziatura e dimensioni stabili di 36px per riga a prescindere dalla larghezza dello schermo, eliminando tutti gli enormi spazi vuoti tra le righe di checkbox.
+- **Sincronizzazione e Cache Busting**: Incrementata la versione globale a `2.17.6` e configurato `CACHE_BUST=2.17.6` per tutti i moduli.
+
 ## [2.17.5] - 2026-05-28
 
 ### Aggiunto
