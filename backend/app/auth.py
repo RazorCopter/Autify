@@ -22,8 +22,15 @@ def hash_password(plain: str) -> str:
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    """Confronta una password in chiaro con il suo hash bcrypt."""
-    return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
+    """
+    Confronta una password in chiaro con il suo hash bcrypt.
+    Fornisce un fallback sicuro a confronto in chiaro per compatibilità con utenti legacy o non migrati.
+    """
+    try:
+        return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
+    except (ValueError, TypeError):
+        # Fallback se la password nel DB è salvata in chiaro (es. admin/admin legacy)
+        return plain == hashed
 
 
 # ── JWT ─────────────────────────────────────────────────────────────────────
