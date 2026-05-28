@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'app_version.dart';
 import 'services/settings_notifier.dart';
 import 'screens/settings_screen.dart';
+import 'screens/about_terms_dialog.dart';
 import 'screens/protocols_screen.dart';
 import 'screens/anagrafica_screen.dart';
 import 'screens/selection_screen.dart';
@@ -144,6 +145,27 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   'v$kFrontendVersion',
                   style: TextStyle(fontSize: 10, color: AppTheme.textSecondary.withValues(alpha: 0.5)),
                 ),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => const AboutTermsDialog(),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(4),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Text(
+                      'About',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryColor.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -207,7 +229,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: Image.asset(
-              'assets/images/logoAutify.png',
+              'assets/images/avatar_bradipo_hd..png',
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => const Icon(Icons.psychology, color: Colors.white, size: 32),
             ),
