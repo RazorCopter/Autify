@@ -2,6 +2,14 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.16.15] - 2026-05-28
+
+### Corretto
+- **Visibilità Watermark "Light Neural" post-login**:
+  - Risolto il problema per cui l'immagine di sfondo a rete neurale (`light_neural_bg.jpg`) non era visibile sulle schede post-login.
+  - La causa era il posizionamento del watermark *sotto* le pagine nel `Stack` di `main.dart`: gli sfondi solidi delle singole pagine coprivano completamente il watermark.
+  - Spostato il watermark posizionandolo *sopra* le pagine (in fondo all'elenco dei figli dello `Stack`), rendendolo visibile come overlay con un'opacità ottimale del **12%** (`0.12`). Grazie ad `IgnorePointer`, il tocco e l'interazione con gli elementi sottostanti non vengono ostacolati.
+
 ## [2.16.14] - 2026-05-28
 
 ### Modificato

@@ -71,20 +71,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
           Expanded(
             child: Stack(
               children: [
-                // Sfondo Watermark Neural Network Premium post-login
+                Positioned.fill(
+                  child: _buildBody(),
+                ),
+                // Sfondo Watermark Neural Network Premium post-login (in overlay sopra il body per aggirare gli sfondi coprenti delle schede)
                 Positioned.fill(
                   child: IgnorePointer(
                     child: Opacity(
-                      opacity: 0.08, // Ottimale trasparenza soft per non disturbare la lettura dei testi
+                      opacity: 0.12, // Trasparenza soft ottimizzata al 12% per una visibilità premium bilanciata
                       child: Image.asset(
                         'assets/images/light_neural_bg.jpg',
                         fit: BoxFit.cover,
                       ),
                     ),
                   ),
-                ),
-                Positioned.fill(
-                  child: _buildBody(),
                 ),
               ],
             ),
