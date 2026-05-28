@@ -5,7 +5,7 @@ import '../models/user_model.dart';
 
 class ApiService {
   // Puntamento all'ambiente di produzione
-  static const String baseUrl = 'https://aut.ghome.it';
+  static const String baseUrl = 'https://www.autify.it';
 
   // --- SCALE ---
   Future<List<ScaleModel>> getScales() async {

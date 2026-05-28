@@ -50,7 +50,7 @@ class ApiService {
   // possiamo usare un URL relativo o parametrizzato. In dev locale su Flutter web, 
   // potremmo aver bisogno dell'url completo se non passiamo da Nginx.
   // Assumiamo che in produzione sia /api/admin.
-  static const String baseUrl = 'https://aut.ghome.it/api/admin';
+  static const String baseUrl = 'https://www.autify.it/api/admin';
   
   // --- AUTHENTICATION ---
   
@@ -588,7 +588,7 @@ class ApiService {
   }
 
   // --- CLIENT-SIDE ENDPOINTS INTEGRATED ---
-  static const String clientBaseUrl = 'https://aut.ghome.it/api/client';
+  static const String clientBaseUrl = 'https://www.autify.it/api/client';
 
   Future<ScaleModel?> getScaleById(String scaleId) async {
     try {

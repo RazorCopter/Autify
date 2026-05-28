@@ -2,6 +2,13 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.17.3] - 2026-05-28
+
+### Modificato
+- **Transizione Domini di Produzione**: Aggiornati tutti gli endpoint API e URL di produzione all'interno di `frontend_admin`, `frontend_client` e `frontend_legacy` dal vecchio dominio `aut.ghome.it` al nuovo dominio ufficiale **`www.autify.it`**.
+- **Aggiornamento CORS**: Aggiornata la configurazione e la documentazione CORS nel backend FastAPI (`main.py`) e in `ARCHITECTURE_MAP.md` per allinearsi al nuovo dominio ufficiale.
+- **Sincronizzazione e Cache Busting**: Incrementata la versione globale a `2.17.3` e configurato `CACHE_BUST=2.17.3` in `docker-compose.yml` per forzare la compilazione pulita dei moduli Flutter Web sul server di produzione Portainer.
+
 ## [2.17.2] - 2026-05-28
 
 ### Corretto

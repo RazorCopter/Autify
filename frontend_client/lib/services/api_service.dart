@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/models.dart';
 
 class ApiService {
-  static const String baseUrl = 'https://aut.ghome.it/api/client';
+  static const String baseUrl = 'https://www.autify.it/api/client';
 
   Future<List<PatientModel>> getPatients() async {
     try {

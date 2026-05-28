@@ -6,7 +6,7 @@ from . import auth as auth_module
 app = FastAPI(
     title="Autify API",
     description="API per la piattaforma Multi-Frontend (Admin/Client) Autify di Valutazione Multidimensionale.",
-    version="2.17.2"
+    version="2.17.3"
 )
 
 @app.on_event("startup")
@@ -17,7 +17,7 @@ async def startup_event():
 # Configurazione CORS per permettere le chiamate dai frontend (Admin e Client)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Modificare in prod inserendo i domini specifici come https://aut.ghome.it
+    allow_origins=["*"],  # Modificare in prod inserendo i domini specifici come https://www.autify.it
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
