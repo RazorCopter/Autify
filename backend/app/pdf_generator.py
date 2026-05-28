@@ -1164,12 +1164,6 @@ def generate_evaluation_pdf(
     # ── Info paziente / valutazione ─────────────────────────────────────────
     if is_sanmartin:
         story.append(_make_san_martin_meta_table(evaluation, patient, scale, styles))
-        demographics = evaluation.get("demographics")
-        if demographics:
-            story.append(Spacer(1, 0.4 * cm))
-            story.append(Paragraph("Dati Socio-Demografici di Contesto", section_header))
-            story.append(Spacer(1, 0.15 * cm))
-            story.append(_make_san_martin_demographics_table(demographics, styles))
     else:
         nome_paziente = f"{patient.get('nome', '')} {patient.get('cognome', '')}"
         data_str = _format_pdf_date(evaluation.get("data_compilazione", datetime.now(timezone.utc)))
@@ -1197,6 +1191,14 @@ def generate_evaluation_pdf(
             ('LEFTPADDING', (0, 0), (-1, -1), 6),
         ]))
         story.append(meta_table)
+        
+    demographics = evaluation.get("demographics")
+    if demographics:
+        story.append(Spacer(1, 0.4 * cm))
+        story.append(Paragraph("Dati Socio-Demografici di Contesto", section_header))
+        story.append(Spacer(1, 0.15 * cm))
+        story.append(_make_san_martin_demographics_table(demographics, styles))
+
     story.append(Spacer(1, 0.2 * cm))
 
     # ── Riepilogo QV o SIS (solo San Martín o SIS) ───────────────────────────────────

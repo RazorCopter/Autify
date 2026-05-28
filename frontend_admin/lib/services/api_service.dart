@@ -330,13 +330,14 @@ class ApiService {
 
   Future<AggregatedEvaluation?> updateEvaluationAnswers(
       String evaluationId, List<AnswerModel> risposte,
-      {String? nomeOperatore, String? nomeIntervistato}) async {
+      {String? nomeOperatore, String? nomeIntervistato, Map<String, dynamic>? demographics}) async {
     try {
       final Map<String, dynamic> body = {
         'risposte': risposte.map((r) => r.toJson()).toList(),
       };
       if (nomeOperatore != null) body['nome_operatore'] = nomeOperatore;
       if (nomeIntervistato != null) body['nome_intervistato'] = nomeIntervistato;
+      if (demographics != null) body['demographics'] = demographics;
 
       final response = await http.put(
         Uri.parse('$baseUrl/evaluations/$evaluationId'),

@@ -41,6 +41,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
   // Teniamo una copia mutabile delle risposte per l'editing inline
   List<AnswerModel> _editableAnswers = [];
   final Map<String, TextEditingController> _noteControllers = {};
+  Map<String, dynamic>? _editableDemographics;
   
   bool _isEditMode = false;
   bool _showPercentilesInSisChart = false;
@@ -167,6 +168,22 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     _operatoreController.text = evaluation.nomeOperatore;
     _intervistatoController.text = evaluation.nomeIntervistato ?? '';
 
+    if (evaluation.demographics != null) {
+      _editableDemographics = jsonDecode(jsonEncode(evaluation.demographics));
+    } else {
+      _editableDemographics = {
+        'persona': {
+          'livello_assistenza': null,
+          'livello_dipendenza': null,
+          'percentuale_disabilita': null,
+          'anno_certificato': null,
+          'condizioni': {}
+        },
+        'informatore1': {},
+        'informatore2': null
+      };
+    }
+
     _loadAnalysis();
   }
 
@@ -225,6 +242,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
       _editableAnswers,
       nomeOperatore: _operatoreController.text.isNotEmpty ? _operatoreController.text : null,
       nomeIntervistato: _intervistatoController.text.isNotEmpty ? _intervistatoController.text : null,
+      demographics: _editableDemographics,
     );
     if (updated != null && mounted) {
       setState(() {
@@ -512,6 +530,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               _buildMetaCard(),
               const SizedBox(height: 20),
               _buildClinicalCard(),
+              const SizedBox(height: 20),
+              _buildDemographicsCard(),
               const SizedBox(height: 20),
               if (isSis && _analysis != null) ...[
                 _buildSisDashboard(),
@@ -2351,6 +2371,484 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     final scores = question?.opzioni.map((option) => option.punteggio).toSet().toList() ?? <int>[];
     scores.sort();
     return scores.isNotEmpty ? scores : <int>[1, 2, 3];
+  }
+
+  Widget _buildDemographicsCard() {
+    final demo = _editableDemographics;
+    if (demo == null && !_isEditMode) {
+      return const SizedBox.shrink();
+    }
+
+    final persona = demo?['persona'] as Map<String, dynamic>? ?? {};
+    final inf1 = demo?['informatore1'] as Map<String, dynamic>? ?? {};
+    final inf2 = demo?['informatore2'] as Map<String, dynamic>?;
+
+    final condizioni = persona['condizioni'] as Map<String, dynamic>? ?? {};
+
+    Widget buildField(String label, String value) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8.0),
+        child: RichText(
+          text: TextSpan(
+            style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
+            children: [
+              TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textSecondary)),
+              TextSpan(text: value),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.analytics_outlined, size: 20, color: AppTheme.primaryColor),
+                const SizedBox(width: 8),
+                const Text('Dati Socio-Demografici di Contesto',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                const Spacer(),
+                if (!_isEditMode && demo == null)
+                  const Text('Non specificati', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary, fontStyle: FontStyle.italic)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (_isEditMode) ...[
+              const Text('Persona Esaminata', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: ['Esteso', 'Generalizzato'].contains(persona['livello_assistenza']) ? persona['livello_assistenza'] as String? : null,
+                      decoration: const InputDecoration(labelText: 'Livello Assistenza', border: OutlineInputBorder()),
+                      items: const [
+                        DropdownMenuItem(value: 'Esteso', child: Text('Esteso')),
+                        DropdownMenuItem(value: 'Generalizzato', child: Text('Generalizzato')),
+                      ],
+                      onChanged: (val) {
+                        setState(() {
+                          demo!['persona']['livello_assistenza'] = val;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: ['Grado I', 'Grado II', 'Grado III'].contains(persona['livello_dipendenza']) ? persona['livello_dipendenza'] as String? : null,
+                      decoration: const InputDecoration(labelText: 'Livello Dipendenza', border: OutlineInputBorder()),
+                      items: const [
+                        DropdownMenuItem(value: 'Grado I', child: Text('Grado I (Lieve)')),
+                        DropdownMenuItem(value: 'Grado II', child: Text('Grado II (Medio)')),
+                        DropdownMenuItem(value: 'Grado III', child: Text('Grado III (Grave)')),
+                      ],
+                      onChanged: (val) {
+                        setState(() {
+                          demo!['persona']['livello_dipendenza'] = val;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: persona['percentuale_disabilita']?.toString() ?? '',
+                      decoration: const InputDecoration(labelText: 'Percentuale Invalidità / Disabilità (%)', border: OutlineInputBorder()),
+                      keyboardType: TextInputType.number,
+                      onChanged: (val) {
+                        demo!['persona']['percentuale_disabilita'] = int.tryParse(val);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: persona['anno_certificato']?.toString() ?? '',
+                      decoration: const InputDecoration(labelText: 'Anno Certificazione Invalidità', border: OutlineInputBorder()),
+                      keyboardType: TextInputType.number,
+                      onChanged: (val) {
+                        demo!['persona']['anno_certificato'] = int.tryParse(val);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Text('Condizioni / Diagnosi (Seleziona tutte quelle applicabili)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textSecondary)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 12,
+                runSpacing: 4,
+                children: [
+                  _conditionCheckbox('Disabilità Fisica', condizioni, 'disabilita_fisica'),
+                  _conditionCheckbox('Lim. Arti Superiori', condizioni, 'lim_arti_superiori'),
+                  _conditionCheckbox('Lim. Arti Inferiori', condizioni, 'lim_arti_inferiori'),
+                  _conditionCheckbox('Disabilità Sensoriale', condizioni, 'disabilita_sensoriale'),
+                  _conditionCheckbox('Udito / Sordità', condizioni, 'udito_sordita'),
+                  _conditionCheckbox('Visiva', condizioni, 'visiva'),
+                  _conditionCheckbox('Paralisi Cerebrale', condizioni, 'paralisi_cerebrale'),
+                  _conditionCheckbox('Epilessia', condizioni, 'epilessia'),
+                  _conditionCheckbox('Salute Mentale', condizioni, 'salute_mentale'),
+                  _conditionCheckbox('Spettro Autistico', condizioni, 'spettro_autistico'),
+                  _conditionCheckbox('Sindrome di Down', condizioni, 'sindrome_down'),
+                  _conditionCheckbox('Gravi Problemi Salute', condizioni, 'gravi_problemi_salute'),
+                  _conditionCheckbox('Disturbi Condotta', condizioni, 'disturbi_condotta'),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                initialValue: condizioni['altro_specifica']?.toString() ?? '',
+                decoration: const InputDecoration(labelText: 'Altre condizioni (specifica)', border: OutlineInputBorder()),
+                onChanged: (val) {
+                  condizioni['altro_specifica'] = val;
+                },
+              ),
+              const SizedBox(height: 20),
+              const Text('Informatore 1 (Contatto Principale)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: inf1['nome_cognome']?.toString() ?? '',
+                      decoration: const InputDecoration(labelText: 'Nome e Cognome', border: OutlineInputBorder()),
+                      onChanged: (val) {
+                        inf1['nome_cognome'] = val;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: ['Genitore', 'Fratello/Sorella', 'Tutore', 'Educatore', 'Operatore', 'Altro'].contains(inf1['relazione']) ? inf1['relazione'] as String? : null,
+                      decoration: const InputDecoration(labelText: 'Relazione con Utente', border: OutlineInputBorder()),
+                      items: const [
+                        DropdownMenuItem(value: 'Genitore', child: Text('Genitore')),
+                        DropdownMenuItem(value: 'Fratello/Sorella', child: Text('Fratello/Sorella')),
+                        DropdownMenuItem(value: 'Tutore', child: Text('Tutore')),
+                        DropdownMenuItem(value: 'Educatore', child: Text('Educatore')),
+                        DropdownMenuItem(value: 'Operatore', child: Text('Operatore')),
+                        DropdownMenuItem(value: 'Altro', child: Text('Altro')),
+                      ],
+                      onChanged: (val) {
+                        setState(() {
+                          inf1['relazione'] = val;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              if (inf1['relazione'] == 'Altro') ...[
+                const SizedBox(height: 12),
+                TextFormField(
+                  initialValue: inf1['relazione_altro']?.toString() ?? '',
+                  decoration: const InputDecoration(labelText: 'Specifica Relazione Altro', border: OutlineInputBorder()),
+                  onChanged: (val) {
+                    inf1['relazione_altro'] = val;
+                  },
+                ),
+              ],
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: inf1['contatto_anni']?.toString() ?? '',
+                      decoration: const InputDecoration(labelText: 'Anni di conoscenza/contatto', border: OutlineInputBorder()),
+                      keyboardType: TextInputType.number,
+                      onChanged: (val) {
+                        inf1['contatto_anni'] = int.tryParse(val);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: inf1['contatto_mesi']?.toString() ?? '',
+                      decoration: const InputDecoration(labelText: 'Mesi', border: OutlineInputBorder()),
+                      keyboardType: TextInputType.number,
+                      onChanged: (val) {
+                        inf1['contatto_mesi'] = int.tryParse(val);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: ['Quotidiano', 'Settimanale', 'Mensile', 'Occasionale'].contains(inf1['frequenza_contatto']) ? inf1['frequenza_contatto'] as String? : null,
+                      decoration: const InputDecoration(labelText: 'Frequenza Contatto', border: OutlineInputBorder()),
+                      items: const [
+                        DropdownMenuItem(value: 'Quotidiano', child: Text('Quotidiano')),
+                        DropdownMenuItem(value: 'Settimanale', child: Text('Settimanale')),
+                        DropdownMenuItem(value: 'Mensile', child: Text('Mensile')),
+                        DropdownMenuItem(value: 'Occasionale', child: Text('Occasionale')),
+                      ],
+                      onChanged: (val) {
+                        setState(() {
+                          inf1['frequenza_contatto'] = val;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  const Text('Abilita Informatore 2', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                  const SizedBox(width: 8),
+                  Switch(
+                    value: inf2 != null,
+                    onChanged: (enable) {
+                      setState(() {
+                        if (enable) {
+                          demo!['informatore2'] = {};
+                        } else {
+                          demo!['informatore2'] = null;
+                        }
+                      });
+                    },
+                  ),
+                ],
+              ),
+              if (inf2 != null) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        initialValue: inf2['nome_cognome']?.toString() ?? '',
+                        decoration: const InputDecoration(labelText: 'Nome e Cognome 2', border: OutlineInputBorder()),
+                        onChanged: (val) {
+                          demo!['informatore2']['nome_cognome'] = val;
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: ['Genitore', 'Fratello/Sorella', 'Tutore', 'Educatore', 'Operatore', 'Altro'].contains(inf2['relazione']) ? inf2['relazione'] as String? : null,
+                        decoration: const InputDecoration(labelText: 'Relazione con Utente 2', border: OutlineInputBorder()),
+                        items: const [
+                          DropdownMenuItem(value: 'Genitore', child: Text('Genitore')),
+                          DropdownMenuItem(value: 'Fratello/Sorella', child: Text('Fratello/Sorella')),
+                          DropdownMenuItem(value: 'Tutore', child: Text('Tutore')),
+                          DropdownMenuItem(value: 'Educatore', child: Text('Educatore')),
+                          DropdownMenuItem(value: 'Operatore', child: Text('Operatore')),
+                          DropdownMenuItem(value: 'Altro', child: Text('Altro')),
+                        ],
+                        onChanged: (val) {
+                          setState(() {
+                            demo!['informatore2']['relazione'] = val;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                if (inf2['relazione'] == 'Altro') ...[
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    initialValue: inf2['relazione_altro']?.toString() ?? '',
+                    decoration: const InputDecoration(labelText: 'Specifica Relazione Altro 2', border: OutlineInputBorder()),
+                    onChanged: (val) {
+                      demo!['informatore2']['relazione_altro'] = val;
+                    },
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        initialValue: inf2['contatto_anni']?.toString() ?? '',
+                        decoration: const InputDecoration(labelText: 'Anni di conoscenza 2', border: OutlineInputBorder()),
+                        keyboardType: TextInputType.number,
+                        onChanged: (val) {
+                          demo!['informatore2']['contatto_anni'] = int.tryParse(val);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        initialValue: inf2['contatto_mesi']?.toString() ?? '',
+                        decoration: const InputDecoration(labelText: 'Mesi 2', border: OutlineInputBorder()),
+                        keyboardType: TextInputType.number,
+                        onChanged: (val) {
+                          demo!['informatore2']['contatto_mesi'] = int.tryParse(val);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: ['Quotidiano', 'Settimanale', 'Mensile', 'Occasionale'].contains(inf2['frequenza_contatto']) ? inf2['frequenza_contatto'] as String? : null,
+                        decoration: const InputDecoration(labelText: 'Frequenza Contatto 2', border: OutlineInputBorder()),
+                        items: const [
+                          DropdownMenuItem(value: 'Quotidiano', child: Text('Quotidiano')),
+                          DropdownMenuItem(value: 'Settimanale', child: Text('Settimanale')),
+                          DropdownMenuItem(value: 'Mensile', child: Text('Mensile')),
+                          DropdownMenuItem(value: 'Occasionale', child: Text('Occasionale')),
+                        ],
+                        onChanged: (val) {
+                          setState(() {
+                            demo!['informatore2']['frequenza_contatto'] = val;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ] else ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Persona Esaminata', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                        const SizedBox(height: 8),
+                        buildField('Livello Assistenza', persona['livello_assistenza']?.toString() ?? '—'),
+                        buildField('Livello Dipendenza', persona['livello_dipendenza']?.toString() ?? '—'),
+                        buildField('Percentuale Invalidità', persona['percentuale_disabilita'] != null ? '${persona['percentuale_disabilita']}%' : '—'),
+                        buildField('Anno Certificazione', persona['anno_certificato']?.toString() ?? '—'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Altre Diagnosi / Condizioni', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                        const SizedBox(height: 8),
+                        _buildConditionsViewList(condizioni),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Informatore Principale', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                        const SizedBox(height: 8),
+                        buildField('Nome', inf1['nome_cognome']?.toString() ?? '—'),
+                        buildField('Relazione', inf1['relazione'] == 'Altro' ? (inf1['relazione_altro']?.toString() ?? 'Altro') : (inf1['relazione']?.toString() ?? '—')),
+                        buildField('Tempo Contatto', (inf1['contatto_anni'] != null || inf1['contatto_mesi'] != null) ? '${inf1['contatto_anni'] ?? 0} anni e ${inf1['contatto_mesi'] ?? 0} mesi' : '—'),
+                        buildField('Frequenza', inf1['frequenza_contatto']?.toString() ?? '—'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: inf2 != null
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Informatore Secondario', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                              const SizedBox(height: 8),
+                              buildField('Nome', inf2['nome_cognome']?.toString() ?? '—'),
+                              buildField('Relazione', inf2['relazione'] == 'Altro' ? (inf2['relazione_altro']?.toString() ?? 'Altro') : (inf2['relazione']?.toString() ?? '—')),
+                              buildField('Tempo Contatto', (inf2['contatto_anni'] != null || inf2['contatto_mesi'] != null) ? '${inf2['contatto_anni'] ?? 0} anni e ${inf2['contatto_mesi'] ?? 0} mesi' : '—'),
+                              buildField('Frequenza', inf2['frequenza_contatto']?.toString() ?? '—'),
+                            ],
+                          )
+                        : const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Informatore Secondario', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                              SizedBox(height: 8),
+                              Text('Nessun secondo informatore specificato.', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary, fontStyle: FontStyle.italic)),
+                            ],
+                          ),
+                  ),
+                ],
+              ),
+            ]
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _conditionCheckbox(String label, Map<String, dynamic> condizioni, String key) {
+    return FilterChip(
+      label: Text(label, style: TextStyle(fontSize: 12, color: condizioni[key] == true ? Colors.white : AppTheme.textPrimary)),
+      selected: condizioni[key] == true,
+      selectedColor: AppTheme.primaryColor,
+      checkmarkColor: Colors.white,
+      onSelected: (selected) {
+        setState(() {
+          condizioni[key] = selected;
+        });
+      },
+    );
+  }
+
+  Widget _buildConditionsViewList(Map<String, dynamic> condizioni) {
+    final list = <String>[];
+    if (condizioni['disabilita_fisica'] == true) {
+      final lims = <String>[];
+      if (condizioni['lim_arti_superiori'] == true) lims.add('arti sup.');
+      if (condizioni['lim_arti_inferiori'] == true) lims.add('arti inf.');
+      list.add('Disabilità Fisica ${lims.isNotEmpty ? "(${lims.join(', ')})" : ""}');
+    }
+    if (condizioni['disabilita_sensoriale'] == true) {
+      final sens = <String>[];
+      if (condizioni['udito_sordita'] == true) sens.add('udito/sordità');
+      if (condizioni['visiva'] == true) sens.add('visiva');
+      list.add('Disabilità Sensoriale ${sens.isNotEmpty ? "(${sens.join(', ')})" : ""}');
+    }
+    if (condizioni['paralisi_cerebrale'] == true) list.add('Paralisi Cerebrale');
+    if (condizioni['epilessia'] == true) list.add('Epilessia');
+    if (condizioni['salute_mentale'] == true) list.add('Problemi Salute Mentale');
+    if (condizioni['spettro_autistico'] == true) list.add('Spettro Autistico (ASD)');
+    if (condizioni['sindrome_down'] == true) list.add('Sindrome di Down');
+    if (condizioni['gravi_problemi_salute'] == true) list.add('Gravi Problemi Salute');
+    if (condizioni['disturbi_condotta'] == true) list.add('Disturbi Condotta');
+    if (condizioni['altro_specifica']?.toString().isNotEmpty == true) {
+      list.add('Altro: ${condizioni['altro_specifica']}');
+    }
+
+    if (list.isEmpty) {
+      return const Text('Nessun\'altra condizione segnalata.', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary, fontStyle: FontStyle.italic));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: list.map((cond) => Padding(
+        padding: const EdgeInsets.only(bottom: 4.0),
+        child: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, size: 14, color: AppTheme.accentColor),
+            const SizedBox(width: 6),
+            Expanded(child: Text(cond, style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary))),
+          ],
+        )),
+      ).toList(),
+    );
   }
 }
 

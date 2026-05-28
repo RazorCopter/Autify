@@ -807,6 +807,7 @@ async def get_aggregated_evaluation(patient_id: str, scale_id: str):
                 data_compilazione=eval_doc["data_compilazione"],
                 nome_operatore=eval_doc["nome_operatore"],
                 nome_intervistato=eval_doc.get("nome_intervistato"),
+                demographics=eval_doc.get("demographics"),
                 domini=domains,
                 risposte=eval_doc.get("risposte", []),
             )
@@ -831,6 +832,9 @@ async def update_evaluation(evaluation_id: str, payload: EvaluationUpdateRequest
     if payload.nome_intervistato is not None:
         update_data["nome_intervistato"] = payload.nome_intervistato
         existing["nome_intervistato"] = payload.nome_intervistato
+    if payload.demographics is not None:
+        update_data["demographics"] = payload.demographics
+        existing["demographics"] = payload.demographics
         
     await evaluations_collection.update_one(
         _build_evaluation_selector(existing),
@@ -852,6 +856,7 @@ async def update_evaluation(evaluation_id: str, payload: EvaluationUpdateRequest
         data_compilazione=existing["data_compilazione"],
         nome_operatore=existing["nome_operatore"],
         nome_intervistato=existing.get("nome_intervistato"),
+        demographics=existing.get("demographics"),
         domini=domains,
         risposte=new_risposte,
     )

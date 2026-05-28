@@ -121,6 +121,7 @@ class EvaluationUpdateRequest(BaseModel):
     risposte: List[Answer]
     nome_operatore: Optional[str] = None
     nome_intervistato: Optional[str] = None
+    demographics: Optional[dict] = None
 
 # --- MODELLI STORICO ANALISI IA (AI History Models) ---
 
