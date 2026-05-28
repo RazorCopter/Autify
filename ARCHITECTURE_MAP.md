@@ -706,3 +706,22 @@ fi
 
 exit 0
 ```
+
+---
+
+## 5. REGOLE DI INGAGGIO E SVILUPPO (RULES OF ENGAGEMENT)
+
+Per ogni attività di sviluppo, manutenzione o evoluzione del sistema, l'operatore/assistente AI deve attenersi rigorosamente alla seguente sequenza operativa:
+
+1. **Allineamento Locale**: Verificare che localmente i file di lavoro siano perfettamente allineati con il repository Git remoto sul branch `main` (`git pull`).
+2. **Analisi dei Requisiti**: Analizzare approfonditamente la richiesta ricevuta e i vincoli funzionali del sistema.
+3. **Analisi Architetturale (ARCHITECTURE_MAP.md)**: Consultare preliminarmente questo file (`ARCHITECTURE_MAP.md`) per disporre di un contesto preciso e individuare con esattezza i punti e i file interessati su cui intervenire.
+4. **Sviluppo**: Effettuare le modifiche al codice secondo le specifiche definite.
+5. **Aggiornamento Versione**: Incrementare la versione software globale in modo coordinato tra le varie componenti (es. `pubspec.yaml` dei frontend, `app_version.dart`, FastAPI backend).
+6. **Documentazione**: Aggiornare il file [CHANGELOG.md](file:///c:/Users/gianv/Documents/Progetti/autify/AutAnalysis/CHANGELOG.md) e, qualora le modifiche abbiano impatto strutturale, aggiornare opportunamente questo file (`ARCHITECTURE_MAP.md`).
+7. **Commit & Push**: Effettuare il commit pulito e il push del codice verso il repository Git remoto (`git push`).
+8. **Deploy Automatico**: Al termine di tutte le verifiche, avviare ed eseguire il comando di distribuzione automatica:
+   ```powershell
+   powershell.exe -ExecutionPolicy Bypass -File "C:\Users\gianv\Documents\Progetti\deploy_autify.ps1"
+   ```
+
