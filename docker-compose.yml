@@ -6,7 +6,7 @@ services:
     build:
       context: ./backend
       args:
-        - CACHE_BUST=2.17.4
+        - CACHE_BUST=2.17.5
     container_name: Autify-API
     environment:
       - MONGODB_URL=mongodb://autify-db:27017
@@ -22,7 +22,7 @@ services:
     build:
       context: ./frontend_admin
       args:
-        - CACHE_BUST=2.17.4
+        - CACHE_BUST=2.17.5
     container_name: Autify-Admin
     ports:
       - "8090:80"
@@ -35,7 +35,7 @@ services:
     build:
       context: ./frontend_client
       args:
-        - CACHE_BUST=2.17.4
+        - CACHE_BUST=2.17.5
     container_name: Autify-Client
     ports:
       - "8091:80"

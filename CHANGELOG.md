@@ -2,9 +2,21 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
-## [2.17.4] - 2026-05-28
+## [2.17.5] - 2026-05-28
 
-### Corretto
+### Aggiunto
+- **Modulo Info Legali e About**: Aggiunta una nuova finestra di dialogo (AboutTermsDialog) integrata nella sidebar sotto la versione dell'app per visualizzare in modo pulito e scrollabile le condizioni d'uso e la privacy policy di Autify.
+
+### Modificato
+- **Miglioramenti UI e Rebranding Logo**: 
+  - Sostituito il logo nella schermata di login con il nuovo `logoAutifyDark.png` (+20% grandezza per maggiore leggibilità).
+  - Rimossa la scritta testuale "Autify" in basso dalla sidebar principale e ingrandito il logo ufficiale nativo `logo_autify_int.png` rimuovendo le maschere e i bordi circolari obsoleti, integrando così l'immagine direttamente come parte nativa della navigation bar.
+  - Sostituiti tutti gli avatar circolari obsoleti (es. loading dashboard e sidebar) con il logo aggiornato.
+
+### Sicurezza (Corretto)
+- **Patch Critica Gestione Sessione di Logout**: Risolta una gravissima vulnerabilità di sicurezza (Zero-Day Logico). In precedenza, alla pressione del tasto di disconnessione, l'applicazione non provvedeva a distruggere il token crittografico `jwt_token` persistente dal database locale (`localStorage`). Questo consentiva ad un utente scollegato di premere "F5" per aggiornare la pagina e rientrare indebitamente bypassando la schermata di Login, con un fallback automatico al ruolo in sola lettura (`viewer`). Da questa versione il logout distrugge interamente l'ambiente di sessione JWT e disconnette forzatamente ogni stato attivo.
+
+## [2.17.4] - 2026-05-28
 - **Risoluzione Problema Caching Build Docker su Portainer**: Sostituiti gli URL Git di GitHub all'interno del parametro `context` di `docker-compose.yml` con percorsi relativi locali (`./backend`, `./frontend_admin`, `./frontend_client`). Questo impedisce a Docker di riutilizzare check-out obsoleti memorizzati nella cache interna e lo costringe ad utilizzare direttamente i file fisici aggiornati da Portainer sul disco dell'host.
 - **Sincronizzazione e Cache Busting**: Incrementata la versione globale a `2.17.4` e configurato `CACHE_BUST=2.17.4` su tutti i moduli per forzare la ricompilazione completa ed escludere qualsiasi persistenza di cache obsoleta.
 
