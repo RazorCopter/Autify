@@ -50,14 +50,37 @@ graph TD
 
 ### 1.1 Sistema di Autenticazione e Gestione degli Accessi (RBAC)
 
-Il sistema implementa un modello **Role-Based Access Control (RBAC)** per garantire la sicurezza delle informazioni e la segregazione dei privilegi, strutturato su due livelli di autorizzazione ben definiti:
+Il sistema implementa un robusto modello **Role-Based Access Control (RBAC)** integrato con standard moderni di sicurezza per la protezione dei dati sensibili degli utenti e la segregazione granulare dei privilegi.
+
+#### 🔐 Meccanismo di Sicurezza e Sessioni
+1. **Hashing bcrypt (rounds=12)**: Tutte le password degli operatori sono memorizzate in forma cifrata all'interno del database MongoDB (nella collezione `users`) utilizzando l'algoritmo standard di derivazione della chiave **bcrypt** con un fattore di costo (salt rounds) pari a `12`.
+2. **Token di Sessione JWT (HS256)**: L'autenticazione è stateless e si basa su **JSON Web Tokens (JWT)** firmati simmetricamente con algoritmo `HS256` tramite una chiave privata configurabile `JWT_SECRET_KEY`.
+   * **Validità**: I token hanno una scadenza programmata di **8 ore** (`JWT_EXPIRY_HOURS = 8`) dall'istante di rilascio.
+   * **Payload**: Il JWT incapsula in sicurezza lo username del soggetto (`sub`), il ruolo assegnato (`role`) e l'abilitazione all'Intelligenza Artificiale (`ai_enabled`).
+   * **Trasmissione**: Il frontend Admin memorizza il token nel `localStorage` del browser (`jwt_token`) e lo trasmette in modo sicuro all'interno dell'header `Authorization: Bearer <token>` in tutte le chiamate API protette.
+3. **Bootstrap e Logica di Primo Accesso**: All'avvio del server backend, un evento di startup verifica la presenza di utenze registrate. Se la collezione è vuota, crea automaticamente l'utente amministratore di default (`username: admin` e `password: admin`). Per motivi di sicurezza:
+   * Lo username dell'account di default è bloccato (non modificabile).
+   * L'amministratore è obbligato a modificare la password predefinita tramite il pannello impostazioni al primo accesso.
+4. **Retrocompatibilità Client**: Per garantire la continuità operativa dei frontend Client o di moduli legacy sprovvisti di supporto JWT completo, la dependency FastAPI `verify_auth` offre un canale di fallback leggendo il vecchio header `X-Admin-Password` e associando temporaneamente le credenziali configurate nel vecchio file `auth_config.json`.
+
+#### 👥 Profili Utente e Livelli di Autorizzazione
+La suite si articola su due ruoli principali, arricchiti da controlli di accesso specifici per singolo operatore:
 
 1. **Admin (Profilo 1 - Amministratore)**:
-   * **Privilegi**: Controllo CRUD completo (Create, Read, Update, Delete).
-   * **Operazioni**: Può creare, modificare ed eliminare profili utente, importare/esportare il database, gestire i protocolli e le domande delle scale, configurare la chiave API Gemini e avviare o salvare nuove valutazioni.
+   * **Privilegi**: Controllo CRUD completo (Create, Read, Update, Delete) sulle risorse.
+   * **Operazioni**: 
+     * Gestione completa del ciclo di vita delle utenze (Pannello Amministratore in Impostazioni): creazione di nuovi operatori, modifica dei loro ruoli, reset delle password, abilitazione/disabilitazione dell'accesso all'Intelligenza Artificiale, eliminazione di profili (con blocco logico dell'auto-eliminazione e della cancellazione del default `admin`).
+     * Importazione/esportazione completa dei backup del database MongoDB.
+     * Gestione e configurazione dei parametri di validità delle scale e delle credenziali API Google Gemini.
+     * Compilazione, modifica e cancellazione definitiva delle schede di valutazione.
 2. **Viewer (Profilo 2 - Visualizzatore Sola Lettura)**:
-   * **Privilegi**: Accesso in sola lettura (Read-Only).
-   * **Operazioni**: Può esclusivamente navigare l'interfaccia, visualizzare l'anagrafica, consultare lo storico dei test, visualizzare i grafici multidimensionali di andamento della Qualità della Vita (QdV) ed esportare i report in PDF. Tutte le azioni di scrittura, inserimento o cancellazione sono disabilitate graficamente a livello di UI e protette a livello di API backend con restituzione di errore HTTP `403 Forbidden`.
+   * **Privilegi**: Accesso in sola lettura (Read-Only) protetto.
+   * **Operazioni**: 
+     * Navigazione dell'applicazione, consultazione dell'anagrafica, dello storico delle valutazioni e dei grafici multidimensionali di andamento della Qualità di Vita (QdV).
+     * Esportazione in formato PDF premium dei report delle valutazioni eseguite.
+     * **Restrizioni**: Tutte le operazioni di scrittura (inserimento dati, modifiche, eliminazioni, import database o modifiche chiavi API) sono rimosse dalla UI (i pulsanti ed i moduli sono disabilitati o nascosti) ed esplicitamente respinte dal server backend tramite eccezione HTTP `403 Forbidden` sollevata sui router protetti.
+3. **Abilitazione IA Granulare (`ai_enabled`)**:
+   * A differenza dei privilegi globali legacy, l'accesso alle funzionalità di generazione ed elaborazione delle relazioni cliniche con l'Intelligenza Artificiale (Gemini) è configurato **singolarmente per ciascun utente** (sia Admin che Viewer) tramite l'attributo `ai_enabled` memorizzato nel profilo. Il backend decodifica e convalida questo permesso direttamente dal token JWT della richiesta corrente.
 
 ---
 
@@ -71,6 +94,8 @@ In questa sezione viene dettagliato ciascun file significativo del progetto, spe
 backend/
 ├── app/
 │   ├── main.py
+│   ├── auth.py
+│   ├── auth_manager.py
 │   ├── database.py
 │   ├── models.py
 │   ├── routes.py
@@ -85,13 +110,43 @@ backend/
 * **Path**: `backend/app/main.py`
 * **Scopo Funzionale**: Entrypoint principale del server backend. Inizializza l'applicazione FastAPI, definisce i parametri globali delle API, configura le regole di sicurezza per la condivisione delle risorse tra origini differenti (CORS) e registra i moduli di instradamento (router).
 * **Dettagli Tecnici**:
-  * Classe `FastAPI` istanziata con titolo "AutAnalysis API" e versione `2.2.0`.
+  * Classe `FastAPI` istanziata con titolo "AutAnalysis API" e versione `2.17.0`.
+  * Configura un evento di avvio `@app.on_event("startup")` per invocare in modalità asincrona `auth.ensure_default_admin()` al fine di assicurare la presenza dell'utenza amministratore iniziale nel database.
   * Middleware `CORSMiddleware` configurato per accettare tutte le origini (`allow_origins=["*"]`) per facilitare lo sviluppo locale e la pubblicazione su domini specifici (es. `https://aut.ghome.it`).
-  * Registrazione dei router: `/api/admin` tramite `admin_router` e `/api/client` tramite `client_router`.
+  * Registrazione dei router: `/api/admin` tramite `admin_router`, `public_admin_router` e `/api/client` tramite `client_router`.
   * Endpoint `/` implementato per il controllo dello stato di salute del server (`health_check`).
 * **Dipendenze/Relazioni**:
-  * Importa e registra `admin_router` e `client_router` da `backend/app/routes.py`.
+  * Importa e registra i router da `backend/app/routes.py`.
+  * Importa e delega l'evento di startup ad `auth.py` (`backend/app/auth.py`).
   * Viene avviato dall'orchestratore di container Docker (`Dockerfile`, `docker-compose.yml`) tramite il server ASGI Uvicorn.
+
+---
+
+#### 📄 [auth.py](file:///home/gianvito/progetti/AutAnalysis/backend/app/auth.py)
+* **Path**: `backend/app/auth.py`
+* **Scopo Funzionale**: Modulo centralizzato di sicurezza per la gestione di autenticazione e autorizzazioni RBAC basate su standard crittografici.
+* **Dettagli Tecnici**:
+  * Implementa il hashing sicuro tramite `bcrypt` con fattore di costo `12` (`rounds=12`) per la persistenza sicura delle password degli operatori.
+  * Genera e valida in modo stateless i **JSON Web Tokens (JWT)** firmati simmetricamente con algoritmo `HS256`, scatenando eccezioni standard in caso di firma non valida o scadenza (8 ore).
+  * Definisce la dependency asincrona FastAPI `verify_auth` per estrarre e validare il JWT dall'header `Authorization: Bearer <token>`.
+  * Fornisce supporto di retrocompatibilità integrato, validando al volo le richieste legacy dotate del vecchio header `X-Admin-Password`.
+  * Espone il metodo di bootstrap `ensure_default_admin()` che crea un indice unico MongoDB su `username` nella collezione `users` e inizializza l'utenza predefinita `admin` / `admin` in caso di primo avvio.
+* **Dipendenze/Relazioni**:
+  * Chiamato da `backend/app/main.py` per l'evento di startup.
+  * Utilizzato da `backend/app/routes.py` come dipendenza FastAPI (`Depends(verify_auth)`) per la protezione e segregazione di tutte le rotte protette di scrittura e lettura.
+
+---
+
+#### 📄 [auth_manager.py](file:///home/gianvito/progetti/AutAnalysis/backend/app/auth_manager.py)
+* **Path**: `backend/app/auth_manager.py`
+* **Scopo Funzionale**: Mantiene la logica di compatibilità per il salvataggio locale e la lettura delle configurazioni legacy e del registro di accesso per gli utenti di tipo *Viewer* (Sola Lettura) persistito su file locale.
+* **Dettagli Tecnici**:
+  * Legge e scrive il file `viewer_logs.json` all'interno della directory di persistenza per mantenere intatto lo storico dei log di accesso.
+  * Utilizza lock o letture/scritture sincrone sicure per prevenire la corruzione del file di log.
+* **Dipendenze/Relazioni**:
+  * Importato localmente in `backend/app/auth.py` per decodificare le credenziali legacy in caso di fallback.
+  * Importato da `backend/app/routes.py` per l'endpoint `GET /auth/logs` e per loggare gli accessi in sola lettura in fase di login.
+
 
 ---
 
@@ -344,21 +399,23 @@ frontend_admin/
 * **Path**: `frontend_admin/lib/screens/login_screen.dart`
 * **Scopo Funzionale**: Schermata di autenticazione per l'accesso alla dashboard amministrativa.
 * **Dettagli Tecnici**:
-  * Consente il login inserendo la password. Verifica le credenziali sul backend identificando il ruolo associato (`Admin` vs `Viewer`).
-  * Salva le credenziali e il ruolo attivo all'interno di `SharedPreferences` per mantenere attiva la sessione.
+  * Consente il login inserendo sia username che password. Verifica le credenziali sul backend identificando il ruolo associato (`admin` vs `viewer`), l'abilitazione AI dell'utente, ed estraendo il JWT token.
+  * Memorizza in sicurezza all'interno del `localStorage` del browser il JWT token (`jwt_token`), il ruolo (`role`), l'abilitazione AI (`ai_enabled`) e lo username (`username`) per mantenere attiva la sessione.
 * **Dipendenze/Relazioni**:
-  * Chiama l'endpoint di verifica di `ApiService` per convalidare le password.
+  * Chiama il metodo `login` di `ApiService` per convalidare le credenziali.
 
 ---
 
 #### 📄 [screens/settings_screen.dart](file:///home/gianvito/progetti/AutAnalysis/frontend_admin/lib/screens/settings_screen.dart)
 * **Path**: `frontend_admin/lib/screens/settings_screen.dart`
-* **Scopo Funzionale**: Consente di configurare i parametri globali dell'applicazione, inclusi i tempi di validità delle scale (POS e San Martín), i giorni di preavviso per la scadenza, le chiavi API di Gemini e il modello AI attivo.
+* **Scopo Funzionale**: Consente di configurare i parametri globali dell'applicazione, inclusi i tempi di validità delle scale (POS e San Martín), i giorni di preavviso per la scadenza, le chiavi API di Gemini, il modello AI attivo, e di gestire l'anagrafica delle utenze (operatori).
 * **Dettagli Tecnici**:
   * Gestisce le impostazioni reattive tramite `SettingsNotifier`.
-  * Restrizioni Viewer: Disabilita completamente i cursori dei tempi di validità, i pulsanti di "Esporta Database" e "Importa Database", la TextField per l'inserimento della chiave Gemini e la scelta del modello, lasciando l'intera schermata in sola lettura protetta.
+  * **Sezione Gestione Accessi (CRUD Utenze)**: Include un pannello di gestione completo visibile solo al ruolo `admin`. Presenta una tabella degli utenti registrati con username, ruolo, stato abilitazione AI, data di creazione e azioni di modifica (reset password, cambio ruolo e permessi AI) o eliminazione (disabilitata per l'utente di sistema di default e per l'utente correntemente loggato).
+  * **Interfaccia Modale Dialog**: Mostra una finestra modale premium per la creazione e la modifica di un operatore, con validazione dei campi in tempo reale (uguaglianza delle password, validità del formato dell'username).
+  * Restrizioni Viewer: Nasconde interamente il pannello di gestione delle utenze, disabilita i cursori dei tempi di validità delle scale, i pulsanti di "Esporta Database" e "Importa Database", la TextField per la chiave Gemini ed il menu per la scelta del modello.
 * **Dipendenze/Relazioni**:
-  * Comunica con `SettingsNotifier` per propagare le modifiche e con `ApiService` per le operazioni di backup del database.
+  * Comunica con `SettingsNotifier` per propagare le modifiche e con `ApiService` per tutte le transazioni CRUD degli utenti, backup del database MongoDB e salvataggio dei parametri.
 
 ---
 

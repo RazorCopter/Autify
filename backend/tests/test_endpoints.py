@@ -113,6 +113,37 @@ class MockCollection:
             deleted_count = initial_len - len(self.documents)
         return DeleteResult()
 
+    async def update_many(self, filter_query, update_query):
+        matched_count = 0
+        modified_count = 0
+        set_fields = update_query.get("$set", {})
+        for doc in self.documents:
+            match = True
+            for k, v in filter_query.items():
+                if k == "$exists":
+                    # Simple mock exist check
+                    pass
+                elif isinstance(v, dict) and "$exists" in v:
+                    exists_val = v["$exists"]
+                    if exists_val == False and k in doc:
+                        match = False
+                    elif exists_val == True and k not in doc:
+                        match = False
+                elif doc.get(k) != v:
+                    match = False
+                    break
+            if match:
+                matched_count += 1
+                for field, val in set_fields.items():
+                    doc[field] = val
+                modified_count += 1
+        class UpdateManyResult:
+            def __init__(self, m_count, mod_count):
+                self.matched_count = m_count
+                self.modified_count = mod_count
+        return UpdateManyResult(matched_count, modified_count)
+
+
 
 # ==============================================================================
 # PYTEST FIXTURES

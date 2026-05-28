@@ -1,7 +1,57 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Union
 from datetime import datetime, timezone
 import uuid
+
+# --- MODELLI UTENZE (Auth & RBAC) ---
+
+class UserCreate(BaseModel):
+    """Payload per la creazione di un nuovo operatore."""
+    username: str = Field(..., min_length=3, max_length=50, description="Nome utente (min 3 caratteri, nessuno spazio)")
+    password: str = Field(..., min_length=4, max_length=128)
+    confirm_password: str
+    role: str = Field(default="viewer", pattern="^(admin|viewer)$")
+    ai_enabled: bool = False
+
+    @field_validator("username")
+    @classmethod
+    def username_no_spaces(cls, v: str) -> str:
+        if " " in v:
+            raise ValueError("Lo username non può contenere spazi")
+        return v.lower()
+
+    @field_validator("confirm_password")
+    @classmethod
+    def passwords_match(cls, v: str, info) -> str:
+        if "password" in info.data and v != info.data["password"]:
+            raise ValueError("Le password non coincidono")
+        return v
+
+
+class UserUpdate(BaseModel):
+    """Payload per la modifica di un operatore esistente."""
+    password: Optional[str] = Field(None, min_length=4, max_length=128)
+    confirm_password: Optional[str] = None
+    role: Optional[str] = Field(None, pattern="^(admin|viewer)$")
+    ai_enabled: Optional[bool] = None
+
+    @field_validator("confirm_password")
+    @classmethod
+    def passwords_match(cls, v: Optional[str], info) -> Optional[str]:
+        if v is not None and "password" in info.data and info.data["password"] is not None:
+            if v != info.data["password"]:
+                raise ValueError("Le password non coincidono")
+        return v
+
+
+class UserResponse(BaseModel):
+    """Risposta pubblica — non espone mai hashed_password."""
+    username: str
+    role: str
+    ai_enabled: bool
+    is_default: bool
+    created_at: datetime
+    updated_at: datetime
 
 # --- MODELLI ANAGRAFICA (User Models) ---
 

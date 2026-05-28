@@ -14,6 +14,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final ApiService _apiService = ApiService();
   bool _obscurePassword = true;
@@ -84,8 +85,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
+    final enteredUsername = _usernameController.text.trim();
     final enteredPassword = _passwordController.text;
-    if (enteredPassword.isEmpty) return;
+    if (enteredUsername.isEmpty || enteredPassword.isEmpty) return;
 
     setState(() {
       _isLoading = true;
@@ -93,20 +95,11 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     final deviceId = html.window.navigator.userAgent;
-    final result = await _apiService.login(enteredPassword, deviceId);
+    final result = await _apiService.login(enteredUsername, enteredPassword, deviceId);
 
     if (result != null && result['role'] != null) {
-      final role = result['role'];
-      
-      // Salva lo stato in localStorage
-      try {
-        html.window.localStorage['admin_authenticated'] = 'true';
-        html.window.localStorage['auth_role'] = role;
-        html.window.localStorage['auth_password'] = enteredPassword;
-      } catch (_) {}
-
+      // Il localStorage viene aggiornato direttamente dentro ApiService.login()
       if (mounted) {
-        // Naviga alla Dashboard pulendo lo stack
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const AdminDashboard()),
@@ -133,6 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -225,6 +219,33 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 32),
+                        // Campo Username
+                        TextFormField(
+                          controller: _usernameController,
+                          onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                          style: const TextStyle(color: Colors.white, fontSize: 16),
+                          decoration: InputDecoration(
+                            labelText: 'Nome Utente',
+                            labelStyle: TextStyle(color: Colors.white.withOpacity(0.55)),
+                            floatingLabelStyle: const TextStyle(color: Color(0xFF60A5FA), fontWeight: FontWeight.bold),
+                            prefixIcon: Icon(Icons.person_outline_rounded, size: 20, color: Colors.white.withOpacity(0.55)),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(color: Colors.white.withOpacity(0.18)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(color: Colors.white.withOpacity(0.18)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: Color(0xFF60A5FA), width: 1.5),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.04),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
                         // Campo Password integrato nel tema vetro
                         TextFormField(
                           controller: _passwordController,

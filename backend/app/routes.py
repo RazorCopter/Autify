@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, UploadFile, File, Header, 
 from fastapi.responses import StreamingResponse
 from typing import List, Optional
 from bson import ObjectId
-from .models import Scale, Evaluation, Patient, AppSettings, Section, Question, Option, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest, AiAnalysis, AiAnalysisCreate
+from .models import Scale, Evaluation, Patient, AppSettings, Section, Question, Option, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest, AiAnalysis, AiAnalysisCreate, UserCreate, UserUpdate, UserResponse
 from .database import evaluations_collection, settings_collection, patients_collection, scales_collection, users_collection, ai_analyses_collection
 from .pdf_generator import generate_evaluation_pdf, generate_ai_analysis_pdf
 from .analytics import compute_psychometric_analysis, compute_direct_scores, build_domain_map, calcola_punteggi_sis
@@ -13,53 +13,29 @@ import uuid
 import io
 import os
 from pathlib import Path
-from . import auth_manager
+from . import auth as auth_module
+from . import auth_manager  # backward-compat: usato da auth.py per il log viewer legacy
 
 class LoginRequest(BaseModel):
+    username: str
     password: str
     device_id: Optional[str] = "Sconosciuto"
 
-class AuthConfigUpdate(BaseModel):
-    admin_pwd: Optional[str] = None
-    viewer_pwd: Optional[str] = None
-    viewer_enabled: Optional[bool] = None
+async def verify_auth(request: Request) -> dict:
+    """Dependency: verifica JWT o header legacy e restituisce {username, role, ai_enabled}."""
+    auth_context = await auth_module.verify_auth(request)
 
-async def verify_admin_auth(request: Request, x_admin_password: Optional[str] = Header(None, alias="X-Admin-Password")):
-    config = auth_manager.get_auth_config()
-    admin_pwd = config.get("admin_pwd", "tiglio2026")
-    viewer_pwd = config.get("viewer_pwd", "tiglioviewer")
-    viewer_enabled = config.get("viewer_enabled", True)
-    
-    if not x_admin_password:
-        raise HTTPException(status_code=401, detail="Non autorizzato")
-        
-    role = None
-    if x_admin_password == admin_pwd:
-        role = "admin"
-    elif x_admin_password == viewer_pwd:
-        if not viewer_enabled:
-            raise HTTPException(status_code=403, detail="L'accesso Viewer è stato disabilitato.")
-        role = "viewer"
-        
-    if not role:
-        raise HTTPException(status_code=401, detail="Credenziali non valide")
-        
     # Blocca le modifiche di stato per il ruolo Viewer
-    if role == "viewer" and request.method not in ("GET", "HEAD", "POST"):
-        # Permettiamo POST solo per login o azioni di sola lettura come i PDF, le blocchiamo in base all'endpoint se necessario, ma i default bloccano le modifiche.
-        # Eccezione specifica per POST /api/admin/evaluations/ai-analysis-pdf e simili. 
-        # Mantengo il controllo originale, ma includo POST se necessario (attualmente AI PDF usa POST).
-        pass
-
-    if role == "viewer" and request.method not in ("GET", "HEAD") and request.url.path != "/api/admin/evaluations/ai-analysis-pdf" and request.url.path != "/api/admin/auth/login":
+    if auth_context["role"] == "viewer" and request.method not in ("GET", "HEAD") and \
+       request.url.path not in ("/api/admin/evaluations/ai-analysis-pdf", "/api/admin/auth/login"):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail="Azione non consentita per il profilo Viewer (sola lettura)"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Azione non consentita per il profilo Viewer (sola lettura)",
         )
-        
-    return role
 
-admin_router = APIRouter(dependencies=[Depends(verify_admin_auth)])
+    return auth_context
+
+admin_router = APIRouter(dependencies=[Depends(verify_auth)])
 public_admin_router = APIRouter()
 client_router = APIRouter()
 
@@ -199,53 +175,119 @@ def _hydrate_scale_doc(scale_doc: Optional[dict]) -> dict:
 @public_admin_router.post("/auth/login", tags=["Admin - Auth"])
 async def auth_login(payload: LoginRequest, request: Request):
     """
-    Endpoint pubblico per verificare la password, restituire il ruolo e, 
-    se si tratta di account viewer, loggare la connessione.
-    (Non necessita di verify_admin_auth perché serve per ottenere l'accesso)
+    Endpoint pubblico di login. Verifica username+password con bcrypt,
+    restituisce un JWT con role e ai_enabled.
     """
-    config = auth_manager.get_auth_config()
-    admin_pwd = config.get("admin_pwd", "tiglio2026")
-    viewer_pwd = config.get("viewer_pwd", "tiglioviewer")
-    viewer_enabled = config.get("viewer_enabled", True)
-    
-    if payload.password == admin_pwd:
-        return {"role": "admin"}
-    elif payload.password == viewer_pwd:
-        if not viewer_enabled:
-            raise HTTPException(status_code=403, detail="L'accesso Viewer è stato disabilitato.")
-        
-        # Log viewer connection
+    user_doc = await users_collection.find_one({"username": payload.username.lower()})
+    if not user_doc:
+        raise HTTPException(status_code=401, detail="Credenziali non valide")
+
+    if not auth_module.verify_password(payload.password, user_doc["hashed_password"]):
+        raise HTTPException(status_code=401, detail="Credenziali non valide")
+
+    role = user_doc.get("role", "viewer")
+    ai_enabled = user_doc.get("ai_enabled", False)
+
+    # Log accesso viewer (mantiene il log su file per backward-compat)
+    if role == "viewer":
         client_ip = request.client.host if request.client else "Sconosciuto"
-        
-        # Prova a prendere l'IP da X-Forwarded-For se dietro proxy Nginx
         x_forwarded_for = request.headers.get("X-Forwarded-For")
         if x_forwarded_for:
             client_ip = x_forwarded_for.split(",")[0].strip()
-            
         auth_manager.log_viewer_connection(ip_address=client_ip, device_name=payload.device_id)
-        
-        return {"role": "viewer"}
-    
-    raise HTTPException(status_code=401, detail="Credenziali non valide")
 
-@admin_router.get("/auth/config", tags=["Admin - Auth"])
-async def get_auth_config(role: str = Depends(verify_admin_auth)):
-    if role != "admin":
-        raise HTTPException(status_code=403, detail="Solo l'admin può leggere la configurazione di sicurezza")
-    return auth_manager.get_auth_config()
-
-@admin_router.put("/auth/config", tags=["Admin - Auth"])
-async def update_auth_config(payload: AuthConfigUpdate, role: str = Depends(verify_admin_auth)):
-    if role != "admin":
-        raise HTTPException(status_code=403, detail="Solo l'admin può modificare la configurazione di sicurezza")
-    updated = auth_manager.update_auth_config(payload.model_dump(exclude_unset=True))
-    return updated
+    token = auth_module.create_access_token(
+        username=user_doc["username"],
+        role=role,
+        ai_enabled=ai_enabled,
+    )
+    return {
+        "token": token,
+        "role": role,
+        "ai_enabled": ai_enabled,
+        "username": user_doc["username"],
+    }
 
 @admin_router.get("/auth/logs", tags=["Admin - Auth"])
-async def get_viewer_logs(role: str = Depends(verify_admin_auth)):
-    if role != "admin":
+async def get_viewer_logs(auth: dict = Depends(verify_auth)):
+    if auth["role"] != "admin":
         raise HTTPException(status_code=403, detail="Solo l'admin può leggere i log di connessione")
     return auth_manager.get_viewer_logs()
+
+# ── CRUD Utenze ─────────────────────────────────────────────────────────────
+
+@admin_router.get("/users", tags=["Admin - Users"])
+async def get_users(auth: dict = Depends(verify_auth)):
+    """Restituisce la lista di tutti gli operatori (solo admin)."""
+    if auth["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Solo l'admin può gestire le utenze")
+    cursor = users_collection.find({}, {"hashed_password": 0, "_id": 0})
+    return await cursor.to_list(length=200)
+
+@public_admin_router.post("/users", tags=["Admin - Users"], status_code=status.HTTP_201_CREATED)
+async def create_user(payload: UserCreate, request: Request):
+    """Crea un nuovo operatore. Solo admin. Accetta sia JWT che legacy header."""
+    auth = await auth_module.verify_auth(request)
+    if auth["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Solo l'admin può creare utenze")
+
+    existing = await users_collection.find_one({"username": payload.username})
+    if existing:
+        raise HTTPException(status_code=409, detail=f"Username '{payload.username}' già in uso")
+
+    now = datetime.now(timezone.utc)
+    await users_collection.insert_one({
+        "username": payload.username,
+        "hashed_password": auth_module.hash_password(payload.password),
+        "role": payload.role,
+        "ai_enabled": payload.ai_enabled,
+        "is_default": False,
+        "created_at": now,
+        "updated_at": now,
+    })
+    return {"message": f"Utente '{payload.username}' creato con successo"}
+
+@admin_router.put("/users/{username}", tags=["Admin - Users"])
+async def update_user(username: str, payload: UserUpdate, auth: dict = Depends(verify_auth)):
+    """Modifica un operatore esistente. Solo admin."""
+    if auth["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Solo l'admin può modificare le utenze")
+
+    user_doc = await users_collection.find_one({"username": username})
+    if not user_doc:
+        raise HTTPException(status_code=404, detail=f"Utente '{username}' non trovato")
+
+    update_data: dict = {"updated_at": datetime.now(timezone.utc)}
+
+    if payload.password:
+        update_data["hashed_password"] = auth_module.hash_password(payload.password)
+    if payload.role is not None:
+        if user_doc.get("is_default") and payload.role != "admin":
+            raise HTTPException(status_code=400, detail="L'utente admin di sistema deve mantenere il ruolo Admin")
+        update_data["role"] = payload.role
+    if payload.ai_enabled is not None:
+        update_data["ai_enabled"] = payload.ai_enabled
+
+    await users_collection.update_one({"username": username}, {"$set": update_data})
+    return {"message": f"Utente '{username}' aggiornato con successo"}
+
+@admin_router.delete("/users/{username}", tags=["Admin - Users"])
+async def delete_user(username: str, auth: dict = Depends(verify_auth)):
+    """Elimina un operatore. Blocca l'eliminazione dell'utente di sistema e l'auto-cancellazione."""
+    if auth["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Solo l'admin può eliminare le utenze")
+
+    if auth["username"] == username:
+        raise HTTPException(status_code=400, detail="Non puoi eliminare il tuo stesso account")
+
+    user_doc = await users_collection.find_one({"username": username})
+    if not user_doc:
+        raise HTTPException(status_code=404, detail=f"Utente '{username}' non trovato")
+    if user_doc.get("is_default"):
+        raise HTTPException(status_code=400, detail="L'utente admin di sistema non può essere eliminato")
+
+    await users_collection.delete_one({"username": username})
+    return {"message": f"Utente '{username}' eliminato con successo"}
 
 
 @admin_router.get("/patients", response_model=List[Patient], tags=["Admin - Patients"])
@@ -877,12 +919,13 @@ async def update_settings(settings: AppSettings):
     return {"message": "Impostazioni salvate con successo"}
 
 @admin_router.get("/settings", response_model=AppSettings, tags=["Admin - Configuration"])
-async def get_settings(role: str = Depends(verify_admin_auth)):
+async def get_settings(auth: dict = Depends(verify_auth)):
     doc = await settings_collection.find_one({"id": "global_settings"})
     if doc:
         settings = AppSettings(**doc)
-        if settings.gemini_api_key and role == "viewer":
-            if not settings.viewer_ai_enabled:
+        # Nasconde la API Key ai viewer che non hanno ai_enabled
+        if settings.gemini_api_key and auth["role"] == "viewer":
+            if not auth.get("ai_enabled", False):
                 settings.gemini_api_key = "***-HIDDEN"
         return settings
     return AppSettings()

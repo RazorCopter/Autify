@@ -18,14 +18,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final ApiService _apiService = ApiService();
   final TextEditingController _apiKeyController = TextEditingController();
   final TextEditingController _promptController = TextEditingController();
-  bool _viewerAiEnabled = false;
-  
-  final TextEditingController _adminPwdController = TextEditingController();
-  final TextEditingController _viewerPwdController = TextEditingController();
-  bool _viewerEnabled = true;
-  bool _isAuthConfigLoading = false;
-  bool _obscureAdminPwd = true;
-  bool _obscureViewerPwd = true;
+
+  // --- Stato Gestione Utenze ---
+  List<Map<String, dynamic>> _users = [];
+  bool _isUsersLoading = false;
 
   bool _isLoading = false;
   bool _isExporting = false;
@@ -37,7 +33,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadSettings();
-    _loadAuthConfig();
+    if (ApiService.isAdmin) _loadUsers();
   }
 
   String _selectedModel = 'gemini-1.5-pro';
@@ -50,7 +46,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     final String loadedPrompt = (settings['prompt'] as String?) ?? '';
     _promptController.text = loadedPrompt.isNotEmpty ? loadedPrompt : _defaultSystemPrompt;
-    _viewerAiEnabled = (settings['viewer_ai_enabled'] as bool?) ?? false;
     final String rawModel = (settings['model'] as String?) ?? 'gemini-1.5-pro';
     setState(() {
       if (rawModel == 'gemini-1.5-pro' || rawModel == 'gemini-1.5-flash' || rawModel == 'gemini-1.5-pro-latest') {
@@ -63,40 +58,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
-  Future<void> _loadAuthConfig() async {
-    if (ApiService.isViewer) return;
-    setState(() => _isAuthConfigLoading = true);
-    final config = await _apiService.getAuthConfig();
+  Future<void> _loadUsers() async {
+    setState(() => _isUsersLoading = true);
+    final users = await _apiService.getUsers();
     setState(() {
-      _isAuthConfigLoading = false;
-      if (config != null) {
-        _adminPwdController.text = config['admin_pwd'] ?? '';
-        _viewerPwdController.text = config['viewer_pwd'] ?? '';
-        _viewerEnabled = config['viewer_enabled'] ?? true;
-      }
+      _users = users;
+      _isUsersLoading = false;
     });
-  }
-
-  Future<void> _saveAuthConfig() async {
-    if (ApiService.isViewer) return;
-    setState(() => _isAuthConfigLoading = true);
-    final success = await _apiService.updateAuthConfig({
-      'admin_pwd': _adminPwdController.text,
-      'viewer_pwd': _viewerPwdController.text,
-      'viewer_enabled': _viewerEnabled,
-    });
-    setState(() => _isAuthConfigLoading = false);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(success ? 'Configurazione Sicurezza salvata!' : 'Errore nel salvataggio')),
-      );
-      // Aggiorna password salvata se l'admin ha cambiato la propria
-      if (success) {
-         try {
-           html.window.localStorage['auth_password'] = _adminPwdController.text;
-         } catch (_) {}
-      }
-    }
   }
 
   Future<void> _showViewerLogsDialog() async {
@@ -279,113 +247,452 @@ TONO E FORMATTAZIONE:
           const Text('Impostazioni di Sistema', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
           const SizedBox(height: 32),
 
-          // 1. Gestione Accessi e Sicurezza
-          if (!ApiService.isViewer)
-            _buildPremiumExpansionTile(
-              context: context,
-              title: 'Gestione Accessi e Sicurezza',
-              subtitle: 'Gestisci le credenziali di accesso per l\'Admin e per i Viewer',
-              icon: Icons.security_rounded,
-              iconColor: Colors.blue.shade700,
-              initiallyExpanded: false,
+  // --- GESTIONE UTENTI ---
+
+  void _showUserDialog({Map<String, dynamic>? user}) {
+    final isEditing = user != null;
+    final isDefault = isEditing && (user['is_default'] == true);
+    final usernameCtrl = TextEditingController(text: isEditing ? user['username'] : '');
+    final pwdCtrl = TextEditingController();
+    final confirmPwdCtrl = TextEditingController();
+    String selectedRole = isEditing ? (user['role'] ?? 'viewer') : 'viewer';
+    bool aiEnabled = isEditing ? (user['ai_enabled'] ?? false) : false;
+    bool obscurePwd = true;
+    bool obscureConfirm = true;
+    String? dialogError;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(
+            isEditing ? 'Modifica Operatore' : 'Nuovo Operatore',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: SizedBox(
+            width: 420,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (dialogError != null)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline, color: Colors.red, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(dialogError!, style: const TextStyle(color: Colors.red, fontSize: 13))),
+                        ],
+                      ),
+                    ),
+                  // Campo username
+                  TextField(
+                    controller: usernameCtrl,
+                    enabled: !isDefault,
+                    decoration: InputDecoration(
+                      labelText: 'Nome Utente${isDefault ? ' (bloccato)' : ' *'}',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.person_outline_rounded),
+                      helperText: isDefault ? 'L\'username admin non è modificabile' : 'Min 3 caratteri, nessuno spazio',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Campo password
+                  StatefulBuilder(
+                    builder: (_, setObs) => TextField(
+                      controller: pwdCtrl,
+                      obscureText: obscurePwd,
+                      decoration: InputDecoration(
+                        labelText: isEditing ? 'Nuova Password (opzionale)' : 'Password *',
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.lock_outline_rounded),
+                        helperText: 'Min 4 caratteri',
+                        suffixIcon: IconButton(
+                          icon: Icon(obscurePwd ? Icons.visibility : Icons.visibility_off),
+                          onPressed: () => setDialogState(() => obscurePwd = !obscurePwd),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Conferma password
+                  TextField(
+                    controller: confirmPwdCtrl,
+                    obscureText: obscureConfirm,
+                    decoration: InputDecoration(
+                      labelText: isEditing ? 'Conferma Nuova Password' : 'Conferma Password *',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.lock_outline_rounded),
+                      suffixIcon: IconButton(
+                        icon: Icon(obscureConfirm ? Icons.visibility : Icons.visibility_off),
+                        onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Ruolo
+                  const Text('Profilo (Ruolo)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: RadioListTile<String>(
+                          title: const Row(
+                            children: [
+                              Icon(Icons.admin_panel_settings_rounded, size: 18, color: Colors.indigo),
+                              SizedBox(width: 6),
+                              Text('Admin'),
+                            ],
+                          ),
+                          value: 'admin',
+                          groupValue: selectedRole,
+                          onChanged: isDefault ? null : (v) => setDialogState(() => selectedRole = v!),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      ),
+                      Expanded(
+                        child: RadioListTile<String>(
+                          title: const Row(
+                            children: [
+                              Icon(Icons.visibility_outlined, size: 18, color: Colors.teal),
+                              SizedBox(width: 6),
+                              Text('Viewer'),
+                            ],
+                          ),
+                          value: 'viewer',
+                          groupValue: selectedRole,
+                          onChanged: isDefault ? null : (v) => setDialogState(() => selectedRole = v!),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Switch AI
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Row(
+                      children: [
+                        Icon(Icons.psychology_rounded, size: 18, color: Colors.purple),
+                        SizedBox(width: 8),
+                        Text('Abilitazione AI', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    subtitle: const Text('Consenti interrogazioni Gemini AI'),
+                    value: aiEnabled,
+                    activeColor: Colors.purple,
+                    onChanged: (v) => setDialogState(() => aiEnabled = v),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annulla'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                // Validazione
+                final uname = usernameCtrl.text.trim();
+                if (!isDefault && uname.length < 3) {
+                  setDialogState(() => dialogError = 'Username troppo corto (min 3 caratteri)');
+                  return;
+                }
+                if (!isDefault && uname.contains(' ')) {
+                  setDialogState(() => dialogError = 'Lo username non può contenere spazi');
+                  return;
+                }
+                if (!isEditing && pwdCtrl.text.length < 4) {
+                  setDialogState(() => dialogError = 'Password troppo corta (min 4 caratteri)');
+                  return;
+                }
+                if (pwdCtrl.text.isNotEmpty && pwdCtrl.text != confirmPwdCtrl.text) {
+                  setDialogState(() => dialogError = 'Le password non coincidono');
+                  return;
+                }
+
+                Navigator.pop(ctx);
+
+                bool success;
+                if (isEditing) {
+                  final data = <String, dynamic>{
+                    'role': selectedRole,
+                    'ai_enabled': aiEnabled,
+                  };
+                  if (pwdCtrl.text.isNotEmpty) {
+                    data['password'] = pwdCtrl.text;
+                    data['confirm_password'] = confirmPwdCtrl.text;
+                  }
+                  success = await _apiService.updateUser(uname, data);
+                } else {
+                  success = await _apiService.createUser({
+                    'username': uname,
+                    'password': pwdCtrl.text,
+                    'confirm_password': confirmPwdCtrl.text,
+                    'role': selectedRole,
+                    'ai_enabled': aiEnabled,
+                  });
+                }
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(success
+                        ? (isEditing ? 'Operatore aggiornato!' : 'Operatore creato!')
+                        : 'Errore durante l\'operazione.'),
+                    backgroundColor: success ? Colors.green.shade700 : Colors.red.shade700,
+                  ));
+                  if (success) _loadUsers();
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade700, foregroundColor: Colors.white),
+              child: Text(isEditing ? 'Salva Modifiche' : 'Crea Operatore'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteUserConfirm(String username) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Conferma Eliminazione', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: RichText(
+          text: TextSpan(
+            style: const TextStyle(color: Colors.black87, fontSize: 14),
+            children: [
+              const TextSpan(text: 'Stai per eliminare l\'operatore '),
+              TextSpan(text: username, style: const TextStyle(fontWeight: FontWeight.bold)),
+              const TextSpan(text: '. Questa azione è irreversibile.'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annulla')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700, foregroundColor: Colors.white),
+            child: const Text('Elimina'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final success = await _apiService.deleteUser(username);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(success ? 'Operatore eliminato.' : 'Errore durante l\'eliminazione.'),
+          backgroundColor: success ? Colors.green.shade700 : Colors.red.shade700,
+        ));
+        if (success) _loadUsers();
+      }
+    }
+  }
+
+  // --- Sezione Utenti UI ---
+  Widget _buildUserManagementSection() {
+    return _buildPremiumExpansionTile(
+      context: context,
+      title: 'Gestione Utenze e Sicurezza',
+      subtitle: 'Crea, modifica ed elimina gli operatori del sistema',
+      icon: Icons.manage_accounts_rounded,
+      iconColor: Colors.blue.shade700,
+      initiallyExpanded: false,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Operatori del Sistema', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Row(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Credenziali di Accesso',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: _showViewerLogsDialog,
-                      icon: const Icon(Icons.list_alt_rounded),
-                      label: const Text('Registro Accessi Viewer'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE8EEF8),
-                        foregroundColor: Colors.black87,
-                        elevation: 0,
-                      ),
-                    ),
-                  ],
+                ElevatedButton.icon(
+                  onPressed: _showViewerLogsDialog,
+                  icon: const Icon(Icons.list_alt_rounded, size: 16),
+                  label: const Text('Log Accessi'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE8EEF8),
+                    foregroundColor: Colors.black87,
+                    elevation: 0,
+                  ),
                 ),
-                const SizedBox(height: 8),
-                const Text('Configura password robuste per proteggere l\'integrità dei dati.'),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _adminPwdController,
-                        obscureText: _obscureAdminPwd,
-                        decoration: InputDecoration(
-                          labelText: 'Password Admin',
-                          border: const OutlineInputBorder(),
-                          prefixIcon: const Icon(Icons.admin_panel_settings),
-                          suffixIcon: IconButton(
-                            icon: Icon(_obscureAdminPwd ? Icons.visibility : Icons.visibility_off),
-                            onPressed: () {
-                              setState(() {
-                                _obscureAdminPwd = !_obscureAdminPwd;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextField(
-                        controller: _viewerPwdController,
-                        obscureText: _obscureViewerPwd,
-                        decoration: InputDecoration(
-                          labelText: 'Password Viewer',
-                          border: const OutlineInputBorder(),
-                          prefixIcon: const Icon(Icons.visibility_outlined),
-                          suffixIcon: IconButton(
-                            icon: Icon(_obscureViewerPwd ? Icons.visibility : Icons.visibility_off),
-                            onPressed: () {
-                              setState(() {
-                                _obscureViewerPwd = !_obscureViewerPwd;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Switch(
-                      value: _viewerEnabled,
-                      onChanged: (val) {
-                        setState(() {
-                          _viewerEnabled = val;
-                        });
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _viewerEnabled ? 'Accesso Viewer Abilitato' : 'Accesso Viewer Disabilitato',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: _viewerEnabled ? Colors.green[700] : Colors.red[700],
-                      ),
-                    ),
-                    const Spacer(),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(minimumSize: const Size(0, 56)),
-                      onPressed: _isAuthConfigLoading ? null : _saveAuthConfig,
-                      icon: _isAuthConfigLoading
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Icon(Icons.save),
-                      label: const Text('Salva Configurazione'),
-                    ),
-                  ],
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: () => _showUserDialog(),
+                  icon: const Icon(Icons.add_rounded, size: 16),
+                  label: const Text('Nuovo Operatore'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade700,
+                    foregroundColor: Colors.white,
+                  ),
                 ),
               ],
             ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (_isUsersLoading)
+          const Center(child: CircularProgressIndicator())
+        else if (_users.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE8EEF8)),
+            ),
+            child: const Center(child: Text('Nessun operatore trovato.', style: TextStyle(color: Color(0xFF64748B)))),
+          )
+        else
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xFFE8EEF8)),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Table(
+                columnWidths: const {
+                  0: FlexColumnWidth(2.5),
+                  1: FlexColumnWidth(1.8),
+                  2: FlexColumnWidth(1),
+                  3: FlexColumnWidth(1.5),
+                  4: FlexColumnWidth(2),
+                },
+                children: [
+                  TableRow(
+                    decoration: const BoxDecoration(color: Color(0xFFE8EEF8)),
+                    children: [
+                      _tableHeader('Username'),
+                      _tableHeader('Ruolo'),
+                      _tableHeader('AI'),
+                      _tableHeader('Creato il'),
+                      _tableHeader('Azioni'),
+                    ],
+                  ),
+                  ..._users.map((u) {
+                    final username = u['username'] as String? ?? '';
+                    final role = u['role'] as String? ?? 'viewer';
+                    final aiEn = u['ai_enabled'] as bool? ?? false;
+                    final isDefault = u['is_default'] as bool? ?? false;
+                    final createdAt = u['created_at'] as String?;
+                    final dt = createdAt != null ? DateTime.tryParse(createdAt) : null;
+                    final dateStr = dt != null ? '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}' : '-';
+
+                    return TableRow(
+                      decoration: BoxDecoration(
+                        color: _users.indexOf(u) % 2 == 0 ? Colors.white : const Color(0xFFF8FAFC),
+                      ),
+                      children: [
+                        _tableCell(Row(
+                          children: [
+                            Text(username, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            if (isDefault) ...[
+                              const SizedBox(width: 6),
+                              Tooltip(
+                                message: 'Utente di sistema (non eliminabile)',
+                                child: Icon(Icons.lock_rounded, size: 14, color: Colors.grey.shade500),
+                              ),
+                            ],
+                          ],
+                        )),
+                        _tableCell(Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: role == 'admin' ? Colors.indigo.shade50 : Colors.teal.shade50,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: role == 'admin' ? Colors.indigo.shade200 : Colors.teal.shade200,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                role == 'admin' ? Icons.admin_panel_settings_rounded : Icons.visibility_outlined,
+                                size: 13,
+                                color: role == 'admin' ? Colors.indigo.shade700 : Colors.teal.shade700,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                role == 'admin' ? 'Admin' : 'Viewer',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: role == 'admin' ? Colors.indigo.shade700 : Colors.teal.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )),
+                        _tableCell(Icon(
+                          aiEn ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                          color: aiEn ? Colors.green.shade600 : Colors.grey.shade400,
+                          size: 20,
+                        )),
+                        _tableCell(Text(dateStr, style: const TextStyle(fontSize: 13))),
+                        _tableCell(Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: 'Modifica',
+                              icon: Icon(Icons.edit_rounded, size: 18, color: Colors.blue.shade700),
+                              onPressed: () => _showUserDialog(user: u),
+                            ),
+                            IconButton(
+                              tooltip: isDefault ? 'Non eliminabile' : 'Elimina',
+                              icon: Icon(
+                                Icons.delete_outline_rounded,
+                                size: 18,
+                                color: isDefault ? Colors.grey.shade300 : Colors.red.shade400,
+                              ),
+                              onPressed: isDefault ? null : () => _deleteUserConfirm(username),
+                            ),
+                          ],
+                        )),
+                      ],
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+        const SizedBox(height: 12),
+        Text(
+          '🔒 L\'utente "admin" non può essere eliminato né rinominato — è l\'account di sistema.',
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+        ),
+      ],
+    );
+  }
+
+  Widget _tableHeader(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF334155))),
+    );
+  }
+
+  Widget _tableCell(Widget child) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: child,
+    );
+  }
+
 
           // 2. Protocolli di Supporto
           _buildPremiumExpansionTile(
@@ -483,18 +790,27 @@ TONO E FORMATTAZIONE:
               ),
               const SizedBox(height: 20),
               
-              // Switch permessi IA ai viewer
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Consenti l\'uso dell\'IA ai Viewer', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('Abilita le utenze Viewer a lanciare analisi IA consumando l\'API Key dell\'Admin.'),
-                value: _viewerAiEnabled,
-                activeColor: Colors.purple.shade700,
-                onChanged: ApiService.isViewer ? null : (val) {
-                  setState(() {
-                    _viewerAiEnabled = val;
-                  });
-                },
+              // Switch permessi IA ai viewer (ora per-utente)
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.purple.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.purple.shade100),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline_rounded, size: 16, color: Colors.purple.shade700),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'L\'abilitazione AI è ora gestita per singolo operatore nella sezione "Gestione Utenze".',
+                        style: TextStyle(fontSize: 13, color: Colors.purple.shade700),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
 

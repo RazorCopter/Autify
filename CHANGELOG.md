@@ -2,7 +2,20 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.17.0] - 2026-05-28
+
+### Aggiunto
+- **Nuovo Sistema Multi-Utente, Hashing bcrypt e Sessioni JWT (Auth & RBAC v2.17.0)**:
+  - **Archiviazione MongoDB & Hashing bcrypt**: Transizione dalle credenziali globali su file di configurazione (`ADMIN_PASSWORD`, `VIEWER_PASSWORD`) a una vera gestione multi-utente con credenziali univoche e password cifrate tramite algoritmo robusto **bcrypt** (rounds=12) memorizzate nella nuova collezione MongoDB `users`.
+  - **Token JWT per la Gestione delle Sessioni**: Implementato il rilascio di token standard **JSON Web Tokens (JWT)** con validità limitata (8 ore) all'accesso. Il frontend memorizza in sicurezza il token in `localStorage['jwt_token']` e lo trasmette come header `Authorization: Bearer <token>` a tutte le API protette.
+  - **Gestione Utenze e Pannello Amministratore**: Sviluppata la sezione di amministrazione utenze all'interno della schermata "Impostazioni" nel frontend Admin (accessibile solo al ruolo `admin`). Consente la gestione CRUD completa (creazione, modifica ruolo, reset password, e abilitazione AI per ogni singolo operatore, bloccando l'auto-eliminazione).
+  - **Logica di Primo Accesso (Bootstrap)**: Introdotta la creazione automatica di un utente amministratore di default (`admin` / `admin`) al primo avvio dell'applicazione (se la collezione `users` è vuota), con vincolo di username immutabile per motivi di sicurezza e tracciamento.
+  - **Autorizzazioni AI Granulari**: Eliminato il flag globale `viewer_ai_enabled` e introdotto il permesso `ai_enabled` specifico per ciascun operatore. Gli endpoint di analisi dell'Intelligenza Artificiale ora verificano questo permesso decodificandolo direttamente dal payload del JWT dell'utente loggato.
+  - **Retrocompatibilità Client**: Mantenuto il supporto per l'autenticazione tramite il vecchio header `X-Admin-Password` all'interno della dependency FastAPI `verify_auth`, garantendo la continuità operativa dei moduli compilazione legacy dei client non ancora aggiornati.
+  - **Registro Accessi su File**: Conservata la persistenza dei log di connessione per gli operatori in sola lettura (`viewer_logs.json` gestito localmente tramite `auth_manager.py`) per mantenere lo storico del server intatto.
+
 ## [2.16.17] - 2026-05-28
+
 
 ### Modificato
 - **Nuovo Logo / Avatar Bradipo HD**:

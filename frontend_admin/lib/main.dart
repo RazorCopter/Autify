@@ -25,10 +25,11 @@ class AdminApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Verifica se l'amministratore è già autenticato localmente
+    // Verifica se l'utente è già autenticato (JWT token presente)
     bool isAuthenticated = false;
     try {
-      isAuthenticated = html.window.localStorage['admin_authenticated'] == 'true';
+      final token = html.window.localStorage['jwt_token'];
+      isAuthenticated = token != null && token.isNotEmpty;
     } catch (_) {}
 
     return MaterialApp(

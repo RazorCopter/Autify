@@ -8,14 +8,14 @@ import '../models/patient_model.dart';
 import '../models/evaluation_model.dart';
 
 class ApiService {
-  static String get kAdminPassword {
+  static String get kAuthToken {
     try {
-      final stored = html.window.localStorage['auth_password'];
+      final stored = html.window.localStorage['jwt_token'];
       if (stored != null && stored.isNotEmpty) {
         return stored;
       }
     } catch (_) {}
-    return ''; // Do not fallback to hardcoded
+    return '';
   }
 
   static bool get isViewer {
@@ -23,6 +23,27 @@ class ApiService {
       return html.window.localStorage['auth_role'] == 'viewer';
     } catch (_) {}
     return false;
+  }
+
+  static bool get isAdmin {
+    try {
+      return html.window.localStorage['auth_role'] == 'admin';
+    } catch (_) {}
+    return false;
+  }
+
+  static bool get isAiEnabled {
+    try {
+      return html.window.localStorage['ai_enabled'] == 'true';
+    } catch (_) {}
+    return false;
+  }
+
+  static String get currentUsername {
+    try {
+      return html.window.localStorage['auth_username'] ?? '';
+    } catch (_) {}
+    return '';
   }
 
   // Dato che questo frontend è servito da Nginx sulla stessa origine e proxy verso backend,
@@ -33,18 +54,27 @@ class ApiService {
   
   // --- AUTHENTICATION ---
   
-  Future<Map<String, dynamic>?> login(String password, String deviceId) async {
+  Future<Map<String, dynamic>?> login(String username, String password, String deviceId) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
+          'username': username,
           'password': password,
           'device_id': deviceId,
         }),
       );
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        // Salva il JWT e i dati di sessione nel localStorage
+        try {
+          html.window.localStorage['jwt_token'] = data['token'] ?? '';
+          html.window.localStorage['auth_role'] = data['role'] ?? '';
+          html.window.localStorage['ai_enabled'] = (data['ai_enabled'] ?? false).toString();
+          html.window.localStorage['auth_username'] = data['username'] ?? '';
+        } catch (_) {}
+        return data;
       }
       return null;
     } catch (e) {
@@ -54,43 +84,20 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>?> getAuthConfig() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/auth/config'),
-        headers: {'X-Admin-Password': kAdminPassword},
-      );
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      }
-      return null;
-    } catch (e) {
-      print('Errore caricamento auth config: $e');
-      return null;
-    }
+    // Mantenuto per backward-compat — non più utilizzato dalla UI
+    return null;
   }
 
   Future<bool> updateAuthConfig(Map<String, dynamic> newConfig) async {
-    try {
-      final response = await http.put(
-        Uri.parse('$baseUrl/auth/config'),
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Password': kAdminPassword,
-        },
-        body: jsonEncode(newConfig),
-      );
-      return response.statusCode == 200;
-    } catch (e) {
-      print('Errore aggiornamento auth config: $e');
-      return false;
-    }
+    // Mantenuto per backward-compat — non più utilizzato dalla UI
+    return false;
   }
 
   Future<List<dynamic>> getViewerLogs() async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/auth/logs'),
-        headers: {'X-Admin-Password': kAdminPassword},
+        headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -99,6 +106,72 @@ class ApiService {
     } catch (e) {
       print('Errore caricamento viewer logs: $e');
       return [];
+    }
+  }
+
+  // --- CRUD UTENZE ---
+
+  Future<List<Map<String, dynamic>>> getUsers() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/users'),
+        headers: {'Authorization': 'Bearer $kAuthToken'},
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> body = jsonDecode(response.body);
+        return body.cast<Map<String, dynamic>>();
+      }
+      return [];
+    } catch (e) {
+      print('Errore caricamento utenti: $e');
+      return [];
+    }
+  }
+
+  Future<bool> createUser(Map<String, dynamic> userData) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/users'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $kAuthToken',
+        },
+        body: jsonEncode(userData),
+      );
+      return response.statusCode == 201;
+    } catch (e) {
+      print('Errore creazione utente: $e');
+      return false;
+    }
+  }
+
+  Future<bool> updateUser(String username, Map<String, dynamic> updateData) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/users/$username'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $kAuthToken',
+        },
+        body: jsonEncode(updateData),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Errore aggiornamento utente: $e');
+      return false;
+    }
+  }
+
+  Future<bool> deleteUser(String username) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/users/$username'),
+        headers: {'Authorization': 'Bearer $kAuthToken'},
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Errore eliminazione utente: $e');
+      return false;
     }
   }
 
@@ -133,7 +206,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/scales'),
-        headers: {'X-Admin-Password': kAdminPassword},
+        headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       if (response.statusCode == 200) {
         final List<dynamic> body = jsonDecode(response.body);
@@ -152,7 +225,7 @@ class ApiService {
         Uri.parse('$baseUrl/scales/${scale.id}'),
         headers: {
           'Content-Type': 'application/json',
-          'X-Admin-Password': kAdminPassword,
+          'Authorization': 'Bearer $kAuthToken',
         },
         body: jsonEncode(scale.toJson()),
       );
@@ -167,7 +240,7 @@ class ApiService {
     try {
       final response = await http.delete(
         Uri.parse('$baseUrl/scales/$id'),
-        headers: {'X-Admin-Password': kAdminPassword},
+        headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       return response.statusCode == 200;
     } catch (e) {
@@ -180,7 +253,7 @@ class ApiService {
     try {
       final response = await http.delete(
         Uri.parse('$baseUrl/evaluations/$id'),
-        headers: {'X-Admin-Password': kAdminPassword},
+        headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       return response.statusCode == 200;
     } catch (e) {
@@ -193,7 +266,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/settings'),
-        headers: {'X-Admin-Password': kAdminPassword},
+        headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
@@ -226,7 +299,7 @@ class ApiService {
         Uri.parse('$baseUrl/settings'),
         headers: {
           'Content-Type': 'application/json',
-          'X-Admin-Password': kAdminPassword,
+          'Authorization': 'Bearer $kAuthToken',
         },
         body: jsonEncode({
           'id': 'global_settings',
@@ -248,7 +321,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/patients'),
-        headers: {'X-Admin-Password': kAdminPassword},
+        headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       if (response.statusCode == 200) {
         final List<dynamic> body = jsonDecode(response.body);
@@ -267,7 +340,7 @@ class ApiService {
         Uri.parse('$baseUrl/patients'),
         headers: {
           'Content-Type': 'application/json',
-          'X-Admin-Password': kAdminPassword,
+          'Authorization': 'Bearer $kAuthToken',
         },
         body: jsonEncode(patient.toJson()),
       );
@@ -284,7 +357,7 @@ class ApiService {
         Uri.parse('$baseUrl/patients/${patient.id}'),
         headers: {
           'Content-Type': 'application/json',
-          'X-Admin-Password': kAdminPassword,
+          'Authorization': 'Bearer $kAuthToken',
         },
         body: jsonEncode(patient.toJson()),
       );
@@ -299,7 +372,7 @@ class ApiService {
     try {
       final response = await http.delete(
         Uri.parse('$baseUrl/patients/$id'),
-        headers: {'X-Admin-Password': kAdminPassword},
+        headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       return response.statusCode == 200;
     } catch (e) {
@@ -315,7 +388,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/evaluations/$patientId/$scaleId'),
-        headers: {'X-Admin-Password': kAdminPassword},
+        headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       if (response.statusCode == 200) {
         final List<dynamic> body = jsonDecode(response.body);
@@ -343,7 +416,7 @@ class ApiService {
         Uri.parse('$baseUrl/evaluations/$evaluationId'),
         headers: {
           'Content-Type': 'application/json',
-          'X-Admin-Password': kAdminPassword,
+          'Authorization': 'Bearer $kAuthToken',
         },
         body: jsonEncode(body),
       );
@@ -361,7 +434,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/evaluations/$evaluationId/pdf'),
-        headers: {'X-Admin-Password': kAdminPassword},
+        headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       if (response.statusCode == 200) {
         return response.bodyBytes;
@@ -379,7 +452,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/evaluations/$evaluationId/analysis'),
-        headers: {'X-Admin-Password': kAdminPassword},
+        headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       print('DEBUG AUTANALYSIS API - analysis status: ${response.statusCode}');
       if (response.statusCode == 200) {
@@ -402,7 +475,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/export-db'),
-        headers: {'X-Admin-Password': kAdminPassword},
+        headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       if (response.statusCode == 200) {
         return response.bodyBytes;
@@ -444,7 +517,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/patients/$patientId/ai-analyses'),
-        headers: {'X-Admin-Password': kAdminPassword},
+        headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       if (response.statusCode == 200) {
         final List<dynamic> body = jsonDecode(response.body);
@@ -464,7 +537,7 @@ class ApiService {
         Uri.parse('$baseUrl/patients/$patientId/ai-analyses'),
         headers: {
           'Content-Type': 'application/json',
-          'X-Admin-Password': kAdminPassword,
+          'Authorization': 'Bearer $kAuthToken',
         },
         body: jsonEncode({
           'report': report,
@@ -486,7 +559,7 @@ class ApiService {
     try {
       final response = await http.delete(
         Uri.parse('$baseUrl/patients/ai-analyses/$analysisId'),
-        headers: {'X-Admin-Password': kAdminPassword},
+        headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       return response.statusCode == 200;
     } catch (e) {
@@ -501,7 +574,7 @@ class ApiService {
         Uri.parse('$baseUrl/patients/ai-analyses/$analysisId'),
         headers: {
           'Content-Type': 'application/json',
-          'X-Admin-Password': kAdminPassword,
+          'Authorization': 'Bearer $kAuthToken',
         },
         body: jsonEncode({
           'notes': newLabel,
@@ -548,7 +621,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/dashboard-stats'),
-        headers: {'X-Admin-Password': kAdminPassword},
+        headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
@@ -566,7 +639,7 @@ class ApiService {
         Uri.parse('$baseUrl/evaluations/ai-analysis-pdf'),
         headers: {
           'Content-Type': 'application/json',
-          'X-Admin-Password': kAdminPassword,
+          'Authorization': 'Bearer $kAuthToken',
         },
         body: jsonEncode({
           'patient': patient.toJson(),

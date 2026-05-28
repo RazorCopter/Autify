@@ -1,12 +1,18 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .routes import admin_router, client_router, public_admin_router
+from . import auth as auth_module
 
 app = FastAPI(
     title="AutAnalysis API",
     description="API per la piattaforma Multi-Frontend (Admin/Client) di Valutazione Multidimensionale.",
-    version="2.16.17"
+    version="2.17.0"
 )
+
+@app.on_event("startup")
+async def startup_event():
+    """Inizializza il sistema al primo avvio: crea l'utente admin di default se necessario."""
+    await auth_module.ensure_default_admin()
 
 # Configurazione CORS per permettere le chiamate dai frontend (Admin e Client)
 app.add_middleware(
