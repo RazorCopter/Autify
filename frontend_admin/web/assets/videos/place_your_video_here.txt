@@ -1,0 +1,2 @@
+Posiziona qui il tuo file video nominato "background.mp4".
+Puoi aggiungere anche "background.webm" in futuro per ottimizzare ulteriormente il caricamento.

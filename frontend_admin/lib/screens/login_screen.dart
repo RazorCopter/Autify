@@ -1,4 +1,5 @@
 import 'dart:html' as html;
+import 'dart:ui_web' as ui;
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
@@ -18,6 +19,68 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   bool _isShaking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Registra la Platform View per il video di sfondo nativo HTML
+    // ignore: undefined_prefixed_name
+    ui.platformViewRegistry.registerViewFactory(
+      'video-background-view',
+      (int viewId) {
+        final html.DivElement container = html.DivElement()
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..style.position = 'relative'
+          ..style.overflow = 'hidden';
+
+        // Tag Video configurato con tutti i requisiti tecnici per autoplay e compatibilità cross-browser/mobile
+        final html.VideoElement video = html.VideoElement()
+          ..autoplay = true
+          ..loop = true
+          ..muted = true
+          ..setAttribute('playsinline', 'true')
+          ..setAttribute('webkit-playsinline', 'true') // Per massima compatibilità iOS
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..style.objectFit = 'cover'
+          ..style.position = 'absolute'
+          ..style.top = '0'
+          ..style.left = '0'
+          ..style.zIndex = '-2';
+
+        // Utilizziamo il tag <source> per caricare il video da assets/videos
+        final html.SourceElement sourceMp4 = html.SourceElement()
+          ..src = 'assets/videos/background.mp4'
+          ..type = 'video/mp4';
+        video.append(sourceMp4);
+
+        /* 
+          NOTA PRO MEMORIA: In futuro, per ottimizzare ulteriormente il caricamento,
+          inserire qui una versione .webm come prima scelta:
+          
+          final html.SourceElement sourceWebm = html.SourceElement()
+            ..src = 'assets/videos/background.webm'
+            ..type = 'video/webm';
+          video.insertBefore(sourceWebm, sourceMp4);
+        */
+
+        // Overlay semitrasparente scuro al 45% per contrasto e leggibilità
+        final html.DivElement overlay = html.DivElement()
+          ..style.position = 'absolute'
+          ..style.top = '0'
+          ..style.left = '0'
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..style.backgroundColor = 'rgba(0, 0, 0, 0.45)'
+          ..style.zIndex = '-1';
+
+        container.append(video);
+        container.append(overlay);
+        return container;
+      },
+    );
+  }
 
   Future<void> _handleLogin() async {
     final enteredPassword = _passwordController.text;
@@ -76,33 +139,12 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // Sfondo Watermark Bradipo Stilizzato
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.05,
-              child: Image.asset(
-                'assets/images/sloth_cool_bg.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          // Sfondo con gradiente morbido
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppTheme.backgroundColor,
-                    AppTheme.primaryColor.withValues(alpha: 0.1),
-                    AppTheme.backgroundColor,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-            ),
+          // Sfondo con video nativo HTML + Overlay semitrasparente
+          const Positioned.fill(
+            child: HtmlElementView(viewType: 'video-background-view'),
           ),
           // Form di Accesso Centrato
           Center(
