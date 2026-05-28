@@ -64,7 +64,7 @@ class AboutTermsDialog extends StatelessWidget {
                     _buildBulletItem('L\'utente garantisce di avere il diritto legale di caricare, archiviare e gestire i documenti inseriti nell\'App, sollevando Autify da qualsiasi responsabilità in merito a caricamenti illeciti.\n'),
 
                     _buildSectionTitle('6. Limitazione di Responsabilità'),
-                    _buildText('Poiché l\'App è attualmente in fase pilota, il servizio è fornito "così com'è" e "come disponibile".\n'),
+                    _buildText('Poiché l\'App è attualmente in fase pilota, il servizio è fornito "così com\\'è" e "come disponibile".\n'),
                     _buildBulletItem('Autify declina ogni responsabilità per eventuali malfunzionamenti, bug o temporanee interruzioni del servizio.'),
                     _buildBulletItem('Pur adottando misure di sicurezza per proteggere i dati, non possiamo garantire l\'assoluta impossibilità di perdita di informazioni. Si raccomanda vivamente all\'utente di conservare sempre copie di backup personali dei documenti essenziali.\n'),
 
