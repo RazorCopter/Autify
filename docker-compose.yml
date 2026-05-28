@@ -46,7 +46,6 @@ services:
   # DATABASE
   autify-db:
     image: mongo:latest
-    container_name: Autify_MongoDB
     restart: unless-stopped
     volumes:
       - autify_data:/data/db
