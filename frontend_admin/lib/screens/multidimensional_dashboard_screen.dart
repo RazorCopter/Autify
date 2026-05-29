@@ -1310,11 +1310,22 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     // Normalize to 100%
                     final isPos = scale.nome.toLowerCase().contains('pos');
                     final isSM = scale.nome.toLowerCase().contains('martin');
+                    final isSis = scale.nome.toLowerCase().contains('sis');
                     
                     double maxTheoretical = domain.numDomande.toDouble();
-                    if (isPos) maxTheoretical *= 3;
-                    else if (isSM) maxTheoretical *= 4;
-                    else maxTheoretical = 100; // Default fallback
+                    if (isPos) {
+                      maxTheoretical *= 3;
+                    } else if (isSM) {
+                      maxTheoretical *= 4;
+                    } else if (isSis) {
+                      if (code == 'SEZ3M' || code == 'SEZ3C') {
+                        maxTheoretical *= 2;
+                      } else {
+                        maxTheoretical *= 12; // A, B, C, D, E, F, SEZ2
+                      }
+                    } else {
+                      maxTheoretical = 100; // Default fallback
+                    }
                     
                     if (maxTheoretical == 0) maxTheoretical = 1;
                     final percent = (domain.punteggio / maxTheoretical) * 100.0;
