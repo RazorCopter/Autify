@@ -1,1 +1,1 @@
-const String kFrontendVersion = '2.18.2';
+const String kFrontendVersion = '2.18.3';

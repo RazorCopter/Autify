@@ -2,6 +2,19 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.18.3] - 2026-05-29
+
+### Aggiunto / Modificato
+- **Revisione Profonda ARCHITECTURE_MAP.md**: Ristrutturazione completa della Single Source of Truth del progetto.
+  - **Regole di Ingaggio spostate in testa (§0)**: Il protocollo operativo obbligatorio per l'IA è ora la prima sezione del documento, con diagramma di flusso Mermaid del workflow a 8 step, tabella dei file di versione da sincronizzare e vincoli codificati.
+  - **Diagrammi Mermaid**: Sostituiti tutti i diagrammi ASCII art con diagrammi Mermaid renderizzabili (architettura, autenticazione JWT, 4 flussi dati).
+  - **Indice navigabile (Table of Contents)**: Aggiunta tabella-indice con link interni per navigazione rapida.
+  - **Correzioni fattuali**: Fix link ai file (da percorsi Linux errati a percorsi corretti), aggiunta scala SIS nella documentazione, aggiunta collezione `ai_analyses` in §4 Database, aggiornamento tree frontend con directory mancanti (`widgets/`, `utils/`, `theme/`), rimozione riferimenti al vecchio sistema di autenticazione legacy.
+  - **Nuova sezione Infrastruttura & Deploy (§3.3)**: Documentazione di `docker-compose.yml`, servizi, porte, volumi e script di deploy.
+  - **Nuova sezione Database (§4)**: Tabella completa delle 6 collezioni MongoDB con indicazione del perimetro di backup.
+  - **Miglioramenti visivi**: Uso di GitHub Alerts, tabelle compatte, emoji tematiche per sezione, layout professionale.
+- **Sincronizzazione e Cache Busting**: Incrementata la versione globale della suite a `2.18.3`.
+
 ## [2.18.2] - 2026-05-29
 
 ### Aggiunto / Modificato
