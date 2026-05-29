@@ -1276,7 +1276,7 @@ async def export_database():
     db_dump = {
         "metadata": {
             "exported_at": datetime.now(timezone.utc).isoformat(),
-            "version": "2.7.2",
+            "version": "2.18.2",
         },
         "collections": {
             "patients": await _collect_collection("patients", patients_collection),
@@ -1284,6 +1284,7 @@ async def export_database():
             "scales": await _collect_collection("scales", scales_collection),
             "users": await _collect_collection("users", users_collection),
             "settings": await _collect_collection("settings", settings_collection),
+            "ai_analyses": await _collect_collection("ai_analyses", ai_analyses_collection),
         }
     }
     json_bytes = json.dumps(db_dump, ensure_ascii=False, indent=2, default=str).encode('utf-8')
@@ -1322,6 +1323,7 @@ async def import_database(file: UploadFile = File(...)):
         "scales": scales_collection,
         "users": users_collection,
         "settings": settings_collection,
+        "ai_analyses": ai_analyses_collection,
     }
 
     imported_counts = {}

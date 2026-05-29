@@ -2,6 +2,12 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.18.2] - 2026-05-29
+
+### Aggiunto / Modificato
+- **Integrazione Report IA in Backup/Ripristino del Database**: Inserita la collezione `ai_analyses` all'interno dei processi di export (`/export-db`) ed import (`/import-db`) del database, garantendo la conservazione e l'allineamento dei report generati con l'Intelligenza Artificiale nelle procedure di migrazione o installazioni pulite.
+- **Sincronizzazione e Cache Busting**: Incrementata la versione globale della suite a `2.18.2` (frontend admin `pubspec.yaml`, `app_version.dart`, FastAPI backend `main.py` e `docker-compose.yml` per l'aggiornamento cache dei container).
+
 ## [2.18.1] - 2026-05-29
 
 ### Aggiunto / Modificato
