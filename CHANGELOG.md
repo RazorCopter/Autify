@@ -1,4 +1,9 @@
 # Changelog
+## [2.18.5] - 2026-05-30
+### Fixed
+- Bugfix calcolo validità temporale delle scale valutative (dashboard) tramite parsing date europee DD/MM/YYYY
+- Rimossa Dark Mode dal file main.dart (tema fisso Light)
+
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 

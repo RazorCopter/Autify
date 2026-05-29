@@ -6,7 +6,7 @@ services:
     build:
       context: ./backend
       args:
-        - CACHE_BUST=2.18.4
+        - CACHE_BUST=2.18.5
     environment:
       - MONGODB_URL=mongodb://autify-db:27017
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
@@ -21,7 +21,7 @@ services:
     build:
       context: ./frontend_admin
       args:
-        - CACHE_BUST=2.18.4
+        - CACHE_BUST=2.18.5
     ports:
       - "8090:80"
     depends_on:
