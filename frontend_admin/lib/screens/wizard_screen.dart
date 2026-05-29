@@ -1822,7 +1822,7 @@ class _WizardScreenState extends State<WizardScreen>
                       _buildSectionHeader('DATI DELL\'INFORMATORE 2 (OPZIONALE)'),
                       Switch(
                         value: _inf2Abilitato,
-                        activeThumbColor: AppTheme.primaryColor,
+                        activeColor: AppTheme.primaryColor,
                         onChanged: (val) => setState(() => _inf2Abilitato = val),
                       ),
                     ],

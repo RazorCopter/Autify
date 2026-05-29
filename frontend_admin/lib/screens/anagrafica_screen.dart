@@ -191,7 +191,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                         Expanded(
                           flex: 2,
                           child: DropdownButtonFormField<String>(
-                            initialValue: selectedSesso,
+                            value: selectedSesso,
                             decoration: const InputDecoration(
                               labelText: 'Sesso',
                               prefixIcon: Icon(Icons.wc_outlined),
