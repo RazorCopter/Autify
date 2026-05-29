@@ -10,6 +10,7 @@ import '../models/scale_model.dart';
 import '../services/api_service.dart';
 import '../services/gemini_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/responsive_helper.dart';
 import 'evaluation_detail_screen.dart';
 import 'settings_screen.dart';
 import 'document_reader_screen.dart';
