@@ -739,7 +739,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 4),
             const Text(
-              'Utenti che necessitano di somministrazione della scala',
+              'Utenti che necessitano la compilazione di una scala',
               style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 18),
@@ -854,7 +854,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: distributions.isEmpty
                 ? const Center(
                     child: Text(
-                      'Nessuna scala somministrata registrata.',
+                      'Nessuna scala ancora compilata.',
                       style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                     ),
                   )
