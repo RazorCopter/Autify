@@ -2,6 +2,12 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.18.1] - 2026-05-29
+
+### Aggiunto / Modificato
+- **Favicon & Icone PWA ad Alta Definizione**: Aggiornate la favicon principale e le icone PWA (`Icon-192.png`, `Icon-512.png`, `Icon-maskable-192.png`, `Icon-maskable-512.png`) con la nuova risorsa premium quadrata a 512x512 pixel.
+- **Sincronizzazione e Cache Busting**: Incrementata la versione globale della suite a `2.18.1` (frontend admin `pubspec.yaml`, `app_version.dart`, FastAPI backend `main.py` e `docker-compose.yml` per l'aggiornamento cache dei container).
+
 ## [2.18.0] - 2026-05-29
 
 ### Aggiunto / Modificato
