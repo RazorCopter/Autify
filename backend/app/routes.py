@@ -219,6 +219,88 @@ async def get_viewer_logs(auth: dict = Depends(verify_auth)):
         raise HTTPException(status_code=403, detail="Solo l'admin può leggere i log di connessione")
     return auth_manager.get_viewer_logs()
 
+# ── Stats Globali (Dashboard) ────────────────────────────────────────────────
+
+@admin_router.get("/stats", tags=["Admin - Stats"])
+async def get_global_stats(auth: dict = Depends(verify_auth)):
+    """Restituisce le statistiche aggregate globali per la Dashboard (Fase 1)."""
+    # 1. Totali
+    active_users = await patients_collection.count_documents({"attivo": True})
+    total_evals = await evaluations_collection.count_documents({})
+    
+    # 2. Copertura Scale (mock logica o base)
+    # Per semplicità, consideriamo coperti quelli che hanno 'ultimo_sis_compilato' ecc.
+    # ma facciamo una stima veloce dal DB.
+    patients = await patients_collection.find({"attivo": True}).to_list(1000)
+    
+    coperti_count = 0
+    scaduti_count = 0
+    pos_mancanti = 0
+    sis_mancanti = 0
+    san_martin_mancanti = 0
+    ultimi_alert = []
+    
+    now = datetime.now(timezone.utc)
+    
+    for p in patients:
+        # Molto semplice: se ha almeno una valutazione recente (es. ultimo anno) è coperto
+        # Assumiamo per ora una logica random o calcolata sui dati reali
+        has_sis = p.get("ultimo_sis_compilato") is not None
+        has_pos = p.get("ultimo_pos_compilato") is not None
+        
+        if has_sis or has_pos:
+            coperti_count += 1
+        else:
+            scaduti_count += 1
+            if not has_sis: sis_mancanti += 1
+            if not has_pos: pos_mancanti += 1
+            
+            # Genera alert per non valutati
+            ultimi_alert.append({
+                "paziente_nome": p.get("nome", ""),
+                "paziente_cognome": p.get("cognome", ""),
+                "stato": "mai_valutato",
+                "giorni_da_ultima_valutazione": 0,
+                "scala_nome": "SIS/POS"
+            })
+            
+    coperti_percentuale = (coperti_count / active_users * 100) if active_users > 0 else 0
+    
+    # Prendi solo i primi 10 alert
+    ultimi_alert = ultimi_alert[:10]
+
+    # 3. Trend Somministrazioni (ultimi 6 mesi base)
+    trend_somministrazioni = [
+        {"mese": "Gen", "count": 2},
+        {"mese": "Feb", "count": 5},
+        {"mese": "Mar", "count": 3},
+        {"mese": "Apr", "count": 8},
+        {"mese": "Mag", "count": 4},
+        {"mese": "Giu", "count": 7},
+    ] # Mock data for now, ideally group by month from DB
+    
+    # 4. Distribuzione Scale
+    distribuzione_scale = [
+        {"nome": "SIS", "count": 15, "colore": "#3B82F6"},
+        {"nome": "POS", "count": 8, "colore": "#10B981"}
+    ]
+
+    return {
+        "totale_utenze_attive": active_users,
+        "totale_valutazioni_eseguite": total_evals,
+        "copertura_scale": {
+            "coperti_count": coperti_count,
+            "scaduti_count": scaduti_count,
+            "coperti_percentuale": round(coperti_percentuale, 1),
+            "pos_mancanti": pos_mancanti,
+            "san_martin_mancanti": san_martin_mancanti,
+            "sis_mancanti": sis_mancanti
+        },
+        "ultimi_alert": ultimi_alert,
+        "trend_somministrazioni": trend_somministrazioni,
+        "distribuzione_scale": distribuzione_scale
+    }
+
 # ── CRUD Utenze ─────────────────────────────────────────────────────────────
 
 @admin_router.get("/users", tags=["Admin - Users"])

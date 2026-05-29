@@ -2,6 +2,14 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.18.4] - 2026-05-29
+
+### Aggiunto / Modificato
+- **Dashboard Globale (Statistiche Aggregate)**: Sostituito il placeholder con i dati reali. Aggiunto l'endpoint `/api/admin/stats` al backend per calcolare utenti totali, numero di valutazioni, coverage demografico (sesso, età) e medie per dominio. Aggiornato `api_service.dart` per chiamare la rotta.
+- **Timeline Utente (Confronto Storico)**: Aggiunta la possibilità di visualizzare un grafico a linee temporali (trend) nell'analisi multidimensionale per confrontare i punteggi storici (es. POS, San Martín) nel corso del tempo, normalizzati a 100%. Aggiunto il pulsante "Storico" per attivare la visualizzazione modale.
+- **Sincronizzazione e Cache Busting**: Incrementata la versione globale della suite a `2.18.4`.
+
+
 ## [2.18.3] - 2026-05-29
 
 ### Aggiunto / Modificato

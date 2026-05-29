@@ -42,6 +42,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
   List<ScaleModel> _availableScales = [];
   Map<String, AggregatedEvaluation> _latestEvaluations = {};
+  Map<String, List<AggregatedEvaluation>> _evaluationsHistory = {};
   Map<String, PsychometricAnalysis?> _analyses = {};
   String? _aiReport;
   String? _aiError;
@@ -110,6 +111,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       if (history.isNotEmpty) {
         history.sort((a, b) => b.dataCompilazione.compareTo(a.dataCompilazione));
         _latestEvaluations[scale.id] = history.first;
+        _evaluationsHistory[scale.id] = history;
         // Carica analisi psicometrica
         try {
           final analysis = await _apiService.getEvaluationAnalysis(history.first.idValutazione);
@@ -1126,6 +1128,20 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             ),
           ),
           const SizedBox(width: 8),
+          if ((_evaluationsHistory[scale.id]?.length ?? 0) > 1) ...[
+            TextButton.icon(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.amber.shade700,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              ),
+              onPressed: () => _showTimelineDialog(scale),
+              icon: const Icon(Icons.timeline, size: 16),
+              label: const Text('Storico', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            ),
+            const SizedBox(width: 8),
+          ],
           TextButton.icon(
             style: TextButton.styleFrom(
               foregroundColor: Colors.white,
@@ -1206,6 +1222,153 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 ),
               ],
             ),
+    );
+  }
+
+  void _showTimelineDialog(ScaleModel scale) {
+    final history = _evaluationsHistory[scale.id]!;
+    // Sort ascending for chart (oldest first)
+    final sorted = List<AggregatedEvaluation>.from(history)..sort((a, b) => a.dataCompilazione.compareTo(b.dataCompilazione));
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            width: 800,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.timeline, color: AppTheme.primaryColor),
+                        const SizedBox(width: 12),
+                        Text('Storico Punteggi: ${scale.nome}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text('Visualizzazione dell\'andamento dei domini nel tempo (normalizzato a 100%).', style: TextStyle(color: AppTheme.textSecondary)),
+                const SizedBox(height: 24),
+                SizedBox(
+                  height: 400,
+                  child: _buildTimelineChart(sorted, scale),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    );
+  }
+
+  Widget _buildTimelineChart(List<AggregatedEvaluation> sorted, ScaleModel scale) {
+    // Collect all domain codes
+    final Set<String> codes = {};
+    for (var eval in sorted) {
+      for (var d in eval.domini) {
+        codes.add(d.codice);
+      }
+    }
+    final codeList = codes.toList();
+
+    return LineChart(
+      LineChartData(
+        minY: 0,
+        maxY: 100,
+        lineBarsData: codeList.map((code) {
+          int colorIndex = codeList.indexOf(code) % _domainColors.length;
+          final color = _domainColors[colorIndex];
+          return LineChartBarData(
+            spots: sorted.asMap().entries.map((e) {
+              final idx = e.key;
+              final eval = e.value;
+              final domain = eval.domini.firstWhere(
+                (d) => d.codice == code, 
+                orElse: () => DomainScore(codice: code, etichetta: '', punteggio: 0, punteggioMassimo: 0, numDomande: 0)
+              );
+              
+              if (domain.numDomande == 0 && domain.punteggioMassimo == 0) {
+                 return FlSpot(idx.toDouble(), 0);
+              }
+
+              // Normalize to 100%
+              final isPos = scale.nome.toLowerCase().contains('pos');
+              final isSM = scale.nome.toLowerCase().contains('martin');
+              
+              double maxTheoretical = domain.numDomande.toDouble();
+              if (isPos) maxTheoretical *= 3;
+              else if (isSM) maxTheoretical *= 4;
+              else maxTheoretical = domain.punteggioMassimo > 0 ? domain.punteggioMassimo.toDouble() : 100;
+              
+              if (maxTheoretical == 0) maxTheoretical = 1;
+              final percent = (domain.punteggio / maxTheoretical) * 100.0;
+              return FlSpot(idx.toDouble(), percent);
+            }).toList(),
+            isCurved: true,
+            color: color,
+            barWidth: 3,
+            dotData: const FlDotData(show: true),
+          );
+        }).toList(),
+        titlesData: FlTitlesData(
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                final idx = value.toInt();
+                if (idx < 0 || idx >= sorted.length) return const SizedBox.shrink();
+                final dateStr = sorted[idx].dataCompilazione.split('T')[0];
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(dateStr, style: const TextStyle(fontSize: 10)),
+                );
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 40,
+              getTitlesWidget: (value, meta) {
+                return Text('${value.toInt()}%', style: const TextStyle(fontSize: 10));
+              },
+            ),
+          ),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: true,
+          horizontalInterval: 20,
+        ),
+        borderData: FlBorderData(show: true, border: Border.all(color: Colors.grey.shade300)),
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipColor: (_) => Colors.blueGrey.shade900,
+            getTooltipItems: (touchedSpots) {
+              return touchedSpots.map((spot) {
+                final code = codeList[spot.barIndex];
+                final eval = sorted[spot.x.toInt()];
+                final domain = eval.domini.firstWhere((d) => d.codice == code, orElse: () => DomainScore(codice: code, etichetta: code, punteggio: 0, punteggioMassimo: 0, numDomande: 0));
+                return LineTooltipItem(
+                  '${domain.etichetta}\n${spot.y.toStringAsFixed(1)}%',
+                  TextStyle(color: _domainColors[spot.barIndex % _domainColors.length], fontWeight: FontWeight.bold),
+                );
+              }).toList();
+            },
+          ),
+        ),
+      ),
     );
   }
 
