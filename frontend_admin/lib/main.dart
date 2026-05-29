@@ -9,6 +9,7 @@ import 'screens/about_terms_dialog.dart';
 import 'screens/protocols_screen.dart';
 import 'screens/anagrafica_screen.dart';
 import 'screens/selection_screen.dart';
+import 'screens/audit_log_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';
@@ -60,6 +61,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     (icon: Icons.edit_note_outlined, active: Icons.edit_note, label: 'Compila'),
     (icon: Icons.people_outline, active: Icons.people, label: 'Utenza'),
     (icon: Icons.library_books_outlined, active: Icons.library_books, label: 'Protocolli'),
+    (icon: Icons.history_outlined, active: Icons.history, label: 'Registro'),
     (icon: Icons.settings_outlined, active: Icons.settings, label: 'Impostazioni'),
   ];
 
@@ -497,7 +499,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
             initialSearchQuery: _patientSearchQuery,
           ),
         3 => const ProtocolsScreen(key: ValueKey(3)),
-        4 => const SettingsScreen(key: ValueKey(4)),
+        4 => const AuditLogScreen(key: ValueKey(4)),
+        5 => const SettingsScreen(key: ValueKey(5)),
         _ => _buildPlaceholder(),
       },
     );

@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException, status, UploadFile, File, Header, 
 from fastapi.responses import StreamingResponse
 from typing import List, Optional
 from bson import ObjectId
-from .models import Scale, Evaluation, Patient, AppSettings, Section, Question, Option, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest, AiAnalysis, AiAnalysisCreate, UserCreate, UserUpdate, UserResponse
-from .database import evaluations_collection, settings_collection, patients_collection, scales_collection, users_collection, ai_analyses_collection
+from .models import Scale, Evaluation, Patient, AppSettings, Section, Question, Option, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest, AiAnalysis, AiAnalysisCreate, UserCreate, UserUpdate, UserResponse, AuditLogCreate, AuditLogResponse
+from .database import evaluations_collection, settings_collection, patients_collection, scales_collection, users_collection, ai_analyses_collection, audit_logs_collection
 from .pdf_generator import generate_evaluation_pdf, generate_ai_analysis_pdf
 from .analytics import compute_psychometric_analysis, compute_direct_scores, build_domain_map, calcola_punteggi_sis
 from datetime import datetime, timezone
@@ -40,6 +40,18 @@ admin_router = APIRouter(dependencies=[Depends(verify_auth)])
 public_admin_router = APIRouter()
 client_router = APIRouter()
 
+async def log_audit(azione: str, operatore: str, dettagli: str, target_id: Optional[str] = None):
+    try:
+        log_entry = {
+            "azione": azione,
+            "operatore": operatore,
+            "dettagli": dettagli,
+            "target_id": target_id,
+            "timestamp": datetime.now(timezone.utc)
+        }
+        await audit_logs_collection.insert_one(log_entry)
+    except Exception as e:
+        print(f"Errore nel salvataggio dell'audit log: {e}")
 
 async def _find_evaluation_document(evaluation_id: str):
     """Recupera una valutazione supportando sia il campo applicativo che fallback legacy."""
@@ -452,7 +464,7 @@ async def get_admin_scales():
     return scales
 
 @admin_router.post("/patients", response_model=Patient, status_code=status.HTTP_201_CREATED, tags=["Admin - Patients"])
-async def create_patient(patient: Patient):
+async def create_patient(patient: Patient, auth_context: dict = Depends(verify_auth)):
     patient_dict = patient.model_dump()
     if not patient_dict.get("id"):
         patient_dict.pop("id", None)
@@ -463,24 +475,48 @@ async def create_patient(patient: Patient):
         if existing:
             raise HTTPException(status_code=400, detail="Utente con questo ID già esistente")
     await patients_collection.insert_one(patient_dict)
+    
+    await log_audit(
+        "CREAZIONE_UTENTE", 
+        auth_context["username"], 
+        f"Creato nuovo utente: {patient.nome} {patient.cognome}", 
+        patient.id
+    )
+    
     return patient
 
 @admin_router.put("/patients/{id}", response_model=Patient, tags=["Admin - Patients"])
-async def update_patient(id: str, patient: Patient):
+async def update_patient(id: str, patient: Patient, auth_context: dict = Depends(verify_auth)):
     patient_dict = patient.model_dump()
     result = await patients_collection.replace_one({"id": id}, patient_dict)
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Utente non trovato")
+        
+    await log_audit(
+        "MODIFICA_UTENTE", 
+        auth_context["username"], 
+        f"Aggiornata anagrafica utente: {patient.nome} {patient.cognome}", 
+        id
+    )
+        
     return patient
 
 @admin_router.delete("/patients/{id}", tags=["Admin - Patients"])
-async def delete_patient(id: str):
+async def delete_patient(id: str, auth_context: dict = Depends(verify_auth)):
     # Elimina a cascata tutte le valutazioni associate all'utente prima di rimuoverlo
     await evaluations_collection.delete_many({"id_paziente": id})
     
     result = await patients_collection.delete_one({"id": id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Utente non trovato")
+        
+    await log_audit(
+        "CANCELLAZIONE_UTENTE", 
+        auth_context["username"], 
+        f"Eliminato utente e relative valutazioni", 
+        id
+    )
+        
     return {"message": "Utente e le relative valutazioni eliminati con successo"}
 
 @admin_router.get("/patients/{id_patient}/ai-analyses", response_model=List[AiAnalysis], tags=["Admin - AI Analyses"])
@@ -1516,7 +1552,31 @@ async def create_evaluation(evaluation: Evaluation):
     if not result.inserted_id:
         raise HTTPException(status_code=500, detail="Errore nel salvataggio della valutazione")
         
+    # Salva il log di audit
+    operatore = eval_dict.get("nome_operatore", "Operatore Sconosciuto")
+    id_paziente = eval_dict.get("id_paziente")
+    id_scala = eval_dict.get("id_scala", "")
+    await log_audit(
+        "COMPILAZIONE_SCALA", 
+        operatore, 
+        f"Compilata nuova scala: {id_scala}", 
+        id_paziente
+    )
+        
     return evaluation
+
+@admin_router.get("/audit-logs", response_model=List[AuditLogResponse], tags=["Admin - Audit"])
+async def get_audit_logs(limit: int = 200):
+    """Recupera gli ultimi log di attività (tracciabilità educativa)"""
+    cursor = audit_logs_collection.find({}).sort("timestamp", -1)
+    logs_raw = await cursor.to_list(length=limit)
+    
+    logs = []
+    for log in logs_raw:
+        log["id"] = str(log["_id"])
+        logs.append(log)
+        
+    return logs
 
 @client_router.get("/patients", response_model=List[Patient], tags=["Client - Patients"])
 async def get_client_patients():

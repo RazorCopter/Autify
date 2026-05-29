@@ -13,4 +13,4 @@ users_collection = database.get_collection("users")
 scales_collection = database.get_collection("scales")
 settings_collection = database.get_collection("settings")
 ai_analyses_collection = database.get_collection("ai_analyses")
-
+audit_logs_collection = database.get_collection("audit_logs")

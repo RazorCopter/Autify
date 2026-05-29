@@ -6,6 +6,7 @@ import '../config.dart' as cfg;
 import '../models/scale_model.dart';
 import '../models/patient_model.dart';
 import '../models/evaluation_model.dart';
+import '../models/audit_log.dart';
 
 class ApiService {
   static String get kAuthToken {
@@ -105,6 +106,23 @@ class ApiService {
       return [];
     } catch (e) {
       print('Errore caricamento viewer logs: $e');
+      return [];
+    }
+  }
+
+  Future<List<AuditLog>> getAuditLogs() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/audit-logs'),
+        headers: {'Authorization': 'Bearer $kAuthToken'},
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((e) => AuditLog.fromJson(e)).toList();
+      }
+      return [];
+    } catch (e) {
+      print('Errore caricamento audit logs: $e');
       return [];
     }
   }
