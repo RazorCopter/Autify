@@ -1293,10 +1293,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               final eval = e.value;
               final domain = eval.domini.firstWhere(
                 (d) => d.codice == code, 
-                orElse: () => DomainScore(codice: code, etichetta: '', punteggio: 0, punteggioMassimo: 0, numDomande: 0)
+                orElse: () => DomainScore(codice: code, etichetta: '', punteggio: 0, numDomande: 0)
               );
               
-              if (domain.numDomande == 0 && domain.punteggioMassimo == 0) {
+              if (domain.numDomande == 0) {
                  return FlSpot(idx.toDouble(), 0);
               }
 
@@ -1307,7 +1307,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               double maxTheoretical = domain.numDomande.toDouble();
               if (isPos) maxTheoretical *= 3;
               else if (isSM) maxTheoretical *= 4;
-              else maxTheoretical = domain.punteggioMassimo > 0 ? domain.punteggioMassimo.toDouble() : 100;
+              else maxTheoretical = 100; // Default fallback
               
               if (maxTheoretical == 0) maxTheoretical = 1;
               final percent = (domain.punteggio / maxTheoretical) * 100.0;
@@ -1359,7 +1359,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               return touchedSpots.map((spot) {
                 final code = codeList[spot.barIndex];
                 final eval = sorted[spot.x.toInt()];
-                final domain = eval.domini.firstWhere((d) => d.codice == code, orElse: () => DomainScore(codice: code, etichetta: code, punteggio: 0, punteggioMassimo: 0, numDomande: 0));
+                final domain = eval.domini.firstWhere((d) => d.codice == code, orElse: () => DomainScore(codice: code, etichetta: code, punteggio: 0, numDomande: 0));
                 return LineTooltipItem(
                   '${domain.etichetta}\n${spot.y.toStringAsFixed(1)}%',
                   TextStyle(color: _domainColors[spot.barIndex % _domainColors.length], fontWeight: FontWeight.bold),
