@@ -28,18 +28,6 @@ services:
       - autify-api
     restart: unless-stopped
 
-  # FRONTEND CLIENT (porta 8091)
-  autify-client:
-    build:
-      context: ./frontend_client
-      args:
-        - CACHE_BUST=2.17.6
-    ports:
-      - "8091:80"
-    depends_on:
-      - autify-api
-    restart: unless-stopped
-
   # DATABASE
   autify-db:
     image: mongo:latest
