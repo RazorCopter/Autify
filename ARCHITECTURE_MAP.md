@@ -119,7 +119,7 @@ backend/
 * **Dettagli Tecnici**:
   * Classe `FastAPI` istanziata con titolo "AutAnalysis API" e versione `2.17.0`.
   * Configura un evento di avvio `@app.on_event("startup")` per invocare in modalità asincrona `auth.ensure_default_admin()` al fine di assicurare la presenza dell'utenza amministratore iniziale nel database.
-  * Middleware `CORSMiddleware` configurato per accettare tutte le origini (`allow_origins=["*"]`) per facilitare lo sviluppo locale e la pubblicazione su domini specifici (es. `https://www.autify.it`).
+  * Middleware `CORSMiddleware` configurato per accettare tutte le origini (`allow_origins=["*"]`) per facilitare lo sviluppo locale e la pubblicazione su domini specifici (es. `https://tiglio.autify.it`).
   * Registrazione dei router: `/api/admin` tramite `admin_router`, `public_admin_router` e `/api/client` tramite `client_router`.
   * Endpoint `/` implementato per il controllo dello stato di salute del server (`health_check`).
 * **Dipendenze/Relazioni**:

@@ -17,7 +17,7 @@ async def startup_event():
 # Configurazione CORS per permettere le chiamate dai frontend (Admin e Client)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Modificare in prod inserendo i domini specifici come https://www.autify.it
+    allow_origins=["*"],  # Modificare in prod inserendo i domini specifici come https://tiglio.autify.it
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
