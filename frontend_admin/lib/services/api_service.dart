@@ -638,7 +638,7 @@ class ApiService {
   Future<Map<String, dynamic>?> getDashboardStats() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/stats'),
+        Uri.parse('$baseUrl/dashboard-stats'),
         headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       if (response.statusCode == 200) {
