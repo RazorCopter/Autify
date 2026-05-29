@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../models/audit_log.dart';
 import '../theme/app_theme.dart';
@@ -92,7 +91,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.textDark,
+                          color: AppTheme.textPrimary,
                           letterSpacing: -0.5,
                         ),
                       ),
@@ -170,8 +169,8 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                                         Icon(Icons.access_time, size: 14, color: AppTheme.textSecondary),
                                         const SizedBox(width: 4),
                                         Text(
-                                          DateFormat('dd/MM/yyyy HH:mm').format(log.timestamp),
-                                          style: TextStyle(color: AppTheme.textSecondary),
+                                          "${log.timestamp.day.toString().padLeft(2, '0')}/${log.timestamp.month.toString().padLeft(2, '0')}/${log.timestamp.year} ${log.timestamp.hour.toString().padLeft(2, '0')}:${log.timestamp.minute.toString().padLeft(2, '0')}",
+                                          style: const TextStyle(color: AppTheme.textSecondary),
                                         ),
                                       ],
                                     ),
