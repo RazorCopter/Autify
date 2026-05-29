@@ -38,8 +38,7 @@ class AdminApp extends StatelessWidget {
       title: 'Autify Admin v$kFrontendVersion',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.light,
       home: isAuthenticated ? const AdminDashboard() : const LoginScreen(),
     );
   }

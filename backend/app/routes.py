@@ -1042,11 +1042,24 @@ async def get_dashboard_stats():
                         clean_str = clean_str[:-1] + "+00:00"
                     res = datetime.fromisoformat(clean_str)
                 except ValueError:
-                    res = datetime.min
+                    # Fallback per formato DD/MM/YYYY o DD-MM-YYYY
+                    try:
+                        clean_str = d.replace("-", "/")
+                        parts = clean_str.split("/")
+                        if len(parts) == 3:
+                            # Assumiamo DD/MM/YYYY
+                            day, month, year = int(parts[0]), int(parts[1]), int(parts[2])
+                            if year < 100:
+                                year += 2000
+                            res = datetime(year, month, day, tzinfo=timezone.utc)
+                        else:
+                            res = datetime.min.replace(tzinfo=timezone.utc)
+                    except ValueError:
+                        res = datetime.min.replace(tzinfo=timezone.utc)
             elif isinstance(d, datetime):
                 res = d
             else:
-                res = datetime.min
+                res = datetime.min.replace(tzinfo=timezone.utc)
             if res.tzinfo is None:
                 res = res.replace(tzinfo=timezone.utc)
             return res
