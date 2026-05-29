@@ -970,6 +970,67 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   Widget _buildPatientHeader() {
     final age = _calculateAge();
     final p = widget.patient;
+    final isMobile = ResponsiveHelper.isMobile(context);
+
+    final avatar = Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
+      ),
+      child: Center(
+        child: Text(
+          '${p.nome.isNotEmpty ? p.nome[0] : ''}${p.cognome.isNotEmpty ? p.cognome[0] : ''}',
+          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+      ),
+    );
+
+    final info = Column(
+      crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${p.nome} ${p.cognome}',
+          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: -0.5),
+          textAlign: isMobile ? TextAlign.center : TextAlign.left,
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 20,
+          runSpacing: 8,
+          alignment: isMobile ? WrapAlignment.center : WrapAlignment.start,
+          children: [
+            if (age != null)
+              _headerChip(Icons.cake_outlined, '$age anni'),
+            if (p.sesso != null && p.sesso!.isNotEmpty)
+              _headerChip(Icons.person_outline, p.sesso!),
+            if (p.dataNascita != null)
+              _headerChip(Icons.calendar_today_outlined, p.dataNascita!.split('T')[0]),
+          ],
+        ),
+      ],
+    );
+
+    final badge = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.assessment_outlined, color: Colors.white70, size: 18),
+          const SizedBox(width: 8),
+          Text(
+            '${_latestEvaluations.length} Scale Compilate',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+          ),
+        ],
+      ),
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -984,76 +1045,27 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         ],
       ),
       padding: const EdgeInsets.all(28),
-      child: Row(
-        children: [
-          // Avatar
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
-            ),
-            child: Center(
-              child: Text(
-                '${p.nome.isNotEmpty ? p.nome[0] : ''}${p.cognome.isNotEmpty ? p.cognome[0] : ''}',
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-            ),
-          ),
-          const SizedBox(width: 24),
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: isMobile
+          ? Column(
               children: [
-                Text(
-                  '${p.nome} ${p.cognome}',
-                  style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: -0.5),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 20,
-                  runSpacing: 8,
-                  children: [
-                    if (age != null)
-                      _headerChip(Icons.cake_outlined, '$age anni'),
-                    if (p.sesso != null && p.sesso!.isNotEmpty)
-                      _headerChip(Icons.person_outline, p.sesso!),
-                    if (p.dataNascita != null)
-                      _headerChip(Icons.calendar_today_outlined, p.dataNascita!.split('T')[0]),
-                  ],
+                avatar,
+                const SizedBox(height: 16),
+                info,
+                const SizedBox(height: 24),
+                badge,
+              ],
+            )
+          : Row(
+              children: [
+                avatar,
+                const SizedBox(width: 24),
+                Expanded(child: info),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [badge],
                 ),
               ],
             ),
-          ),
-          // Scale compilate badge
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.assessment_outlined, color: Colors.white70, size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${_latestEvaluations.length} Scale Compilate',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
