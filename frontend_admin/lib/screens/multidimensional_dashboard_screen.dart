@@ -1271,104 +1271,151 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   }
 
   Widget _buildTimelineChart(List<AggregatedEvaluation> sorted, ScaleModel scale) {
-    // Collect all domain codes
-    final Set<String> codes = {};
+    // Collect all domain codes and their labels
+    final Map<String, String> codeToLabel = {};
     for (var eval in sorted) {
       for (var d in eval.domini) {
-        codes.add(d.codice);
+        if (!codeToLabel.containsKey(d.codice)) {
+          codeToLabel[d.codice] = d.etichetta;
+        }
       }
     }
-    final codeList = codes.toList();
+    final codeList = codeToLabel.keys.toList();
 
-    return LineChart(
-      LineChartData(
-        minY: 0,
-        maxY: 100,
-        lineBarsData: codeList.map((code) {
-          int colorIndex = codeList.indexOf(code) % _domainColors.length;
-          final color = _domainColors[colorIndex];
-          return LineChartBarData(
-            spots: sorted.asMap().entries.map((e) {
-              final idx = e.key;
-              final eval = e.value;
-              final domain = eval.domini.firstWhere(
-                (d) => d.codice == code, 
-                orElse: () => DomainScore(codice: code, etichetta: '', punteggio: 0, numDomande: 0)
-              );
-              
-              if (domain.numDomande == 0) {
-                 return FlSpot(idx.toDouble(), 0);
-              }
+    return Column(
+      children: [
+        Expanded(
+          child: LineChart(
+            LineChartData(
+              minX: -0.5,
+              maxX: sorted.isNotEmpty ? sorted.length - 0.5 : 0.5,
+              minY: 0,
+              maxY: 100,
+              lineBarsData: codeList.map((code) {
+                int colorIndex = codeList.indexOf(code) % _domainColors.length;
+                final color = _domainColors[colorIndex];
+                return LineChartBarData(
+                  spots: sorted.asMap().entries.map((e) {
+                    final idx = e.key;
+                    final eval = e.value;
+                    final domain = eval.domini.firstWhere(
+                      (d) => d.codice == code, 
+                      orElse: () => DomainScore(codice: code, etichetta: '', punteggio: 0, numDomande: 0)
+                    );
+                    
+                    if (domain.numDomande == 0) {
+                       return FlSpot(idx.toDouble(), 0);
+                    }
 
-              // Normalize to 100%
-              final isPos = scale.nome.toLowerCase().contains('pos');
-              final isSM = scale.nome.toLowerCase().contains('martin');
-              
-              double maxTheoretical = domain.numDomande.toDouble();
-              if (isPos) maxTheoretical *= 3;
-              else if (isSM) maxTheoretical *= 4;
-              else maxTheoretical = 100; // Default fallback
-              
-              if (maxTheoretical == 0) maxTheoretical = 1;
-              final percent = (domain.punteggio / maxTheoretical) * 100.0;
-              return FlSpot(idx.toDouble(), percent);
-            }).toList(),
-            isCurved: true,
-            color: color,
-            barWidth: 3,
-            dotData: const FlDotData(show: true),
-          );
-        }).toList(),
-        titlesData: FlTitlesData(
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (value, meta) {
-                final idx = value.toInt();
-                if (idx < 0 || idx >= sorted.length) return const SizedBox.shrink();
-                final dateStr = sorted[idx].dataCompilazione.split('T')[0];
-                return Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(dateStr, style: const TextStyle(fontSize: 10)),
+                    // Normalize to 100%
+                    final isPos = scale.nome.toLowerCase().contains('pos');
+                    final isSM = scale.nome.toLowerCase().contains('martin');
+                    
+                    double maxTheoretical = domain.numDomande.toDouble();
+                    if (isPos) maxTheoretical *= 3;
+                    else if (isSM) maxTheoretical *= 4;
+                    else maxTheoretical = 100; // Default fallback
+                    
+                    if (maxTheoretical == 0) maxTheoretical = 1;
+                    final percent = (domain.punteggio / maxTheoretical) * 100.0;
+                    return FlSpot(idx.toDouble(), percent);
+                  }).toList(),
+                  isCurved: true,
+                  color: color,
+                  barWidth: 3,
+                  dotData: const FlDotData(show: true),
                 );
-              },
+              }).toList(),
+              titlesData: FlTitlesData(
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 60,
+                    interval: 1,
+                    getTitlesWidget: (value, meta) {
+                      final idx = value.toInt();
+                      if (idx < 0 || idx >= sorted.length || value != idx.toDouble()) return const SizedBox.shrink();
+                      
+                      final dateParts = sorted[idx].dataCompilazione.split('T')[0].split('-');
+                      final dateStr = dateParts.length == 3 ? '${dateParts[2]}/${dateParts[1]}/${dateParts[0]}' : sorted[idx].dataCompilazione.split('T')[0];
+                      
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 16.0),
+                        child: Transform.rotate(
+                          angle: -0.6,
+                          child: Text(dateStr, style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 40,
+                    getTitlesWidget: (value, meta) {
+                      return Text('${value.toInt()}%', style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary));
+                    },
+                  ),
+                ),
+                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              ),
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: true,
+                horizontalInterval: 20,
+                getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.shade300, strokeWidth: 1, dashArray: [5, 5]),
+                getDrawingVerticalLine: (value) => FlLine(color: Colors.grey.shade200, strokeWidth: 1),
+              ),
+              borderData: FlBorderData(show: true, border: Border.all(color: Colors.grey.shade300)),
+              lineTouchData: LineTouchData(
+                touchTooltipData: LineTouchTooltipData(
+                  getTooltipColor: (_) => Colors.blueGrey.shade900.withValues(alpha: 0.9),
+                  getTooltipItems: (touchedSpots) {
+                    return touchedSpots.map((spot) {
+                      final code = codeList[spot.barIndex];
+                      final eval = sorted[spot.x.toInt()];
+                      final domain = eval.domini.firstWhere((d) => d.codice == code, orElse: () => DomainScore(codice: code, etichetta: code, punteggio: 0, numDomande: 0));
+                      return LineTooltipItem(
+                        '${domain.etichetta}\n${spot.y.toStringAsFixed(1)}%',
+                        TextStyle(color: _domainColors[spot.barIndex % _domainColors.length], fontWeight: FontWeight.bold, fontSize: 12),
+                      );
+                    }).toList();
+                  },
+                ),
+              ),
             ),
           ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 40,
-              getTitlesWidget: (value, meta) {
-                return Text('${value.toInt()}%', style: const TextStyle(fontSize: 10));
-              },
-            ),
-          ),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: true,
-          horizontalInterval: 20,
+        const SizedBox(height: 24),
+        // Legend
+        Wrap(
+          spacing: 16,
+          runSpacing: 12,
+          alignment: WrapAlignment.center,
+          children: codeList.map((code) {
+            int colorIndex = codeList.indexOf(code) % _domainColors.length;
+            final color = _domainColors[colorIndex];
+            final label = codeToLabel[code] ?? code;
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: const TextStyle(fontSize: 12, color: AppTheme.textPrimary, fontWeight: FontWeight.w500),
+                ),
+              ],
+            );
+          }).toList(),
         ),
-        borderData: FlBorderData(show: true, border: Border.all(color: Colors.grey.shade300)),
-        lineTouchData: LineTouchData(
-          touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (_) => Colors.blueGrey.shade900,
-            getTooltipItems: (touchedSpots) {
-              return touchedSpots.map((spot) {
-                final code = codeList[spot.barIndex];
-                final eval = sorted[spot.x.toInt()];
-                final domain = eval.domini.firstWhere((d) => d.codice == code, orElse: () => DomainScore(codice: code, etichetta: code, punteggio: 0, numDomande: 0));
-                return LineTooltipItem(
-                  '${domain.etichetta}\n${spot.y.toStringAsFixed(1)}%',
-                  TextStyle(color: _domainColors[spot.barIndex % _domainColors.length], fontWeight: FontWeight.bold),
-                );
-              }).toList();
-            },
-          ),
-        ),
-      ),
+      ],
     );
   }
 
