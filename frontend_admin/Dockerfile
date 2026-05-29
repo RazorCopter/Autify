@@ -4,7 +4,7 @@ WORKDIR /app
 COPY . .
 RUN flutter pub get
 RUN dart run tools/update_version.dart
-RUN flutter build web --release --web-renderer canvaskit -O 2
+RUN flutter build web --release -O 2
 
 # Stage 2: Serve with Nginx
 FROM nginx:alpine
