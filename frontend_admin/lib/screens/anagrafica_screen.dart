@@ -1111,7 +1111,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: _isExporting ? null : _exportCsv,
-              icon: _isExporting ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.download),
+              icon: _isExporting ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.download),
               label: Text(_isExporting ? 'Esportazione...' : 'Esporta (CSV)'),
             ),
           ),
@@ -1142,7 +1142,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
         ),
         OutlinedButton.icon(
           onPressed: _isExporting ? null : _exportCsv,
-          icon: _isExporting ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.download),
+          icon: _isExporting ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.download),
           label: Text(_isExporting ? 'Esportazione...' : 'Esporta (CSV)'),
         ),
         const SizedBox(width: 12),
