@@ -764,7 +764,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                       return TweenAnimationBuilder<double>(
                         tween: Tween<double>(begin: 0, end: 1),
-                        duration: Duration(milliseconds: 300 + (index * 100)),
+                        duration: Duration(milliseconds: (300 + (index * 100)).toInt()),
                         builder: (context, animValue, child) {
                           return Opacity(
                             opacity: animValue,
