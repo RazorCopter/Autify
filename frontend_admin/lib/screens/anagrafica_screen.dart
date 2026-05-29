@@ -5,6 +5,7 @@ import '../models/scale_model.dart';
 import '../services/api_service.dart';
 import '../services/settings_notifier.dart';
 import '../services/validity_calculator.dart';
+import '../utils/responsive_helper.dart';
 import '../theme/app_theme.dart';
 import 'multidimensional_dashboard_screen.dart';
 
@@ -70,8 +71,8 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
       builder: (ctx) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Container(
-          width: 500,
-          padding: const EdgeInsets.all(28),
+      width: ResponsiveHelper.dialogMaxWidth(context),
+      padding: EdgeInsets.all(ResponsiveHelper.isMobile(context) ? 20 : 28),
           child: Form(
             key: _formKey,
             child: StatefulBuilder(
@@ -391,145 +392,16 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
     return Stack(
       children: [
         Padding(
-          padding: const EdgeInsets.all(32.0),
+          padding: EdgeInsets.all(ResponsiveHelper.horizontalPadding(context)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
-              Row(
-                children: [
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Utenza',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.textPrimary,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text('Gestisci i dati degli utenti',
-                          style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
-                        ),
-                      ],
-                    ),
-                  ),
-                  FilledButton.icon(
-                    onPressed: ApiService.isViewer ? null : () => _showPatientDialog(),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Aggiungi Utente'),
-                  ),
-                  const SizedBox(width: 12),
-                  IconButton.outlined(
-                    icon: const Icon(Icons.refresh_rounded),
-                    onPressed: _refreshPatients,
-                    tooltip: 'Aggiorna lista',
-                    style: IconButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFFE8EEF8)),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // Search Bar
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE8EEF8)),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.search, color: AppTheme.textSecondary),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextField(
-                              controller: _searchController,
-                              onChanged: (val) => setState(() {}),
-                              decoration: const InputDecoration(
-                                hintText: 'Cerca utente per nome, cognome o note...',
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                filled: false,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
-                          ),
-                          if (_searchController.text.isNotEmpty)
-                            IconButton(
-                              icon: const Icon(Icons.clear, size: 18),
-                              onPressed: () => setState(() {
-                                _searchController.clear();
-                              }),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE8EEF8)),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _statusFilter,
-                        icon: const Icon(Icons.filter_list_rounded, color: AppTheme.textSecondary),
-                        dropdownColor: Colors.white,
-                        items: const [
-                          DropdownMenuItem(value: 'active', child: Text('Solo Attivi', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary))),
-                          DropdownMenuItem(value: 'archived', child: Text('Archiviati', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary))),
-                          DropdownMenuItem(value: 'all', child: Text('Tutti gli utenti', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary))),
-                        ],
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() {
-                              _statusFilter = val;
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE8EEF8)),
-                    ),
-                    padding: const EdgeInsets.all(4),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.grid_view_rounded, size: 20),
-                          color: _isGridView ? AppTheme.primaryColor : AppTheme.textSecondary,
-                          onPressed: () => setState(() => _isGridView = true),
-                          tooltip: 'Vista Griglia',
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.view_list_rounded, size: 20),
-                          color: !_isGridView ? AppTheme.primaryColor : AppTheme.textSecondary,
-                          onPressed: () => setState(() => _isGridView = false),
-                          tooltip: 'Vista Elenco',
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
+              // Header — responsive
+              _buildResponsiveHeader(context),
+              const SizedBox(height: 16),
+              // Search Bar — responsive
+              _buildResponsiveSearchBar(context),
+              const SizedBox(height: 16),
               // Lista
               Expanded(
                 child: FutureBuilder<List<PatientModel>>(
@@ -592,10 +464,10 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                       );
                     }
 
-                    if (_isGridView) {
+                    if (_isGridView && !ResponsiveHelper.isMobile(context)) {
                       return GridView.builder(
-                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 280,
+                        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: ResponsiveHelper.isTablet(context) ? 260 : 280,
                           mainAxisExtent: 140,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
@@ -959,5 +831,212 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
       }
     } catch (_) {}
     return ddmmyyyy;
+  }
+
+  // ─── RESPONSIVE WIDGETS ──────────────────────────────────────────────────
+
+  Widget _buildResponsiveHeader(BuildContext context) {
+    final isMobile = ResponsiveHelper.isMobile(context);
+    final titleSize = ResponsiveHelper.titleFontSize(context);
+
+    if (isMobile) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Utenza',
+                style: TextStyle(
+                  fontSize: titleSize,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              IconButton.outlined(
+                icon: const Icon(Icons.refresh_rounded),
+                onPressed: _refreshPatients,
+                tooltip: 'Aggiorna lista',
+                style: IconButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFFE8EEF8)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text('Gestisci i dati degli utenti',
+            style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: ApiService.isViewer ? null : () => _showPatientDialog(),
+              icon: const Icon(Icons.add),
+              label: const Text('Aggiungi Utente'),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Utenza',
+                style: TextStyle(
+                  fontSize: titleSize,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text('Gestisci i dati degli utenti',
+                style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+              ),
+            ],
+          ),
+        ),
+        FilledButton.icon(
+          onPressed: ApiService.isViewer ? null : () => _showPatientDialog(),
+          icon: const Icon(Icons.add),
+          label: const Text('Aggiungi Utente'),
+        ),
+        const SizedBox(width: 12),
+        IconButton.outlined(
+          icon: const Icon(Icons.refresh_rounded),
+          onPressed: _refreshPatients,
+          tooltip: 'Aggiorna lista',
+          style: IconButton.styleFrom(
+            side: const BorderSide(color: Color(0xFFE8EEF8)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResponsiveSearchBar(BuildContext context) {
+    final isMobile = ResponsiveHelper.isMobile(context);
+
+    Widget searchField = Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE8EEF8)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          const Icon(Icons.search, color: AppTheme.textSecondary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) => setState(() {}),
+              decoration: const InputDecoration(
+                hintText: 'Cerca utente per nome, cognome o note...',
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+          if (_searchController.text.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.clear, size: 18),
+              onPressed: () => setState(() {
+                _searchController.clear();
+              }),
+            ),
+        ],
+      ),
+    );
+
+    Widget filters = Row(
+      children: [
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE8EEF8)),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _statusFilter,
+                isExpanded: true,
+                icon: const Icon(Icons.filter_list_rounded, color: AppTheme.textSecondary),
+                dropdownColor: Colors.white,
+                items: const [
+                  DropdownMenuItem(value: 'active', child: Text('Solo Attivi', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary))),
+                  DropdownMenuItem(value: 'archived', child: Text('Archiviati', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary))),
+                  DropdownMenuItem(value: 'all', child: Text('Tutti gli utenti', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary))),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _statusFilter = val;
+                    });
+                  }
+                },
+              ),
+            ),
+          ),
+        ),
+        if (!isMobile) ...[
+          const SizedBox(width: 16),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE8EEF8)),
+            ),
+            padding: const EdgeInsets.all(4),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.grid_view_rounded, size: 20),
+                  color: _isGridView ? AppTheme.primaryColor : AppTheme.textSecondary,
+                  onPressed: () => setState(() => _isGridView = true),
+                  tooltip: 'Vista Griglia',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.view_list_rounded, size: 20),
+                  color: !_isGridView ? AppTheme.primaryColor : AppTheme.textSecondary,
+                  onPressed: () => setState(() => _isGridView = false),
+                  tooltip: 'Vista Elenco',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+
+    if (isMobile) {
+      return Column(
+        children: [
+          searchField,
+          const SizedBox(height: 12),
+          filters,
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        Expanded(child: searchField),
+        const SizedBox(width: 16),
+        filters,
+      ],
+    );
   }
 }

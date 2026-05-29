@@ -2,6 +2,23 @@
 
 Tutte le modifiche significative a questo progetto saranno documentate in questo file.
 
+## [2.18.0] - 2026-05-29
+
+### Aggiunto / Modificato
+- **Mobile Responsiveness (Phase 1)**: Riprogettata l'interfaccia utente del `frontend_admin` per renderla completamente accessibile e navigabile da smartphone (Portrait-locked).
+  - **Infrastruttura**: Aggiunto `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">` e forzato il blocco orientamento in portrait in `index.html`. Creato l'utility `ResponsiveHelper` per gestire i breakpoint logici (Mobile, Tablet, Desktop) in modo centralizzato.
+  - **Layout Principale (main.dart)**: Sostituita la sidebar statica con un sistema adattivo. Su schermi desktop rimane la Sidebar classica, su mobile viene visualizzata una `BottomNavigationBar` sul fondo con menu Hamburger e `Drawer` per loghi, azioni secondarie (about, logout) e badge di ruolo.
+  - **Watermark e Backgrounds**: Ottimizzato il posizionamento del watermark decorativo (sovrapposto con `IgnorePointer`) e ridotta l'opacità su mobile per massimizzare la leggibilità.
+  - **Login Screen**: Rimossa la limitazione della larghezza fissa (400px), il form ora utilizza un `ConstrainedBox` e adatta automaticamente il padding e le dimensioni del logo.
+  - **Dashboard Analitica**: Ristrutturato l'header per passare da una disposizione in riga a una in colonna sui display più stretti, ridimensionando automaticamente i font dei titoli.
+  - **Anagrafica Utenti**: Reso responsivo il layout con `_buildResponsiveHeader` e `_buildResponsiveSearchBar`. I pulsanti d'azione, la casella di ricerca e i filtri di stato si impilano verticalmente su schermi piccoli. La griglia delle card adotta dinamicamente le larghezze per le colonne.
+  - **Selezione Valutazione & Protocolli**: Adattati i titoli degli header e allineate dinamicamente le griglie delle schede.
+  - **Impostazioni di Sistema**: Il widget degli slider per la configurazione (`_buildSliderRow`) ora si impila su due righe per evitare sfocature o out-of-bounds nei valori su display stretti. Diminuiti i padding laterali negli `ExpansionTile` su schermi mobile.
+
+### Rimozioni e Pulizia
+- **Rimozione Client Legacy**: Eliminati completamente dal repository i progetti obsoleti `frontend_client` e `frontend_legacy` e ripulito il file `docker-compose.yml` e la mappa architetturale dai servizi e container non più utilizzati, riducendo l'impronta complessiva del progetto.
+
+
 ## [2.17.6] - 2026-05-28
 
 ### Ottimizzato

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shimmer/shimmer.dart';
 import '../services/api_service.dart';
+import '../utils/responsive_helper.dart';
 import '../theme/app_theme.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -53,7 +54,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         color: AppTheme.primaryColor,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 32),
+          padding: EdgeInsets.symmetric(
+            vertical: ResponsiveHelper.verticalPadding(context),
+            horizontal: ResponsiveHelper.horizontalPadding(context),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -80,6 +84,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
     ];
     final formattedDate = '${now.day} ${months[now.month - 1]} ${now.year}';
+    final isMobile = ResponsiveHelper.isMobile(context);
+    final titleSize = ResponsiveHelper.titleFontSize(context);
+
+    if (isMobile) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Centro di Controllo',
+            style: TextStyle(
+              fontSize: titleSize,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textPrimary,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Stato e monitoraggio documentale',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppTheme.textSecondary.withValues(alpha: 0.8),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE8EEF8), width: 1),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.calendar_today_outlined, color: AppTheme.primaryColor, size: 14),
+                const SizedBox(width: 6),
+                Text(
+                  formattedDate,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -87,10 +142,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Centro di Controllo Documentale',
               style: TextStyle(
-                fontSize: 28,
+                fontSize: titleSize,
                 fontWeight: FontWeight.w800,
                 color: AppTheme.textPrimary,
                 letterSpacing: -0.5,

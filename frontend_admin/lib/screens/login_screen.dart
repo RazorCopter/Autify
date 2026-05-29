@@ -4,6 +4,7 @@ import 'dart:ui_web' as ui;
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/responsive_helper.dart';
 import '../main.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -133,6 +134,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = ResponsiveHelper.isMobile(context);
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
@@ -144,30 +147,32 @@ class _LoginScreenState extends State<LoginScreen> {
           // Form di Accesso Centrato con effetto Glassmorphism Premium
           Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(32),
-                child: BackdropFilter(
-                  filter: ui_core.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    width: 400,
-                    margin: EdgeInsets.only(left: _isShaking ? 20.0 : 0.0, right: _isShaking ? 0.0 : 20.0),
-                    padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 40),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.35), // Vetro scuro omogeneo con lo sfondo
-                      borderRadius: BorderRadius.circular(32),
-                      border: Border.all(color: Colors.white.withOpacity(0.12), width: 1.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.4),
-                          blurRadius: 48,
-                          offset: const Offset(0, 16),
-                        ),
-                      ],
-                    ),
-                    child: Column(
+              padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(isMobile ? 24 : 32),
+                  child: BackdropFilter(
+                    filter: ui_core.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      width: double.infinity,
+                      margin: EdgeInsets.only(left: _isShaking ? 20.0 : 0.0, right: _isShaking ? 0.0 : 20.0),
+                      padding: EdgeInsets.symmetric(horizontal: isMobile ? 24 : 36, vertical: isMobile ? 28 : 40),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.35), // Vetro scuro omogeneo con lo sfondo
+                        borderRadius: BorderRadius.circular(isMobile ? 24 : 32),
+                        border: Border.all(color: Colors.white.withOpacity(0.12), width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.4),
+                            blurRadius: 48,
+                            offset: const Offset(0, 16),
+                          ),
+                        ],
+                      ),
+                      child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         // Logo Autify Premium
@@ -185,9 +190,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           child: Image.asset(
                             'assets/images/logoAutifyDark.png',
-                            height: 120,
+                            height: isMobile ? 80 : 120,
                             fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const Icon(Icons.psychology, color: Colors.white, size: 72),
+                            errorBuilder: (_, __, ___) => Icon(Icons.psychology, color: Colors.white, size: isMobile ? 48 : 72),
                           ),
                         ),
                         const SizedBox(height: 32),
@@ -322,6 +327,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ],
+                    ),
                     ),
                   ),
                 ),

@@ -2,6 +2,7 @@ import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'app_version.dart';
+import 'utils/responsive_helper.dart';
 import 'services/settings_notifier.dart';
 import 'screens/settings_screen.dart';
 import 'screens/about_terms_dialog.dart';
@@ -63,39 +64,251 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = ResponsiveHelper.isMobile(context);
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      body: Row(
-        children: [
-          // Sidebar
-          _buildSidebar(),
-          // Contenuto principale
-          Expanded(
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: _buildBody(),
+      // AppBar solo su mobile
+      appBar: isMobile
+          ? AppBar(
+              backgroundColor: AppTheme.surfaceColor,
+              elevation: 0,
+              centerTitle: true,
+              title: Text(
+                _navItems[_selectedIndex].label,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary,
                 ),
-                // Sfondo Watermark Bradipo HD Premium post-login (in overlay sopra il body per aggirare gli sfondi coprenti delle schede)
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: Opacity(
-                      opacity: 0.08, // Trasparenza soft ottimizzata all'8% per un watermark elegante e discreto
-                      child: Image.asset(
-                        'assets/images/bradipo_hd_BG.png',
-                        fit: BoxFit.cover,
-                      ),
+              ),
+              leading: Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu_rounded, color: AppTheme.textPrimary),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              ),
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(1),
+                child: Container(
+                  color: const Color(0xFFE8EEF8),
+                  height: 1,
+                ),
+              ),
+            )
+          : null,
+      // Drawer con info utente e azioni secondarie (solo mobile)
+      drawer: isMobile ? _buildMobileDrawer() : null,
+      // BottomNavigationBar su mobile
+      bottomNavigationBar: isMobile ? _buildBottomNav() : null,
+      body: isMobile ? _buildMobileBody() : _buildDesktopBody(),
+    );
+  }
+
+  // ─── DESKTOP LAYOUT (sidebar + contenuto) ──────────────────────────────────
+  Widget _buildDesktopBody() {
+    return Row(
+      children: [
+        // Sidebar
+        _buildSidebar(),
+        // Contenuto principale
+        Expanded(
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: _buildBody(),
+              ),
+              // Sfondo Watermark Bradipo HD Premium post-login (in overlay sopra il body per aggirare gli sfondi coprenti delle schede)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Opacity(
+                    opacity: 0.08, // Trasparenza soft ottimizzata all'8% per un watermark elegante e discreto
+                    child: Image.asset(
+                      'assets/images/bradipo_hd_BG.png',
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
-              ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── MOBILE LAYOUT (solo contenuto, nav in bottom) ─────────────────────────
+  Widget _buildMobileBody() {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: _buildBody(),
+        ),
+        // Watermark (ridotto su mobile)
+        Positioned.fill(
+          child: IgnorePointer(
+            child: Opacity(
+              opacity: 0.05,
+              child: Image.asset(
+                'assets/images/bradipo_hd_BG.png',
+                fit: BoxFit.cover,
+              ),
             ),
           ),
-        ],
+        ),
+      ],
+    );
+  }
+
+  // ─── BOTTOM NAVIGATION BAR (mobile) ────────────────────────────────────────
+  Widget _buildBottomNav() {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Color(0xFFE8EEF8), width: 1)),
+      ),
+      child: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: (index) => setState(() => _selectedIndex = index),
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: AppTheme.surfaceColor,
+        selectedItemColor: AppTheme.puzzleColorAt(_selectedIndex),
+        unselectedItemColor: AppTheme.textSecondary,
+        selectedFontSize: 11,
+        unselectedFontSize: 10,
+        iconSize: 24,
+        elevation: 0,
+        items: _navItems
+            .map((item) => BottomNavigationBarItem(
+                  icon: Icon(item.icon),
+                  activeIcon: Icon(item.active),
+                  label: item.label,
+                ))
+            .toList(),
       ),
     );
   }
 
+  // ─── MOBILE DRAWER ─────────────────────────────────────────────────────────
+  Widget _buildMobileDrawer() {
+    return Drawer(
+      backgroundColor: AppTheme.surfaceColor,
+      child: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            // Logo
+            _buildLogo(),
+            const SizedBox(height: 16),
+            const Divider(indent: 24, endIndent: 24, color: Color(0xFFE8EEF8)),
+            const SizedBox(height: 8),
+            // Voci navigazione
+            Expanded(
+              child: ListView.builder(
+                itemCount: _navItems.length,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                itemBuilder: (context, index) {
+                  final item = _navItems[index];
+                  final isSelected = _selectedIndex == index;
+                  final color = isSelected ? AppTheme.puzzleColorAt(index) : AppTheme.textSecondary;
+                  return ListTile(
+                    leading: Icon(
+                      isSelected ? item.active : item.icon,
+                      color: color,
+                      size: 24,
+                    ),
+                    title: Text(
+                      item.label,
+                      style: TextStyle(
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: color,
+                        fontSize: 15,
+                      ),
+                    ),
+                    selected: isSelected,
+                    selectedTileColor: color.withValues(alpha: 0.08),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    onTap: () {
+                      setState(() => _selectedIndex = index);
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              ),
+            ),
+            // Footer drawer
+            const Divider(indent: 24, endIndent: 24, color: Color(0xFFE8EEF8)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                children: [
+                  _buildRoleBadge(),
+                  const SizedBox(height: 8),
+                  Text(
+                    'v$kFrontendVersion',
+                    style: TextStyle(fontSize: 11, color: AppTheme.textSecondary.withValues(alpha: 0.5)),
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () {
+                      Navigator.pop(context);
+                      showDialog(
+                        context: context,
+                        builder: (context) => const AboutTermsDialog(),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(4),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      child: Text(
+                        'About & Termini',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryColor.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Logout button
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        try {
+                          html.window.localStorage.remove('jwt_token');
+                          html.window.localStorage.remove('auth_role');
+                          html.window.localStorage.remove('auth_username');
+                          html.window.localStorage.remove('ai_enabled');
+                          html.window.localStorage.remove('admin_authenticated');
+                          html.window.localStorage.remove('auth_password');
+                        } catch (_) {}
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => const LoginScreen()),
+                          (route) => false,
+                        );
+                      },
+                      icon: const Icon(Icons.logout_rounded, size: 18, color: AppTheme.errorColor),
+                      label: const Text('Esci', style: TextStyle(color: AppTheme.errorColor, fontWeight: FontWeight.bold)),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: AppTheme.errorColor.withValues(alpha: 0.3)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── DESKTOP SIDEBAR (invariata) ───────────────────────────────────────────
   Widget _buildSidebar() {
     return Container(
       width: 88,

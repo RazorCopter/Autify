@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import '../services/settings_notifier.dart';
 import '../services/api_service.dart';
+import '../utils/responsive_helper.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -1180,7 +1181,12 @@ TONO E FORMATTAZIONE:
               color: Color(0xFF64748B),
               size: 24,
             ),
-            childrenPadding: const EdgeInsets.only(left: 24, right: 24, bottom: 24, top: 8),
+            childrenPadding: EdgeInsets.only(
+              left: ResponsiveHelper.isMobile(context) ? 12 : 24, 
+              right: ResponsiveHelper.isMobile(context) ? 12 : 24, 
+              bottom: 24, 
+              top: 8
+            ),
             children: children,
           ),
         ),
@@ -1197,6 +1203,65 @@ TONO E FORMATTAZIONE:
     required IconData icon,
     required ValueChanged<double> onChanged,
   }) {
+    final isMobile = ResponsiveHelper.isMobile(context);
+    
+    Widget sliderContent = Row(
+      children: [
+        Text('${min.toInt()}', style: const TextStyle(color: Color(0xFF718096), fontSize: 12)),
+        Expanded(
+          child: Slider(
+            value: value,
+            min: min,
+            max: max,
+            divisions: (max - min).toInt(),
+            activeColor: const Color(0xFF64B5F6),
+            inactiveColor: const Color(0xFF64B5F6).withValues(alpha: 0.15),
+            onChanged: ApiService.isViewer ? null : onChanged,
+          ),
+        ),
+        Text('${max.toInt()}', style: const TextStyle(color: Color(0xFF718096), fontSize: 12)),
+      ],
+    );
+
+    if (isMobile) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF64B5F6).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: const Color(0xFF64B5F6), size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Valore attuale: ${value.toInt()} $unit',
+                      style: const TextStyle(color: Color(0xFF718096), fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          sliderContent,
+        ],
+      );
+    }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -1229,23 +1294,7 @@ TONO E FORMATTAZIONE:
         const SizedBox(width: 24),
         Expanded(
           flex: 3,
-          child: Row(
-            children: [
-              Text('${min.toInt()}', style: const TextStyle(color: Color(0xFF718096), fontSize: 12)),
-              Expanded(
-                child: Slider(
-                  value: value,
-                  min: min,
-                  max: max,
-                  divisions: (max - min).toInt(),
-                  activeColor: const Color(0xFF64B5F6),
-                  inactiveColor: const Color(0xFF64B5F6).withValues(alpha: 0.15),
-                  onChanged: ApiService.isViewer ? null : onChanged,
-                ),
-              ),
-              Text('${max.toInt()}', style: const TextStyle(color: Color(0xFF718096), fontSize: 12)),
-            ],
-          ),
+          child: sliderContent,
         ),
       ],
     );

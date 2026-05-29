@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/scale_model.dart';
 import '../services/api_service.dart';
+import '../utils/responsive_helper.dart';
 import '../theme/app_theme.dart';
 
 class ProtocolsScreen extends StatefulWidget {
@@ -191,44 +192,12 @@ class _ProtocolsScreenState extends State<ProtocolsScreen> {
     return Stack(
       children: [
         Padding(
-          padding: const EdgeInsets.all(32.0),
+          padding: EdgeInsets.all(ResponsiveHelper.horizontalPadding(context)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header
-              Row(
-                children: [
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Protocolli di Supporto',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.textPrimary,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text('Gestisci le scale di valutazione a sistema',
-                          style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
-                        ),
-                      ],
-                    ),
-                  ),
-                  _buildHeaderPuzzlePieces(),
-                  const SizedBox(width: 12),
-                  IconButton.outlined(
-                    icon: const Icon(Icons.refresh_rounded),
-                    onPressed: _refreshScales,
-                    tooltip: 'Aggiorna lista',
-                    style: IconButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFFE8EEF8)),
-                    ),
-                  ),
-                ],
-              ),
+              _buildResponsiveHeader(context),
               const SizedBox(height: 28),
               // Lista
               Expanded(
@@ -500,11 +469,87 @@ class _ProtocolsScreenState extends State<ProtocolsScreen> {
   }
 
   Widget _buildHeaderPuzzlePieces() {
+    if (ResponsiveHelper.isMobile(context)) return const SizedBox.shrink();
     return Row(
-      children: List.generate(4, (i) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2),
-        child: Icon(Icons.extension, size: 16, color: AppTheme.puzzleColorAt(i).withValues(alpha: 0.4)),
-      )),
+      children: [
+        _puzzlePiece(AppTheme.primaryColor),
+        const SizedBox(width: 6),
+        _puzzlePiece(AppTheme.secondaryColor),
+        const SizedBox(width: 6),
+        _puzzlePiece(AppTheme.accentColor),
+      ],
+    );
+  }
+
+  Widget _buildResponsiveHeader(BuildContext context) {
+    final isMobile = ResponsiveHelper.isMobile(context);
+    final titleSize = ResponsiveHelper.titleFontSize(context);
+
+    if (isMobile) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Protocolli',
+                style: TextStyle(
+                  fontSize: titleSize,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              IconButton.outlined(
+                icon: const Icon(Icons.refresh_rounded),
+                onPressed: _refreshScales,
+                tooltip: 'Aggiorna lista',
+                style: IconButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFFE8EEF8)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text('Gestisci le scale a sistema',
+            style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Protocolli di Supporto',
+                style: TextStyle(
+                  fontSize: titleSize,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text('Gestisci le scale di valutazione a sistema',
+                style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+              ),
+            ],
+          ),
+        ),
+        _buildHeaderPuzzlePieces(),
+        const SizedBox(width: 12),
+        IconButton.outlined(
+          icon: const Icon(Icons.refresh_rounded),
+          onPressed: _refreshScales,
+          tooltip: 'Aggiorna lista',
+          style: IconButton.styleFrom(
+            side: const BorderSide(color: Color(0xFFE8EEF8)),
+          ),
+        ),
+      ],
     );
   }
 

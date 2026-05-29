@@ -24,8 +24,7 @@ Il sistema supporta principalmente due scale cliniche:
 ```mermaid
 graph TD
     subgraph Frontend Layer
-        FA[frontend_admin - Flutter Web/Desktop]
-        FC[frontend_client - Flutter Client Wizard]
+        FA[frontend_admin - Flutter Web/Mobile Responsive]
     end
 
     subgraph API Gateway / Orchestration
@@ -42,7 +41,6 @@ graph TD
     end
 
     FA -->|REST API - Basic Auth| API
-    FC -->|REST API - Wizard Submit| API
     API -->|Async Driver - Motor| DB
     API -->|Plotting & Layouts| REP
     FA -->|JSON Data Payload| GEM
@@ -50,8 +48,7 @@ graph TD
 
 * **Backend**: **FastAPI** (Python 3.10+), con programmazione asincrona nativa e validazione rigorosa dei dati tramite **Pydantic**.
 * **Database**: **MongoDB**, interfacciato asincronamente tramite il driver **Motor** (AsyncIOMotorClient).
-* **Frontend Admin**: Applicazione **Flutter (Dart)** incentrata sulla gestione clinica delle anagrafiche, la visualizzazione di dashboard multidimensionali, la configurazione dei protocolli e l'analisi dei dati assistita da Intelligenza Artificiale.
-* **Frontend Client (Wizard)**: Applicazione **Flutter (Dart)** ottimizzata per la compilazione rapida e interattiva delle valutazioni da parte di operatori sul campo o caregiver.
+* **Frontend Admin**: Applicazione **Flutter (Dart)** fully-responsive (Mobile/Desktop) incentrata sulla gestione clinica delle anagrafiche, la visualizzazione di dashboard multidimensionali, la configurazione dei protocolli e l'analisi dei dati assistita da Intelligenza Artificiale. Include anche il Wizard di compilazione integrato.
 * **Motore Grafico & PDF**: **Matplotlib** (per la generazione di radar chart ottagonali e bar chart) e **ReportLab** (per l'assemblaggio di report PDF dinamici pronti per la stampa).
 * **AI Analysis**: **Google Gemini API** (tramite integrazione client-side sul frontend amministrativo) per la stesura assistita di relazioni cliniche sintetiche e raccomandazioni multidimensionali.
 
@@ -459,43 +456,7 @@ frontend_admin/
 
 ---
 
-### 2.3 Frontend Client (Flutter Client)
-
-```
-frontend_client/
-├── lib/
-│   ├── main.dart
-│   ├── screens/
-│   │   └── wizard_screen.dart
-│   └── services/
-│       └── api_service.dart
-```
-
----
-
-#### 📄 [main.dart](file:///home/gianvito/progetti/AutAnalysis/frontend_client/lib/main.dart)
-* **Path**: `frontend_client/lib/main.dart`
-* **Scopo Funzionale**: Entrypoint dell'applicazione client semplificata. Questo frontend è espressamente dedicato alla compilazione rapida a schermo (es. su tablet all'interno dei centri o da remoto da parte della famiglia/caregiver).
-* **Dettagli Tecnici**:
-  * Presenta un'interfaccia focalizzata e minimale. Evita l'accesso alle statistiche amministrative o alle impostazioni di sistema.
-  * Permette all'utente di selezionare il paziente dall'anagrafica abilitata (in modalità protetta) e avviare immediatamente lo schermo del wizard di valutazione.
-* **Dipendenze/Relazioni**:
-  * Istanzia lo schermo wizard dedicato presente in `frontend_client/lib/screens/wizard_screen.dart`.
-
----
-
-#### 📄 [screens/wizard_screen.dart](file:///home/gianvito/progetti/AutAnalysis/frontend_client/lib/screens/wizard_screen.dart)
-* **Path**: `frontend_client/lib/screens/wizard_screen.dart`
-* **Scopo Funzionale**: Fornisce un wizard interattivo per la compilazione dei test clinici POS e San Martín, ottimizzato per utenti non prettamente tecnici o per compilazioni self-report.
-* **Dettagli Tecnici**:
-  * Interfaccia a forte componente visiva, pulsanti di risposta ad area espansa per facilitare il tocco su dispositivi mobili/tablet.
-  * Tracciamento dello stato di completamento e avanzamento tramite indicatori percentuali lineari.
-* **Dipendenze/Relazioni**:
-  * Salva le risposte inoltrando la valutazione all'endpoint pubblico `/api/client/evaluations` esposto dal backend, tramite l'intermediazione del file `services/api_service.dart` locale.
-
----
-
-### 2.4 Utilità di Root (Validator)
+### 2.3 Utilità di Root (Validator)
 
 ---
 
@@ -543,7 +504,7 @@ Questo flusso registra un nuovo profilo clinico e lo rende disponibile per le va
 Questo flusso gestisce l'inserimento dei punteggi forniti durante l'intervista clinica.
 
 ```
-[Operatore/Caregiver] ──(Compila Wizard)──> [WizardScreen (Admin/Client)]
+[Operatore] ──(Compila Wizard)──> [WizardScreen (Admin)]
                                                      │
                                            (Valida Completezza)
                                                      │

@@ -3,6 +3,7 @@ import '../theme/app_theme.dart';
 import '../models/scale_model.dart';
 import '../models/patient_model.dart';
 import '../services/api_service.dart';
+import '../utils/responsive_helper.dart';
 import 'wizard_screen.dart';
 import 'sis_wizard_screen.dart';
 
@@ -59,7 +60,9 @@ class _SelectionScreenState extends State<SelectionScreen> {
               child: _isLoading 
                 ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
                 : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveHelper.horizontalPadding(context),
+                    ),
                     child: SingleChildScrollView(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -254,8 +257,16 @@ class _SelectionScreenState extends State<SelectionScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final isMobile = ResponsiveHelper.isMobile(context);
+    final titleSize = isMobile ? 16.0 : 18.0;
+    
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+      padding: EdgeInsets.fromLTRB(
+        ResponsiveHelper.horizontalPadding(context), 
+        20, 
+        ResponsiveHelper.horizontalPadding(context), 
+        16
+      ),
       child: Row(
         children: [
           Container(
@@ -264,29 +275,33 @@ class _SelectionScreenState extends State<SelectionScreen> {
               color: AppTheme.primaryColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.psychology, color: AppTheme.primaryColor, size: 28),
+            child: Icon(Icons.psychology, color: AppTheme.primaryColor, size: isMobile ? 24 : 28),
           ),
           const SizedBox(width: 12),
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Autify',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.primaryColor,
-                  letterSpacing: -0.3,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Autify',
+                  style: TextStyle(
+                    fontSize: titleSize,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.primaryColor,
+                    letterSpacing: -0.3,
+                  ),
                 ),
-              ),
-              Text(
-                'Valutazione Multidimensionale',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textSecondary,
+                Text(
+                  'Valutazione Multidimensionale',
+                  style: TextStyle(
+                    fontSize: isMobile ? 11 : 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
