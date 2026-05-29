@@ -475,7 +475,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/export-patients-csv'),
-        headers: await _getHeaders(),
+        headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       if (response.statusCode == 200) {
         return response.bodyBytes;
