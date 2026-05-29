@@ -12,6 +12,7 @@ from pydantic import BaseModel
 import uuid
 import io
 import os
+import asyncio
 from pathlib import Path
 from . import auth as auth_module
 from . import auth_manager  # backward-compat: usato da auth.py per il log viewer legacy
@@ -769,12 +770,13 @@ async def download_evaluation_pdf(
         domain_map = DOMINI_POS
     domains = compute_direct_scores(eval_doc.get("risposte", []), domain_map)
 
-    pdf_bytes = generate_evaluation_pdf(
-        evaluation=eval_doc,
-        patient=patient_doc or {},
-        scale=scale_doc or {},
-        domains=domains,
-        analysis=analysis,
+    pdf_bytes = await asyncio.to_thread(
+        generate_evaluation_pdf,
+        eval_doc,
+        patient_doc or {},
+        scale_doc or {},
+        domains,
+        analysis,
     )
 
     filename = f"valutazione_{evaluation_id[:8]}.pdf"
@@ -789,7 +791,7 @@ class AiPdfRequest(BaseModel):
 
 @admin_router.post("/evaluations/ai-analysis-pdf", tags=["Admin - Evaluations"])
 async def download_ai_analysis_pdf(request: AiPdfRequest):
-    pdf_bytes = generate_ai_analysis_pdf(request.patient, request.report)
+    pdf_bytes = await asyncio.to_thread(generate_ai_analysis_pdf, request.patient, request.report)
     filename = f"analisi_ai_{request.patient.get('cognome', 'paziente')}.pdf"
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
