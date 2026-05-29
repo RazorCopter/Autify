@@ -471,6 +471,24 @@ class ApiService {
 
   // --- DATABASE EXPORT / IMPORT ---
 
+  Future<List<int>?> exportPatientsCsv() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/export-patients-csv'),
+        headers: await _getHeaders(),
+      );
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      } else {
+        print('Errore export CSV pazienti: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Errore export CSV: $e');
+      return null;
+    }
+  }
+
   Future<List<int>?> exportDatabase() async {
     try {
       final response = await http.get(

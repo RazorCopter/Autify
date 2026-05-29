@@ -1,3 +1,5 @@
+import 'dart:html' as html;
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/patient_model.dart';
@@ -28,6 +30,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
   List<ScaleModel> _availableScales = [];
   bool _isLoading = false;
   bool _isGridView = true;
+  bool _isExporting = false;
   String _statusFilter = 'active'; // 'active', 'archived', 'all'
 
   @override
@@ -44,6 +47,27 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
       _patientsFuture = _apiService.getPatients();
     });
     _loadScales();
+  }
+
+  Future<void> _exportCsv() async {
+    if (_isExporting) return;
+    setState(() => _isExporting = true);
+    try {
+      final bytes = await _apiService.exportPatientsCsv();
+      if (bytes != null) {
+        final base64Data = base64Encode(bytes);
+        final dataUrl = 'data:text/csv;base64,$base64Data';
+        final now = DateTime.now();
+        final filename = 'autify_utenti_${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}.csv';
+        html.AnchorElement(href: dataUrl)
+          ..setAttribute('download', filename)
+          ..click();
+      }
+    } catch (e) {
+      debugPrint('Export error: $e');
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
   }
 
   Future<void> _loadScales() async {
@@ -1082,6 +1106,15 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
               label: const Text('Aggiungi Utente'),
             ),
           ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _isExporting ? null : _exportCsv,
+              icon: _isExporting ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.download),
+              label: Text(_isExporting ? 'Esportazione...' : 'Esporta (CSV)'),
+            ),
+          ),
         ],
       );
     }
@@ -1107,6 +1140,12 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
             ],
           ),
         ),
+        OutlinedButton.icon(
+          onPressed: _isExporting ? null : _exportCsv,
+          icon: _isExporting ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.download),
+          label: Text(_isExporting ? 'Esportazione...' : 'Esporta (CSV)'),
+        ),
+        const SizedBox(width: 12),
         FilledButton.icon(
           onPressed: ApiService.isViewer ? null : () => _showPatientDialog(),
           icon: const Icon(Icons.add),

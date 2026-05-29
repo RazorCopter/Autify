@@ -1030,32 +1030,30 @@ async def get_dashboard_stats():
     - Lista degli ultimi alert (max 5) di pazienti da rivalutare urgentemente
     """
     try:
-        # Helper di parsing delle date robusto (garantisce sempre un datetime offset-aware con UTC)
+        import re
         def parse_eval_date(ev_doc):
             d = ev_doc.get("data_compilazione")
             if not d:
                 return datetime.min.replace(tzinfo=timezone.utc)
             if isinstance(d, str):
                 try:
-                    clean_str = d
-                    if clean_str.endswith("Z"):
-                        clean_str = clean_str[:-1] + "+00:00"
-                    res = datetime.fromisoformat(clean_str)
+                    res = datetime.fromisoformat(d.replace('Z', '+00:00'))
                 except ValueError:
-                    # Fallback per formato DD/MM/YYYY o DD-MM-YYYY
-                    try:
-                        clean_str = d.replace("-", "/")
-                        parts = clean_str.split("/")
-                        if len(parts) == 3:
-                            # Assumiamo DD/MM/YYYY
-                            day, month, year = int(parts[0]), int(parts[1]), int(parts[2])
-                            if year < 100:
-                                year += 2000
-                            res = datetime(year, month, day, tzinfo=timezone.utc)
+                    m_ymd = re.match(r"^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})", d)
+                    if m_ymd:
+                        try:
+                            res = datetime(int(m_ymd.group(1)), int(m_ymd.group(2)), int(m_ymd.group(3)), tzinfo=timezone.utc)
+                        except ValueError:
+                            res = datetime.min.replace(tzinfo=timezone.utc)
+                    else:
+                        m_dmy = re.match(r"^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})", d)
+                        if m_dmy:
+                            try:
+                                res = datetime(int(m_dmy.group(3)), int(m_dmy.group(2)), int(m_dmy.group(1)), tzinfo=timezone.utc)
+                            except ValueError:
+                                res = datetime.min.replace(tzinfo=timezone.utc)
                         else:
                             res = datetime.min.replace(tzinfo=timezone.utc)
-                    except ValueError:
-                        res = datetime.min.replace(tzinfo=timezone.utc)
             elif isinstance(d, datetime):
                 res = d
             else:
@@ -1435,6 +1433,42 @@ async def import_database(file: UploadFile = File(...)):
         "message": "Database importato con successo",
         "collections": imported_counts,
     }
+
+
+@admin_router.get("/export-patients-csv", tags=["Admin - Database"])
+async def export_patients_csv():
+    """Esporta la lista utenti e il loro stato documentale in formato CSV per Excel."""
+    import csv
+    from io import StringIO
+    
+    patients_cursor = patients_collection.find({})
+    patients = await patients_cursor.to_list(length=2000)
+    
+    output = StringIO()
+    # Aggiungi il BOM (Byte Order Mark) per far riconoscere a Excel il formato UTF-8 automaticamente
+    output.write('\ufeff')
+    writer = csv.writer(output, delimiter=';')
+    writer.writerow(["Nome", "Cognome", "Sesso", "Data di Nascita", "Ultimo POS", "Ultimo San Martin", "Ultima SIS"])
+    
+    for pat in patients:
+        nome = pat.get("nome", "")
+        cognome = pat.get("cognome", "")
+        sesso = pat.get("sesso", "")
+        data_nascita = pat.get("dataNascita", "")
+        ultimo_pos = pat.get("ultimoPosCompilato", "")
+        ultimo_sm = pat.get("ultimoSanMartinCompilato", "")
+        ultima_sis = pat.get("ultimaSisCompilata", "")
+        
+        writer.writerow([nome, cognome, sesso, data_nascita, ultimo_pos, ultimo_sm, ultima_sis])
+        
+    csv_bytes = output.getvalue().encode('utf-8')
+    filename = f"autify_utenti_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
+    
+    return StreamingResponse(
+        io.BytesIO(csv_bytes),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
 
 
 @admin_router.delete("/evaluations/{evaluation_id}", tags=["Admin - Evaluations"])
