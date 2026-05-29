@@ -3,7 +3,7 @@ import bcrypt
 import jwt
 from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, Request, status
-from .database import users_collection
+from .database import users_collection, evaluations_collection
 
 # ── Configurazione JWT ──────────────────────────────────────────────────────
 
@@ -119,6 +119,9 @@ async def ensure_default_admin():
     """
     # Crea indice univoco su username
     await users_collection.create_index("username", unique=True)
+    
+    # Crea indice per velocizzare l'estrazione dello storico per singolo paziente
+    await evaluations_collection.create_index("id_paziente")
 
     count = await users_collection.count_documents({})
     if count == 0:
