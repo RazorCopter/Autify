@@ -98,117 +98,205 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: nomeController,
-                            decoration: const InputDecoration(labelText: 'Nome', prefixIcon: Icon(Icons.person_outline)),
-                            validator: (v) => v == null || v.isEmpty ? 'Campo richiesto' : null,
-                          ),
+                    if (ResponsiveHelper.isMobile(context)) ...[
+                      TextFormField(
+                        controller: nomeController,
+                        decoration: const InputDecoration(labelText: 'Nome', prefixIcon: Icon(Icons.person_outline)),
+                        validator: (v) => v == null || v.isEmpty ? 'Campo richiesto' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: cognomeController,
+                        decoration: const InputDecoration(labelText: 'Cognome'),
+                        validator: (v) => v == null || v.isEmpty ? 'Campo richiesto' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: altezzaController,
+                        decoration: const InputDecoration(labelText: 'Altezza (cm)', prefixIcon: Icon(Icons.height)),
+                        keyboardType: TextInputType.number,
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return null;
+                          final n = int.tryParse(v.trim());
+                          if (n == null || n <= 0) return 'Valore non valido';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: pesoController,
+                        decoration: const InputDecoration(labelText: 'Peso (kg)', prefixIcon: Icon(Icons.monitor_weight_outlined)),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return null;
+                          final n = double.tryParse(v.trim().replaceAll(',', '.'));
+                          if (n == null || n <= 0) return 'Valore non valido';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: dataNascitaController,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Data di Nascita',
+                          prefixIcon: Icon(Icons.cake_outlined),
+                          hintText: 'Seleziona...',
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextFormField(
-                            controller: cognomeController,
-                            decoration: const InputDecoration(labelText: 'Cognome'),
-                            validator: (v) => v == null || v.isEmpty ? 'Campo richiesto' : null,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: altezzaController,
-                            decoration: const InputDecoration(labelText: 'Altezza (cm)', prefixIcon: Icon(Icons.height)),
-                            keyboardType: TextInputType.number,
-                            validator: (v) {
-                              if (v == null || v.isEmpty) return null;
-                              final n = int.tryParse(v.trim());
-                              if (n == null || n <= 0) return 'Valore non valido';
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextFormField(
-                            controller: pesoController,
-                            decoration: const InputDecoration(labelText: 'Peso (kg)', prefixIcon: Icon(Icons.monitor_weight_outlined)),
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            validator: (v) {
-                              if (v == null || v.isEmpty) return null;
-                              final n = double.tryParse(v.trim().replaceAll(',', '.'));
-                              if (n == null || n <= 0) return 'Valore non valido';
-                              return null;
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: TextFormField(
-                            controller: dataNascitaController,
-                            readOnly: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Data di Nascita',
-                              prefixIcon: Icon(Icons.cake_outlined),
-                              hintText: 'Seleziona...',
-                            ),
-                            onTap: () async {
-                              DateTime initialDate = DateTime(1990);
-                              if (dataNascitaController.text.isNotEmpty) {
-                                try {
-                                  final parts = dataNascitaController.text.split('/');
-                                  if (parts.length == 3) {
-                                    initialDate = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
-                                  }
-                                } catch (_) {}
+                        onTap: () async {
+                          DateTime initialDate = DateTime(1990);
+                          if (dataNascitaController.text.isNotEmpty) {
+                            try {
+                              final parts = dataNascitaController.text.split('/');
+                              if (parts.length == 3) {
+                                initialDate = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
                               }
-                              final DateTime? picked = await showDatePicker(
-                                context: context,
-                                initialDate: initialDate,
-                                firstDate: DateTime(1900),
-                                lastDate: DateTime.now(),
-                              );
-                              if (picked != null) {
-                                final day = picked.day.toString().padLeft(2, '0');
-                                final month = picked.month.toString().padLeft(2, '0');
-                                final year = picked.year.toString();
-                                dataNascitaController.text = '$day/$month/$year';
-                              }
-                            },
-                          ),
+                            } catch (_) {}
+                          }
+                          final DateTime? picked = await showDatePicker(
+                            context: context,
+                            initialDate: initialDate,
+                            firstDate: DateTime(1900),
+                            lastDate: DateTime.now(),
+                          );
+                          if (picked != null) {
+                            final day = picked.day.toString().padLeft(2, '0');
+                            final month = picked.month.toString().padLeft(2, '0');
+                            final year = picked.year.toString();
+                            dataNascitaController.text = '$day/$month/$year';
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: selectedSesso,
+                        decoration: const InputDecoration(
+                          labelText: 'Sesso',
+                          prefixIcon: Icon(Icons.wc_outlined),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          flex: 2,
-                          child: DropdownButtonFormField<String>(
-                            value: selectedSesso,
-                            decoration: const InputDecoration(
-                              labelText: 'Sesso',
-                              prefixIcon: Icon(Icons.wc_outlined),
+                        items: const [
+                          DropdownMenuItem(value: 'M', child: Text('M')),
+                          DropdownMenuItem(value: 'F', child: Text('F')),
+                        ],
+                        onChanged: (val) {
+                          setStateDialog(() {
+                            selectedSesso = val;
+                          });
+                        },
+                      ),
+                    ] else ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: nomeController,
+                              decoration: const InputDecoration(labelText: 'Nome', prefixIcon: Icon(Icons.person_outline)),
+                              validator: (v) => v == null || v.isEmpty ? 'Campo richiesto' : null,
                             ),
-                            items: const [
-                              DropdownMenuItem(value: 'M', child: Text('M')),
-                              DropdownMenuItem(value: 'F', child: Text('F')),
-                            ],
-                            onChanged: (val) {
-                              setStateDialog(() {
-                                selectedSesso = val;
-                              });
-                            },
                           ),
-                        ),
-                      ],
-                    ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: TextFormField(
+                              controller: cognomeController,
+                              decoration: const InputDecoration(labelText: 'Cognome'),
+                              validator: (v) => v == null || v.isEmpty ? 'Campo richiesto' : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: altezzaController,
+                              decoration: const InputDecoration(labelText: 'Altezza (cm)', prefixIcon: Icon(Icons.height)),
+                              keyboardType: TextInputType.number,
+                              validator: (v) {
+                                if (v == null || v.isEmpty) return null;
+                                final n = int.tryParse(v.trim());
+                                if (n == null || n <= 0) return 'Valore non valido';
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: TextFormField(
+                              controller: pesoController,
+                              decoration: const InputDecoration(labelText: 'Peso (kg)', prefixIcon: Icon(Icons.monitor_weight_outlined)),
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              validator: (v) {
+                                if (v == null || v.isEmpty) return null;
+                                final n = double.tryParse(v.trim().replaceAll(',', '.'));
+                                if (n == null || n <= 0) return 'Valore non valido';
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: TextFormField(
+                              controller: dataNascitaController,
+                              readOnly: true,
+                              decoration: const InputDecoration(
+                                labelText: 'Data di Nascita',
+                                prefixIcon: Icon(Icons.cake_outlined),
+                                hintText: 'Seleziona...',
+                              ),
+                              onTap: () async {
+                                DateTime initialDate = DateTime(1990);
+                                if (dataNascitaController.text.isNotEmpty) {
+                                  try {
+                                    final parts = dataNascitaController.text.split('/');
+                                    if (parts.length == 3) {
+                                      initialDate = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+                                    }
+                                  } catch (_) {}
+                                }
+                                final DateTime? picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: initialDate,
+                                  firstDate: DateTime(1900),
+                                  lastDate: DateTime.now(),
+                                );
+                                if (picked != null) {
+                                  final day = picked.day.toString().padLeft(2, '0');
+                                  final month = picked.month.toString().padLeft(2, '0');
+                                  final year = picked.year.toString();
+                                  dataNascitaController.text = '$day/$month/$year';
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            flex: 2,
+                            child: DropdownButtonFormField<String>(
+                              value: selectedSesso,
+                              decoration: const InputDecoration(
+                                labelText: 'Sesso',
+                                prefixIcon: Icon(Icons.wc_outlined),
+                              ),
+                              items: const [
+                                DropdownMenuItem(value: 'M', child: Text('M')),
+                                DropdownMenuItem(value: 'F', child: Text('F')),
+                              ],
+                              onChanged: (val) {
+                                setStateDialog(() {
+                                  selectedSesso = val;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: noteController,
@@ -687,6 +775,123 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
   }
 
   Widget _buildPatientListView(List<PatientModel> list) {
+    if (list.isEmpty) {
+      return Expanded(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.people_outline, size: 64, color: AppTheme.primaryColor.withValues(alpha: 0.2)),
+              const SizedBox(height: 16),
+              const Text('Nessun utente trovato.', style: TextStyle(fontSize: 16, color: AppTheme.textSecondary, fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final isMobile = ResponsiveHelper.isMobile(context);
+
+    if (isMobile) {
+      return Expanded(
+        child: ListView.builder(
+          itemCount: list.length,
+          padding: const EdgeInsets.only(bottom: 24),
+          itemBuilder: (ctx, i) {
+            final p = list[i];
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE8EEF8)),
+                boxShadow: [
+                  BoxShadow(color: AppTheme.primaryColor.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${p.cognome} ${p.nome}',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.analytics_outlined, size: 20, color: AppTheme.accentColor),
+                            onPressed: () => _openMultidimensionalDashboard(p),
+                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.all(4),
+                          ),
+                          const SizedBox(width: 4),
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 20, color: AppTheme.primaryColor),
+                            onPressed: ApiService.isViewer ? null : () => _showPatientDialog(patient: p),
+                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.all(4),
+                          ),
+                          const SizedBox(width: 4),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.errorColor),
+                            onPressed: ApiService.isViewer ? null : () => _confirmDelete(p),
+                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.all(4),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.cake_outlined, size: 14, color: AppTheme.textSecondary),
+                      const SizedBox(width: 4),
+                      Text(p.dataNascita != null && p.dataNascita!.isNotEmpty ? _formatDateString(p.dataNascita!) : '-', style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                      const SizedBox(width: 16),
+                      const Icon(Icons.wc_outlined, size: 14, color: AppTheme.textSecondary),
+                      const SizedBox(width: 4),
+                      Text(p.sesso ?? '-', style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.monitor_weight_outlined, size: 14, color: AppTheme.textSecondary),
+                      const SizedBox(width: 4),
+                      Text(
+                        [
+                          if (p.altezza != null) '${p.altezza} cm',
+                          if (p.peso != null) '${p.peso} kg',
+                        ].join(' • '),
+                        style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      _buildScaleIndicator(p.ultimoPosCompilato, "POS"),
+                      _buildScaleIndicator(p.ultimoSanMartinCompilato, "SanMartín"),
+                      _buildScaleIndicator(p.ultimoSisCompilato, "SIS"),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    }
+
     return Column(
       children: [
         // Table Header
