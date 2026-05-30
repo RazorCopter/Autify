@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.18.9] - 2026-05-30
+- **Scale**: Aggiunta la validazione rigorosa in fase di salvataggio per tutte le scale: ora è obbligatorio rispondere a tutti gli item prima di poter salvare una valutazione.
+- **SIS Wizard**: Il campo "Operatore" non viene più precompilato forzatamente, ma usa un placeholder (hint), permettendo l'inserimento manuale rapido.
+- **UI**: Aggiornata la favicon con il nuovo logo dark.
+
 ## [2.18.8] - 2026-05-30
 - **Bugfix**: Risolto errore 500 su endpoint `/api/admin/audit_logs` causato dalla validazione ObjectId di MongoDB.
 - **Export**: Aggiunta la collezione `audit_logs` all'export JSON del database.

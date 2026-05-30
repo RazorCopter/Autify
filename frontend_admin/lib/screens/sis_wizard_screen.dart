@@ -132,7 +132,6 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
       _patient = patients.firstWhere((p) => p.id == widget.patientId);
 
       // Pre-compila nome operatore di default se noto
-      _operatoreController.text = "Operatore Autify";
 
       // Correggi i codici di SEZ3C per evitare la collisione con la Sottoscala C
       if (_scale != null) {
@@ -308,21 +307,37 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
       ));
     });
 
-    // Make sure we include all items (prefilled with default zeros if not answered, to ensure API computes scores)
-    final allKeys = <String>[];
+    // Check that all questions are fully answered
     for (final sec in _scale!.sezioni) {
       for (final q in sec.domande) {
         final k = q.codice ?? q.idDomanda;
-        allKeys.add(k);
-        if (!_answers.containsKey(k)) {
-          final is3D = sec.codiceSezione == 'A' || sec.codiceSezione == 'B' || sec.codiceSezione == 'C' || 
-                       sec.codiceSezione == 'D' || sec.codiceSezione == 'E' || sec.codiceSezione == 'F' || 
-                       sec.codiceSezione == 'SEZ2';
-          answersList.add(AnswerModel(
-            codiceDomanda: k,
-            punteggio: is3D ? {"F": 0, "D": 0, "T": 0} : 0,
-            nota: null,
-          ));
+        
+        final is3D = sec.codiceSezione == 'A' || sec.codiceSezione == 'B' || sec.codiceSezione == 'C' || 
+                     sec.codiceSezione == 'D' || sec.codiceSezione == 'E' || sec.codiceSezione == 'F' || 
+                     sec.codiceSezione == 'SEZ2';
+
+        bool isAnswered = false;
+        if (_answers.containsKey(k) && _answers[k] != null) {
+           if (is3D) {
+              final ans = _answers[k] as Map?;
+              if (ans != null && ans['F'] != null && ans['D'] != null && ans['T'] != null) {
+                 isAnswered = true;
+              }
+           } else {
+              isAnswered = true;
+           }
+        }
+
+        if (!isAnswered) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Rispondi a tutte le domande prima di salvare. Manca: ${q.testoDomanda}"),
+              backgroundColor: Colors.redAccent,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          setState(() => _isLoading = false);
+          return;
         }
       }
     }
@@ -788,6 +803,7 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
                           controller: _operatoreController,
                           decoration: InputDecoration(
                             labelText: 'Operatore compilante *',
+                            hintText: 'Operatore Autify',
                             filled: true,
                             fillColor: const Color(0xFFF8FAFC),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
