@@ -1576,7 +1576,7 @@ async def get_audit_logs(limit: int = 200):
     
     logs = []
     for log in logs_raw:
-        log["id"] = str(log["_id"])
+        log["_id"] = str(log["_id"])
         logs.append(log)
         
     return logs
