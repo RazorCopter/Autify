@@ -310,6 +310,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // ─── BENTO GRID ────────────────────────────────────────────────────────────
   Widget _buildBentoGrid() {
     final activePatients = _stats?['totale_utenze_attive'] ?? 0;
+    final totalPatients = _stats?['totale_utenze'] ?? activePatients;
     final totalEvals = _stats?['totale_valutazioni_eseguite'] ?? 0;
     
     final coverage = _stats?['copertura_scale'] ?? {};
@@ -339,7 +340,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: _BentoKpiCard(
                       title: 'UTENZE ATTIVE',
                       value: activePatients.toDouble(),
-                      subtitle: 'Utenti totali censiti',
+                      subtitle: 'su $totalPatients utenti censiti',
                       icon: Icons.people_alt_outlined,
                       gradientColors: const [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
                       onTap: () => widget.onNavigate(2), // Vai a Utenza
@@ -377,7 +378,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _BentoKpiCard(
                     title: 'UTENZE ATTIVE',
                     value: activePatients.toDouble(),
-                    subtitle: 'Utenti totali censiti',
+                    subtitle: 'su $totalPatients utenti censiti',
                     icon: Icons.people_alt_outlined,
                     gradientColors: const [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
                     onTap: () => widget.onNavigate(2),

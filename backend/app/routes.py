@@ -1103,7 +1103,8 @@ async def get_dashboard_stats():
         patients = await patients_cursor.to_list(length=2000)
         
         active_patient_ids = set()
-        for pat in patients:
+        pazienti_attivi = [p for p in patients if p.get("attivo", True)]
+        for pat in pazienti_attivi:
             p_id = pat.get("id")
             if p_id:
                 active_patient_ids.add(str(p_id))
@@ -1266,9 +1267,10 @@ async def get_dashboard_stats():
 
         # Calcolo percentuale di copertura
         totale_pazienti = len(patients)
+        totale_pazienti_attivi = len(pazienti_attivi)
         coperti_count = pos_attivi + san_martin_attivi + sis_attivi
         scaduti_count = pos_scaduti + san_martin_scaduti + sis_scaduti
-        max_scale_teoriche = 3 * totale_pazienti
+        max_scale_teoriche = 3 * totale_pazienti_attivi
         copertura_percentuale = (coperti_count / max_scale_teoriche * 100) if max_scale_teoriche > 0 else 0.0
         
         # 5. Ordina gli alert: prima chi non ne ha mai fatte, poi chi ha valutazioni scadute da più tempo
@@ -1347,7 +1349,8 @@ async def get_dashboard_stats():
             })
             
         return {
-            "totale_utenze_attive": totale_pazienti,
+            "totale_utenze": totale_pazienti,
+            "totale_utenze_attive": totale_pazienti_attivi,
             "totale_valutazioni_eseguite": totale_valutazioni,
             "copertura_scale": {
                 "coperti_percentuale": round(copertura_percentuale, 1),
