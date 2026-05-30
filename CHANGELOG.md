@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.18.27] - 2026-05-30
+- **UI Anagrafica**: Modificato il colore dell'indicatore della presenza di una relazione IA nella scheda utente:
+  - **Viola** (`Colors.purple.shade700` / `Colors.purple.shade50`) se presente e recente (compilata negli ultimi 6 mesi).
+  - **Arancio** (`Colors.orange.shade800` / `Colors.orange.shade50`) se presente ma datata (più vecchia di 6 mesi).
+  - **Grigio** (`Colors.grey.shade400` / `Colors.grey.shade100`) se non presente.
+
 ## [2.18.22] - 2026-05-30
 - **Bugfix PDF Generator**: Risolto errore 500 (`Internal Server Error`) che si verificava all'esportazione del report IA come PDF dal DocumentReader. Il problema era causato da un conflitto di registrazione nel singleton globale `getSampleStyleSheet()` di ReportLab al secondo tentativo di aggiunta dei medesimi stili (`CustomTitle`, `PatientInfo`). Definiti ora localmente ed in sicurezza.
 

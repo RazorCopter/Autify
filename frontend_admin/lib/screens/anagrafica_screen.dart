@@ -790,17 +790,13 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
         final now = DateTime.now();
         final monthsDiff = (now.year - date.year) * 12 + (now.month - date.month);
         if (monthsDiff < 6) {
-          badgeColor = Colors.green.shade100;
-          iconColor = Colors.green.shade700;
+          badgeColor = Colors.purple.shade50;
+          iconColor = Colors.purple.shade700;
           status = "Analisi IA recente (${date.day}/${date.month}/${date.year})";
-        } else if (monthsDiff < 12) {
-          badgeColor = Colors.amber.shade100;
-          iconColor = Colors.amber.shade800;
-          status = "Analisi IA datata (${date.day}/${date.month}/${date.year} - oltre 6 mesi)";
         } else {
-          badgeColor = Colors.grey.shade200;
-          iconColor = Colors.grey.shade600;
-          status = "Analisi IA obsoleta (${date.day}/${date.month}/${date.year})";
+          badgeColor = Colors.orange.shade50;
+          iconColor = Colors.orange.shade800;
+          status = "Analisi IA datata (${date.day}/${date.month}/${date.year} - oltre 6 mesi)";
         }
       } catch (_) {
         badgeColor = Colors.grey.shade100;
