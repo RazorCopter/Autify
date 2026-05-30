@@ -1,6 +1,6 @@
 # 🏗️ MAPPA TECNICO-FUNZIONALE: Autify
 
-*Single Source of Truth (SSOT) del Progetto — v2.18.6*
+*Single Source of Truth (SSOT) del Progetto — v2.18.10*
 
 > [!CAUTION]
 > **REGOLE DI INGAGGIO E PROTOCOLLO OPERATIVO PER L'AGENTE IA**
@@ -164,6 +164,7 @@ Il DB logico è denominato `autanalysis`. Tutte le collezioni sottostanti fanno 
 | `users` | Operatori di sistema (credenziali bcrypt, ruoli) | ✅ Sì |
 | `settings` | Chiavi API Gemini, Modello IA in uso, Prompt di sistema | ✅ Sì |
 | `ai_analyses` | Storico testuale delle Relazioni IA generate e approvate | ✅ Sì |
+| `audit_logs` | Tracciabilità delle operazioni utente (login, creazione, modifica, export) | ✅ Sì |
 
 > [!CAUTION]
 > **Aggiunta di nuove collezioni**
@@ -220,7 +221,7 @@ sequenceDiagram
 
     ADM->>UI: Clicca "Esporta Backup DB"
     UI->>API: GET /api/admin/export-db
-    API->>DB: fetch di TUTTE le 6 collezioni
+    API->>DB: fetch di TUTTE le 7 collezioni
     DB-->>API: Stream Documenti JSON
     API-->>UI: Risponde con file .json
     UI-->>ADM: Avvia download nel browser
