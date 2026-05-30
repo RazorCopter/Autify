@@ -1112,7 +1112,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Utenza',
+              Text('Utenti',
                 style: TextStyle(
                   fontSize: titleSize,
                   fontWeight: FontWeight.w800,
@@ -1162,7 +1162,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Utenza',
+              Text('Utenti',
                 style: TextStyle(
                   fontSize: titleSize,
                   fontWeight: FontWeight.w800,
