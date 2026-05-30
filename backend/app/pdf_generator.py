@@ -1546,12 +1546,51 @@ def _parse_markdown_to_flowables(text: str, styles) -> list:
             res += f'<b>{part}</b>' if i % 2 == 1 else part
         return res
 
-    for line in text.split('\n'):
+    lines = text.split('\n')
+    i = 0
+    while i < len(lines):
+        line = lines[i]
         stripped = line.strip()
         if not stripped:
             flowables.append(Spacer(1, 6))
+            i += 1
             continue
             
+        if stripped.startswith('|') and stripped.endswith('|'):
+            table_lines = []
+            while i < len(lines) and lines[i].strip().startswith('|') and lines[i].strip().endswith('|'):
+                table_lines.append(lines[i].strip())
+                i += 1
+            
+            table_data = []
+            for t_line in table_lines:
+                inner = t_line[1:-1]
+                cells = [c.strip() for c in inner.split('|')]
+                
+                if all(all(ch in '-: ' for ch in c) and len(c) > 0 for c in cells):
+                    continue
+                
+                row = [Paragraph(_bold(c), styles['Normal']) for c in cells]
+                table_data.append(row)
+            
+            if table_data:
+                num_cols = len(table_data[0]) if table_data else 1
+                col_width = (17 * cm) / num_cols if num_cols > 0 else 17 * cm
+                
+                t = Table(table_data, colWidths=[col_width] * num_cols, style=TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), HexColor('#E0F2F1')),
+                    ('TEXTCOLOR', (0,0), (-1,0), HexColor('#004D40')),
+                    ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+                    ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                    ('BOTTOMPADDING', (0,0), (-1,0), 8),
+                    ('BACKGROUND', (0,1), (-1,-1), white),
+                    ('GRID', (0,0), (-1,-1), 0.5, HexColor('#BDBDBD')),
+                    ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ]))
+                flowables.append(t)
+                flowables.append(Spacer(1, 12))
+            continue
+
         if stripped.startswith('# '):
             flowables.append(Paragraph(_bold(stripped[2:]), styles['Heading1']))
             flowables.append(Spacer(1, 12))
@@ -1568,6 +1607,8 @@ def _parse_markdown_to_flowables(text: str, styles) -> list:
         else:
             flowables.append(Paragraph(_bold(stripped), styles['Normal']))
             flowables.append(Spacer(1, 6))
+            
+        i += 1
     return flowables
 
 def generate_ai_analysis_pdf(patient: dict, report: str) -> bytes:
