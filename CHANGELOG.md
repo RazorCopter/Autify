@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.18.18] - 2026-05-30
+- **Riorganizzazione completa del Tab Analisi IA**: Unificate le tre card separate (Profilo Utente, Seleziona Dati, Dati Aggiuntivi) in un'unica card premium "Configurazione & Avvio Analisi" con 4 sezioni logiche divise da divider: Profilo Utente, Scale da Includere, Contesto Aggiuntivo, Dati Aggiuntivi. Pulsante Avvia Analisi integrato in fondo alla card con gradient e ombra potenziati.
+- **Overlay di elaborazione potenziato**: Sfocatura dello sfondo intensificata (blur 20px, opacità 55%), card loader più grande (maxWidth 600) con gradiente elegante.
+- **Animazione di elaborazione con logo bradipo**: Il loader puzzle `_SlothPuzzleLoader` ora mostra l'immagine `avatar_bradipo_hd..png` a 280px (prima 180px), contenitore aumentato a 420×420px, testo di caricamento più grande (16px). L'animazione dei pezzi che si ricompongono ed esplodono rimane invariata ma molto più visibile e d'impatto.
+
 ## [2.18.16] - 2026-05-30
 - **IA e Contesto**: Aggiunto il pannello di selezione dei dati ("Seleziona Dati da Inviare all'IA") nell'interfaccia dell'Analisi IA dell'utente. Ora l'educatore può decidere quali scale includere (POS, San Martín, SIS), se inviare l'intero storico temporale delle compilazioni e se includere i report pregressi selezionati nello storico, mantenendo sempre l'invio delle note testuali e dell'allegato documentale. Tutti i filtri sono selezionati di default per garantire continuità.
 
