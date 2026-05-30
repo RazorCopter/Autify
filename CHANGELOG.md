@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.18.29] - 2026-05-30
+- **Tracciabilità ed Audit Log IA**: Implementata la scrittura automatica degli audit log educativi (registro) legati alle operazioni sulle relazioni di intelligenza artificiale:
+  - `GENERAZIONE_REPORT_IA`: `{operatore} ha generato la Relazione IA per {cognome} {nome}`.
+  - `CANCELLAZIONE_REPORT_IA`: `{operatore} ha eliminato la Relazione IA per {cognome} {nome}`.
+  - `MODIFICA_REPORT_IA`: `{operatore} ha modificato la nota della Relazione IA per {cognome} {nome} in: {nota_nuova}`.
+  Tutti i log estraggono programmaticamente il nome reale del soggetto dal database per conformarsi al formato stabilito.
+- **Sincronizzazione Versioni**: Eseguito lo script globale `bump_version.py` per sincronizzare la versione corrente `2.18.29` in tutti i moduli (FastAPI backend, Flutter frontend `pubspec.yaml`, `app_version.dart`, `docker-compose.yml` e `ARCHITECTURE_MAP.md`), garantendo che il numero di versione visualizzato nel menu dell'applicazione sia allineato e coerente.
+
 ## [2.18.28] - 2026-05-30
 - **Parsing Error Gemini**: Implementato il parsing degli errori di Gemini API sia a livello di parsing JSON che a livello di eccezioni di runtime. Tradotti in messaggi chiari, espliciti e di supporto in lingua italiana, in particolar modo per l'errore di sforamento del limite di spesa mensile (Monthly Spending Cap su Google AI Studio - Errore 429 `RESOURCE_EXHAUSTED`), per il superamento della quota di richieste, chiavi API non valide e modelli obsoleti.
 - **UI Dashboard**: Pulita la visualizzazione dell'errore rimuovendo il prefisso tecnico `Exception: ` ed estesa la comparsa del tasto "Vai a Impostazioni" in presenza di qualsiasi errore relativo alle credenziali API.

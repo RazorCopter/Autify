@@ -550,7 +550,7 @@ async def get_patient_ai_analyses(id_patient: str):
     return analyses
 
 @admin_router.post("/patients/{id_patient}/ai-analyses", response_model=AiAnalysis, status_code=status.HTTP_201_CREATED, tags=["Admin - AI Analyses"])
-async def save_patient_ai_analysis(id_patient: str, payload: AiAnalysisCreate):
+async def save_patient_ai_analysis(id_patient: str, payload: AiAnalysisCreate, auth_context: dict = Depends(verify_auth)):
     patient = await patients_collection.find_one({"id": id_patient})
     if not patient:
         raise HTTPException(status_code=404, detail="Utente non trovato")
@@ -566,13 +566,26 @@ async def save_patient_ai_analysis(id_patient: str, payload: AiAnalysisCreate):
     if isinstance(analysis_dict.get("timestamp"), datetime) and analysis_dict["timestamp"].tzinfo is None:
         analysis_dict["timestamp"] = analysis_dict["timestamp"].replace(tzinfo=timezone.utc)
     await ai_analyses_collection.insert_one(analysis_dict)
+    
+    operatore = auth_context.get("username", "Operatore Sconosciuto")
+    cognome = patient.get("cognome", "")
+    nome = patient.get("nome", "")
+    utente_info = f" per {cognome} {nome}" if (cognome or nome) else ""
+    
+    await log_audit(
+        "GENERAZIONE_REPORT_IA",
+        operatore,
+        f"{operatore} ha generato la Relazione IA{utente_info}".strip(),
+        id_patient
+    )
+    
     return analysis
 
 class AiAnalysisUpdate(BaseModel):
     notes: Optional[str] = None
 
 @admin_router.put("/patients/ai-analyses/{id_analysis}", tags=["Admin - AI Analyses"])
-async def update_ai_analysis(id_analysis: str, payload: AiAnalysisUpdate):
+async def update_ai_analysis(id_analysis: str, payload: AiAnalysisUpdate, auth_context: dict = Depends(verify_auth)):
     existing = await ai_analyses_collection.find_one({"id": id_analysis})
     if not existing:
         raise HTTPException(status_code=404, detail="Analisi IA non trovata")
@@ -584,13 +597,54 @@ async def update_ai_analysis(id_analysis: str, payload: AiAnalysisUpdate):
     if update_data:
         await ai_analyses_collection.update_one({"id": id_analysis}, {"$set": update_data})
         
+        id_patient = existing.get("id_paziente")
+        utente_info = ""
+        if id_patient:
+            patient = await patients_collection.find_one({"id": id_patient})
+            if patient:
+                cognome = patient.get("cognome", "")
+                nome = patient.get("nome", "")
+                if cognome or nome:
+                    utente_info = f" per {cognome} {nome}"
+                    
+        operatore = auth_context.get("username", "Operatore Sconosciuto")
+        nota_nuova = payload.notes or ""
+        await log_audit(
+            "MODIFICA_REPORT_IA",
+            operatore,
+            f"{operatore} ha modificato la nota della Relazione IA{utente_info} in: {nota_nuova}".strip(),
+            id_patient
+        )
+        
     return {"message": "Analisi IA aggiornata con successo"}
 
 @admin_router.delete("/patients/ai-analyses/{id_analysis}", tags=["Admin - AI Analyses"])
-async def delete_ai_analysis(id_analysis: str):
+async def delete_ai_analysis(id_analysis: str, auth_context: dict = Depends(verify_auth)):
+    existing = await ai_analyses_collection.find_one({"id": id_analysis})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Analisi IA non trovata")
+        
+    id_patient = existing.get("id_paziente")
+    utente_info = ""
+    if id_patient:
+        patient = await patients_collection.find_one({"id": id_patient})
+        if patient:
+            cognome = patient.get("cognome", "")
+            nome = patient.get("nome", "")
+            if cognome or nome:
+                utente_info = f" per {cognome} {nome}"
+
     result = await ai_analyses_collection.delete_one({"id": id_analysis})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Analisi IA non trovata")
+        
+    operatore = auth_context.get("username", "Operatore Sconosciuto")
+    await log_audit(
+        "CANCELLAZIONE_REPORT_IA",
+        operatore,
+        f"{operatore} ha eliminato la Relazione IA{utente_info}".strip(),
+        id_patient
+    )
     return {"message": "Analisi IA eliminata con successo"}
 
 @admin_router.get("/evaluations/{id_patient}", response_model=List[Evaluation], tags=["Admin - Evaluations"])
