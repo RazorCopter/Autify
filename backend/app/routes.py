@@ -421,6 +421,19 @@ async def get_patients():
         pat_dict["ultimo_pos_compilato"] = None
         pat_dict["ultimo_san_martin_compilato"] = None
         pat_dict["ultimo_sis_compilato"] = None
+        pat_dict["ultima_analisi_ia"] = None
+        
+        # Recupera la data dell'ultima analisi IA per questo utente
+        latest_ai = await ai_analyses_collection.find_one(
+            {"patient_id": pat_id},
+            sort=[("timestamp", -1)]
+        )
+        if latest_ai and latest_ai.get("timestamp"):
+            ts = latest_ai["timestamp"]
+            if isinstance(ts, datetime):
+                pat_dict["ultima_analisi_ia"] = ts.isoformat()
+            else:
+                pat_dict["ultima_analisi_ia"] = str(ts)
         
         for ev in evals:
             scale_id = ev.get("id_scala")

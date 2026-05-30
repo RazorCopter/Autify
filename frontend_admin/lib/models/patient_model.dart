@@ -11,6 +11,7 @@ class PatientModel {
   String? ultimoPosCompilato;
   String? ultimoSanMartinCompilato;
   String? ultimoSisCompilato;
+  String? ultimaAnalisiIa;
 
   PatientModel({
     required this.id,
@@ -25,6 +26,7 @@ class PatientModel {
     this.ultimoPosCompilato,
     this.ultimoSanMartinCompilato,
     this.ultimoSisCompilato,
+    this.ultimaAnalisiIa,
   });
 
   factory PatientModel.fromJson(Map<String, dynamic> json) {
@@ -41,6 +43,7 @@ class PatientModel {
       ultimoPosCompilato: json['ultimo_pos_compilato'],
       ultimoSanMartinCompilato: json['ultimo_san_martin_compilato'],
       ultimoSisCompilato: json['ultimo_sis_compilato'],
+      ultimaAnalisiIa: json['ultima_analisi_ia'],
     );
   }
 
@@ -58,6 +61,7 @@ class PatientModel {
       'ultimo_pos_compilato': ultimoPosCompilato,
       'ultimo_san_martin_compilato': ultimoSanMartinCompilato,
       'ultimo_sis_compilato': ultimoSisCompilato,
+      'ultima_analisi_ia': ultimaAnalisiIa,
     };
   }
 }

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.18.19] - 2026-05-30
+- **Indicatore Analisi IA nelle schede utente**: Aggiunta icona `psychology_outlined` (la stessa del tab "Analisi IA") nelle card, list view e table view dell'anagrafica per segnalare la presenza di analisi IA. Colore verde se l'ultima analisi è recente (< 6 mesi), giallo/ambra se datata (6-12 mesi), grigio se assente o obsoleta (> 12 mesi). Tooltip con data e stato dettagliato.
+- **Backend**: L'endpoint `GET /api/admin/patients` ora include il campo `ultima_analisi_ia` con la data dell'ultima analisi IA recuperata dalla collezione `ai_analyses`.
+- **Modello**: Aggiunto campo `ultimaAnalisiIa` al `PatientModel` e aggiornati `fromJson`/`toJson` con `ultima_analisi_ia`.
+
 ## [2.18.18] - 2026-05-30
 - **Riorganizzazione completa del Tab Analisi IA**: Unificate le tre card separate (Profilo Utente, Seleziona Dati, Dati Aggiuntivi) in un'unica card premium "Configurazione & Avvio Analisi" con 4 sezioni logiche divise da divider: Profilo Utente, Scale da Includere, Contesto Aggiuntivo, Dati Aggiuntivi. Pulsante Avvia Analisi integrato in fondo alla card con gradient e ombra potenziati.
 - **Overlay di elaborazione potenziato**: Sfocatura dello sfondo intensificata (blur 20px, opacità 55%), card loader più grande (maxWidth 600) con gradiente elegante.

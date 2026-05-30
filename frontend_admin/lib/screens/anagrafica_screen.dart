@@ -657,6 +657,8 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                     _buildScaleIndicator(patient.ultimoSanMartinCompilato, "SanMartín"),
                     const SizedBox(width: 4),
                     _buildScaleIndicator(patient.ultimoSisCompilato, "SIS"),
+                    const SizedBox(width: 4),
+                    _buildIaIndicator(patient),
                   ],
                 ),
                 // Pulsanti Azione (Modifica/Elimina)
@@ -776,6 +778,53 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
     );
   }
 
+  Widget _buildIaIndicator(PatientModel patient) {
+    Color badgeColor = Colors.grey.shade100;
+    Color iconColor = Colors.grey.shade400;
+    String status = "Nessuna analisi IA";
+
+    final dateStr = patient.ultimaAnalisiIa;
+    if (dateStr != null && dateStr.isNotEmpty) {
+      try {
+        final date = DateTime.parse(dateStr);
+        final now = DateTime.now();
+        final monthsDiff = (now.year - date.year) * 12 + (now.month - date.month);
+        if (monthsDiff < 6) {
+          badgeColor = Colors.green.shade100;
+          iconColor = Colors.green.shade700;
+          status = "Analisi IA recente (${date.day}/${date.month}/${date.year})";
+        } else if (monthsDiff < 12) {
+          badgeColor = Colors.amber.shade100;
+          iconColor = Colors.amber.shade800;
+          status = "Analisi IA datata (${date.day}/${date.month}/${date.year} - oltre 6 mesi)";
+        } else {
+          badgeColor = Colors.grey.shade200;
+          iconColor = Colors.grey.shade600;
+          status = "Analisi IA obsoleta (${date.day}/${date.month}/${date.year})";
+        }
+      } catch (_) {
+        badgeColor = Colors.grey.shade100;
+        iconColor = Colors.grey.shade400;
+      }
+    }
+
+    return Tooltip(
+      message: status,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: badgeColor,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Icon(
+          Icons.psychology_outlined,
+          size: 13,
+          color: iconColor,
+        ),
+      ),
+    );
+  }
+
   Widget _buildPatientListView(List<PatientModel> list) {
     if (list.isEmpty) {
       return Expanded(
@@ -876,6 +925,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                       _buildScaleIndicator(p.ultimoPosCompilato, "POS"),
                       _buildScaleIndicator(p.ultimoSanMartinCompilato, "SanMartín"),
                       _buildScaleIndicator(p.ultimoSisCompilato, "SIS"),
+                      _buildIaIndicator(p),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -964,6 +1014,8 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                           _buildScaleIndicator(p.ultimoSanMartinCompilato, "SanMartín"),
                           const SizedBox(width: 6),
                           _buildScaleIndicator(p.ultimoSisCompilato, "SIS"),
+                          const SizedBox(width: 6),
+                          _buildIaIndicator(p),
                         ],
                       ),
                     ),
