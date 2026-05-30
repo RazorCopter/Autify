@@ -17,12 +17,12 @@ class AuditLog {
 
   factory AuditLog.fromJson(Map<String, dynamic> json) {
     return AuditLog(
-      id: json['id'],
-      azione: json['azione'],
-      operatore: json['operatore'],
+      id: json['id'] ?? '',
+      azione: json['azione'] ?? '',
+      operatore: json['operatore'] ?? '',
       targetId: json['target_id'],
-      dettagli: json['dettagli'],
-      timestamp: DateTime.parse(json['timestamp']).toLocal(),
+      dettagli: json['dettagli'] ?? '',
+      timestamp: json['timestamp'] != null ? DateTime.parse(json['timestamp']).toLocal() : DateTime.now(),
     );
   }
 }
