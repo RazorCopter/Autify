@@ -1570,21 +1570,21 @@ def generate_ai_analysis_pdf(patient: dict, report: str) -> bytes:
     )
     
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=PRIMARY, spaceAfter=20, alignment=TA_CENTER))
-    styles.add(ParagraphStyle('PatientInfo', parent=styles['Normal'], fontSize=10, textColor=MID_GREY, spaceAfter=4))
+    custom_title_style = ParagraphStyle('CustomTitleLocal', parent=styles['Heading1'], fontSize=16, textColor=PRIMARY, spaceAfter=20, alignment=TA_CENTER)
+    patient_info_style = ParagraphStyle('PatientInfoLocal', parent=styles['Normal'], fontSize=10, textColor=MID_GREY, spaceAfter=4)
     
     story = []
     story.append(_make_letterhead(styles))
     story.append(HRFlowable(width="100%", thickness=1, color=BORDER, spaceBefore=10, spaceAfter=20))
     
-    story.append(Paragraph("Analisi Multidimensionale AI", styles['CustomTitle']))
+    story.append(Paragraph("Analisi Multidimensionale AI", custom_title_style))
     
     nome = patient.get("nome", "")
     cognome = patient.get("cognome", "")
     cf = patient.get("codiceFiscale", "N/D")
-    story.append(Paragraph(f"<b>Utente:</b> {nome} {cognome} ({cf})", styles['PatientInfo']))
+    story.append(Paragraph(f"<b>Utente:</b> {nome} {cognome} ({cf})", patient_info_style))
     data_str = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M")
-    story.append(Paragraph(f"<b>Data Generazione:</b> {data_str}", styles['PatientInfo']))
+    story.append(Paragraph(f"<b>Data Generazione:</b> {data_str}", patient_info_style))
     story.append(HRFlowable(width="100%", thickness=1, color=BORDER, spaceBefore=10, spaceAfter=20))
     
     story.extend(_parse_markdown_to_flowables(report, styles))

@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.18.22] - 2026-05-30
+- **Bugfix PDF Generator**: Risolto errore 500 (`Internal Server Error`) che si verificava all'esportazione del report IA come PDF dal DocumentReader. Il problema era causato da un conflitto di registrazione nel singleton globale `getSampleStyleSheet()` di ReportLab al secondo tentativo di aggiunta dei medesimi stili (`CustomTitle`, `PatientInfo`). Definiti ora localmente ed in sicurezza.
+
 ## [2.18.21] - 2026-05-30
 - **Bugfix Pydantic**: Aggiunto il campo `ultima_analisi_ia` all'interno della definizione del modello Pydantic `Patient` in `backend/app/models.py`. Questo previene che FastAPI filtri via il campo durante la serializzazione JSON delle risposte in `GET /patients`.
 - **UI Anagrafica**: Spostato l'indicatore dell'analisi IA in alto a destra delle card utente per una visualizzazione ottimizzata e un posizionamento preminente.
