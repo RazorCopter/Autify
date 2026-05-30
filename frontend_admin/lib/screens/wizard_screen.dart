@@ -411,21 +411,17 @@ class _WizardScreenState extends State<WizardScreen>
     }
 
     // Controlla che tutte le risposte siano state date
-    if (_scale != null) {
-      for (final sec in _scale!.sezioni) {
-        for (final q in sec.domande) {
-          final k = q.codice ?? q.idDomanda;
-          if (!_answers.containsKey(k) || _answers[k] == null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text("Rispondi a tutte le domande prima di salvare. Manca: ${q.testoDomanda}"),
-                backgroundColor: Colors.redAccent,
-                duration: const Duration(seconds: 4),
-              ),
-            );
-            return;
-          }
-        }
+    for (final item in _questions) {
+      final k = item.domanda.codice ?? item.domanda.idDomanda;
+      if (!_answers.containsKey(k) || _answers[k] == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Rispondi a tutte le domande prima di salvare. Manca: ${item.domanda.testoDomanda}"),
+            backgroundColor: Colors.redAccent,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+        return;
       }
     }
 
