@@ -1072,6 +1072,14 @@ def _make_sis_bar_chart(domains: List[dict], score_min: int = 0, score_max: int 
     return buf
 
 
+def _get_rome_now() -> datetime:
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.now(ZoneInfo("Europe/Rome"))
+    except Exception:
+        return datetime.now()
+
+
 # ─── Generazione PDF completo ────────────────────────────────────────────────
 
 def generate_evaluation_pdf(
@@ -1519,7 +1527,7 @@ def generate_evaluation_pdf(
     story.append(Spacer(1, 0.8 * cm))
     story.append(HRFlowable(width="100%", thickness=0.5, color=BORDER))
     story.append(Paragraph(
-        f"Generato da Autify il {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M')} UTC",
+        f"Generato da Autify il {_get_rome_now().strftime('%d/%m/%Y %H:%M')}",
         ParagraphStyle('Footer', parent=styles['Normal'], fontSize=8,
                        textColor=MID_GREY, fontName='Helvetica', alignment=TA_RIGHT)
     ))
@@ -1583,7 +1591,7 @@ def generate_ai_analysis_pdf(patient: dict, report: str) -> bytes:
     cognome = patient.get("cognome", "")
     cf = patient.get("codiceFiscale", "N/D")
     story.append(Paragraph(f"<b>Utente:</b> {nome} {cognome} ({cf})", patient_info_style))
-    data_str = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M")
+    data_str = _get_rome_now().strftime("%d/%m/%Y %H:%M")
     story.append(Paragraph(f"<b>Data Generazione:</b> {data_str}", patient_info_style))
     story.append(HRFlowable(width="100%", thickness=1, color=BORDER, spaceBefore=10, spaceAfter=20))
     

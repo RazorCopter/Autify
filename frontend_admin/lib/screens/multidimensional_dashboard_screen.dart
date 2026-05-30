@@ -2719,7 +2719,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
                   String formattedTimestamp = rawTimestamp;
                   try {
-                    final parsed = DateTime.parse(rawTimestamp);
+                    final parsed = DateTime.parse(rawTimestamp).toLocal();
                     final day = parsed.day.toString().padLeft(2, '0');
                     final month = parsed.month.toString().padLeft(2, '0');
                     final year = parsed.year;

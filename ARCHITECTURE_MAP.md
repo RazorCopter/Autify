@@ -1,6 +1,6 @@
 # 🏗️ MAPPA TECNICO-FUNZIONALE: Autify
 
-*Single Source of Truth (SSOT) del Progetto — v2.18.22*
+*Single Source of Truth (SSOT) del Progetto — v2.18.23*
 
 > [!CAUTION]
 > **REGOLE DI INGAGGIO E PROTOCOLLO OPERATIVO PER L'AGENTE IA**
