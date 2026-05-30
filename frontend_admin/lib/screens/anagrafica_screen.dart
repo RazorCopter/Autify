@@ -689,7 +689,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
               child: ElevatedButton.icon(
                 onPressed: () => _openMultidimensionalDashboard(patient),
                 icon: const Icon(Icons.analytics_outlined, size: 16),
-                label: const Text('Analisi Multidimensionale', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                label: const Text('Analisi', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
                   foregroundColor: AppTheme.accentColor,
@@ -885,7 +885,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                     child: ElevatedButton.icon(
                       onPressed: () => _openMultidimensionalDashboard(p),
                       icon: const Icon(Icons.analytics_outlined, size: 18),
-                      label: const Text('Analisi Multidimensionale', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      label: const Text('Analisi', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
                         foregroundColor: AppTheme.accentColor,

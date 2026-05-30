@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.18.14] - 2026-05-30
+- **UI/Anagrafica**: Rinominato il bottone delle schede utente da "Analisi Multidimensionale" a un più semplice e pulito "Analisi".
+
 ## [2.18.13] - 2026-05-30
 - **Bugfix**: Risolto errore di compilazione web causato dall'uso dell'API deprecata/assente `html.window.eval`. Ora viene usato `dart:js` (`js.context.callMethod`) per l'esecuzione sicura di script JS interop su Flutter Web.
 
