@@ -55,6 +55,12 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   final List<String> _selectedAnalysesIdsForContext = [];
   bool _isSavingAnalysis = false;
 
+  bool _includePos = true;
+  bool _includeSm = true;
+  bool _includeSis = true;
+  bool _includeHistory = true;
+  bool _includeSavedAnalyses = true;
+
   static const List<Color> _domainColors = [
     Color(0xFF60A5FA), Color(0xFFF59E0B), Color(0xFF34D399), Color(0xFFA78BFA),
     Color(0xFFF87171), Color(0xFF38BDF8), Color(0xFF86EFAC), Color(0xFFFB923C),
@@ -195,9 +201,34 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     });
 
     try {
-      final evaluations = _latestEvaluations.values.toList();
-      if (evaluations.isEmpty) {
-        throw Exception('Nessuna valutazione disponibile per l\'analisi.');
+      final List<AggregatedEvaluation> evaluationsToInclude = [];
+
+      for (final scale in _availableScales) {
+        final isSM = _isSanMartinScale(scale.id, scale.nome);
+        final isSIS = _isSisScale(scale.id, scale.nome);
+        final isPOS = !isSM && !isSIS;
+
+        if (isPOS && !_includePos) continue;
+        if (isSM && !_includeSm) continue;
+        if (isSIS && !_includeSis) continue;
+
+        if (_includeHistory) {
+          final history = _evaluationsHistory[scale.id];
+          if (history != null) {
+            evaluationsToInclude.addAll(history);
+          }
+        } else {
+          final latest = _latestEvaluations[scale.id];
+          if (latest != null) {
+            evaluationsToInclude.add(latest);
+          }
+        }
+      }
+
+      if (evaluationsToInclude.isEmpty &&
+          _aiNotesController.text.trim().isEmpty &&
+          _aiAttachment == null) {
+        throw Exception('Nessun dato (valutazione, note o allegato) selezionato per l\'analisi.');
       }
 
       Map<String, dynamic>? attachmentMap;
@@ -208,13 +239,15 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         };
       }
 
-      final historyToInclude = _savedAnalyses
-          .where((a) => _selectedAnalysesIdsForContext.contains(a['id']?.toString()))
-          .toList();
+      final historyToInclude = _includeSavedAnalyses
+          ? _savedAnalyses
+              .where((a) => _selectedAnalysesIdsForContext.contains(a['id']?.toString()))
+              .toList()
+          : <Map<String, dynamic>>[];
 
       final report = await _geminiService.analyzePatientData(
         widget.patient,
-        evaluations,
+        evaluationsToInclude,
         _geminiKey!,
         _geminiModel,
         systemPrompt: _geminiPrompt,
@@ -2244,6 +2277,96 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary, height: 1.4),
                   ),
                 ],
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // ── Card Selezione Dati ──
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFFE8EEF8)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.tune_outlined, color: Colors.indigo.shade600, size: 20),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Seleziona Dati da Inviare all\'IA',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Scegli quali informazioni dell\'utente includere nel contesto per Gemini:',
+                  style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                ),
+                const SizedBox(height: 16),
+                CheckboxListTile(
+                  title: const Text('Scala POS (Qualità della Vita)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Includi i dati del profilo di funzionamento standard', style: TextStyle(fontSize: 11)),
+                  value: _includePos,
+                  activeColor: AppTheme.primaryColor,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  onChanged: (val) {
+                    setState(() => _includePos = val ?? true);
+                  },
+                ),
+                CheckboxListTile(
+                  title: const Text('Scala San Martín', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Includi i dati della scala di qualità della vita per disabilità gravi', style: TextStyle(fontSize: 11)),
+                  value: _includeSm,
+                  activeColor: AppTheme.primaryColor,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  onChanged: (val) {
+                    setState(() => _includeSm = val ?? true);
+                  },
+                ),
+                CheckboxListTile(
+                  title: const Text('Scala SIS (Supports Intensity Scale)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Includi i bisogni di supporto, priorità e alert eccezionali', style: TextStyle(fontSize: 11)),
+                  value: _includeSis,
+                  activeColor: AppTheme.primaryColor,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  onChanged: (val) {
+                    setState(() => _includeSis = val ?? true);
+                  },
+                ),
+                const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                CheckboxListTile(
+                  title: const Text('Storico Scale', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Invia tutte le compilazioni passate delle scale selezionate (consente l\'analisi del trend temporale)', style: TextStyle(fontSize: 11)),
+                  value: _includeHistory,
+                  activeColor: AppTheme.primaryColor,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  onChanged: (val) {
+                    setState(() => _includeHistory = val ?? true);
+                  },
+                ),
+                CheckboxListTile(
+                  title: const Text('Storico Valutazioni IA', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Inietta come contesto le relazioni pregresse selezionate nella barra laterale', style: TextStyle(fontSize: 11)),
+                  value: _includeSavedAnalyses,
+                  activeColor: AppTheme.primaryColor,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  onChanged: (val) {
+                    setState(() => _includeSavedAnalyses = val ?? true);
+                  },
+                ),
               ],
             ),
           ),
