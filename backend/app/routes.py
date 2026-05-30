@@ -1410,7 +1410,7 @@ async def export_database():
     db_dump = {
         "metadata": {
             "exported_at": datetime.now(timezone.utc).isoformat(),
-            "version": "2.18.2",
+            "version": "2.18.8",
         },
         "collections": {
             "patients": await _collect_collection("patients", patients_collection),
@@ -1419,6 +1419,7 @@ async def export_database():
             "users": await _collect_collection("users", users_collection),
             "settings": await _collect_collection("settings", settings_collection),
             "ai_analyses": await _collect_collection("ai_analyses", ai_analyses_collection),
+            "audit_logs": await _collect_collection("audit_logs", audit_logs_collection),
         }
     }
     json_bytes = json.dumps(db_dump, ensure_ascii=False, indent=2, default=str).encode('utf-8')

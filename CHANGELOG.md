@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.18.8] - 2026-05-30
+- **Bugfix**: Risolto errore 500 su endpoint `/api/admin/audit_logs` causato dalla validazione ObjectId di MongoDB.
+- **Export**: Aggiunta la collezione `audit_logs` all'export JSON del database.
+
+## [2.18.7] - 2026-05-30
+- **Dashboard**: Aggiornato il calcolo del numero di utenti totali vs utenti attivi nella dashboard.
+- **Frontend**: Aggiunto indicatore visivo in tempo reale (`connectivity_plus`) dello stato di connessione offline/online per la PWA.
+
 ## [2.18.6] - 2026-05-30
 - **Bugfix**: Corretto il calcolo del parsing delle date per la copertura in dashboard.
 - **Export**: Aggiunta esportazione CSV per l'anagrafica pazienti.
