@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.18.28] - 2026-05-30
+- **Parsing Error Gemini**: Implementato il parsing degli errori di Gemini API sia a livello di parsing JSON che a livello di eccezioni di runtime. Tradotti in messaggi chiari, espliciti e di supporto in lingua italiana, in particolar modo per l'errore di sforamento del limite di spesa mensile (Monthly Spending Cap su Google AI Studio - Errore 429 `RESOURCE_EXHAUSTED`), per il superamento della quota di richieste, chiavi API non valide e modelli obsoleti.
+- **UI Dashboard**: Pulita la visualizzazione dell'errore rimuovendo il prefisso tecnico `Exception: ` ed estesa la comparsa del tasto "Vai a Impostazioni" in presenza di qualsiasi errore relativo alle credenziali API.
+
 ## [2.18.27] - 2026-05-30
 - **UI Anagrafica**: Rinominata l'intestazione della schermata da "Utenza" a "Utenti" per maggiore chiarezza e allineamento terminologico.
 - **UI Anagrafica**: Modificato il colore dell'indicatore della presenza di una relazione IA nella scheda utente:

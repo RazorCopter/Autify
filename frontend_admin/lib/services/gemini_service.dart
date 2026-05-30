@@ -102,11 +102,80 @@ TONO E FORMATTAZIONE:
         final text = data['candidates'][0]['content']['parts'][0]['text'];
         return text;
       } else {
-        throw Exception('Errore API Gemini (${response.statusCode}): ${response.body}');
+        throw Exception(_parseApiError(response.statusCode, response.body));
       }
     } catch (e) {
+      if (e is Exception) {
+        final msg = e.toString();
+        if (msg.contains('Limite di spesa') ||
+            msg.contains('Limite di richieste') ||
+            msg.contains('API Gemini') ||
+            msg.contains('Chiave API')) {
+          rethrow;
+        }
+      }
+      final errStr = e.toString();
+      if (errStr.contains('spending cap') || errStr.contains('RESOURCE_EXHAUSTED')) {
+        throw Exception(
+          "Limite di spesa mensile superato su Google AI Studio.\n\n"
+          "Il progetto ha superato il budget o il limite massimo di spesa mensile impostato per l'API di Gemini.\n"
+          "Per ripristinare il servizio, un amministratore deve accedere a Google AI Studio (https://ai.studio/spend) "
+          "e incrementare o sbloccare il 'Monthly Spending Cap'."
+        );
+      }
       throw Exception('Impossibile comunicare con Gemini: $e');
     }
+  }
+
+  String _parseApiError(int statusCode, String body) {
+    try {
+      final data = jsonDecode(body);
+      if (data is Map && data.containsKey('error')) {
+        final error = data['error'];
+        if (error is Map && error.containsKey('message')) {
+          final message = error['message'] as String;
+          final status = error['status'] as String?;
+
+          if (message.contains('spending cap') ||
+              (status == 'RESOURCE_EXHAUSTED' && (message.contains('budget') || message.contains('spending')))) {
+            return "Limite di spesa mensile superato su Google AI Studio.\n\n"
+                   "Il progetto ha superato il budget o il limite massimo di spesa mensile impostato per l'API di Gemini.\n"
+                   "Per ripristinare il servizio, un amministratore deve accedere alla console di Google AI Studio (https://ai.studio/spend) "
+                   "e incrementare o sbloccare il 'Monthly Spending Cap'.";
+          }
+
+          if (status == 'RESOURCE_EXHAUSTED' || statusCode == 429) {
+            return "Limite di richieste temporaneo superato (Quota/Rate Limit).\n\n"
+                   "Sono state inviate troppe richieste in un breve periodo di tempo. Si prega di attendere circa 60 secondi prima di riprovare.";
+          }
+
+          if (message.contains('API key') || message.contains('key is invalid') || message.contains('not valid')) {
+            return "Chiave API Gemini non valida.\n\n"
+                   "La chiave di autorizzazione inserita non è corretta o è stata revocata. Verificare la configurazione nelle Impostazioni.";
+          }
+
+          return "Errore API Gemini ($statusCode): $message";
+        }
+      }
+    } catch (_) {
+      // Fallback
+    }
+
+    if (statusCode == 429) {
+      return "Limite di risorse o di spesa superato (Errore 429).\n\n"
+             "Verificare di non aver superato il limite di spesa mensile (Spending Cap) o la quota di richieste su Google AI Studio (https://ai.studio/spend).";
+    } else if (statusCode == 400) {
+      return "Richiesta non valida (Errore 400).\n\n"
+             "Verificare che la chiave API e i dati inviati siano corretti.";
+    } else if (statusCode == 403) {
+      return "Accesso negato (Errore 403).\n\n"
+             "Verificare i permessi della chiave API di Gemini.";
+    } else if (statusCode == 404) {
+      return "Modello non trovato (Errore 404).\n\n"
+             "Il modello selezionato potrebbe non essere disponibile o essere deprecato. Verificare la configurazione del modello nelle Impostazioni.";
+    }
+
+    return "Errore API Gemini ($statusCode): $body";
   }
 
   String _serializePatientData(

@@ -266,12 +266,16 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       await _autoSaveAnalysis();
 
     } catch (e) {
+      String cleanError = e.toString();
+      if (cleanError.startsWith('Exception: ')) {
+        cleanError = cleanError.substring(11);
+      }
       setState(() {
-        _aiError = e.toString();
+        _aiError = cleanError;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Errore durante l\'analisi IA: $e'),
+          content: Text('Errore: $cleanError'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -2920,7 +2924,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                       style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
                     ),
                   ),
-                  if (_aiError!.contains('mancante'))
+                  if (_aiError!.contains('mancante') ||
+                      _aiError!.contains('Chiave API') ||
+                      _aiError!.contains('API key') ||
+                      _aiError!.contains('non valida'))
                     TextButton(
                       onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
                       child: const Text('Vai a Impostazioni'),
