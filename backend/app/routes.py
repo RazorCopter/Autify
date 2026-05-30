@@ -425,7 +425,7 @@ async def get_patients():
         
         # Recupera la data dell'ultima analisi IA per questo utente
         latest_ai = await ai_analyses_collection.find_one(
-            {"patient_id": pat_id},
+            {"id_paziente": pat_id},
             sort=[("timestamp", -1)]
         )
         if latest_ai and latest_ai.get("timestamp"):

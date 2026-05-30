@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.18.20] - 2026-05-30
+- **Bugfix**: Risolto errore nella query per il recupero dell'ultima analisi IA degli utenti. Il database utilizza la chiave `id_paziente` e non `patient_id`. Ora il badge dell'analisi IA sulle schede utente in anagrafica rileva correttamente la presenza delle relazioni.
+
 ## [2.18.19] - 2026-05-30
 - **Indicatore Analisi IA nelle schede utente**: Aggiunta icona `psychology_outlined` (la stessa del tab "Analisi IA") nelle card, list view e table view dell'anagrafica per segnalare la presenza di analisi IA. Colore verde se l'ultima analisi è recente (< 6 mesi), giallo/ambra se datata (6-12 mesi), grigio se assente o obsoleta (> 12 mesi). Tooltip con data e stato dettagliato.
 - **Backend**: L'endpoint `GET /api/admin/patients` ora include il campo `ultima_analisi_ia` con la data dell'ultima analisi IA recuperata dalla collezione `ai_analyses`.
