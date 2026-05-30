@@ -580,7 +580,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                       return GridView.builder(
                         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                           maxCrossAxisExtent: ResponsiveHelper.isTablet(context) ? 260 : 280,
-                          mainAxisExtent: 140,
+                          mainAxisExtent: 165,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                         ),
@@ -678,33 +678,24 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
             else
               const Spacer(),
             const Spacer(),
-            Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // Indicatori delle scale multidimensionali compilate
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _buildScaleIndicator(patient.ultimoPosCompilato, "POS"),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 4),
                     _buildScaleIndicator(patient.ultimoSanMartinCompilato, "SanMartín"),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 4),
                     _buildScaleIndicator(patient.ultimoSisCompilato, "SIS"),
                   ],
                 ),
-                // Pulsanti Azione
+                // Pulsanti Azione (Modifica/Elimina)
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.analytics_outlined, size: 18, color: AppTheme.accentColor),
-                      onPressed: () => _openMultidimensionalDashboard(patient),
-                      tooltip: 'Analisi Utente',
-                      constraints: const BoxConstraints(),
-                      padding: const EdgeInsets.all(4),
-                    ),
-                    const SizedBox(width: 4),
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.primaryColor),
                       onPressed: ApiService.isViewer ? null : () => _showPatientDialog(patient: patient),
@@ -723,6 +714,23 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                   ],
                 ),
               ],
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              height: 32,
+              child: ElevatedButton.icon(
+                onPressed: () => _openMultidimensionalDashboard(patient),
+                icon: const Icon(Icons.analytics_outlined, size: 16),
+                label: const Text('Analisi Multidimensionale', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
+                  foregroundColor: AppTheme.accentColor,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
             ),
           ],
         ),
@@ -852,13 +860,6 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                       Row(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.analytics_outlined, size: 20, color: AppTheme.accentColor),
-                            onPressed: () => _openMultidimensionalDashboard(p),
-                            constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.all(4),
-                          ),
-                          const SizedBox(width: 4),
-                          IconButton(
                             icon: const Icon(Icons.edit_outlined, size: 20, color: AppTheme.primaryColor),
                             onPressed: ApiService.isViewer ? null : () => _showPatientDialog(patient: p),
                             constraints: const BoxConstraints(),
@@ -911,6 +912,22 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                       _buildScaleIndicator(p.ultimoSisCompilato, "SIS"),
                     ],
                   ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 36,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _openMultidimensionalDashboard(p),
+                      icon: const Icon(Icons.analytics_outlined, size: 18),
+                      label: const Text('Analisi Multidimensionale', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
+                        foregroundColor: AppTheme.accentColor,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -937,7 +954,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
               Expanded(flex: 2, child: Text('DOCUMENTI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
               Expanded(flex: 2, child: Text('FISICO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
               Expanded(flex: 3, child: Text('NOTE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
-              SizedBox(width: 120, child: Text('AZIONI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary), textAlign: TextAlign.right)),
+              SizedBox(width: 200, child: Text('AZIONI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary), textAlign: TextAlign.right)),
             ],
           ),
         ),
@@ -1004,16 +1021,22 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                       ),
                     ),
                     SizedBox(
-                      width: 120,
+                      width: 200,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          IconButton(
-                            icon: const Icon(Icons.analytics_outlined, size: 18, color: AppTheme.accentColor),
+                          ElevatedButton.icon(
                             onPressed: () => _openMultidimensionalDashboard(p),
-                            tooltip: 'Analisi Utente',
-                            constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.all(4),
+                            icon: const Icon(Icons.analytics_outlined, size: 16),
+                            label: const Text('Analisi', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
+                              foregroundColor: AppTheme.accentColor,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                              minimumSize: const Size(0, 32),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                            ),
                           ),
                           const SizedBox(width: 8),
                           IconButton(
