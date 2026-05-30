@@ -11,6 +11,8 @@ import 'screens/anagrafica_screen.dart';
 import 'screens/selection_screen.dart';
 import 'screens/audit_log_screen.dart';
 import 'screens/dashboard_screen.dart';
+import 'models/patient_model.dart';
+import 'widgets/connection_status_indicator.dart';
 import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';
 
@@ -246,6 +248,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 children: [
                   _buildRoleBadge(),
                   const SizedBox(height: 8),
+                  const ConnectionStatusIndicator(),
+                  const SizedBox(height: 8),
                   Text(
                     'v$kFrontendVersion',
                     style: TextStyle(fontSize: 11, color: AppTheme.textSecondary.withValues(alpha: 0.5)),
@@ -359,7 +363,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
             child: Column(
               children: [
                 _buildRoleBadge(),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
+                const ConnectionStatusIndicator(compact: true),
+                const SizedBox(height: 8),
                 Text(
                   'v$kFrontendVersion',
                   style: TextStyle(fontSize: 10, color: AppTheme.textSecondary.withValues(alpha: 0.5)),
