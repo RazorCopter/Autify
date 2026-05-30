@@ -292,7 +292,7 @@ class _SelectionScreenState extends State<SelectionScreen> {
                   ),
                 ),
                 Text(
-                  'Valutazione Multidimensionale',
+                  'Analisi',
                   style: TextStyle(
                     fontSize: isMobile ? 11 : 12,
                     color: AppTheme.textSecondary,

@@ -61,12 +61,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   void _performLogout() {
     try {
-      html.window.localStorage.remove('jwt_token');
-      html.window.localStorage.remove('auth_role');
-      html.window.localStorage.remove('auth_username');
-      html.window.localStorage.remove('ai_enabled');
-      html.window.localStorage.remove('admin_authenticated');
-      html.window.localStorage.remove('auth_password');
+      html.window.localStorage.clear();
+      html.window.sessionStorage.clear();
     } catch (_) {}
 
     try {
@@ -86,14 +82,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
             }
           });
         }
+        sessionStorage.clear();
+        localStorage.clear();
         setTimeout(function() {
-          window.location.reload(true);
+          window.location.href = window.location.pathname + "?v=" + new Date().getTime();
         }, 150);
         '''
       ]);
     } catch (_) {
       try {
-        html.window.location.reload();
+        html.window.location.href = '/?v=\${DateTime.now().millisecondsSinceEpoch}';
       } catch (_) {
         Navigator.pushAndRemoveUntil(
           context,

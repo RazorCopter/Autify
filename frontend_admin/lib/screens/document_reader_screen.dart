@@ -168,7 +168,7 @@ class _DocumentReaderScreenState extends State<DocumentReaderScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Lettore Relazione Multidimensionale',
+            'Lettore Relazione',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
           Text(
@@ -474,7 +474,7 @@ class _DocumentReaderScreenState extends State<DocumentReaderScreen> {
               ],
             ),
             Text(
-              'Relazione Multidimensionale: ${widget.patient.cognome.toUpperCase()} ${widget.patient.nome}',
+              'Relazione: ${widget.patient.cognome.toUpperCase()} ${widget.patient.nome}',
               style: TextStyle(
                 fontSize: 10 * _zoom,
                 fontWeight: FontWeight.bold,

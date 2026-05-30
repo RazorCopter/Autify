@@ -1622,12 +1622,12 @@ async def create_evaluation(evaluation: Evaluation):
             cognome = utente_doc.get("cognome", "")
             nome = utente_doc.get("nome", "")
             if cognome or nome:
-                utente_info = f" per l'utente {cognome} {nome}"
+                utente_info = f" per {cognome} {nome}"
                 
     await log_audit(
         "COMPILAZIONE_SCALA", 
         operatore, 
-        f"Compilata nuova scala: {id_scala}{utente_info}".strip(), 
+        f"{operatore} ha compilato la Scala {id_scala}{utente_info}".strip(), 
         id_paziente
     )
         

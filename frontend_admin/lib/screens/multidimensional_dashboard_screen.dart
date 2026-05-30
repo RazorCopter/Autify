@@ -17,6 +17,7 @@ import 'document_reader_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 class MultidimensionalDashboardScreen extends StatefulWidget {
   final PatientModel patient;
@@ -492,27 +493,64 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
-      child: Scaffold(
-        backgroundColor: AppTheme.backgroundColor,
-        appBar: AppBar(
-          title: const Text('Analisi Utente', style: TextStyle(fontWeight: FontWeight.bold)),
-          bottom: const TabBar(
-            tabs: [
-              Tab(icon: Icon(Icons.dashboard_outlined), text: 'Overview'),
-              Tab(icon: Icon(Icons.psychology_outlined), text: 'Analisi IA'),
-            ],
-            indicatorColor: AppTheme.primaryColor,
-            labelColor: AppTheme.primaryColor,
-          ),
-        ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : TabBarView(
-                children: [
-                  _buildOverviewTab(),
-                  _buildAiTab(),
+      child: Stack(
+        children: [
+          Scaffold(
+            backgroundColor: AppTheme.backgroundColor,
+            appBar: AppBar(
+              title: const Text('Analisi Utente', style: TextStyle(fontWeight: FontWeight.bold)),
+              bottom: const TabBar(
+                tabs: [
+                  Tab(icon: Icon(Icons.dashboard_outlined), text: 'Overview'),
+                  Tab(icon: Icon(Icons.psychology_outlined), text: 'Analisi IA'),
                 ],
+                indicatorColor: AppTheme.primaryColor,
+                labelColor: AppTheme.primaryColor,
               ),
+            ),
+            body: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : TabBarView(
+                    children: [
+                      _buildOverviewTab(),
+                      _buildAiTab(),
+                    ],
+                  ),
+          ),
+          if (_isAnalyzing)
+            Positioned.fill(
+              child: ClipRect(
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    child: Center(
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 24),
+                        constraints: const BoxConstraints(maxWidth: 480),
+                        child: Card(
+                          elevation: 12,
+                          shadowColor: Colors.black.withValues(alpha: 0.2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 40, horizontal: 32),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _SlothPuzzleLoader(),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -734,7 +772,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Comparazione Multidimensionale',
+                        'Comparazione',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
                       ),
                       const SizedBox(height: 2),
@@ -2468,53 +2506,44 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         const SizedBox(height: 24),
 
         // ── Pulsante Principale di Generazione o Loader ──
-        if (_isAnalyzing)
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: Color(0xFFE8EEF8)),
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              colors: (_isAnalyzing || (ApiService.isViewer && !_viewerAiEnabled))
+                  ? [Colors.grey.shade400, Colors.grey.shade400]
+                  : [Colors.deepPurple.shade700, Colors.indigo.shade600],
             ),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 40, horizontal: 24),
-              child: Center(
-                child: _SlothPuzzleLoader(),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.deepPurple.withValues(alpha: 0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
+            ],
+          ),
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
-          )
-        else
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
-                colors: (_isAnalyzing || (ApiService.isViewer && !_viewerAiEnabled))
-                    ? [Colors.grey.shade400, Colors.grey.shade400]
-                    : [Colors.deepPurple.shade700, Colors.indigo.shade600],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.deepPurple.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              onPressed: (ApiService.isViewer && !_viewerAiEnabled) ? null : _runAiAnalysis,
-              icon: const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
-              label: const Text(
-                'Avvia Analisi con IA',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
+            onPressed: (_isAnalyzing || (ApiService.isViewer && !_viewerAiEnabled)) ? null : _runAiAnalysis,
+            icon: _isAnalyzing
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
+            label: Text(
+              _isAnalyzing ? 'Elaborazione in corso...' : 'Avvia Analisi con IA',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
             ),
           ),
+        ),
         const SizedBox(height: 24),
 
         // ── Premium Success State Card ──
@@ -2544,7 +2573,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                       const SizedBox(width: 16),
                       const Expanded(
                         child: Text(
-                          'Sintesi Multidimensionale Generata!',
+                          'Sintesi Generata!',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -2880,7 +2909,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Analisi Multidimensionale con Intelligenza Artificiale',
+                        'Analisi con Intelligenza Artificiale',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                       SizedBox(height: 6),
@@ -3063,7 +3092,7 @@ class _SlothPuzzleLoaderState extends State<_SlothPuzzleLoader> with SingleTicke
   late final List<String> _loadingTexts;
   
   final int N = 5; // 5x5 grid = 25 pezzi
-  final double imageSize = 120.0;
+  final double imageSize = 180.0;
   late final double tileSize;
   
   @override
@@ -3074,7 +3103,7 @@ class _SlothPuzzleLoaderState extends State<_SlothPuzzleLoader> with SingleTicke
     _loadingTexts = [
       'Inizializzazione modulo psicometrico...',
       'Elaborazione correlazioni POS e San Martín...',
-      'Definizione del profilo multidimensionale...',
+      'Definizione del profilo...',
       'Generazione raccomandazioni psico-educative...',
       'Stesura del referto di sintesi tramite IA...',
     ];
@@ -3124,8 +3153,8 @@ class _SlothPuzzleLoaderState extends State<_SlothPuzzleLoader> with SingleTicke
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         SizedBox(
-          width: 240,
-          height: 240,
+          width: 300,
+          height: 300,
           child: AnimatedBuilder(
             animation: _controller,
             builder: (context, child) {
@@ -3222,7 +3251,7 @@ class _SlothPuzzleLoaderState extends State<_SlothPuzzleLoader> with SingleTicke
                                       -1.0 + (2.0 / (N - 1)) * piece.row,
                                     ),
                                     child: Image.asset(
-                                      'assets/images/logo_autify_int.png',
+                                      'assets/images/avatar_bradipo_hd..png',
                                       width: imageSize,
                                       height: imageSize,
                                       fit: BoxFit.cover,
