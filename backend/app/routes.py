@@ -544,6 +544,9 @@ async def delete_patient(id: str, auth_context: dict = Depends(verify_auth)):
 async def get_patient_ai_analyses(id_patient: str):
     cursor = ai_analyses_collection.find({"id_paziente": id_patient}).sort("timestamp", -1)
     analyses = await cursor.to_list(length=100)
+    for a in analyses:
+        if "timestamp" in a and isinstance(a["timestamp"], datetime) and a["timestamp"].tzinfo is None:
+            a["timestamp"] = a["timestamp"].replace(tzinfo=timezone.utc)
     return analyses
 
 @admin_router.post("/patients/{id_patient}/ai-analyses", response_model=AiAnalysis, status_code=status.HTTP_201_CREATED, tags=["Admin - AI Analyses"])
@@ -991,7 +994,11 @@ async def get_aggregated_evaluation(patient_id: str, scale_id: str):
                 id_paziente=eval_doc["id_paziente"],
                 id_scala=eval_doc["id_scala"],
                 anno=eval_doc["anno"],
-                data_compilazione=eval_doc["data_compilazione"],
+                data_compilazione=(
+                    eval_doc["data_compilazione"].replace(tzinfo=timezone.utc)
+                    if isinstance(eval_doc["data_compilazione"], datetime) and eval_doc["data_compilazione"].tzinfo is None
+                    else eval_doc["data_compilazione"]
+                ),
                 nome_operatore=eval_doc["nome_operatore"],
                 nome_intervistato=eval_doc.get("nome_intervistato"),
                 demographics=eval_doc.get("demographics"),
