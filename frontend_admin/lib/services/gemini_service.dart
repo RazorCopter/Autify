@@ -39,6 +39,7 @@ TONO E FORMATTAZIONE:
 
     final activeSystemPrompt = (systemPrompt != null && systemPrompt.trim().isNotEmpty) ? systemPrompt : defaultPrompt;
 
+    final patientData = _serializePatientData(patient, evaluations, analyses);
     final String currentFormattedDate = "${DateTime.now().toLocal().day.toString().padLeft(2, '0')}/${DateTime.now().toLocal().month.toString().padLeft(2, '0')}/${DateTime.now().toLocal().year}";
     String promptText = "DATA ODIERNA DI COMPILAZIONE DELLA RELAZIONE: $currentFormattedDate. Usa tassativamente questa data ($currentFormattedDate) come data di redazione e generazione del documento, senza inventare o allucinare altre date (future o passate) nei testi generati.\n\nEcco i dati estratti dalle valutazioni dell'utente:\n\n$patientData\n\n";
     
