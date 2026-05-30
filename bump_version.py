@@ -61,7 +61,17 @@ def main():
             f.write(content)
         print("OK: ARCHITECTURE_MAP.md aggiornato.")
 
-    print("\nFatto! Ricorda che se modifichi CHANGELOG.md o docker-compose.yml potresti dover aggiornare le note di rilascio a mano.")
+    # 5. Update docker-compose.yml
+    docker_compose = os.path.join(root_dir, "docker-compose.yml")
+    if os.path.exists(docker_compose):
+        with open(docker_compose, "r", encoding="utf-8") as f:
+            content = f.read()
+        content = re.sub(r'CACHE_BUST=[\d\.]+', f'CACHE_BUST={new_version}', content)
+        with open(docker_compose, "w", encoding="utf-8") as f:
+            f.write(content)
+        print("OK: docker-compose.yml aggiornato.")
+
+    print("\nFatto!")
 
 if __name__ == "__main__":
     main()
