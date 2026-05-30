@@ -632,6 +632,8 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
+                _buildIaIndicator(patient),
               ],
             ),
             const SizedBox(height: 6),
@@ -657,8 +659,6 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                     _buildScaleIndicator(patient.ultimoSanMartinCompilato, "SanMartín"),
                     const SizedBox(width: 4),
                     _buildScaleIndicator(patient.ultimoSisCompilato, "SIS"),
-                    const SizedBox(width: 4),
-                    _buildIaIndicator(patient),
                   ],
                 ),
                 // Pulsanti Azione (Modifica/Elimina)

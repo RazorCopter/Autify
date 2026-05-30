@@ -68,6 +68,7 @@ class Patient(BaseModel):
     ultimo_pos_compilato: Optional[str] = None
     ultimo_san_martin_compilato: Optional[str] = None
     ultimo_sis_compilato: Optional[str] = None
+    ultima_analisi_ia: Optional[str] = None
 
 # --- MODELLI SETTINGS (Config Models) ---
 

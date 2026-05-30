@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.18.21] - 2026-05-30
+- **Bugfix Pydantic**: Aggiunto il campo `ultima_analisi_ia` all'interno della definizione del modello Pydantic `Patient` in `backend/app/models.py`. Questo previene che FastAPI filtri via il campo durante la serializzazione JSON delle risposte in `GET /patients`.
+- **UI Anagrafica**: Spostato l'indicatore dell'analisi IA in alto a destra delle card utente per una visualizzazione ottimizzata e un posizionamento preminente.
+
 ## [2.18.20] - 2026-05-30
 - **Bugfix**: Risolto errore nella query per il recupero dell'ultima analisi IA degli utenti. Il database utilizza la chiave `id_paziente` e non `patient_id`. Ora il badge dell'analisi IA sulle schede utente in anagrafica rileva correttamente la presenza delle relazioni.
 
