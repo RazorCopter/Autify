@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.18.13] - 2026-05-30
+- **Bugfix**: Risolto errore di compilazione web causato dall'uso dell'API deprecata/assente `html.window.eval`. Ora viene usato `dart:js` (`js.context.callMethod`) per l'esecuzione sicura di script JS interop su Flutter Web.
+
 ## [2.18.12] - 2026-05-30
 - **Logout e Cache**: Centralizzato il flusso di logout. Oltre all'eliminazione dei token locali, ora il sistema pulisce programmaticamente la cache del browser (`Cache Storage`) e deregistra i `Service Workers` della PWA, forzando poi un ricaricamento completo della pagina per garantire il caricamento dell'ultima versione rilasciata del software senza dover premere manualmente F5.
 

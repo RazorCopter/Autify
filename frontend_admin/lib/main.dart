@@ -1,4 +1,5 @@
 import 'dart:html' as html;
+import 'dart:js' as js;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'app_version.dart';
@@ -69,7 +70,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
     } catch (_) {}
 
     try {
-      html.window.eval('''
+      js.context.callMethod('eval', [
+        '''
         if ('caches' in window) {
           caches.keys().then(function(names) {
             for (let name of names) {
@@ -87,7 +89,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
         setTimeout(function() {
           window.location.reload(true);
         }, 150);
-      ''');
+        '''
+      ]);
     } catch (_) {
       try {
         html.window.location.reload();
