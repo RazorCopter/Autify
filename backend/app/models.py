@@ -188,6 +188,26 @@ class AiAnalysisCreate(BaseModel):
     notes: Optional[str] = None
     evaluations_used: List[str] = []
 
+# --- MODELLI AUDIT LOG (Tracciabilità) ---
+
+class AuditLogCreate(BaseModel):
+    azione: str
+    operatore: str
+    target_id: Optional[str] = None
+    dettagli: Optional[str] = None
+
+class AuditLogResponse(BaseModel):
+    id: str = Field(alias="_id", default="")
+    timestamp: datetime
+    azione: str
+    operatore: str
+    target_id: Optional[str] = None
+    dettagli: Optional[str] = None
+    
+    model_config = {
+        "populate_by_name": True
+    }
+
 # --- MODELLI OUTPUT SIS ---
 
 class SISDomainResult(BaseModel):

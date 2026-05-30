@@ -510,3 +510,8 @@ Tutte le modifiche significative a questo progetto saranno documentate in questo
 - Creazione dei frontend Flutter (Admin e Client) e backend FastAPI.
 - Gestione base delle scale San MartÃ­n e POS.
 - Setup iniziale del sistema di valutazione multidimensionale.
+## [2.18.7] - 2026-05-30
+### Fixed
+- Backend 502 Bad Gateway (AuditLog missing models)
+- PWA Support added (manifest and metatags)
+
