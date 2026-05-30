@@ -58,6 +58,49 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0;
   String? _patientSearchQuery;
 
+  void _performLogout() {
+    try {
+      html.window.localStorage.remove('jwt_token');
+      html.window.localStorage.remove('auth_role');
+      html.window.localStorage.remove('auth_username');
+      html.window.localStorage.remove('ai_enabled');
+      html.window.localStorage.remove('admin_authenticated');
+      html.window.localStorage.remove('auth_password');
+    } catch (_) {}
+
+    try {
+      html.window.eval('''
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            for (let name of names) {
+              caches.delete(name);
+            }
+          });
+        }
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for (let registration of registrations) {
+              registration.unregister();
+            }
+          });
+        }
+        setTimeout(function() {
+          window.location.reload(true);
+        }, 150);
+      ''');
+    } catch (_) {
+      try {
+        html.window.location.reload();
+      } catch (_) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
+
   static const _navItems = [
     (icon: Icons.dashboard_outlined, active: Icons.dashboard, label: 'Dashboard'),
     (icon: Icons.edit_note_outlined, active: Icons.edit_note, label: 'Compila'),
@@ -281,21 +324,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        try {
-                          html.window.localStorage.remove('jwt_token');
-                          html.window.localStorage.remove('auth_role');
-                          html.window.localStorage.remove('auth_username');
-                          html.window.localStorage.remove('ai_enabled');
-                          html.window.localStorage.remove('admin_authenticated');
-                          html.window.localStorage.remove('auth_password');
-                        } catch (_) {}
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (context) => const LoginScreen()),
-                          (route) => false,
-                        );
-                      },
+                      onPressed: _performLogout,
                       icon: const Icon(Icons.logout_rounded, size: 18, color: AppTheme.errorColor),
                       label: const Text('Esci', style: TextStyle(color: AppTheme.errorColor, fontWeight: FontWeight.bold)),
                       style: OutlinedButton.styleFrom(
@@ -340,21 +369,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           IconButton(
             icon: const Icon(Icons.logout_rounded, size: 20, color: AppTheme.errorColor),
             tooltip: 'Esci',
-            onPressed: () {
-              try {
-                html.window.localStorage.remove('jwt_token');
-                html.window.localStorage.remove('auth_role');
-                html.window.localStorage.remove('auth_username');
-                html.window.localStorage.remove('ai_enabled');
-                html.window.localStorage.remove('admin_authenticated');
-                html.window.localStorage.remove('auth_password');
-              } catch (_) {}
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-                (route) => false,
-              );
-            },
+            onPressed: _performLogout,
           ),
           const SizedBox(height: 8),
           // Footer

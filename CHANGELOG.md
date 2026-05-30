@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.18.12] - 2026-05-30
+- **Logout e Cache**: Centralizzato il flusso di logout. Oltre all'eliminazione dei token locali, ora il sistema pulisce programmaticamente la cache del browser (`Cache Storage`) e deregistra i `Service Workers` della PWA, forzando poi un ricaricamento completo della pagina per garantire il caricamento dell'ultima versione rilasciata del software senza dover premere manualmente F5.
+
 ## [2.18.11] - 2026-05-30
 - **Anagrafica**: Rimossa l'altezza dell'utente dalla scheda anagrafica (form di inserimento/modifica, card di riepilogo e vista in tabella) e dal dettaglio delle valutazioni. Aggiornata di conseguenza la suite di test automatizzati.
 
