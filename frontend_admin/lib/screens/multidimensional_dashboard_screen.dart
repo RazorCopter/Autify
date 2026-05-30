@@ -521,26 +521,41 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             Positioned.fill(
               child: ClipRect(
                 child: BackdropFilter(
-                  filter: ui.ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-                  child: Container(
-                    color: Colors.black.withValues(alpha: 0.35),
+                  filter: ui.ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.easeOutCubic,
+                    color: Colors.black.withValues(alpha: 0.55),
                     child: Center(
                       child: Container(
                         margin: const EdgeInsets.symmetric(horizontal: 24),
-                        constraints: const BoxConstraints(maxWidth: 480),
+                        constraints: const BoxConstraints(maxWidth: 600),
                         child: Card(
-                          elevation: 12,
-                          shadowColor: Colors.black.withValues(alpha: 0.2),
+                          elevation: 20,
+                          shadowColor: AppTheme.primaryColor.withValues(alpha: 0.25),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.circular(28),
                           ),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 40, horizontal: 32),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                _SlothPuzzleLoader(),
-                              ],
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(28),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.white,
+                                  AppTheme.primaryColor.withValues(alpha: 0.04),
+                                ],
+                              ),
+                            ),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 48, horizontal: 36),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _SlothPuzzleLoader(),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -2227,320 +2242,281 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     );
   }
 
+  Widget _buildSectionHeader({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color iconBgColor,
+    required Color iconColor,
+  }) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: iconBgColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: iconColor, size: 20),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+              const SizedBox(height: 2),
+              Text(subtitle, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _compactCheckbox(String label, bool value, ValueChanged<bool?> onChanged) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: CheckboxListTile(
+        dense: true,
+        visualDensity: VisualDensity.compact,
+        title: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        value: value,
+        activeColor: AppTheme.primaryColor,
+        controlAffinity: ListTileControlAffinity.leading,
+        contentPadding: EdgeInsets.zero,
+        onChanged: onChanged,
+      ),
+    );
+  }
+
+  Widget _buildAttachmentTile() {
+    return InkWell(
+      onTap: _isAnalyzing ? null : _pickAiAttachment,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: _aiAttachment == null
+              ? Colors.deepPurple.shade50.withValues(alpha: 0.3)
+              : Colors.deepPurple.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _aiAttachment == null
+                ? Colors.deepPurple.shade100
+                : Colors.deepPurple.shade200,
+            width: 1,
+          ),
+        ),
+        child: _aiAttachment == null
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.cloud_upload_outlined, color: Colors.deepPurple.shade300, size: 20),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Allega Documentazione (PDF, TXT, Immagini)',
+                    style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w600, fontSize: 12),
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  const Icon(Icons.insert_drive_file, color: Colors.deepPurple, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _aiAttachment!.name,
+                      style: const TextStyle(fontSize: 12, color: Colors.deepPurple, fontWeight: FontWeight.w500),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                    onPressed: () => setState(() => _aiAttachment = null),
+                    constraints: const BoxConstraints(),
+                    padding: EdgeInsets.zero,
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
   Widget _buildAiTab() {
     final Widget leftColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Profilo Utente Card (Dati dell'utente) ──
+        // ═══ CARD UNIFICATA: Configurazione & Avvio Analisi ═══
         Card(
-          elevation: 0,
+          elevation: 2,
+          shadowColor: Colors.indigo.shade100.withValues(alpha: 0.3),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             side: const BorderSide(color: Color(0xFFE8EEF8)),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(28),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.account_circle_outlined,
-                        color: AppTheme.primaryColor,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Profilo Utente',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.textSecondary,
-                            ),
-                          ),
-                          Text(
-                            '${widget.patient.cognome} ${widget.patient.nome}',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.textPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                // ── Sezione 1: Profilo Utente ──
+                _buildSectionHeader(
+                  icon: Icons.account_circle_outlined,
+                  title: 'Profilo Utente',
+                  subtitle: '${widget.patient.cognome} ${widget.patient.nome}',
+                  iconBgColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  iconColor: AppTheme.primaryColor,
                 ),
-                const SizedBox(height: 20),
-                const Divider(height: 1, color: Color(0xFFF1F5F9)),
                 const SizedBox(height: 16),
                 Wrap(
-                  spacing: 24,
-                  runSpacing: 16,
+                  spacing: 32,
+                  runSpacing: 12,
                   children: [
-                    _buildPatientDetailItem('Sesso', widget.patient.sesso ?? 'Non specificato'),
-                    _buildPatientDetailItem(
-                      'Età',
-                      _calculateAge() != null ? '${_calculateAge()} anni' : 'Non specificata',
-                    ),
-                    _buildPatientDetailItem(
-                      'Data di Nascita',
-                      widget.patient.dataNascita != null
-                          ? widget.patient.dataNascita!.split('T')[0]
-                          : 'Non specificata',
-                    ),
+                    _buildPatientDetailItem('Sesso', widget.patient.sesso ?? '—'),
+                    _buildPatientDetailItem('Età', _calculateAge() != null ? '${_calculateAge()} anni' : '—'),
+                    _buildPatientDetailItem('Data di Nascita', widget.patient.dataNascita?.split('T')[0] ?? '—'),
                   ],
                 ),
                 if (widget.patient.note != null && widget.patient.note!.trim().isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Note Generali dell\'utente:',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textSecondary),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.patient.note!,
-                    style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary, height: 1.4),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.amber.shade100),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline, size: 16, color: Colors.amber.shade700),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            widget.patient.note!,
+                            style: TextStyle(fontSize: 12, color: Colors.amber.shade900, height: 1.3),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
 
-        // ── Card Selezione Dati ──
-        Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFFE8EEF8)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.tune_outlined, color: Colors.indigo.shade600, size: 20),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Seleziona Dati da Inviare all\'IA',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Scegli quali informazioni dell\'utente includere nel contesto per Gemini:',
-                  style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                ),
-                const SizedBox(height: 16),
-                CheckboxListTile(
-                  title: const Text('Scala POS (Qualità della Vita)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Includi i dati del profilo di funzionamento standard', style: TextStyle(fontSize: 11)),
-                  value: _includePos,
-                  activeColor: AppTheme.primaryColor,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
-                  onChanged: (val) {
-                    setState(() => _includePos = val ?? true);
-                  },
-                ),
-                CheckboxListTile(
-                  title: const Text('Scala San Martín', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Includi i dati della scala di qualità della vita per disabilità gravi', style: TextStyle(fontSize: 11)),
-                  value: _includeSm,
-                  activeColor: AppTheme.primaryColor,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
-                  onChanged: (val) {
-                    setState(() => _includeSm = val ?? true);
-                  },
-                ),
-                CheckboxListTile(
-                  title: const Text('Scala SIS (Supports Intensity Scale)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Includi i bisogni di supporto, priorità e alert eccezionali', style: TextStyle(fontSize: 11)),
-                  value: _includeSis,
-                  activeColor: AppTheme.primaryColor,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
-                  onChanged: (val) {
-                    setState(() => _includeSis = val ?? true);
-                  },
-                ),
-                const Divider(height: 24, color: Color(0xFFF1F5F9)),
-                CheckboxListTile(
-                  title: const Text('Storico Scale', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Invia tutte le compilazioni passate delle scale selezionate (consente l\'analisi del trend temporale)', style: TextStyle(fontSize: 11)),
-                  value: _includeHistory,
-                  activeColor: AppTheme.primaryColor,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
-                  onChanged: (val) {
-                    setState(() => _includeHistory = val ?? true);
-                  },
-                ),
-                CheckboxListTile(
-                  title: const Text('Storico Valutazioni IA', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Inietta come contesto le relazioni pregresse selezionate nella barra laterale', style: TextStyle(fontSize: 11)),
-                  value: _includeSavedAnalyses,
-                  activeColor: AppTheme.primaryColor,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
-                  onChanged: (val) {
-                    setState(() => _includeSavedAnalyses = val ?? true);
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
+                const SizedBox(height: 28),
+                const Divider(height: 1, color: Color(0xFFE8EEF8)),
+                const SizedBox(height: 28),
 
-        // ── Input: Note e Allegato ──
-        Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFFE8EEF8)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.add_circle_outline, color: Colors.deepPurple.shade400, size: 20),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Dati Aggiuntivi per l\'IA (Opzionali)',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-                    ),
-                  ],
+                // ── Sezione 2: Scale da Includere ──
+                _buildSectionHeader(
+                  icon: Icons.tune_outlined,
+                  title: 'Scale da Includere',
+                  subtitle: 'Seleziona quali dati inviare a Gemini per l\'analisi',
+                  iconBgColor: Colors.indigo.shade50,
+                  iconColor: Colors.indigo.shade600,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+                _compactCheckbox('Scala POS (Qualità della Vita)', _includePos, (v) => setState(() => _includePos = v ?? true)),
+                _compactCheckbox('Scala San Martín', _includeSm, (v) => setState(() => _includeSm = v ?? true)),
+                _compactCheckbox('Scala SIS (Supports Intensity Scale)', _includeSis, (v) => setState(() => _includeSis = v ?? true)),
+
+                const SizedBox(height: 24),
+                const Divider(height: 1, color: Color(0xFFE8EEF8)),
+                const SizedBox(height: 24),
+
+                // ── Sezione 3: Opzioni Contesto ──
+                _buildSectionHeader(
+                  icon: Icons.history_rounded,
+                  title: 'Contesto Aggiuntivo',
+                  subtitle: 'Arricchisci l\'analisi con dati storici e relazioni pregresse',
+                  iconBgColor: Colors.teal.shade50,
+                  iconColor: Colors.teal.shade700,
+                ),
+                const SizedBox(height: 12),
+                _compactCheckbox('Storico Scale (trend temporale)', _includeHistory, (v) => setState(() => _includeHistory = v ?? true)),
+                _compactCheckbox('Storico Valutazioni IA (relazioni pregresse)', _includeSavedAnalyses, (v) => setState(() => _includeSavedAnalyses = v ?? true)),
+
+                const SizedBox(height: 24),
+                const Divider(height: 1, color: Color(0xFFE8EEF8)),
+                const SizedBox(height: 24),
+
+                // ── Sezione 4: Note e Allegato ──
+                _buildSectionHeader(
+                  icon: Icons.add_circle_outline,
+                  title: 'Dati Aggiuntivi',
+                  subtitle: 'Note testuali e documentazione allegata (opzionale)',
+                  iconBgColor: Colors.deepPurple.shade50,
+                  iconColor: Colors.deepPurple.shade400,
+                ),
+                const SizedBox(height: 12),
                 TextField(
                   controller: _aiNotesController,
-                  maxLines: 4,
+                  maxLines: 3,
+                  style: const TextStyle(fontSize: 13),
                   decoration: InputDecoration(
-                    hintText: 'Inserisci osservazioni, contesto familiare o scolastico...',
-                    hintStyle: TextStyle(color: Colors.grey.shade400),
+                    hintText: 'Osservazioni, contesto familiare o scolastico...',
+                    hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
                     filled: true,
                     fillColor: Colors.grey.shade50,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+                      borderSide: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade200),
                     ),
                     contentPadding: const EdgeInsets.all(16),
                   ),
                 ),
-                const SizedBox(height: 16),
-                InkWell(
-                  onTap: _isAnalyzing ? null : _pickAiAttachment,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    decoration: BoxDecoration(
-                      color: _aiAttachment == null
-                          ? Colors.deepPurple.shade50.withValues(alpha: 0.3)
-                          : Colors.deepPurple.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _aiAttachment == null
-                            ? Colors.deepPurple.shade100
-                            : Colors.deepPurple.shade200,
-                        width: 1,
-                      ),
+                const SizedBox(height: 12),
+                _buildAttachmentTile(),
+
+                const SizedBox(height: 28),
+                const Divider(height: 1, color: Color(0xFFE8EEF8)),
+                const SizedBox(height: 24),
+
+                // ── Pulsante Avvia Analisi ──
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      colors: (_isAnalyzing || (ApiService.isViewer && !_viewerAiEnabled))
+                          ? [Colors.grey.shade400, Colors.grey.shade400]
+                          : [Colors.deepPurple.shade700, Colors.indigo.shade600],
                     ),
-                    child: _aiAttachment == null
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.cloud_upload_outlined, color: Colors.deepPurple.shade300, size: 24),
-                              const SizedBox(width: 12),
-                              const Text(
-                                'Allega Documentazione (PDF, TXT, Immagini)',
-                                style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w600, fontSize: 13),
-                              ),
-                            ],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.deepPurple.withValues(alpha: 0.35),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    onPressed: (_isAnalyzing || (ApiService.isViewer && !_viewerAiEnabled)) ? null : _runAiAnalysis,
+                    icon: _isAnalyzing
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                           )
-                        : Row(
-                            children: [
-                              const Icon(Icons.insert_drive_file, color: Colors.deepPurple, size: 24),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  _aiAttachment!.name,
-                                  style: const TextStyle(fontSize: 13, color: Colors.deepPurple, fontWeight: FontWeight.w500),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                                onPressed: () => setState(() => _aiAttachment = null),
-                              ),
-                            ],
-                          ),
+                        : const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
+                    label: Text(
+                      _isAnalyzing ? 'Elaborazione in corso...' : 'Avvia Analisi con IA',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
                   ),
                 ),
               ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
-
-        // ── Pulsante Principale di Generazione o Loader ──
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              colors: (_isAnalyzing || (ApiService.isViewer && !_viewerAiEnabled))
-                  ? [Colors.grey.shade400, Colors.grey.shade400]
-                  : [Colors.deepPurple.shade700, Colors.indigo.shade600],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.deepPurple.withValues(alpha: 0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-              shadowColor: Colors.transparent,
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-            onPressed: (_isAnalyzing || (ApiService.isViewer && !_viewerAiEnabled)) ? null : _runAiAnalysis,
-            icon: _isAnalyzing
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                : const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
-            label: Text(
-              _isAnalyzing ? 'Elaborazione in corso...' : 'Avvia Analisi con IA',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
             ),
           ),
         ),
@@ -3092,7 +3068,7 @@ class _SlothPuzzleLoaderState extends State<_SlothPuzzleLoader> with SingleTicke
   late final List<String> _loadingTexts;
   
   final int N = 5; // 5x5 grid = 25 pezzi
-  final double imageSize = 180.0;
+  final double imageSize = 280.0;
   late final double tileSize;
   
   @override
@@ -3153,8 +3129,8 @@ class _SlothPuzzleLoaderState extends State<_SlothPuzzleLoader> with SingleTicke
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         SizedBox(
-          width: 300,
-          height: 300,
+          width: 420,
+          height: 420,
           child: AnimatedBuilder(
             animation: _controller,
             builder: (context, child) {
@@ -3290,10 +3266,10 @@ class _SlothPuzzleLoaderState extends State<_SlothPuzzleLoader> with SingleTicke
             key: ValueKey<String>(_loadingTexts[_textIndex]),
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 14,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: AppTheme.primaryColor,
-              letterSpacing: 0.2,
+              letterSpacing: 0.3,
             ),
           ),
         ),
