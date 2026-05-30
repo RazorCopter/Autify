@@ -1539,6 +1539,7 @@ def _parse_markdown_to_flowables(text: str, styles) -> list:
     flowables = []
     # Simplified bold replacement
     def _bold(text: str) -> str:
+        text = text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
         parts = text.split('**')
         res = ''
         for i, part in enumerate(parts):
@@ -1587,9 +1588,9 @@ def generate_ai_analysis_pdf(patient: dict, report: str) -> bytes:
     
     story.append(Paragraph("Analisi Multidimensionale AI", custom_title_style))
     
-    nome = patient.get("nome", "")
-    cognome = patient.get("cognome", "")
-    cf = patient.get("codiceFiscale", "N/D")
+    nome = patient.get("nome", "").replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+    cognome = patient.get("cognome", "").replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+    cf = patient.get("codiceFiscale", "N/D").replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
     story.append(Paragraph(f"<b>Utente:</b> {nome} {cognome} ({cf})", patient_info_style))
     data_str = _get_rome_now().strftime("%d/%m/%Y %H:%M")
     story.append(Paragraph(f"<b>Data Generazione:</b> {data_str}", patient_info_style))
