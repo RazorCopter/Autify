@@ -1348,6 +1348,51 @@ async def get_dashboard_stats():
                 "dettaglio_scale": dettaglio_scale
             })
             
+        # 8. Statistiche Demografiche
+        demographics = {
+            "sesso": {"M": 0, "F": 0, "Altro/Non specificato": 0},
+            "fasce_eta": {"0-18": 0, "19-35": 0, "36-50": 0, "51+": 0, "Non specificata": 0}
+        }
+        
+        for pat in pazienti_attivi:
+            sesso = pat.get("sesso") or "Altro/Non specificato"
+            if sesso.upper() == "M":
+                demographics["sesso"]["M"] += 1
+            elif sesso.upper() == "F":
+                demographics["sesso"]["F"] += 1
+            else:
+                demographics["sesso"]["Altro/Non specificato"] += 1
+                
+            data_nascita = pat.get("data_nascita") or pat.get("dataNascita")
+            eta_fascia = "Non specificata"
+            if data_nascita:
+                try:
+                    if "/" in data_nascita:
+                        d, m, y = data_nascita.split("/")
+                        birth = datetime(int(y), int(m), int(d))
+                    elif "-" in data_nascita:
+                        parts = data_nascita.split("-")
+                        if len(parts[0]) == 4:
+                            birth = datetime(int(parts[0]), int(parts[1]), int(parts[2][:2]))
+                        else:
+                            birth = datetime(int(parts[2][:4]), int(parts[1]), int(parts[0]))
+                    else:
+                        birth = None
+                        
+                    if birth:
+                        age = now.year - birth.year - ((now.month, now.day) < (birth.month, birth.day))
+                        if age <= 18:
+                            eta_fascia = "0-18"
+                        elif age <= 35:
+                            eta_fascia = "19-35"
+                        elif age <= 50:
+                            eta_fascia = "36-50"
+                        else:
+                            eta_fascia = "51+"
+                except Exception:
+                    pass
+            demographics["fasce_eta"][eta_fascia] += 1
+            
         return {
             "totale_utenze": totale_pazienti,
             "totale_utenze_attive": totale_pazienti_attivi,
@@ -1365,7 +1410,8 @@ async def get_dashboard_stats():
             },
             "distribuzione_scale": distribuzione_scale,
             "trend_somministrazioni": trend_dati,
-            "ultimi_alert": ultimi_alert
+            "ultimi_alert": ultimi_alert,
+            "demographics": demographics
         }
     except Exception as e:
         import traceback

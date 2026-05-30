@@ -324,6 +324,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final alertList = (_stats?['ultimi_alert'] as List<dynamic>?) ?? [];
     final distributions = (_stats?['distribuzione_scale'] as List<dynamic>?) ?? [];
     final trendData = (_stats?['trend_somministrazioni'] as List<dynamic>?) ?? [];
+    final demographics = (_stats?['demographics'] as Map<String, dynamic>?) ?? {};
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -459,6 +460,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _buildDistributionCard(distributions, activePatients),
                 ],
               ),
+
+            const SizedBox(height: 24),
+
+            // Row 4: Demographics
+            _buildDemographicsCard(demographics),
           ],
         );
       },
@@ -829,6 +835,110 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  // ─── DEMOGRAPHICS CARD ──────────────────────────────────────────────────
+  Widget _buildDemographicsCard(Map<String, dynamic> demographics) {
+    if (demographics.isEmpty) return const SizedBox();
+    
+    final sesso = demographics['sesso'] as Map<String, dynamic>? ?? {};
+    final fasceEta = demographics['fasce_eta'] as Map<String, dynamic>? ?? {};
+    
+    final men = sesso['M'] ?? 0;
+    final women = sesso['F'] ?? 0;
+    
+    return _HoverBentoCard(
+      height: 280,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Dati Socio-Demografici',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Distribuzione per genere e fasce d\'età degli utenti attivi',
+              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+            ),
+            const SizedBox(height: 24),
+            Expanded(
+              child: Row(
+                children: [
+                  // Genere
+                  Expanded(
+                    flex: 1,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.man, color: Colors.blue, size: 36),
+                            const SizedBox(width: 8),
+                            Text('$men', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const Text('Uomini', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.woman, color: Colors.pink, size: 36),
+                            const SizedBox(width: 8),
+                            Text('$women', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const Text('Donne', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                      ],
+                    ),
+                  ),
+                  Container(width: 1, color: const Color(0xFFE8EEF8), margin: const EdgeInsets.symmetric(horizontal: 16)),
+                  // Età
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildAgeRow('0-18 anni', fasceEta['0-18'] ?? 0),
+                        const SizedBox(height: 12),
+                        _buildAgeRow('19-35 anni', fasceEta['19-35'] ?? 0),
+                        const SizedBox(height: 12),
+                        _buildAgeRow('36-50 anni', fasceEta['36-50'] ?? 0),
+                        const SizedBox(height: 12),
+                        _buildAgeRow('51+ anni', fasceEta['51+'] ?? 0),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAgeRow(String label, int count) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 14, color: AppTheme.textSecondary)),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '$count',
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+          ),
+        ),
+      ],
     );
   }
 

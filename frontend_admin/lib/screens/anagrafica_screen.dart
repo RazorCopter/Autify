@@ -678,11 +678,13 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
             else
               const Spacer(),
             const Spacer(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 // Indicatori delle scale multidimensionali compilate
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     _buildScaleIndicator(patient.ultimoPosCompilato, "POS"),
                     const SizedBox(width: 6),
@@ -693,6 +695,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                 ),
                 // Pulsanti Azione
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
                       icon: const Icon(Icons.analytics_outlined, size: 18, color: AppTheme.accentColor),
