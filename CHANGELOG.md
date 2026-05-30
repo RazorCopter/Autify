@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.18.10] - 2026-05-30
+- **Dashboard**: Aggiunti dati socio-demografici (distribuzione per genere e fasce d'età).
+- **Anagrafica**: Nuovo layout per le card pazienti e list view, con bottone dedicato e preminente per l'Analisi Multidimensionale.
+
 ## [2.18.9] - 2026-05-30
 - **Scale**: Aggiunta la validazione rigorosa in fase di salvataggio per tutte le scale: ora è obbligatorio rispondere a tutti gli item prima di poter salvare una valutazione.
 - **SIS Wizard**: Il campo "Operatore" non viene più precompilato forzatamente, ma usa un placeholder (hint), permettendo l'inserimento manuale rapido.
