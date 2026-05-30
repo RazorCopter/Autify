@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.18.11] - 2026-05-30
+- **Anagrafica**: Rimossa l'altezza dell'utente dalla scheda anagrafica (form di inserimento/modifica, card di riepilogo e vista in tabella) e dal dettaglio delle valutazioni. Aggiornata di conseguenza la suite di test automatizzati.
+
 ## [2.18.10] - 2026-05-30
 - **Dashboard**: Aggiunti dati socio-demografici (distribuzione per genere e fasce d'età).
 - **Anagrafica**: Nuovo layout per le card pazienti e list view, con bottone dedicato e preminente per l'Analisi Multidimensionale.
