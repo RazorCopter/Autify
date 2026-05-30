@@ -1229,17 +1229,14 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            if (p.altezza != null || p.peso != null)
+            if (p.peso != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Wrap(
                   spacing: 24,
                   runSpacing: 8,
                   children: [
-                    if (p.altezza != null)
-                      _clinicalChip(Icons.height, 'Altezza', '${p.altezza} cm'),
-                    if (p.peso != null)
-                      _clinicalChip(Icons.monitor_weight_outlined, 'Peso', '${p.peso} kg'),
+                    _clinicalChip(Icons.monitor_weight_outlined, 'Peso', '${p.peso} kg'),
                   ],
                 ),
               ),
@@ -1261,7 +1258,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                     ),
                   )),
             ],
-            if (p.altezza == null && p.peso == null && noteLines.isEmpty)
+            if (p.peso == null && noteLines.isEmpty)
               const Text('Nessuna informazione aggiuntiva registrata.',
                   style: TextStyle(fontSize: 13, color: AppTheme.textSecondary, fontStyle: FontStyle.italic)),
           ],

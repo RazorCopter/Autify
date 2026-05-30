@@ -363,10 +363,8 @@ void main() {
       await tester.tap(mOption);
       await tester.pumpAndSettle();
 
-      // Inserisce altezza e peso
-      final altezzaField = find.widgetWithLabel(TextFormField, 'Altezza (cm)');
+      // Inserisce peso
       final pesoField = find.widgetWithLabel(TextFormField, 'Peso (kg)');
-      await tester.enterText(altezzaField, '180');
       await tester.enterText(pesoField, '78.5');
 
       // Clicca su "Salva"

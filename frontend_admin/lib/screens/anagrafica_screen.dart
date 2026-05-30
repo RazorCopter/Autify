@@ -81,7 +81,6 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
     final bool isEdit = patient != null;
     final nomeController = TextEditingController(text: patient?.nome ?? '');
     final cognomeController = TextEditingController(text: patient?.cognome ?? '');
-    final altezzaController = TextEditingController(text: patient?.altezza?.toString() ?? '');
     final pesoController = TextEditingController(text: patient?.peso?.toString() ?? '');
     final dataNascitaController = TextEditingController(text: patient?.dataNascita != null ? _formatDateString(patient!.dataNascita!) : '');
     String? selectedSesso = patient?.sesso;
@@ -133,18 +132,6 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                         controller: cognomeController,
                         decoration: const InputDecoration(labelText: 'Cognome'),
                         validator: (v) => v == null || v.isEmpty ? 'Campo richiesto' : null,
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: altezzaController,
-                        decoration: const InputDecoration(labelText: 'Altezza (cm)', prefixIcon: Icon(Icons.height)),
-                        keyboardType: TextInputType.number,
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return null;
-                          final n = int.tryParse(v.trim());
-                          if (n == null || n <= 0) return 'Valore non valido';
-                          return null;
-                        },
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -229,36 +216,16 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: altezzaController,
-                              decoration: const InputDecoration(labelText: 'Altezza (cm)', prefixIcon: Icon(Icons.height)),
-                              keyboardType: TextInputType.number,
-                              validator: (v) {
-                                if (v == null || v.isEmpty) return null;
-                                final n = int.tryParse(v.trim());
-                                if (n == null || n <= 0) return 'Valore non valido';
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextFormField(
-                              controller: pesoController,
-                              decoration: const InputDecoration(labelText: 'Peso (kg)', prefixIcon: Icon(Icons.monitor_weight_outlined)),
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              validator: (v) {
-                                if (v == null || v.isEmpty) return null;
-                                final n = double.tryParse(v.trim().replaceAll(',', '.'));
-                                if (n == null || n <= 0) return 'Valore non valido';
-                                return null;
-                              },
-                            ),
-                          ),
-                        ],
+                      TextFormField(
+                        controller: pesoController,
+                        decoration: const InputDecoration(labelText: 'Peso (kg)', prefixIcon: Icon(Icons.monitor_weight_outlined)),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return null;
+                          final n = double.tryParse(v.trim().replaceAll(',', '.'));
+                          if (n == null || n <= 0) return 'Valore non valido';
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 16),
                       Row(
@@ -358,7 +325,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                                 id: patient?.id ?? '', // backend generates if empty and creating
                                 nome: nomeController.text.trim(),
                                 cognome: cognomeController.text.trim(),
-                                altezza: int.tryParse(altezzaController.text.trim()),
+                                altezza: patient?.altezza,
                                 peso: double.tryParse(pesoController.text.trim().replaceAll(',', '.')),
                                 dataNascita: _parseDateString(dataNascitaController.text.trim()),
                                 sesso: selectedSesso,
@@ -888,20 +855,19 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                       Text(p.sesso ?? '-', style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.monitor_weight_outlined, size: 14, color: AppTheme.textSecondary),
-                      const SizedBox(width: 4),
-                      Text(
-                        [
-                          if (p.altezza != null) '${p.altezza} cm',
-                          if (p.peso != null) '${p.peso} kg',
-                        ].join(' • '),
-                        style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-                      ),
-                    ],
-                  ),
+                  if (p.peso != null) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.monitor_weight_outlined, size: 14, color: AppTheme.textSecondary),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${p.peso} kg',
+                          style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 6,
@@ -952,7 +918,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
               Expanded(flex: 2, child: Text('DATA NASCITA', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
               Expanded(flex: 1, child: Text('SESSO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
               Expanded(flex: 2, child: Text('DOCUMENTI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
-              Expanded(flex: 2, child: Text('FISICO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
+              Expanded(flex: 2, child: Text('PESO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
               Expanded(flex: 3, child: Text('NOTE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
               SizedBox(width: 200, child: Text('AZIONI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary), textAlign: TextAlign.right)),
             ],
@@ -1004,10 +970,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                     Expanded(
                       flex: 2,
                       child: Text(
-                        [
-                          if (p.altezza != null) '${p.altezza} cm',
-                          if (p.peso != null) '${p.peso} kg',
-                        ].join(' • '),
+                        p.peso != null ? '${p.peso} kg' : '-',
                         style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
                       ),
                     ),
