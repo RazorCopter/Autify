@@ -503,6 +503,14 @@ async def update_patient(id: str, patient: Patient, auth_context: dict = Depends
 
 @admin_router.delete("/patients/{id}", tags=["Admin - Patients"])
 async def delete_patient(id: str, auth_context: dict = Depends(verify_auth)):
+    patient_doc = await patients_collection.find_one({"id": id})
+    utente_nome = ""
+    if patient_doc:
+        cognome = patient_doc.get("cognome", "")
+        nome = patient_doc.get("nome", "")
+        if cognome or nome:
+            utente_nome = f" {cognome} {nome}"
+            
     # Elimina a cascata tutte le valutazioni associate all'utente prima di rimuoverlo
     await evaluations_collection.delete_many({"id_paziente": id})
     
@@ -513,7 +521,7 @@ async def delete_patient(id: str, auth_context: dict = Depends(verify_auth)):
     await log_audit(
         "CANCELLAZIONE_UTENTE", 
         auth_context["username"], 
-        f"Eliminato utente e relative valutazioni", 
+        f"Eliminato utente{utente_nome} e relative valutazioni".strip(), 
         id
     )
         
@@ -1606,10 +1614,20 @@ async def create_evaluation(evaluation: Evaluation):
     operatore = eval_dict.get("nome_operatore", "Operatore Sconosciuto")
     id_paziente = eval_dict.get("id_paziente")
     id_scala = eval_dict.get("id_scala", "")
+    
+    utente_info = ""
+    if id_paziente:
+        utente_doc = await patients_collection.find_one({"id": id_paziente})
+        if utente_doc:
+            cognome = utente_doc.get("cognome", "")
+            nome = utente_doc.get("nome", "")
+            if cognome or nome:
+                utente_info = f" per l'utente {cognome} {nome}"
+                
     await log_audit(
         "COMPILAZIONE_SCALA", 
         operatore, 
-        f"Compilata nuova scala: {id_scala}", 
+        f"Compilata nuova scala: {id_scala}{utente_info}".strip(), 
         id_paziente
     )
         

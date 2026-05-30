@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.18.15] - 2026-05-30
+- **Tracciabilità ed Audit**: Aggiornato il testo dei log di tracciabilità educativa (audit logs) per allinearlo alla regola `[operatore] + [azione] + [dove/chi]`. Ora, all'inserimento di una nuova scala e alla cancellazione di un utente, viene recuperata e mostrata la denominazione in chiaro dell'utente coinvolto (es. *Elena Pisi - Compilata nuova scala: sis_supports_intensity_scale per l'utente [Cognome] [Nome]*).
+
 ## [2.18.14] - 2026-05-30
 - **UI/Anagrafica**: Rinominato il bottone delle schede utente da "Analisi Multidimensionale" a un più semplice e pulito "Analisi".
 
