@@ -1655,7 +1655,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     final hasAnalysis = _analysis != null && _analysis!.domini.isNotEmpty;
     final items = hasAnalysis ? _analysis!.domini : _eval!.domini;
     final isPos = widget.scale.id.toLowerCase().contains("pos") || widget.scale.nome.toLowerCase().contains("pos");
-    final maxY = isPos ? 18.0 : 60.0;
+    final isSabs = widget.scale.id.toLowerCase().contains("sabs") || widget.scale.nome.toLowerCase().contains("sabs");
+    final maxY = isPos ? 18.0 : (isSabs ? 49.0 : 60.0);
 
     return BarChart(
       BarChartData(

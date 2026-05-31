@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.18.33] - 2026-05-31
+- **Fondoscala Grafici SABS**: Impostato il fondoscala massimo (valore y) a 49.0 nei grafici ad istogramma (dettaglio e dashboard) per la scala SABS.
+- **Nomi Scale Dinamici**: Sostituito il titolo statico "POS Eterovalutativo" con il nome dinamico reale della scala (`scale.nome`) nella sezione "Comportamento Adattivo" della dashboard di analisi utente.
+
 ## [2.18.32] - 2026-05-31
 - **Calcolo Punteggi Dinamico**: Il calcolo dei punteggi diretti per le scale personalizzate ora mappa dinamicamente domande a sezioni (domini) in `analytics.py`.
 - **Comportamento Adattivo**: Aggiornata la categorizzazione UI nella dashboard e aggiunti nomi dinamici per ogni singola scala.

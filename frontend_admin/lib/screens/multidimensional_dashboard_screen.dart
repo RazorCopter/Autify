@@ -1246,7 +1246,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isSis ? '📊 Supports Intensity Scale (SIS)' : (isSM ? '🧩 San Martín' : '📊 POS Eterovalutativo'),
+                  isSis ? '📊 Supports Intensity Scale (SIS)' : (isSM ? '🧩 San Martín' : '📊 ${scale.nome}'),
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
                 const SizedBox(height: 4),
@@ -1324,7 +1324,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             height: 250,
             child: isSM && analysis != null && analysis.domini.isNotEmpty
                 ? _buildRadarChartForPanel(analysis)
-                : _buildBarChartForPanel(eval.domini, isSm: isSM, isSis: isSis),
+                : _buildBarChartForPanel(eval.domini, isSm: isSM, isSis: isSis, isSabs: scale.id.toLowerCase().contains("sabs") || scale.nome.toLowerCase().contains("sabs")),
           ),
       ],
     );
@@ -2157,21 +2157,25 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     );
   }
 
-  Widget _buildBarChartForPanel(List<DomainScore> domini, {bool isSm = false, bool isSis = false}) {
+  Widget _buildBarChartForPanel(List<DomainScore> domini, {bool isSm = false, bool isSis = false, bool isSabs = false}) {
     if (domini.isEmpty) return const SizedBox();
 
     // Calcola il maxY dinamico basato sui dati reali
     double dynamicMaxY = 0;
-    for (final d in domini) {
-      final int maxValPerQuestion = isSis ? 12 : (isSm ? 4 : 3);
-      final maxScore = d.numDomande * maxValPerQuestion;
-      final score = d.punteggio.toDouble();
-      if (maxScore > dynamicMaxY) dynamicMaxY = maxScore.toDouble();
-      if (score > dynamicMaxY) dynamicMaxY = score.toDouble();
+    if (isSabs) {
+      dynamicMaxY = 49.0;
+    } else {
+      for (final d in domini) {
+        final int maxValPerQuestion = isSis ? 12 : (isSm ? 4 : 3);
+        final maxScore = d.numDomande * maxValPerQuestion;
+        final score = d.punteggio.toDouble();
+        if (maxScore > dynamicMaxY) dynamicMaxY = maxScore.toDouble();
+        if (score > dynamicMaxY) dynamicMaxY = score.toDouble();
+      }
+      if (dynamicMaxY <= 0) dynamicMaxY = 20;
+      // Aggiungi un margine del 10% per estetica
+      dynamicMaxY = (dynamicMaxY * 1.1).ceilToDouble();
     }
-    if (dynamicMaxY <= 0) dynamicMaxY = 20;
-    // Aggiungi un margine del 10% per estetica
-    dynamicMaxY = (dynamicMaxY * 1.1).ceilToDouble();
 
     return BarChart(
       BarChartData(
