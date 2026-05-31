@@ -1,6 +1,8 @@
 # Stage 1: Build the Flutter web app
 FROM ghcr.io/cirruslabs/flutter:stable AS build
 WORKDIR /app
+ARG CACHE_BUST=1
+RUN echo "Cache bust: $CACHE_BUST"
 COPY . .
 RUN flutter pub get
 RUN dart run tools/update_version.dart
