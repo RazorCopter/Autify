@@ -2177,91 +2177,93 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       dynamicMaxY = (dynamicMaxY * 1.1).ceilToDouble();
     }
 
-    return BarChart(
-      BarChartData(
-        alignment: BarChartAlignment.spaceAround,
-        maxY: dynamicMaxY,
-        barTouchData: BarTouchData(
-          touchTooltipData: BarTouchTooltipData(
-            getTooltipItem: (group, gIdx, rod, rIdx) {
-              if (group.x < 0 || group.x >= domini.length) return null;
-              return BarTooltipItem(
-                '${domini[group.x].etichetta}\n${rod.toY.toInt()} pt',
-                const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-              );
-            },
-          ),
-        ),
-        titlesData: FlTitlesData(
-          show: true,
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 40,
-              getTitlesWidget: (value, meta) {
-                final idx = value.toInt();
-                if (idx < 0 || idx >= domini.length) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    domini[idx].codice,
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-                    textAlign: TextAlign.center,
-                  ),
+    return ClipRect(
+      child: BarChart(
+        BarChartData(
+          alignment: BarChartAlignment.spaceAround,
+          maxY: dynamicMaxY,
+          barTouchData: BarTouchData(
+            touchTooltipData: BarTouchTooltipData(
+              getTooltipItem: (group, gIdx, rod, rIdx) {
+                if (group.x < 0 || group.x >= domini.length) return null;
+                return BarTooltipItem(
+                  '${domini[group.x].etichetta}\n${rod.toY.toInt()} pt',
+                  const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                 );
               },
             ),
           ),
-          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (value, meta) {
-                final idx = value.toInt();
-                if (idx < 0 || idx >= domini.length) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    '${domini[idx].punteggio}',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _domainColors[idx % _domainColors.length]),
-                  ),
-                );
-              },
-            ),
-          ),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        ),
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          horizontalInterval: 3,
-          getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.shade200, strokeWidth: 0.8),
-        ),
-        borderData: FlBorderData(show: false),
-        barGroups: List.generate(domini.length, (i) {
-          final maxScore = domini[i].numDomande * (isSm ? 4 : 3);
-          final double toYValue = domini[i].punteggio.toDouble();
-          final double backYValue = maxScore.toDouble();
-          
-          return BarChartGroupData(
-            x: i,
-            barRods: [
-              BarChartRodData(
-                toY: toYValue,
-                color: _domainColors[i % _domainColors.length],
-                width: 28,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-                backDrawRodData: BackgroundBarChartRodData(
-                  show: true,
-                  toY: backYValue,
-                  color: Colors.grey.shade100,
-                ),
+          titlesData: FlTitlesData(
+            show: true,
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 40,
+                getTitlesWidget: (value, meta) {
+                  final idx = value.toInt();
+                  if (idx < 0 || idx >= domini.length) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      domini[idx].codice,
+                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                      textAlign: TextAlign.center,
+                    ),
+                  );
+                },
               ),
-            ],
-            showingTooltipIndicators: [],
-          );
-        }),
-        extraLinesData: ExtraLinesData(horizontalLines: []),
+            ),
+            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  final idx = value.toInt();
+                  if (idx < 0 || idx >= domini.length) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '${domini[idx].punteggio}',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _domainColors[idx % _domainColors.length]),
+                    ),
+                  );
+                },
+              ),
+            ),
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          ),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            horizontalInterval: 3,
+            getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.shade200, strokeWidth: 0.8),
+          ),
+          borderData: FlBorderData(show: false),
+          barGroups: List.generate(domini.length, (i) {
+            final maxScore = domini[i].numDomande * (isSm ? 4 : 3);
+            final double toYValue = domini[i].punteggio.toDouble();
+            final double backYValue = isSabs ? dynamicMaxY : maxScore.toDouble();
+            
+            return BarChartGroupData(
+              x: i,
+              barRods: [
+                BarChartRodData(
+                  toY: toYValue,
+                  color: _domainColors[i % _domainColors.length],
+                  width: 28,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                  backDrawRodData: BackgroundBarChartRodData(
+                    show: true,
+                    toY: backYValue,
+                    color: Colors.grey.shade100,
+                  ),
+                ),
+              ],
+              showingTooltipIndicators: [],
+            );
+          }),
+          extraLinesData: ExtraLinesData(horizontalLines: []),
+        ),
       ),
     );
     // We overlay real bars on top — simplified: use single bar with backDrawRodData

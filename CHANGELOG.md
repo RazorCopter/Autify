@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.18.34] - 2026-05-31
+- **Fix Overflow Grafici Istogrammi**: Risolto il problema di overflow in cui le barre di sfondo (`backDrawRodData`) dei grafici ad istogramma nel cruscotto della dashboard uscivano dal loro spazio di visualizzazione disegnandosi sopra gli indicatori blu. Introdotto il `ClipRect` di sicurezza e impostata l'altezza massima del fondoscala di sfondo vincolata al `dynamicMaxY` per la scala SABS.
+
 ## [2.18.33] - 2026-05-31
 - **Fondoscala Grafici SABS**: Impostato il fondoscala massimo (valore y) a 49.0 nei grafici ad istogramma (dettaglio e dashboard) per la scala SABS.
 - **Nomi Scale Dinamici**: Sostituito il titolo statico "POS Eterovalutativo" con il nome dinamico reale della scala (`scale.nome`) nella sezione "Comportamento Adattivo" della dashboard di analisi utente.
