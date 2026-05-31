@@ -1041,7 +1041,7 @@ async def get_aggregated_evaluation(patient_id: str, scale_id: str):
         domain_map = build_domain_map(scale_doc or {})
         if not domain_map:
             domain_map = DOMINI_POS
-        domains = compute_direct_scores(eval_doc.get("risposte", []), domain_map)
+        domains = compute_direct_scores(eval_doc.get("risposte", []), domain_map, scale_doc=scale_doc)
         history.append(
             AggregatedEvaluation(
                 id_valutazione=_extract_evaluation_identifier(eval_doc),
@@ -1095,7 +1095,7 @@ async def update_evaluation(evaluation_id: str, payload: EvaluationUpdateRequest
     domain_map = build_domain_map(scale_doc or {})
     if not domain_map:
         domain_map = DOMINI_POS
-    domains = compute_direct_scores(new_risposte, domain_map)
+    domains = compute_direct_scores(new_risposte, domain_map, scale_doc=scale_doc)
     return AggregatedEvaluation(
         id_valutazione=_extract_evaluation_identifier(existing),
         id_paziente=existing["id_paziente"],

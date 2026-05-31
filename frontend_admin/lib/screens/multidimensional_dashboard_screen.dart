@@ -716,7 +716,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                           children: [
                              buildCardSection('Progetto di Vita e Qualità della Vita', lifeProjectScales),
                              if (behaviorScales.isNotEmpty && lifeProjectScales.isNotEmpty) const Divider(height: 32),
-                             buildCardSection('Comportamenti Specifici', behaviorScales),
+                             buildCardSection('Comportamento Adattivo', behaviorScales),
                           ]
                         );
                       }

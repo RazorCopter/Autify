@@ -1,0 +1,694 @@
+{
+  "id": "sabs_adaptive_behavior_short",
+  "nome": "Adaptive Behavior Scale - (SABS)",
+  "descrizione": "Adult con disabilità intellettiva (grave o gravissima) – anche in strutture residenziali",
+  "sezioni": [
+    {
+      "codice_sezione": "PSS",
+      "titolo_sezione": "Personal Self‑Sufficiency (Autonomia personale)",
+      "descrizione_sezione": null,
+      "domande": [
+        {
+          "id_domanda": "1",
+          "codice": "SABS-1",
+          "testo_domanda": "Utilizzo delle posate",
+          "tipo": "likert",
+          "note": null,
+          "opzioni": [
+            {
+              "punteggio": 6,
+              "testo_risposta": "Usa il coltello per tagliare o spalmare"
+            },
+            {
+              "punteggio": 5,
+              "testo_risposta": "Mangia con forchetta e cucchiaio in modo appropriato"
+            },
+            {
+              "punteggio": 4,
+              "testo_risposta": "Mangia con forchetta e cucchiaio sporcando parecchio"
+            },
+            {
+              "punteggio": 3,
+              "testo_risposta": "Usa solo il cucchiaio, con competenza"
+            },
+            {
+              "punteggio": 2,
+              "testo_risposta": "Usa solo il cucchiaio, sporcando parecchio"
+            },
+            {
+              "punteggio": 1,
+              "testo_risposta": "Mangia solo con le mani"
+            },
+            {
+              "punteggio": 0,
+              "testo_risposta": "Non si nutre da solo"
+            }
+          ]
+        },
+        {
+          "id_domanda": "6",
+          "codice": "SABS-6",
+          "testo_domanda": "Cura di sé in bagno",
+          "tipo": "composito",
+          "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no).",
+          "sottodomande": [
+            {
+              "testo": "Si abbassa i pantaloni senza aiuto"
+            },
+            {
+              "testo": "Si siede sul water senza aiuto"
+            },
+            {
+              "testo": "Usa con competenza la carta igienica"
+            },
+            {
+              "testo": "Tira l'acqua dopo l'uso"
+            },
+            {
+              "testo": "Si rimette i vestiti senza aiuto"
+            },
+            {
+              "testo": "Si lava le mani senza aiuto"
+            }
+          ]
+        },
+        {
+          "id_domanda": "8",
+          "codice": "SABS-8",
+          "testo_domanda": "Fare il bagno",
+          "tipo": "likert",
+          "note": null,
+          "opzioni": [
+            {
+              "punteggio": 6,
+              "testo_risposta": "Prepara e si fa il bagno (o la doccia) da solo"
+            },
+            {
+              "punteggio": 5,
+              "testo_risposta": "Si lava e asciuga senza aiuto e senza che gli venga richiesto"
+            },
+            {
+              "punteggio": 4,
+              "testo_risposta": "Si lava e asciuga da solo abbastanza bene, quando lo si richiede"
+            },
+            {
+              "punteggio": 3,
+              "testo_risposta": "Si lava e asciuga con aiuto"
+            },
+            {
+              "punteggio": 2,
+              "testo_risposta": "Prova ad insaponarsi e lavarsi da solo"
+            },
+            {
+              "punteggio": 1,
+              "testo_risposta": "Collabora quando viene lavato e asciugato"
+            },
+            {
+              "punteggio": 0,
+              "testo_risposta": "Non prova nemmeno a lavarsi o asciugarsi da solo"
+            }
+          ]
+        },
+        {
+          "id_domanda": "13",
+          "codice": "SABS-13",
+          "testo_domanda": "Cura degli indumenti",
+          "tipo": "composito",
+          "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no).",
+          "sottodomande": [
+            {
+              "testo": "Pulisce le scarpe quando necessario"
+            },
+            {
+              "testo": "Mette i vestiti nei cassetti, nel comò, o nell'armadio"
+            },
+            {
+              "testo": "Appende i vestiti senza che gli venga ricordato"
+            },
+            {
+              "testo": "Fa notare quando manca un bottone o c'è un buco, e/o ripara i vestiti"
+            }
+          ]
+        },
+        {
+          "id_domanda": "15",
+          "codice": "SABS-15",
+          "testo_domanda": "Vestirsi",
+          "tipo": "likert",
+          "note": null,
+          "opzioni": [
+            {
+              "punteggio": 5,
+              "testo_risposta": "Si veste da solo in modo completo"
+            },
+            {
+              "punteggio": 4,
+              "testo_risposta": "Si veste da solo in modo completo con suggerimenti verbali"
+            },
+            {
+              "punteggio": 3,
+              "testo_risposta": "Si veste da solo con suggerimenti verbali, e aiutato a chiudere bottoni, cerniere, ecc."
+            },
+            {
+              "punteggio": 2,
+              "testo_risposta": "Si veste da solo, aiutandolo a infilare o sfilare i vestiti per velocizzare la procedura"
+            },
+            {
+              "punteggio": 1,
+              "testo_risposta": "Coopera allungando le braccia o le gambe"
+            },
+            {
+              "punteggio": 0,
+              "testo_risposta": "Dev'essere vestito"
+            }
+          ]
+        },
+        {
+          "id_domanda": "17",
+          "codice": "SABS-17",
+          "testo_domanda": "Scarpe",
+          "tipo": "composito",
+          "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no).",
+          "sottodomande": [
+            {
+              "testo": "Mette le scarpe correttamente e senza assistenza"
+            },
+            {
+              "testo": "Allaccia le stringhe senza assistenza"
+            },
+            {
+              "testo": "Slaccia le stringhe senza assistenza"
+            },
+            {
+              "testo": "Toglie le scarpe senza assistenza"
+            },
+            {
+              "testo": "Sa usare il velcro sulle scarpe"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "codice_sezione": "CSS",
+      "titolo_sezione": "Community Self‑Sufficiency (Autonomia nella comunità)",
+      "descrizione_sezione": null,
+      "domande": [
+        {
+          "id_domanda": "2",
+          "codice": "SABS-2",
+          "testo_domanda": "Mangiare in luoghi pubblici",
+          "tipo": "likert",
+          "note": null,
+          "opzioni": [
+            {
+              "punteggio": 3,
+              "testo_risposta": "Ordina pasti completi, al ristorante"
+            },
+            {
+              "punteggio": 2,
+              "testo_risposta": "Ordina pasti semplici come panini o insalate"
+            },
+            {
+              "punteggio": 1,
+              "testo_risposta": "Chiede singoli alimenti al bar (gelato, bibita, caramelle)"
+            },
+            {
+              "punteggio": 0,
+              "testo_risposta": "Non ordina nulla in luoghi pubblici"
+            }
+          ]
+        },
+        {
+          "id_domanda": "23",
+          "codice": "SABS-23",
+          "testo_domanda": "Indipendenza nel funzionamento (varie)",
+          "tipo": "composito",
+          "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no).",
+          "sottodomande": [
+            {
+              "testo": "Ha un normale controllo dell'appetito, mangia con moderazione"
+            },
+            {
+              "testo": "Conosce il prezzo dei francobolli, o li sa comprare in posta"
+            },
+            {
+              "testo": "Si prende cura della propria salute (ad esempio cambiandosi se bagnato)"
+            },
+            {
+              "testo": "Cura piccole ferite (tagli, scottature...)"
+            },
+            {
+              "testo": "Sa quando e come chiedere l'aiuto di un dottore o dentista"
+            },
+            {
+              "testo": "È informato sulle strutture di assistenza sociale"
+            },
+            {
+              "testo": "Conosce il proprio indirizzo (di casa o della struttura)"
+            }
+          ]
+        },
+        {
+          "id_domanda": "24",
+          "codice": "SABS-24",
+          "testo_domanda": "Sicurezza nella struttura residenziale o a casa",
+          "tipo": "likert",
+          "note": null,
+          "opzioni": [
+            {
+              "punteggio": 3,
+              "testo_risposta": "Chiede se un oggetto non famigliare è sicuro da toccare o da mangiare"
+            },
+            {
+              "punteggio": 2,
+              "testo_risposta": "Riconosce la pericolosità di prese e spine elettriche"
+            },
+            {
+              "punteggio": 1,
+              "testo_risposta": "Riconosce la pericolosità di cibi, bevande o superfici troppo caldi"
+            },
+            {
+              "punteggio": 0,
+              "testo_risposta": "Non riconosce possibili pericoli"
+            }
+          ]
+        },
+        {
+          "id_domanda": "28",
+          "codice": "SABS-28",
+          "testo_domanda": "Camminare e correre",
+          "tipo": "composito",
+          "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no).",
+          "sottodomande": [
+            {
+              "testo": "Sa camminare da solo"
+            },
+            {
+              "testo": "Sale e scende le scale da solo"
+            },
+            {
+              "testo": "Scende le scale correttamente (alternando i piedi)"
+            },
+            {
+              "testo": "Corre senza cadere quasi mai"
+            },
+            {
+              "testo": "Sa saltare o saltellare"
+            }
+          ]
+        },
+        {
+          "id_domanda": "31",
+          "codice": "SABS-31",
+          "testo_domanda": "Maneggiare il denaro",
+          "tipo": "likert",
+          "note": null,
+          "opzioni": [
+            {
+              "punteggio": 4,
+              "testo_risposta": "Amministra da solo il proprio denaro"
+            },
+            {
+              "punteggio": 3,
+              "testo_risposta": "Sa usare il denaro contante, facendosi dare il resto esatto, ma non usa strumenti bancari"
+            },
+            {
+              "punteggio": 2,
+              "testo_risposta": "Sa mettere insieme monete di vario taglio, per arrivare a un euro"
+            },
+            {
+              "punteggio": 1,
+              "testo_risposta": "Usa il denaro, ma non sa farsi dare il resto esatto"
+            },
+            {
+              "punteggio": 0,
+              "testo_risposta": "Non usa il denaro"
+            }
+          ]
+        },
+        {
+          "id_domanda": "35",
+          "codice": "SABS-35",
+          "testo_domanda": "Comprare",
+          "tipo": "likert",
+          "note": null,
+          "opzioni": [
+            {
+              "punteggio": 5,
+              "testo_risposta": "Compra vestiti da solo"
+            },
+            {
+              "punteggio": 4,
+              "testo_risposta": "Compra da solo accessori di abbigliamento"
+            },
+            {
+              "punteggio": 3,
+              "testo_risposta": "Fa piccoli acquisti senza aiuto (caramelle, bibite, ecc.)"
+            },
+            {
+              "punteggio": 2,
+              "testo_risposta": "Fa acquisti con una minima supervisione"
+            },
+            {
+              "punteggio": 1,
+              "testo_risposta": "Fa acquisti con attenta supervisione"
+            },
+            {
+              "punteggio": 0,
+              "testo_risposta": "Non sa fare acquisti"
+            }
+          ]
+        },
+        {
+          "id_domanda": "41",
+          "codice": "SABS-41",
+          "testo_domanda": "Utilizzo di frasi",
+          "tipo": "likert",
+          "note": null,
+          "opzioni": [
+            {
+              "punteggio": 3,
+              "testo_risposta": "A volte usa frasi complesse collegate dalle congiunzioni 'perché', 'ma', ecc."
+            },
+            {
+              "punteggio": 2,
+              "testo_risposta": "Fa domande che iniziano con 'perché', 'dove', ecc."
+            },
+            {
+              "punteggio": 1,
+              "testo_risposta": "Parla con frasi semplici (corrette, ma brevi e senza congiunzioni)"
+            },
+            {
+              "punteggio": 0,
+              "testo_risposta": "Usa frasi rozze o non sa parlare"
+            }
+          ]
+        },
+        {
+          "id_domanda": "44",
+          "codice": "SABS-44",
+          "testo_domanda": "Comprensione di istruzioni verbali",
+          "tipo": "likert",
+          "note": null,
+          "opzioni": [
+            {
+              "punteggio": 4,
+              "testo_risposta": "Comprende istruzioni complesse che implicano una decisione ('Se.... allora')"
+            },
+            {
+              "punteggio": 3,
+              "testo_risposta": "Comprende istruzioni che comportano una serie di passaggi ('Fai questo.... Poi quello...')"
+            },
+            {
+              "punteggio": 2,
+              "testo_risposta": "Risponde a semplici richieste ('Come ti chiami?', o 'Cosa stai facendo?')"
+            },
+            {
+              "punteggio": 1,
+              "testo_risposta": "Rispetta semplici ordini ('Fermati', 'Siediti', o 'Vieni qui')"
+            },
+            {
+              "punteggio": 0,
+              "testo_risposta": "Non riesce a comprendere le richieste più semplici"
+            }
+          ]
+        },
+        {
+          "id_domanda": "47",
+          "codice": "SABS-47",
+          "testo_domanda": "Numeri",
+          "tipo": "likert",
+          "note": null,
+          "opzioni": [
+            {
+              "punteggio": 6,
+              "testo_risposta": "Sa fare divisioni e moltiplicazioni"
+            },
+            {
+              "punteggio": 5,
+              "testo_risposta": "Sa fare addizioni e sottrazioni, anche semplici"
+            },
+            {
+              "punteggio": 4,
+              "testo_risposta": "Sa contare 10 o più oggetti"
+            },
+            {
+              "punteggio": 3,
+              "testo_risposta": "Sa contare a memoria fino a 10"
+            },
+            {
+              "punteggio": 2,
+              "testo_risposta": "Sa contare 2 oggetti dicendo 'Uno' e 'Due'"
+            },
+            {
+              "punteggio": 1,
+              "testo_risposta": "Sa distinguere tra 'uno', 'qualcuno', o 'molti'"
+            },
+            {
+              "punteggio": 0,
+              "testo_risposta": "Non ha nessuna comprensione dei numeri"
+            }
+          ]
+        },
+        {
+          "id_domanda": "53",
+          "codice": "SABS-53",
+          "testo_domanda": "Preparazione del cibo",
+          "tipo": "likert",
+          "note": null,
+          "opzioni": [
+            {
+              "punteggio": 4,
+              "testo_risposta": "Sa preparare e cuocere un pasto"
+            },
+            {
+              "punteggio": 3,
+              "testo_risposta": "Prepara un pasto abbastanza correttamente"
+            },
+            {
+              "punteggio": 2,
+              "testo_risposta": "Mescola e cuoce cibi semplici (uova, torte)"
+            },
+            {
+              "punteggio": 1,
+              "testo_risposta": "Prepara cibi semplici che non richiedono di essere mescolati e cotti (panini, latte e cacao...)"
+            },
+            {
+              "punteggio": 0,
+              "testo_risposta": "Non sa preparare alcun cibo"
+            }
+          ]
+        },
+        {
+          "id_domanda": "55",
+          "codice": "SABS-55",
+          "testo_domanda": "Attività domestiche varie",
+          "tipo": "composito",
+          "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no).",
+          "sottodomande": [
+            {
+              "testo": "Lava bene i piatti"
+            },
+            {
+              "testo": "Fa il letto correttamente"
+            },
+            {
+              "testo": "Aiuta nei lavori domestici"
+            },
+            {
+              "testo": "Fa abitualmente lavori domestici, da solo"
+            },
+            {
+              "testo": "Usa correttamente e da solo la lavastoviglie"
+            },
+            {
+              "testo": "Sa usare correttamente piccoli accessori elettrici"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "codice_sezione": "PSR",
+      "titolo_sezione": "Personal Social Responsibility (Responsabilità personale)",
+      "descrizione_sezione": null,
+      "domande": [
+        {
+          "id_domanda": "60",
+          "codice": "SABS-60",
+          "testo_domanda": "Passività",
+          "tipo": "composito",
+          "note": "Punteggio = somma dei sub-item. Per ogni sub-item: 1 se il comportamento problematico è assente (No), 0 se presente (Sì).",
+          "sottodomande": [
+            {
+              "testo": "Ha bisogno di costante supporto per completare un compito (No = 1, Sì = 0)"
+            },
+            {
+              "testo": "Dev'essere costretto a fare le cose (No = 1, Sì = 0)"
+            },
+            {
+              "testo": "Non ha aspirazioni (No = 1, Sì = 0)"
+            },
+            {
+              "testo": "Sembra non avere interesse per nulla (No = 1, Sì = 0)"
+            },
+            {
+              "testo": "Finisce i compiti in ritardo perché perde tempo (No = 1, Sì = 0)"
+            },
+            {
+              "testo": "Dipendenza dall'aiuto altrui, anche quando non necessario (No = 1, Sì = 0)"
+            },
+            {
+              "testo": "È lento e pigro nei movimenti (No = 1, Sì = 0)"
+            }
+          ]
+        },
+        {
+          "id_domanda": "62",
+          "codice": "SABS-62",
+          "testo_domanda": "Costanza",
+          "tipo": "composito",
+          "note": "Punteggio = somma dei sub-item. 1 = comportamento problematico assente, 0 = presente.",
+          "sottodomande": [
+            {
+              "testo": "Non riesce ad organizzarsi nelle attività (No = 1, Sì = 0)"
+            },
+            {
+              "testo": "Si scoraggia facilmente (No = 1, Sì = 0)"
+            },
+            {
+              "testo": "Non riesce a portare a termine i compiti (No = 1, Sì = 0)"
+            },
+            {
+              "testo": "Salta da un'attività all'altra (No = 1, Sì = 0)"
+            },
+            {
+              "testo": "Ha bisogno di incoraggiamento costante (No = 1, Sì = 0)"
+            }
+          ]
+        },
+        {
+          "id_domanda": "63",
+          "codice": "SABS-63",
+          "testo_domanda": "Tempo libero",
+          "tipo": "likert",
+          "note": null,
+          "opzioni": [
+            {
+              "punteggio": 4,
+              "testo_risposta": "Organizza attività ricreative abbastanza complesse (pescare, giocare a biliardo, giocare al computer...)"
+            },
+            {
+              "punteggio": 3,
+              "testo_risposta": "Si interessa attivamente in hobby (pittura, collezionismo..)"
+            },
+            {
+              "punteggio": 2,
+              "testo_risposta": "Partecipa ad attività ricreative strutturate quando vengono organizzate"
+            },
+            {
+              "punteggio": 1,
+              "testo_risposta": "Partecipa ad attività ricreative di livello base (guardare la TV, ascoltare musica..)"
+            },
+            {
+              "punteggio": 0,
+              "testo_risposta": "È incapace di prendere parte alle più semplici attività ricreative"
+            }
+          ]
+        },
+        {
+          "id_domanda": "65",
+          "codice": "SABS-65",
+          "testo_domanda": "Responsabilità generale",
+          "tipo": "likert",
+          "note": null,
+          "opzioni": [
+            {
+              "punteggio": 3,
+              "testo_risposta": "Molto coscienzioso, si assume molte responsabilità; si impegna; le attività assegnate sono sempre svolte"
+            },
+            {
+              "punteggio": 2,
+              "testo_risposta": "Di solito è affidabile; si sforza per ciò di cui è responsabile; ci si attende di solito che svolga le attività assegnate"
+            },
+            {
+              "punteggio": 1,
+              "testo_risposta": "Inaffidabile; si sforza poco; è difficile che porti a termine i compiti assegnati"
+            },
+            {
+              "punteggio": 0,
+              "testo_risposta": "Non gli vengono date responsabilità; incapace di portare a termine i compiti dati"
+            }
+          ]
+        },
+        {
+          "id_domanda": "66",
+          "codice": "SABS-66",
+          "testo_domanda": "Responsabilità personale",
+          "tipo": "composito",
+          "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no).",
+          "sottodomande": [
+            {
+              "testo": "Di solito mantiene l'autocontrollo"
+            },
+            {
+              "testo": "Capisce il concetto di 'essere in orario', 'rispettare i tempi'"
+            },
+            {
+              "testo": "Cerca e accetta aiuto sulle istruzioni date"
+            },
+            {
+              "testo": "Riferisce quando c'è un problema"
+            }
+          ]
+        },
+        {
+          "id_domanda": "68",
+          "codice": "SABS-68",
+          "testo_domanda": "Considerazione per gli altri",
+          "tipo": "composito",
+          "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no).",
+          "sottodomande": [
+            {
+              "testo": "Mostra interesse per ciò che fanno gli altri"
+            },
+            {
+              "testo": "Tratta con cura le cose altrui"
+            },
+            {
+              "testo": "Dirige o gestisce gli affari altrui, quando necessario"
+            },
+            {
+              "testo": "Mostra di prendere in considerazione i sentimenti altrui"
+            }
+          ]
+        },
+        {
+          "id_domanda": "69",
+          "codice": "SABS-69",
+          "testo_domanda": "Coscienza dell'altro",
+          "tipo": "composito",
+          "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no).",
+          "sottodomande": [
+            {
+              "testo": "Riconosce i propri familiari"
+            },
+            {
+              "testo": "Riconosce persone diverse dai propri familiari"
+            },
+            {
+              "testo": "Ricorda informazioni sugli altri (lavoro, indirizzo, rapporto rispetto a lui)"
+            },
+            {
+              "testo": "Conosce il nome di persone a lui vicine"
+            },
+            {
+              "testo": "Conosce il nome di persone che vede saltuariamente"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

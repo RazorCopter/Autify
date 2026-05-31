@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.18.32] - 2026-05-31
+- **Calcolo Punteggi Dinamico**: Il calcolo dei punteggi diretti per le scale personalizzate ora mappa dinamicamente domande a sezioni (domini) in `analytics.py`.
+- **Comportamento Adattivo**: Aggiornata la categorizzazione UI nella dashboard e aggiunti nomi dinamici per ogni singola scala.
+
+## [2.18.31] - 2026-05-31
+- **Fix Scale Rendering**: Corretti i nomi e titoli hardcoded per le scale esterne nella UI.
+
 ## [2.18.30] - 2026-05-31
 - **Supporto Domande Composite**: Implementato il supporto per domande 'composite' con sottodomande a checklist (es. per scale comportamentali). La UI riconosce il tipo 'composito' e calcola dinamicamente la somma dei comportamenti selezionati.
 - **Dashboard Comportamenti Specifici**: Creata la sottosezione dedicata ai comportamenti specifici all'interno della Dashboard Multidimensionale, separandoli dal Progetto di Vita.

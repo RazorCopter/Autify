@@ -1,0 +1,1689 @@
+{
+  "scala": {
+    "info": {
+      "id": "odflab_griglia_autonomia",
+      "nome": "ODFLAB – Griglia di Valutazione delle Autonomie e Competenze Adattive",
+      "versione": "2026 – Gennaio",
+      "autore": "ODFLAB / Alessandro Cogliati",
+      "target": "Adulti con disabilità (autismo, disabilità intellettiva, disturbi del neurosviluppo)",
+      "compilatore": "Educatore, terapista o caregiver che conosce la persona da almeno 3 mesi",
+      "tempo_somministrazione": "30-45 minuti",
+      "struttura_punteggi": {
+        "punteggi_item": "Scala Likert 1-5 (1 = assente/peggiore, 5 = molto frequente/migliore) con alcuni item invertiti (scala 5-1). Per Orientamento temporale: 0/1.",
+        "punteggio_grezzo_dominio": "Somma dei punteggi attribuiti a ciascun item del dominio (dopo eventuale inversione)",
+        "punteggio_normalizzato_dominio": "Punteggio grezzo / (numero_item * 5) [o / numero_item per item dicotomici]",
+        "punteggio_totale_grezzo": "Somma dei punteggi grezzi di tutti i domini",
+        "punteggio_totale_normalizzato": "Punteggio totale grezzo / massimo totale teorico (dipende dalla somma dei massimi di ogni dominio)"
+      },
+      "note_operative": [
+        "Valutare il comportamento osservato nelle ultime 4 settimane.",
+        "Per i Likert: 1 = assenza del comportamento/competenza scarsa; 5 = comportamento molto frequente/competenza elevata (salvo inversione).",
+        "Gli item con scala invertita (indicati con `verso: \"inverso\"`) richiedono di convertire il punteggio prima della somma: punteggio_corretto = 6 - punteggio_originale (1→5, 2→4, 3→3, 4→2, 5→1).",
+        "Nella colonna 'Attribuzione' del foglio Excel originale sono riportati i punteggi attribuiti a un caso esempio (Alessandro Cogliati)."
+      ]
+    },
+    "domini": [
+      {
+        "codice": "PERC",
+        "nome": "Percezione",
+        "num_item": 4,
+        "punteggio_massimo_grezzo": 20,
+        "punteggio_minimo_grezzo": 4,
+        "descrizione": "Reazioni a stimoli sensoriali (luce, suono, contatto, situazioni caotiche). Più alto è il punteggio, minore è il disagio manifestato (scala invertita).",
+        "domande": [
+          {
+            "id": "PERC-1",
+            "testo": "Manifesta comportamenti che fanno pensare ad insofferenza o disagio relativi a particolari fonti di luce",
+            "verso": "inverso",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento" },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Alquanto frequente e intenso" },
+              { "punteggio": 2, "etichetta": "Frequente e intenso" },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso" }
+            ]
+          },
+          {
+            "id": "PERC-2",
+            "testo": "Manifesta comportamenti che fanno pensare ad insofferenza o disagio relativi a particolari fonti di suono (rumori di sottofondo, musica, vociare…)",
+            "verso": "inverso",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento" },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Alquanto frequente e intenso" },
+              { "punteggio": 2, "etichetta": "Frequente e intenso" },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso" }
+            ]
+          },
+          {
+            "id": "PERC-3",
+            "testo": "Si divincola, evitandoli, contatti fisici tipo abbracci, mani su spalla, ecc…",
+            "verso": "inverso",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento" },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Alquanto frequente e intenso" },
+              { "punteggio": 2, "etichetta": "Frequente e intenso" },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso" }
+            ]
+          },
+          {
+            "id": "PERC-4",
+            "testo": "Manifesta comportamenti che fanno pensare ad insofferenza o disagio in situazioni generalmente caotiche e ricche di stimoli (centri commerciali, feste, ecc…)",
+            "verso": "inverso",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento" },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Alquanto frequente e intenso" },
+              { "punteggio": 2, "etichetta": "Frequente e intenso" },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso" }
+            ]
+          }
+        ]
+      },
+      {
+        "codice": "MOT",
+        "nome": "Motricità generale",
+        "num_item": 10,
+        "punteggio_massimo_grezzo": 50,
+        "punteggio_minimo_grezzo": 10,
+        "descrizione": "Capacità motorie di base (equilibrio, cammino, corsa, agilità, coordinazione, afferrare, lanciare, andare in bici, nuotare). Punteggio alto = buona motricità.",
+        "domande": [
+          {
+            "id": "MOT-1",
+            "testo": "Capacità di tenere l'equilibrio",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "MOT-2",
+            "testo": "Camminare in maniera adeguata",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "MOT-3",
+            "testo": "Essere capaci di correre",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "MOT-4",
+            "testo": "Agilità (saltare, arrampicarsi, scivolare)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "MOT-5",
+            "testo": "Coordinazione grosso-motoria",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "MOT-6",
+            "testo": "Coordinazione fino-motoria",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "MOT-7",
+            "testo": "Capacità di afferrare al volo",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "MOT-8",
+            "testo": "Capacità di lanciare",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "MOT-9",
+            "testo": "Capacità di andare in bicicletta",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "MOT-10",
+            "testo": "Capacità di nuotare",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          }
+        ]
+      },
+      {
+        "codice": "INTENZ",
+        "nome": "Intenzione (iniziativa)",
+        "num_item": 4,
+        "punteggio_massimo_grezzo": 20,
+        "punteggio_minimo_grezzo": 4,
+        "descrizione": "Capacità di iniziare spontaneamente attività, spostamenti, comunicazione.",
+        "domande": [
+          {
+            "id": "INT-1",
+            "testo": "Ha iniziativa negli spostamenti",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "INT-2",
+            "testo": "Ha iniziativa nel gioco",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "INT-3",
+            "testo": "Ha iniziativa nell'espressione della volontà ed espressione di desideri (uscire, vedere la Tv, ascoltare radio, scelta del posto in cui andare)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "INT-4",
+            "testo": "Ha iniziativa nella comunicazione con gli altri",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          }
+        ]
+      },
+      {
+        "codice": "EMOZ",
+        "nome": "Emozione",
+        "num_item": 8,
+        "punteggio_massimo_grezzo": 40,
+        "punteggio_minimo_grezzo": 8,
+        "descrizione": "Espressione, comprensione e regolazione delle emozioni. Alcuni item sono invertiti (comportamenti disadattivi).",
+        "domande": [
+          {
+            "id": "EMOZ-1",
+            "testo": "Mostra le emozioni (gioia, tristezza, paura, rabbia) in modo adeguato",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "EMOZ-2",
+            "testo": "Mostra le emozioni in maniera particolare (es. sfarfallamento, tremore, canto, ripetizione di parole ecc.)",
+            "verso": "inverso",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento" },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Alquanto frequente e intenso" },
+              { "punteggio": 2, "etichetta": "Frequente e intenso" },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso" }
+            ]
+          },
+          {
+            "id": "EMOZ-3",
+            "testo": "Capacità espressiva del volto",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "EMOZ-4",
+            "testo": "Capacità mimica gestuale e corporea",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "EMOZ-5",
+            "testo": "Capacità a comprendere le emozioni",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "EMOZ-6",
+            "testo": "Reagisce adeguatamente alle manifestazioni emotivo/affettive",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "EMOZ-7",
+            "testo": "Condivide l'emozione altrui",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "EMOZ-8",
+            "testo": "Ha reazioni emotive o altre manifestazioni di ansia o disagio in occasione di cambiamenti (di programma, di setting, ecc…)",
+            "verso": "inverso",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento" },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Alquanto frequente e intenso" },
+              { "punteggio": 2, "etichetta": "Frequente e intenso" },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso" }
+            ]
+          }
+        ]
+      },
+      {
+        "codice": "REG_COMP",
+        "nome": "Regolazione del comportamento",
+        "num_item": 11,
+        "punteggio_massimo_grezzo": 55,
+        "punteggio_minimo_grezzo": 11,
+        "descrizione": "Controllo dell'iperattività, impulsività, attenzione, stereotipie, regolazione di impulsi aggressivi/sessuali. Alcuni item invertiti.",
+        "domande": [
+          {
+            "id": "RC-1",
+            "testo": "È iperattivo",
+            "verso": "inverso",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento" },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Alquanto frequente e intenso" },
+              { "punteggio": 2, "etichetta": "Frequente e intenso" },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso" }
+            ]
+          },
+          {
+            "id": "RC-2",
+            "testo": "È ipoattivo",
+            "verso": "inverso",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento" },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Alquanto frequente e intenso" },
+              { "punteggio": 2, "etichetta": "Frequente e intenso" },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso" }
+            ]
+          },
+          {
+            "id": "RC-3",
+            "testo": "Il suo comportamento è imprevedibile",
+            "verso": "inverso",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento" },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Alquanto frequente e intenso" },
+              { "punteggio": 2, "etichetta": "Frequente e intenso" },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso" }
+            ]
+          },
+          {
+            "id": "RC-4",
+            "testo": "Sa regolare gli impulsi sessuali",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "RC-5",
+            "testo": "Sa regolare gli impulsi aggressivi",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "RC-6",
+            "testo": "Sa regolare l'eccitazione emotiva rispetto a stimoli piacevoli",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "RC-7",
+            "testo": "La sua attenzione varia eccessivamente da uno stimolo all'altro",
+            "verso": "inverso",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento" },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Alquanto frequente e intenso" },
+              { "punteggio": 2, "etichetta": "Frequente e intenso" },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso" }
+            ]
+          },
+          {
+            "id": "RC-8",
+            "testo": "Ha rapidi sbalzi d'umore",
+            "verso": "inverso",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento" },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Alquanto frequente e intenso" },
+              { "punteggio": 2, "etichetta": "Frequente e intenso" },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso" }
+            ]
+          },
+          {
+            "id": "RC-9",
+            "testo": "Interrompe bruscamente un'attività intrapresa",
+            "verso": "inverso",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento" },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Alquanto frequente e intenso" },
+              { "punteggio": 2, "etichetta": "Frequente e intenso" },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso" }
+            ]
+          },
+          {
+            "id": "RC-10",
+            "testo": "Esegue movimenti ripetitivi (con o senza oggetto) in situazioni di eccitamento emotivo",
+            "verso": "inverso",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento" },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Alquanto frequente e intenso" },
+              { "punteggio": 2, "etichetta": "Frequente e intenso" },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso" }
+            ]
+          },
+          {
+            "id": "RC-11",
+            "testo": "Ripete eccessivamente la stessa frase in situazioni di eccitamento emotivo",
+            "verso": "inverso",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento" },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Alquanto frequente e intenso" },
+              { "punteggio": 2, "etichetta": "Frequente e intenso" },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso" }
+            ]
+          }
+        ]
+      },
+      {
+        "codice": "INTER",
+        "nome": "Interazione sociale",
+        "num_item": 11,
+        "punteggio_massimo_grezzo": 55,
+        "punteggio_minimo_grezzo": 11,
+        "descrizione": "Capacità di gestire il contatto e la condivisione con i pari (turno, distanza, attenzione condivisa, giochi di gruppo).",
+        "domande": [
+          {
+            "id": "INTER-1",
+            "testo": "È in grado di rispettare l'alternanza di turno nel gioco",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "INTER-2",
+            "testo": "Si colloca ad una distanza adeguata rispetto alla persona a cui vuole rivolgersi",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "INTER-3",
+            "testo": "Reagisce adeguatamente alla presenza dei pari",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "INTER-4",
+            "testo": "Ricerca la presenza di una persona in particolare quando è nel suo gruppo di pari",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "INTER-5",
+            "testo": "ATTENZIONE CONDIVISA: Mantiene il contatto oculare durante uno scambio verbale",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "INTER-6",
+            "testo": "ATTENZIONE CONDIVISA: È in grado di condividere l'attenzione su un oggetto",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "INTER-7",
+            "testo": "ATTENZIONE CONDIVISA: È in grado di condividere l'attenzione su una terza persona",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "INTER-8",
+            "testo": "ATTENZIONE CONDIVISA: È in grado di giocare a giochi attorno ad un tavolo con uno o più membri del suo gruppo dei pari",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "INTER-9",
+            "testo": "ATTENZIONE CONDIVISA: È in grado di fare uno sport con uno o più membri del suo gruppo dei pari",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "INTER-10",
+            "testo": "ATTENZIONE CONDIVISA: È in grado di eseguire un semplice lavoro con uno o più membri del suo gruppo dei pari",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "INTER-11",
+            "testo": "ATTENZIONE CONDIVISA: È in grado di stare in cerchio con il suo gruppo dei pari mentre aspetta qualcosa o qualcuno o per una conversazione",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          }
+        ]
+      },
+      {
+        "codice": "REG_SOC",
+        "nome": "Regolazione sociale",
+        "num_item": 13,
+        "punteggio_massimo_grezzo": 65,
+        "punteggio_minimo_grezzo": 13,
+        "descrizione": "Conoscenza e rispetto delle regole sociali, uso di forme di cortesia, partecipazione ad attività di gruppo e lavorative.",
+        "domande": [
+          {
+            "id": "RSOC-1",
+            "testo": "Attende il tempo necessario perché i suoi bisogni siano soddisfatti",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "RSOC-2",
+            "testo": "Segue le regole sociali che riguardano il rispetto della proprietà altrui",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "RSOC-3",
+            "testo": "Adegua il tono della voce al contesto sociale in cui si trova",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "RSOC-4",
+            "testo": "Mangia e beve seguendo basilari regole di comportamento, adeguate al contesto",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "RSOC-5",
+            "testo": "Adegua il comportamento al contesto sociale in cui si trova (reagisce adeguatamente alla presenza degli altri e al tipo d'ambiente)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "RSOC-6",
+            "testo": "Mostra di comprendere l'ordinamento sociale di uno specifico contesto riconoscendo i ruoli delle persone che lo compongono (es. scuola: insegnanti, bidelli ecc; in città: vigili, commessa ecc)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "RSOC-7",
+            "testo": "Richiama l'attenzione di una persona in modo adeguato (usando forme di cortesia in situazioni sociali che lo richiedono: esempio: 'scusi!')",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "RSOC-8",
+            "testo": "Saluta una persona usando una forma espressiva adeguata al tipo di rapporto o livello di confidenza",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "RSOC-9",
+            "testo": "Chiede scusa in situazioni in cui ha arrecato volontariamente o involontariamente danno a terzi",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "RSOC-10",
+            "testo": "Dà del tu o del lei ad una persona a seconda dell'età, del tipo di rapporto o livello di confidenza",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "RSOC-11",
+            "testo": "Effettua richieste in modo cortese (verbi al condizionale, uso di per favore, ecc…), adeguandole al contesto (es. forme di cortesia al bar)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "RSOC-12",
+            "testo": "Partecipa attivamente alle attività ricreative offerte dalla scuola o dall'organizzazione in cui è inserito (giochi, incontri di gruppo ecc.)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "RSOC-13",
+            "testo": "Partecipa attivamente alle attività lavorative a scuola o nelle organizzazioni in cui è inserito (lavoro tarato per le reali abilità)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          }
+        ]
+      },
+      {
+        "codice": "AUT_PERS",
+        "nome": "Autonomia personale",
+        "num_item": 4,
+        "punteggio_massimo_grezzo": 20,
+        "punteggio_minimo_grezzo": 4,
+        "descrizione": "Autonomia nelle attività di base della vita quotidiana (mangiare, andare in bagno, lavarsi, vestirsi).",
+        "domande": [
+          {
+            "id": "AUTP-1",
+            "testo": "Mangia da solo (è autonomo nel tagliare, nel coordinare forchetta e coltello, nel bere e versare liquidi ecc.)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTP-2",
+            "testo": "Va al gabinetto da solo (Provvede a tutte le esigenze dell'andare al gabinetto senza che gli vengano ricordate e senza aiuto)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTP-3",
+            "testo": "Si lava da solo (fa la doccia, lava le mani, i denti ecc.)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTP-4",
+            "testo": "Si veste e si sveste da solo (infila correttamente gli abiti anche con bottoni ed adegua l'abito alla stagione in corso)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          }
+        ]
+      },
+      {
+        "codice": "AUT_TERR",
+        "nome": "Autonomia sul territorio",
+        "num_item": 18,
+        "punteggio_massimo_grezzo": 90,
+        "punteggio_minimo_grezzo": 18,
+        "descrizione": "Capacità di muoversi autonomamente in strada, utilizzare mezzi pubblici, gestire il denaro, fare acquisti, chiedere informazioni.",
+        "domande": [
+          {
+            "id": "AUTT-1",
+            "testo": "Cammina per strada utilizzando il marciapiede",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTT-2",
+            "testo": "Attraversa preferibilmente sulle strisce pedonali",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTT-3",
+            "testo": "Attraversa al momento giusto, dopo aver controllato se ci sono mezzi in arrivo",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTT-4",
+            "testo": "Conosce e rispetta il significato dei colori del semaforo",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTT-5",
+            "testo": "Sa leggere un semplice cartello con orari di treni o autobus",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTT-6",
+            "testo": "Sa all'incirca quanti soldi ha in tasca in un preciso momento",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTT-7",
+            "testo": "Dimostra di sapere che è essenziale avere dei soldi per poter svolgere certe azioni",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTT-8",
+            "testo": "Conosce il valore delle monete e principali banconote, prevedendo la quantità di denaro necessaria per una specifica azione (esempio: acquistare uno specifico prodotto o utilizzare un videogioco)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTT-9",
+            "testo": "Avendo a disposizione del denaro in vari tagli, paga l'esatto importo o porge una moneta o banconota adeguata (esempio: biglietto autobus con banconota da 5 euro e non da 50 euro)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTT-10",
+            "testo": "Aspetta l'eventuale resto di denaro da parte del commesso, barista, ecc…",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTT-11",
+            "testo": "Conosce l'esatto resto che deve eventualmente aspettarsi dopo un pagamento",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTT-12",
+            "testo": "Sa utilizzare il telefono (fisso o cellulare) per chiamare chi desidera",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTT-13",
+            "testo": "È in grado di uscire autonomamente e raggiungere un luogo prestabilito a piedi",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTT-14",
+            "testo": "È in grado di uscire autonomamente e raggiungere un luogo prestabilito con i mezzi pubblici",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTT-15",
+            "testo": "È in grado di uscire autonomamente e raggiungere un luogo prestabilito con la bicicletta",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTT-16",
+            "testo": "È in grado di individuare la tipologia di negozio appropriata per acquistare uno specifico prodotto",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTT-17",
+            "testo": "È in grado di chiedere e avere informazioni a specifiche persone per risolvere semplici problemi sul territorio (esempio: se l'autobus è già passato; la strada ad un vigile, ecc…)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "AUTT-18",
+            "testo": "Al bisogno, è in grado di chiedere, al personale di un supermercato o altro esercizio, la disponibilità o la collocazione di una merce",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          }
+        ]
+      },
+      {
+        "codice": "OR_TOP",
+        "nome": "Orientamento topografico",
+        "num_item": 12,
+        "punteggio_massimo_grezzo": 60,
+        "punteggio_minimo_grezzo": 12,
+        "descrizione": "Capacità di esplorare, riconoscere e raggiungere luoghi in ambienti delimitati (edificio, parco) e in città, anche con mezzi pubblici.",
+        "domande": [
+          {
+            "id": "ORTOP-1",
+            "testo": "Esplora un ambiente delimitato (es. edificio, parco) nuovo (accompagnato)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "ORTOP-2",
+            "testo": "Esplora un ambiente delimitato (es. edificio, parco) nuovo (da solo)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "ORTOP-3",
+            "testo": "Raggiunge a piedi e riconosce un luogo specifico di un ambiente delimitato che frequenta abitualmente (accompagnato)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "ORTOP-4",
+            "testo": "Raggiunge a piedi e riconosce un luogo specifico di un ambiente delimitato che frequenta abitualmente (da solo)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "ORTOP-5",
+            "testo": "Ripercorre un breve percorso in un luogo delimitato ritornando al punto di partenza (accompagnato)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "ORTOP-6",
+            "testo": "Ripercorre un breve percorso in un luogo delimitato ritornando al punto di partenza (da solo)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "ORTOP-7",
+            "testo": "Raggiunge a piedi e riconosce un luogo specifico della città che frequenta abitualmente (accompagnato)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "ORTOP-8",
+            "testo": "Raggiunge a piedi e riconosce un luogo specifico della città che frequenta abitualmente (da solo)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "ORTOP-9",
+            "testo": "Raggiunge con un mezzo pubblico e riconosce un luogo specifico della città che frequenta abitualmente (accompagnato)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "ORTOP-10",
+            "testo": "Raggiunge con un mezzo pubblico e riconosce un luogo specifico della città che frequenta abitualmente (da solo)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "ORTOP-11",
+            "testo": "Raggiunge con un mezzo pubblico un luogo specifico al di fuori della città che frequenta abitualmente (accompagnato)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "ORTOP-12",
+            "testo": "Raggiunge con un mezzo pubblico un luogo specifico al di fuori della città che frequenta abitualmente (da solo)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          }
+        ]
+      },
+      {
+        "codice": "OR_TEMP",
+        "nome": "Orientamento temporale",
+        "num_item": 10,
+        "punteggio_massimo_grezzo": 10,
+        "punteggio_minimo_grezzo": 0,
+        "descrizione": "Conoscenza di anno, stagione, mese, giorno, comprensione del passare del tempo e sincronia. Ogni item vale 1 se la competenza è presente.",
+        "domande": [
+          {
+            "id": "ORTEMP-1",
+            "testo": "Mostra di conoscere l'anno in cui si trova",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì" },
+              { "punteggio": 0, "etichetta": "No" }
+            ]
+          },
+          {
+            "id": "ORTEMP-2",
+            "testo": "Mostra di conoscere la stagione in cui si trova",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì" },
+              { "punteggio": 0, "etichetta": "No" }
+            ]
+          },
+          {
+            "id": "ORTEMP-3",
+            "testo": "Mostra di conoscere il mese in cui si trova",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì" },
+              { "punteggio": 0, "etichetta": "No" }
+            ]
+          },
+          {
+            "id": "ORTEMP-4",
+            "testo": "Mostra di conoscere il giorno del mese in cui si trova",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì" },
+              { "punteggio": 0, "etichetta": "No" }
+            ]
+          },
+          {
+            "id": "ORTEMP-5",
+            "testo": "Mostra di conoscere il giorno della settimana in cui si trova",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì" },
+              { "punteggio": 0, "etichetta": "No" }
+            ]
+          },
+          {
+            "id": "ORTEMP-6",
+            "testo": "Mostra di comprendere il passare del tempo con il supporto di una clessidra",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì" },
+              { "punteggio": 0, "etichetta": "No" }
+            ]
+          },
+          {
+            "id": "ORTEMP-7",
+            "testo": "Mostra di comprendere il passare del tempo con il supporto di un orologio digitale (anche con sveglia)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì" },
+              { "punteggio": 0, "etichetta": "No" }
+            ]
+          },
+          {
+            "id": "ORTEMP-8",
+            "testo": "Mostra di comprendere il passare del tempo con il supporto di un orologio analogico",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì" },
+              { "punteggio": 0, "etichetta": "No" }
+            ]
+          },
+          {
+            "id": "ORTEMP-9",
+            "testo": "Mostra di comprendere i concetti di 'prima' e 'dopo'",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì" },
+              { "punteggio": 0, "etichetta": "No" }
+            ]
+          },
+          {
+            "id": "ORTEMP-10",
+            "testo": "Sincronia spazio temporale (es. raggiunge la fermata dell'autobus all'ora utile, raggiunge un luogo in tempo per un appuntamento)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì" },
+              { "punteggio": 0, "etichetta": "No" }
+            ]
+          }
+        ]
+      },
+      {
+        "codice": "COM_RIC",
+        "nome": "Comunicazione – Ricezione",
+        "num_item": 10,
+        "punteggio_massimo_grezzo": 50,
+        "punteggio_minimo_grezzo": 10,
+        "descrizione": "Capacità di comprendere consegne, proposizioni, simboli, scelte verbali.",
+        "domande": [
+          {
+            "id": "COMRI-1",
+            "testo": "È in grado di comprendere il senso di una semplice consegna (un oggetto e un'azione)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "COMRI-2",
+            "testo": "Dimostra di comprendere il senso di consegne complesse (più azioni; più oggetti)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "COMRI-3",
+            "testo": "Dimostra di comprendere il senso di brevi proposizioni (un'ordinata e una subordinata)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "COMRI-4",
+            "testo": "Dimostra di comprendere il senso di proposizioni lunghe (una o più ordinate con una o più subordinate)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "COMRI-5",
+            "testo": "Dimostra di capire il senso di vocaboli astratti o generici (giustizia, confusione)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "COMRI-6",
+            "testo": "Dimostra di comprendere il senso di scritte o simboli convenzionali (divieti, cartelli di proprietà privata, ecc…)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "COMRI-7",
+            "testo": "Dimostra di comprendere il senso di frasi o richieste con se-allora",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "COMRI-8",
+            "testo": "Dimostra di comprendere il significato di frasi formulate in maniera negativa (esempio: non hai ordinato il succo?)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "COMRI-9",
+            "testo": "È in grado di comprendere la richiesta verbale di effettuare scelte tra due oggetti (o luoghi in cui andare, o attività da svolgere)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "COMRI-10",
+            "testo": "È in grado di comprendere la richiesta verbale di effettuare scelte tra più di due oggetti (o luoghi in cui andare, o attività da svolgere)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          }
+        ]
+      },
+      {
+        "codice": "COM_ESP",
+        "nome": "Comunicazione – Espressione non verbale",
+        "num_item": 4,
+        "punteggio_massimo_grezzo": 20,
+        "punteggio_minimo_grezzo": 4,
+        "descrizione": "Uso di gesti, immagini, sequenze per comunicare richieste e scelte.",
+        "domande": [
+          {
+            "id": "COMES-1",
+            "testo": "Capacità di usare i gesti convenzionali (sorriso, saluto)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "COMES-2",
+            "testo": "Capacità di richiedere a gesti (indicare)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "COMES-3",
+            "testo": "Capacità di usare un'immagine per fare una richiesta o scelta",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "COMES-4",
+            "testo": "Capacità di usare più immagini in sequenza per fare richieste o scelte",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          }
+        ]
+      },
+      {
+        "codice": "COM_LING",
+        "nome": "Comunicazione – Linguaggio verbale",
+        "num_item": 3,
+        "punteggio_massimo_grezzo": 15,
+        "punteggio_minimo_grezzo": 3,
+        "descrizione": "Ecolalia (invertito), capacità di comunicare verbalmente, uso appropriato di sì/no.",
+        "domande": [
+          {
+            "id": "COMLI-1",
+            "testo": "Presenza di linguaggio ecolalico",
+            "verso": "inverso",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento" },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Alquanto frequente e intenso" },
+              { "punteggio": 2, "etichetta": "Frequente e intenso" },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso" }
+            ]
+          },
+          {
+            "id": "COMLI-2",
+            "testo": "Capacità di comunicare verbalmente (richiedere e proporre)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "COMLI-3",
+            "testo": "Dice 'sì' o 'no' in modo appropriato in risposta a semplici domande",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          }
+        ]
+      },
+      {
+        "codice": "COM_CONV",
+        "nome": "Comunicazione – Conversazione",
+        "num_item": 6,
+        "punteggio_massimo_grezzo": 30,
+        "punteggio_minimo_grezzo": 6,
+        "descrizione": "Capacità di sostenere conversazioni brevi, qualità, quantità, pertinenza, modalità e appropriatezza sociale.",
+        "domande": [
+          {
+            "id": "COMCO-1",
+            "testo": "Se stimolato è capace di intraprendere conversazioni molto brevi (4 scambi es. ciao, ciao, come stai, bene)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "COMCO-2",
+            "testo": "QUALITÀ: fornisce un'informazione reale, legata a quanto effettivamente sa (o che rispecchia ciò che è realmente accaduto)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "COMCO-3",
+            "testo": "QUANTITÀ: la quantità dell'eloquio è adeguata, né sovrabbondante o carente",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "COMCO-4",
+            "testo": "ATTINENZA: gli interventi e le risposte sono pertinenti con l'argomento della conversazione",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "COMCO-5",
+            "testo": "MODALITÀ: gli interventi, il racconto, le frasi, sono chiare, poco ambigue, brevi e ordinate (soggetto, verbo, complementi)",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          },
+          {
+            "id": "COMCO-6",
+            "testo": "Conversa in maniera disinvolta e appropriata per quanto riguarda la scelta dell'argomento, il livello di intimità, il contatto visivo e l'intensità della voce",
+            "verso": "normale",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza della competenza" },
+              { "punteggio": 2, "etichetta": "Competenza rara e scarsa" },
+              { "punteggio": 3, "etichetta": "Competenza alquanto frequente e intensa" },
+              { "punteggio": 4, "etichetta": "Competenza frequente e intensa" },
+              { "punteggio": 5, "etichetta": "Competenza molto frequente e intensa" }
+            ]
+          }
+        ]
+      }
+    ],
+    "calcolo_punteggi": {
+      "istruzioni": "Per ogni dominio sommare i punteggi attribuiti a ciascun item (applicando l'inversione dove indicato dal campo 'verso'). Il punteggio normalizzato per dominio = punteggio_grezzo_dominio / (numero_item * 5) [per i domini con item dicotomici di orientamento temporale: punteggio_grezzo / numero_item]. Il punteggio totale grezzo è la somma dei punteggi grezzi di tutti i domini. Il punteggio totale normalizzato = punteggio_totale_grezzo / somma_dei_massimi_teorici_dei_domini (complessivamente 15 domini, massimo totale = 20+50+20+40+55+55+65+20+90+60+10+50+20+15+30 = 600).",
+      "punteggio_massimo_totale": 600,
+      "punteggio_minimo_totale": 0
+    }
+  }
+}

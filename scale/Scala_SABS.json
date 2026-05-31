@@ -1,0 +1,354 @@
+{
+  "scala": {
+    "nome": "Adaptive Behavior Scale - (SABS)",
+    "sottotitolo": "short form",
+    "autori": null,
+    "anno": null,
+    "editore": null,
+    "target": "Adult con disabilità intellettiva (grave o gravissima) – anche in strutture residenziali",
+    "eta": null,
+    "informatori": "Caregiver professionista (educatore, coordinatore) che conosce la persona da almeno 3 mesi",
+    "tempo_somministrazione": "circa 15-20 minuti",
+    "proprieta_psicometriche": null,
+    "struttura_punteggi": {
+      "punteggi_item": "variabili: alcuni item Likert da 0 a 6, altri somma di sub‑item dicotomici (0/1)",
+      "punteggio_grezzo_sottoscala": "somma dei punteggi degli item della sottoscala",
+      "punteggio_totale": "somma delle tre sottoscale (0-114)"
+    },
+    "note_operative": [
+      "Non esistono tabelle nazionali di conversione in punteggi standard; la scala va usata a livello di punteggi grezzi.",
+      "Per i sub‑item dicotomici: 1 = comportamento presente / abilità acquisita, 0 = assente.",
+      "Compilare tutti gli item basandosi sulle ultime 4 settimane di osservazione.",
+      "Il punteggio totale e di sottoscala più alto indica maggiori competenze adattive."
+    ],
+    "domini": [
+      {
+        "codice": "PSS",
+        "nome": "Personal Self‑Sufficiency (Autonomia personale)",
+        "descrizione": "Punteggio massimo: 33",
+        "domande": [
+          {
+            "codice": "SABS-1",
+            "testo": "Utilizzo delle posate",
+            "opzioni": [
+              { "punteggio": 6, "etichetta": "Usa il coltello per tagliare o spalmare", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Mangia con forchetta e cucchiaio in modo appropriato", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Mangia con forchetta e cucchiaio sporcando parecchio", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Usa solo il cucchiaio, con competenza", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Usa solo il cucchiaio, sporcando parecchio", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Mangia solo con le mani", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Non si nutre da solo", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-6",
+            "testo": "Cura di sé in bagno (somma di: si abbassa i pantaloni, si siede, usa carta igienica, tira l'acqua, si rimette i vestiti, lava le mani)",
+            "opzioni": [
+              { "punteggio": 0, "etichetta": "0", "descrizione": null },
+              { "punteggio": 1, "etichetta": "1", "descrizione": null },
+              { "punteggio": 2, "etichetta": "2", "descrizione": null },
+              { "punteggio": 3, "etichetta": "3", "descrizione": null },
+              { "punteggio": 4, "etichetta": "4", "descrizione": null },
+              { "punteggio": 5, "etichetta": "5", "descrizione": null },
+              { "punteggio": 6, "etichetta": "6", "descrizione": null }
+            ],
+            "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no)."
+          },
+          {
+            "codice": "SABS-8",
+            "testo": "Fare il bagno",
+            "opzioni": [
+              { "punteggio": 6, "etichetta": "Prepara e si fa il bagno (o la doccia) da solo", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Si lava e asciuga senza aiuto e senza che gli venga richiesto", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Si lava e asciuga da solo abbastanza bene, quando lo si richiede", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Si lava e asciuga con aiuto", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Prova ad insaponarsi e lavarsi da solo", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Collabora quando viene lavato e asciugato", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Non prova nemmeno a lavarsi o asciugarsi da solo", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-13",
+            "testo": "Cura degli indumenti (somma di: pulisce scarpe, mette vestiti nei cassetti, appende, nota buchi/ripara)",
+            "opzioni": [
+              { "punteggio": 0, "etichetta": "0", "descrizione": null },
+              { "punteggio": 1, "etichetta": "1", "descrizione": null },
+              { "punteggio": 2, "etichetta": "2", "descrizione": null },
+              { "punteggio": 3, "etichetta": "3", "descrizione": null },
+              { "punteggio": 4, "etichetta": "4", "descrizione": null }
+            ],
+            "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no)."
+          },
+          {
+            "codice": "SABS-15",
+            "testo": "Vestirsi",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Si veste da solo in modo completo", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Si veste da solo in modo completo con suggerimenti verbali", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Si veste da solo con suggerimenti verbali, e aiutato a chiudere bottoni, cerniere, ecc.", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Si veste da solo, aiutandolo a infilare o sfilare i vestiti per velocizzare la procedura", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Coopera allungando le braccia o le gambe", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Dev'essere vestito", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-17",
+            "testo": "Scarpe (somma di: mette scarpe, allaccia stringhe, slaccia, toglie, usa velcro)",
+            "opzioni": [
+              { "punteggio": 0, "etichetta": "0", "descrizione": null },
+              { "punteggio": 1, "etichetta": "1", "descrizione": null },
+              { "punteggio": 2, "etichetta": "2", "descrizione": null },
+              { "punteggio": 3, "etichetta": "3", "descrizione": null },
+              { "punteggio": 4, "etichetta": "4", "descrizione": null },
+              { "punteggio": 5, "etichetta": "5", "descrizione": null }
+            ],
+            "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no)."
+          }
+        ]
+      },
+      {
+        "codice": "CSS",
+        "nome": "Community Self‑Sufficiency (Autonomia nella comunità)",
+        "descrizione": "Punteggio massimo: 49",
+        "domande": [
+          {
+            "codice": "SABS-2",
+            "testo": "Mangiare in luoghi pubblici",
+            "opzioni": [
+              { "punteggio": 3, "etichetta": "Ordina pasti completi, al ristorante", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Ordina pasti semplici come panini o insalate", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Chiede singoli alimenti al bar (gelato, bibita, caramelle)", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Non ordina nulla in luoghi pubblici", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-23",
+            "testo": "Indipendenza nel funzionamento (varie) – somma di 7 item: controllo appetito, francobolli, cura salute, ferite, medico/dentista, assistenza sociale, indirizzo",
+            "opzioni": [
+              { "punteggio": 0, "etichetta": "0", "descrizione": null },
+              { "punteggio": 1, "etichetta": "1", "descrizione": null },
+              { "punteggio": 2, "etichetta": "2", "descrizione": null },
+              { "punteggio": 3, "etichetta": "3", "descrizione": null },
+              { "punteggio": 4, "etichetta": "4", "descrizione": null },
+              { "punteggio": 5, "etichetta": "5", "descrizione": null },
+              { "punteggio": 6, "etichetta": "6", "descrizione": null },
+              { "punteggio": 7, "etichetta": "7", "descrizione": null }
+            ],
+            "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no)."
+          },
+          {
+            "codice": "SABS-24",
+            "testo": "Sicurezza nella struttura residenziale o a casa",
+            "opzioni": [
+              { "punteggio": 3, "etichetta": "Chiede se un oggetto non famigliare è sicuro da toccare o da mangiare", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Riconosce la pericolosità di prese e spine elettriche", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Riconosce la pericolosità di cibi, bevande o superfici troppo caldi", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Non riconosce possibili pericoli", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-28",
+            "testo": "Camminare e correre (somma di: camminare, scale salire, scale scendere alternando, correre, saltare)",
+            "opzioni": [
+              { "punteggio": 0, "etichetta": "0", "descrizione": null },
+              { "punteggio": 1, "etichetta": "1", "descrizione": null },
+              { "punteggio": 2, "etichetta": "2", "descrizione": null },
+              { "punteggio": 3, "etichetta": "3", "descrizione": null },
+              { "punteggio": 4, "etichetta": "4", "descrizione": null },
+              { "punteggio": 5, "etichetta": "5", "descrizione": null }
+            ],
+            "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no)."
+          },
+          {
+            "codice": "SABS-31",
+            "testo": "Maneggiare il denaro",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Amministra da solo il proprio denaro", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Sa usare il denaro contante, facendosi dare il resto esatto, ma non usa strumenti bancari", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Sa mettere insieme monete di vario taglio, per arrivare a un euro", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Usa il denaro, ma non sa farsi dare il resto esatto", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Non usa il denaro", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-35",
+            "testo": "Comprare",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Compra vestiti da solo", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Compra da solo accessori di abbigliamento", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Fa piccoli acquisti senza aiuto (caramelle, bibite, ecc.)", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Fa acquisti con una minima supervisione", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Fa acquisti con attenta supervisione", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Non sa fare acquisti", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-41",
+            "testo": "Utilizzo di frasi",
+            "opzioni": [
+              { "punteggio": 3, "etichetta": "A volte usa frasi complesse collegate dalle congiunzioni 'perché', 'ma', ecc.", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Fa domande che iniziano con 'perché', 'dove', ecc.", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Parla con frasi semplici (corrette, ma brevi e senza congiunzioni)", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Usa frasi rozze o non sa parlare", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-44",
+            "testo": "Comprensione di istruzioni verbali",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Comprende istruzioni complesse che implicano una decisione ('Se.... allora')", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Comprende istruzioni che comportano una serie di passaggi ('Fai questo.... Poi quello...')", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Risponde a semplici richieste ('Come ti chiami?', o 'Cosa stai facendo?')", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Rispetta semplici ordini ('Fermati', 'Siediti', o 'Vieni qui')", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Non riesce a comprendere le richieste più semplici", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-47",
+            "testo": "Numeri",
+            "opzioni": [
+              { "punteggio": 6, "etichetta": "Sa fare divisioni e moltiplicazioni", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Sa fare addizioni e sottrazioni, anche semplici", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Sa contare 10 o più oggetti", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Sa contare a memoria fino a 10", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Sa contare 2 oggetti dicendo 'Uno' e 'Due'", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Sa distinguere tra 'uno', 'qualcuno', o 'molti'", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Non ha nessuna comprensione dei numeri", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-53",
+            "testo": "Preparazione del cibo",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Sa preparare e cuocere un pasto", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Prepara un pasto abbastanza correttamente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Mescola e cuoce cibi semplici (uova, torte)", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Prepara cibi semplici che non richiedono di essere mescolati e cotti (panini, latte e cacao...)", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Non sa preparare alcun cibo", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-55",
+            "testo": "Attività domestiche varie (somma di: lava piatti, fa letto, aiuta, lavori domestici da solo, lavastoviglie, accessori elettrici)",
+            "opzioni": [
+              { "punteggio": 0, "etichetta": "0", "descrizione": null },
+              { "punteggio": 1, "etichetta": "1", "descrizione": null },
+              { "punteggio": 2, "etichetta": "2", "descrizione": null },
+              { "punteggio": 3, "etichetta": "3", "descrizione": null },
+              { "punteggio": 4, "etichetta": "4", "descrizione": null },
+              { "punteggio": 5, "etichetta": "5", "descrizione": null },
+              { "punteggio": 6, "etichetta": "6", "descrizione": null }
+            ],
+            "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no)."
+          }
+        ]
+      },
+      {
+        "codice": "PSR",
+        "nome": "Personal Social Responsibility (Responsabilità sociale personale)",
+        "descrizione": "Punteggio massimo: 32",
+        "domande": [
+          {
+            "codice": "SABS-60",
+            "testo": "Passività – somma di 7 comportamenti (assenza = 1, presenza = 0): bisogno supporto, costrizione, aspirazioni, interesse, puntualità, dipendenza, lentezza",
+            "opzioni": [
+              { "punteggio": 0, "etichetta": "0", "descrizione": null },
+              { "punteggio": 1, "etichetta": "1", "descrizione": null },
+              { "punteggio": 2, "etichetta": "2", "descrizione": null },
+              { "punteggio": 3, "etichetta": "3", "descrizione": null },
+              { "punteggio": 4, "etichetta": "4", "descrizione": null },
+              { "punteggio": 5, "etichetta": "5", "descrizione": null },
+              { "punteggio": 6, "etichetta": "6", "descrizione": null },
+              { "punteggio": 7, "etichetta": "7", "descrizione": null }
+            ],
+            "note": "Punteggio = somma dei sub-item. Per ogni sub-item: 1 se il comportamento problematico è assente (No), 0 se presente (Sì)."
+          },
+          {
+            "codice": "SABS-62",
+            "testo": "Costanza – somma di 5 comportamenti (assenza = 1, presenza = 0): organizzazione, scoraggiamento, completamento, salto attività, incoraggiamento",
+            "opzioni": [
+              { "punteggio": 0, "etichetta": "0", "descrizione": null },
+              { "punteggio": 1, "etichetta": "1", "descrizione": null },
+              { "punteggio": 2, "etichetta": "2", "descrizione": null },
+              { "punteggio": 3, "etichetta": "3", "descrizione": null },
+              { "punteggio": 4, "etichetta": "4", "descrizione": null },
+              { "punteggio": 5, "etichetta": "5", "descrizione": null }
+            ],
+            "note": "Punteggio = somma dei sub-item. 1 = comportamento problematico assente, 0 = presente."
+          },
+          {
+            "codice": "SABS-63",
+            "testo": "Tempo libero",
+            "opzioni": [
+              { "punteggio": 4, "etichetta": "Organizza attività ricreative abbastanza complesse (pescare, giocare a biliardo, giocare al computer...)", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Si interessa attivamente in hobby (pittura, collezionismo..)", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Partecipa ad attività ricreative strutturate quando vengono organizzate", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Partecipa ad attività ricreative di livello base (guardare la TV, ascoltare musica..)", "descrizione": null },
+              { "punteggio": 0, "etichetta": "È incapace di prendere parte alle più semplici attività ricreative", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-65",
+            "testo": "Responsabilità generale",
+            "opzioni": [
+              { "punteggio": 3, "etichetta": "Molto coscienzioso, si assume molte responsabilità; si impegna; le attività assegnate sono sempre svolte", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Di solito è affidabile; si sforza per ciò di cui è responsabile; ci si attende di solito che svolga le attività assegnate", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Inaffidabile; si sforza poco; è difficile che porti a termine i compiti assegnati", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Non gli vengono date responsabilità; incapace di portare a termine i compiti dati", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-66",
+            "testo": "Responsabilità personale – somma di: autocontrollo, concetto di orario, chiede aiuto, riferisce problemi",
+            "opzioni": [
+              { "punteggio": 0, "etichetta": "0", "descrizione": null },
+              { "punteggio": 1, "etichetta": "1", "descrizione": null },
+              { "punteggio": 2, "etichetta": "2", "descrizione": null },
+              { "punteggio": 3, "etichetta": "3", "descrizione": null },
+              { "punteggio": 4, "etichetta": "4", "descrizione": null }
+            ],
+            "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no)."
+          },
+          {
+            "codice": "SABS-68",
+            "testo": "Considerazione per gli altri – somma di: interesse per gli altri, cura cose altrui, dirige affari, considerazione sentimenti",
+            "opzioni": [
+              { "punteggio": 0, "etichetta": "0", "descrizione": null },
+              { "punteggio": 1, "etichetta": "1", "descrizione": null },
+              { "punteggio": 2, "etichetta": "2", "descrizione": null },
+              { "punteggio": 3, "etichetta": "3", "descrizione": null },
+              { "punteggio": 4, "etichetta": "4", "descrizione": null }
+            ],
+            "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no)."
+          },
+          {
+            "codice": "SABS-69",
+            "testo": "Coscienza dell'altro – somma di: riconosce familiari, riconosce non familiari, ricorda info, nomi vicini, nomi saltuari",
+            "opzioni": [
+              { "punteggio": 0, "etichetta": "0", "descrizione": null },
+              { "punteggio": 1, "etichetta": "1", "descrizione": null },
+              { "punteggio": 2, "etichetta": "2", "descrizione": null },
+              { "punteggio": 3, "etichetta": "3", "descrizione": null },
+              { "punteggio": 4, "etichetta": "4", "descrizione": null },
+              { "punteggio": 5, "etichetta": "5", "descrizione": null }
+            ],
+            "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no)."
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -165,7 +165,7 @@ def build_domain_map(scale_doc: dict) -> Dict[str, str]:
     return domain_map
 
 
-def compute_direct_scores(risposte: list, domain_map: Dict[str, str]) -> List[dict]:
+def compute_direct_scores(risposte: list, domain_map: Dict[str, str], scale_doc: dict = None) -> List[dict]:
     """Calcola i punteggi diretti (grezzi) per ogni dominio."""
     sorted_prefixes = sorted(domain_map.keys(), key=len, reverse=True)
     aggregated: Dict[str, dict] = {}
@@ -176,6 +176,16 @@ def compute_direct_scores(risposte: list, domain_map: Dict[str, str]) -> List[di
             "punteggio_totale": 0,
             "num_domande": 0,
         }
+
+    item_to_domain = {}
+    if scale_doc:
+        for sezione in scale_doc.get("sezioni", []):
+            cod_sez = sezione.get("codice_sezione", "")
+            if cod_sez:
+                for domanda in sezione.get("domande", []):
+                    cod_dom = domanda.get("codice", "")
+                    if cod_dom:
+                        item_to_domain[cod_dom.upper()] = cod_sez.upper()
 
     for r in risposte:
         codice = r.get("codice_domanda", "")
@@ -191,11 +201,18 @@ def compute_direct_scores(risposte: list, domain_map: Dict[str, str]) -> List[di
         else:
             valore = int(punteggio) if isinstance(punteggio, (int, float)) else 0
 
-        for prefix in sorted_prefixes:
-            if codice.upper().startswith(prefix.upper()):
-                aggregated[prefix]["punteggio_totale"] += valore
-                aggregated[prefix]["num_domande"] += 1
-                break
+        matched_prefix = None
+        if item_to_domain and codice.upper() in item_to_domain:
+            matched_prefix = item_to_domain[codice.upper()]
+        else:
+            for prefix in sorted_prefixes:
+                if codice.upper().startswith(prefix.upper()):
+                    matched_prefix = prefix
+                    break
+        
+        if matched_prefix and matched_prefix in aggregated:
+            aggregated[matched_prefix]["punteggio_totale"] += valore
+            aggregated[matched_prefix]["num_domande"] += 1
 
     return list(aggregated.values())
 
@@ -395,7 +412,7 @@ def compute_psychometric_analysis(
     if "sis" in scale_id_check or scale_doc.get("tipo_scala") == "sis":
         return calcola_punteggi_sis(risposte, scale_doc)
 
-    direct_scores = compute_direct_scores(risposte, domain_map)
+    direct_scores = compute_direct_scores(risposte, domain_map, scale_doc=scale_doc)
 
     scoring = scale_doc.get("scoring_tables")
     if not scoring:
