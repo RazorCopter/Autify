@@ -1325,7 +1325,7 @@ class _WizardScreenState extends State<WizardScreen>
                 border: Border.all(
                   color: isChecked
                       ? AppTheme.primaryColor
-                      : AppTheme.borderLight,
+                      : Colors.grey.withOpacity(0.3),
                   width: isChecked ? 2 : 1,
                 ),
                 boxShadow: isChecked
