@@ -964,7 +964,7 @@ async def download_evaluation_pdf(
     domain_map = build_domain_map(scale_doc or {})
     if not domain_map:
         domain_map = DOMINI_POS
-    domains = compute_direct_scores(eval_doc.get("risposte", []), domain_map)
+    domains = compute_direct_scores(eval_doc.get("risposte", []), domain_map, scale_doc)
 
     pdf_bytes = await asyncio.to_thread(
         generate_evaluation_pdf,

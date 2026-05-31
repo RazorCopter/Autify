@@ -346,7 +346,7 @@ def _make_qol_visual_chart(domains: List[dict]) -> io.BytesIO:
 
 # ─── Grafico a barre (fallback POS) ─────────────────────────────────────────
 
-def _make_bar_chart(domains: List[dict], score_min: int = 0, score_max: int = 18) -> io.BytesIO:
+def _make_bar_chart(domains: List[dict], score_min: int = 0, score_max: int = 18, scale_name: str = "POS") -> io.BytesIO:
     """
     Crea un grafico a barre VERTICALI identico alla pagina di analisi POS nel frontend Flutter.
     Una barra colorata per dominio, barra di sfondo ghost, griglia orizzontale,
@@ -426,7 +426,7 @@ def _make_bar_chart(domains: List[dict], score_min: int = 0, score_max: int = 18
     for spine in ax.spines.values():
         spine.set_visible(False)
 
-    ax.set_title('Diagramma Domini scala POS', fontsize=12,
+    ax.set_title(f'Diagramma Domini scala {scale_name}', fontsize=12,
                  fontweight='bold', color='#0F172A', pad=16)
 
     plt.tight_layout()
@@ -1150,7 +1150,7 @@ def generate_evaluation_pdf(
     elif is_sis:
         story.append(Paragraph("SUPPORTS INTENSITY SCALE (SIS)", title_style))
     else:
-        story.append(Paragraph("POS ETEROVALUTATIVA", title_style))
+        story.append(Paragraph(scala_nome.upper(), title_style))
     
     story.append(HRFlowable(width="100%", thickness=1, color=BORDER, spaceBefore=4, spaceAfter=10))
 
@@ -1229,7 +1229,8 @@ def generate_evaluation_pdf(
         chart_buf = _make_sis_bar_chart(chart_domains)
         chart_img = RLImage(chart_buf, width=17 * cm, height=10.5 * cm)
     else:
-        chart_buf = _make_bar_chart(domains)
+        is_sabs = "sabs" in scale_id or "sabs" in scale_nome_lower
+        chart_buf = _make_bar_chart(domains, score_max=49 if is_sabs else 18, scale_name=scala_nome)
         chart_img = RLImage(chart_buf, width=17 * cm, height=10.5 * cm)
 
     story.append(chart_img)

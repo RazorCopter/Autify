@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.18.35] - 2026-05-31
+- **Fix Esportazione PDF SABS**: Risolto il problema dell'esportazione PDF per la scala SABS che risultava con nome errato ("POS ETEROVALUTATIVA") e senza valori:
+  - Aggiornata la chiamata `compute_direct_scores` nell'endpoint di generazione PDF in `routes.py` inserendo il parametro `scale_doc`, in modo da attivare la mappatura dinamica degli item per le scale custom invece del fallimentare prefix-matching.
+  - Sostituito il titolo fisso "POS ETEROVALUTATIVA" con il nome reale dinamico (`scala_nome.upper()`) nel report PDF.
+  - Impostato il fondoscala (`score_max`) dinamico a 49 se la scala esportata nel PDF è di tipo SABS, configurando correttamente anche la griglia.
+
 ## [2.18.34] - 2026-05-31
 - **Fix Overflow Grafici Istogrammi**: Risolto il problema di overflow in cui le barre di sfondo (`backDrawRodData`) dei grafici ad istogramma nel cruscotto della dashboard uscivano dal loro spazio di visualizzazione disegnandosi sopra gli indicatori blu. Introdotto il `ClipRect` di sicurezza e impostata l'altezza massima del fondoscala di sfondo vincolata al `dynamicMaxY` per la scala SABS.
 
