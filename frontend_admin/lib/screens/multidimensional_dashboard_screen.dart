@@ -159,6 +159,13 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         normalizedName.contains('martin');
   }
 
+  bool _isBehaviorScale(String id, String nome) {
+    final lowerId = id.toLowerCase();
+    final lowerNome = nome.toLowerCase();
+    return lowerId.contains('sabs') || lowerId.contains('behavior') || lowerId.contains('comportament') ||
+           lowerNome.contains('sabs') || lowerNome.contains('behavior') || lowerNome.contains('comportament');
+  }
+
   bool _isSisScale(String scaleId, [String? scaleName]) {
     String normalize(String s) {
       return s.toLowerCase()
@@ -1221,9 +1228,9 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
     final accentGradient = isSis
         ? const [Color(0xFF00695C), Color(0xFF26A69A)] // Teal premium per la scala SIS
-        : (isBehavior ? const [Color(0xFF6A1B9A), Color(0xFFAB47BC)] : (isSM
+        : isBehavior ? const [Color(0xFF6A1B9A), Color(0xFFAB47BC)] : isSM
             ? const [Color(0xFF1A237E), Color(0xFF3949AB)]
-            : const [Color(0xFF0D47A1), Color(0xFF42A5F5)]);
+            : const [Color(0xFF0D47A1), Color(0xFF42A5F5)];
 
     final headerWidget = Container(
       decoration: BoxDecoration(
