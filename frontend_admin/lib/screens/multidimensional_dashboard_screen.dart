@@ -162,8 +162,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   bool _isBehaviorScale(String id, String nome) {
     final lowerId = id.toLowerCase();
     final lowerNome = nome.toLowerCase();
-    return lowerId.contains('sabs') || lowerId.contains('behavior') || lowerId.contains('comportament') ||
-           lowerNome.contains('sabs') || lowerNome.contains('behavior') || lowerNome.contains('comportament');
+    return lowerId.contains('sabs') || lowerId.contains('behavior') || lowerId.contains('comportament') || lowerId.contains('odflab') ||
+           lowerNome.contains('sabs') || lowerNome.contains('behavior') || lowerNome.contains('comportament') || lowerNome.contains('odflab');
   }
 
   bool _isSisScale(String scaleId, [String? scaleName]) {
