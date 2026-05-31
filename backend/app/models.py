@@ -90,7 +90,9 @@ class Question(BaseModel):
     id_domanda: str
     codice: Optional[str] = None
     testo_domanda: str
-    note: Optional[str] = None           # Avvertenze / contesto clinico
+    note: Optional[str] = None           # Avvertenze / contesto educativo
+    tipo: str = Field("likert", description="Tipologia domanda: 'likert' o 'composito'")
+    sottodomande: Optional[List[dict]] = None
     opzioni: List[Option] = []
 
 class Section(BaseModel):

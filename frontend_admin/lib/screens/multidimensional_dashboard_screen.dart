@@ -653,28 +653,66 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                             .where((scale) => _latestEvaluations.containsKey(scale.id))
                             .toList();
 
-                        if (constraints.maxWidth > 800 && availableCards.length >= 2) {
-                          // Side by side - equal height stretching
-                          final cards = availableCards.map((scale) => _buildScalePanel(scale, useExpanded: false)).toList();
-                          return IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: cards.map((c) => Expanded(child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                child: c,
-                              ))).toList(),
-                            ),
+                        final lifeProjectScales = availableCards.where((s) => !_isBehaviorScale(s.id, s.nome)).toList();
+                        final behaviorScales = availableCards.where((s) => _isBehaviorScale(s.id, s.nome)).toList();
+
+                        Widget buildCardSection(String title, List<ScaleModel> scales) {
+                          if (scales.isEmpty) return const SizedBox.shrink();
+                          
+                          final cards = scales.map((scale) => _buildScalePanel(scale, useExpanded: false)).toList();
+                          Widget grid;
+                          if (constraints.maxWidth > 800 && cards.length >= 2) {
+                             List<Widget> rows = [];
+                             for (int i=0; i<cards.length; i+=2) {
+                                if (i+1 < cards.length) {
+                                  rows.add(IntrinsicHeight(
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: cards[i])),
+                                        Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: cards[i+1])),
+                                      ],
+                                    )
+                                  ));
+                                } else {
+                                  rows.add(Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: cards[i]));
+                                }
+                                rows.add(const SizedBox(height: 16));
+                             }
+                             grid = Column(children: rows);
+                          } else {
+                             grid = Column(
+                               children: cards.map((c) => Padding(
+                                 padding: const EdgeInsets.only(bottom: 20),
+                                 child: c,
+                               )).toList(),
+                             );
+                          }
+                          
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 16, left: 8, top: 16),
+                                child: Text(
+                                  title,
+                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                                ),
+                              ),
+                              grid,
+                            ],
                           );
                         }
-                        // Stacked - mobile/narrow screen view
-                        final cards = availableCards.map((scale) => _buildScalePanel(scale, useExpanded: false)).toList();
+
                         return Column(
-                          children: cards.map((c) => Padding(
-                            padding: const EdgeInsets.only(bottom: 20),
-                            child: c,
-                          )).toList(),
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                             buildCardSection('Progetto di Vita e Qualità della Vita', lifeProjectScales),
+                             if (behaviorScales.isNotEmpty && lifeProjectScales.isNotEmpty) const Divider(height: 32),
+                             buildCardSection('Comportamenti Specifici', behaviorScales),
+                          ]
                         );
-                      },
+                      }
                     ),
             ),
           ],
@@ -1179,10 +1217,11 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     final analysis = _analyses[scale.id];
     final isSM = _isSanMartinScale(scale.id, scale.nome);
     final isSis = _isSisScale(scale.id, scale.nome);
+    final isBehavior = _isBehaviorScale(scale.id, scale.nome);
 
     final accentGradient = isSis
         ? const [Color(0xFF00695C), Color(0xFF26A69A)] // Teal premium per la scala SIS
-        : (isSM
+        : (isBehavior ? const [Color(0xFF6A1B9A), Color(0xFFAB47BC)] : (isSM
             ? const [Color(0xFF1A237E), Color(0xFF3949AB)]
             : const [Color(0xFF0D47A1), Color(0xFF42A5F5)]);
 
@@ -1205,11 +1244,11 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  isSis
+                  isBehavior ? 'Valutazione dei comportamenti specifici e abilità adattive' : (isSis
                       ? 'Valutazione dell\'intensità dei bisogni di sostegno'
                       : (isSM 
                           ? 'Valutazione osservativa della qualità di vita' 
-                          : 'Valutazione degli esiti personali e della QdV percepita'),
+                          : 'Valutazione degli esiti personali e della QdV percepita')),
                   style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.7)),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.18.30] - 2026-05-31
+- **Supporto Domande Composite**: Implementato il supporto per domande 'composite' con sottodomande a checklist (es. per scale comportamentali). La UI riconosce il tipo 'composito' e calcola dinamicamente la somma dei comportamenti selezionati.
+- **Dashboard Comportamenti Specifici**: Creata la sottosezione dedicata ai comportamenti specifici all'interno della Dashboard Multidimensionale, separandoli dal Progetto di Vita.
+
 ## [2.18.29] - 2026-05-30
 - **Tracciabilità ed Audit Log IA**: Implementata la scrittura automatica degli audit log educativi (registro) legati alle operazioni sulle relazioni di intelligenza artificiale:
   - `GENERAZIONE_REPORT_IA`: `{operatore} ha generato la Relazione IA per {cognome} {nome}`.

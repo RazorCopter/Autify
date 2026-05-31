@@ -25,6 +25,8 @@ class Question {
   final String? codice;
   final String testoDomanda;
   final String? note;
+  final String tipo;
+  final List<Map<String, dynamic>>? sottodomande;
   final List<Option> opzioni;
 
   Question({
@@ -32,6 +34,8 @@ class Question {
     this.codice,
     required this.testoDomanda,
     this.note,
+    this.tipo = 'likert',
+    this.sottodomande,
     required this.opzioni,
   });
 
@@ -41,6 +45,8 @@ class Question {
       codice: json['codice'],
       testoDomanda: json['testo_domanda'],
       note: json['note'],
+      tipo: json['tipo'] ?? 'likert',
+      sottodomande: json['sottodomande'] != null ? List<Map<String, dynamic>>.from(json['sottodomande']) : null,
       opzioni: (json['opzioni'] as List?)?.map((e) => Option.fromJson(e)).toList() ?? [],
     );
   }
@@ -50,6 +56,8 @@ class Question {
     'codice': codice,
     'testo_domanda': testoDomanda,
     if (note != null) 'note': note,
+    'tipo': tipo,
+    if (sottodomande != null) 'sottodomande': sottodomande,
     'opzioni': opzioni.map((e) => e.toJson()).toList(),
   };
 }
