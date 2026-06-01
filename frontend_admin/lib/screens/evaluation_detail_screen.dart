@@ -1521,7 +1521,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               )
             else
               SizedBox(
-                height: useRadar ? 520 : (itemsCount > 8 ? 365 : 320),
+                height: useRadar ? 520 : (itemsCount > 10 ? 365 : 320),
                 child: useRadar ? _buildRadarChart() : _buildBarChart(),
               ),
           ],
@@ -1698,12 +1698,12 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: items.length > 8 ? 75 : 48,
+              reservedSize: items.length > 10 ? 75 : 48,
               getTitlesWidget: (val, meta) {
                 final idx = val.toInt();
                 if (idx < 0 || idx >= items.length) return const SizedBox();
                 
-                final bool hasMany = items.length > 8;
+                final bool hasMany = items.length > 10;
                 final item = items[idx];
                 final name = hasMany ? item.codice : item.etichetta;
 

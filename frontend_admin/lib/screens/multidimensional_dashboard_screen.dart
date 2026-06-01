@@ -1321,7 +1321,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         // ── Chart ──
         if (eval.domini.isNotEmpty)
           SizedBox(
-            height: (isSM && analysis != null && analysis.domini.isNotEmpty) ? 250 : (eval.domini.length > 8 ? 295 : 250),
+            height: (isSM && analysis != null && analysis.domini.isNotEmpty) ? 250 : (eval.domini.length > 10 ? 295 : 250),
             child: isSM && analysis != null && analysis.domini.isNotEmpty
                 ? _buildRadarChartForPanel(analysis)
                 : _buildBarChartForPanel(eval.domini, isSm: isSM, isSis: isSis, isSabs: scale.id.toLowerCase().contains("sabs") || scale.nome.toLowerCase().contains("sabs")),
@@ -2198,7 +2198,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: domini.length > 8 ? 75 : 40,
+                reservedSize: domini.length > 10 ? 75 : 40,
                 getTitlesWidget: (value, meta) {
                   final idx = value.toInt();
                   if (idx < 0 || idx >= domini.length) return const SizedBox.shrink();
@@ -2212,7 +2212,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     ),
                   );
 
-                  if (domini.length > 8) {
+                  if (domini.length > 10) {
                     return SideTitleWidget(
                       axisSide: meta.axisSide,
                       space: 2,
