@@ -2169,9 +2169,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     double dynamicMaxY = maxVal + 5.0;
     if (dynamicMaxY < 10.0) dynamicMaxY = 10.0;
 
-    return ClipRect(
-      child: BarChart(
-        BarChartData(
+    return BarChart(
+      BarChartData(
           alignment: BarChartAlignment.spaceAround,
           maxY: dynamicMaxY,
           barTouchData: BarTouchData(
@@ -2269,8 +2268,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           }),
           extraLinesData: ExtraLinesData(horizontalLines: []),
         ),
-      ),
-    );
+      );
     // We overlay real bars on top — simplified: use single bar with backDrawRodData
   }
 
