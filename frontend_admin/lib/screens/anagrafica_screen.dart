@@ -651,15 +651,34 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // Indicatori delle scale multidimensionali compilate
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildScaleIndicator(patient.ultimoPosCompilato, "POS"),
-                    const SizedBox(width: 4),
-                    _buildScaleIndicator(patient.ultimoSanMartinCompilato, "SanMartín"),
-                    const SizedBox(width: 4),
-                    _buildScaleIndicator(patient.ultimoSisCompilato, "SIS"),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildScaleIndicator(patient.ultimoOgvaCompilato, "OGVA"),
+                          const SizedBox(width: 4),
+                          _buildScaleIndicator(patient.ultimoSabsCompilato, "SABS"),
+                          const SizedBox(width: 4),
+                          _buildScaleIndicator(patient.ultimoOsoCompilato, "OSO"),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildScaleIndicator(patient.ultimoPosCompilato, "POS"),
+                          const SizedBox(width: 4),
+                          _buildScaleIndicator(patient.ultimoSanMartinCompilato, "SanMartín"),
+                          const SizedBox(width: 4),
+                          _buildScaleIndicator(patient.ultimoSisCompilato, "SIS"),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
                 // Pulsanti Azione (Modifica/Elimina)
                 Row(
@@ -735,7 +754,10 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
         textColor = color;
 
         final isSM = scaleName.toLowerCase().contains('martin') || scaleName.toLowerCase().contains('san');
-        final months = isSM ? currentSettings.validityMonthsSanMartin : currentSettings.validityMonthsPOS;
+        final isSIS = scaleName.toLowerCase().contains('sis');
+        final months = isSM 
+            ? currentSettings.validityMonthsSanMartin 
+            : (isSIS ? currentSettings.validityMonthsSIS : currentSettings.validityMonthsPOS);
 
         switch (statusEnum) {
           case EvaluationStatus.expired:
@@ -765,8 +787,8 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
         child: Text(
           scaleName == "SanMartín"
               ? "SM"
-              : scaleName == "SIS"
-                  ? "SIS"
+              : (scaleName == "SIS" || scaleName == "OGVA" || scaleName == "SABS" || scaleName == "OSO")
+                  ? scaleName
                   : "POS",
           style: TextStyle(
             fontSize: 9,
@@ -914,14 +936,30 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildScaleIndicator(p.ultimoPosCompilato, "POS"),
-                      _buildScaleIndicator(p.ultimoSanMartinCompilato, "SanMartín"),
-                      _buildScaleIndicator(p.ultimoSisCompilato, "SIS"),
-                      _buildIaIndicator(p),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _buildScaleIndicator(p.ultimoOgvaCompilato, "OGVA"),
+                          _buildScaleIndicator(p.ultimoSabsCompilato, "SABS"),
+                          _buildScaleIndicator(p.ultimoOsoCompilato, "OSO"),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _buildScaleIndicator(p.ultimoPosCompilato, "POS"),
+                          _buildScaleIndicator(p.ultimoSanMartinCompilato, "SanMartín"),
+                          _buildScaleIndicator(p.ultimoSisCompilato, "SIS"),
+                          _buildIaIndicator(p),
+                        ],
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -1003,15 +1041,33 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                     ),
                     Expanded(
                       flex: 2,
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          _buildScaleIndicator(p.ultimoPosCompilato, "POS"),
-                          const SizedBox(width: 6),
-                          _buildScaleIndicator(p.ultimoSanMartinCompilato, "SanMartín"),
-                          const SizedBox(width: 6),
-                          _buildScaleIndicator(p.ultimoSisCompilato, "SIS"),
-                          const SizedBox(width: 6),
-                          _buildIaIndicator(p),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildScaleIndicator(p.ultimoOgvaCompilato, "OGVA"),
+                              const SizedBox(width: 4),
+                              _buildScaleIndicator(p.ultimoSabsCompilato, "SABS"),
+                              const SizedBox(width: 4),
+                              _buildScaleIndicator(p.ultimoOsoCompilato, "OSO"),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildScaleIndicator(p.ultimoPosCompilato, "POS"),
+                              const SizedBox(width: 4),
+                              _buildScaleIndicator(p.ultimoSanMartinCompilato, "SanMartín"),
+                              const SizedBox(width: 4),
+                              _buildScaleIndicator(p.ultimoSisCompilato, "SIS"),
+                              const SizedBox(width: 4),
+                              _buildIaIndicator(p),
+                            ],
+                          ),
                         ],
                       ),
                     ),

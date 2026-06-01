@@ -11,6 +11,9 @@ class PatientModel {
   String? ultimoPosCompilato;
   String? ultimoSanMartinCompilato;
   String? ultimoSisCompilato;
+  String? ultimoOgvaCompilato;
+  String? ultimoSabsCompilato;
+  String? ultimoOsoCompilato;
   String? ultimaAnalisiIa;
 
   PatientModel({
@@ -26,6 +29,9 @@ class PatientModel {
     this.ultimoPosCompilato,
     this.ultimoSanMartinCompilato,
     this.ultimoSisCompilato,
+    this.ultimoOgvaCompilato,
+    this.ultimoSabsCompilato,
+    this.ultimoOsoCompilato,
     this.ultimaAnalisiIa,
   });
 
@@ -43,6 +49,9 @@ class PatientModel {
       ultimoPosCompilato: json['ultimo_pos_compilato'],
       ultimoSanMartinCompilato: json['ultimo_san_martin_compilato'],
       ultimoSisCompilato: json['ultimo_sis_compilato'],
+      ultimoOgvaCompilato: json['ultimo_ogva_compilato'],
+      ultimoSabsCompilato: json['ultimo_sabs_compilato'],
+      ultimoOsoCompilato: json['ultimo_oso_compilato'],
       ultimaAnalisiIa: json['ultima_analisi_ia'],
     );
   }
@@ -61,6 +70,9 @@ class PatientModel {
       'ultimo_pos_compilato': ultimoPosCompilato,
       'ultimo_san_martin_compilato': ultimoSanMartinCompilato,
       'ultimo_sis_compilato': ultimoSisCompilato,
+      'ultimo_ogva_compilato': ultimoOgvaCompilato,
+      'ultimo_sabs_compilato': ultimoSabsCompilato,
+      'ultimo_oso_compilato': ultimoOsoCompilato,
       'ultima_analisi_ia': ultimaAnalisiIa,
     };
   }

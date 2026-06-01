@@ -224,11 +224,13 @@ def setup_mock_db(mock_patients, mock_scales, mock_evaluations):
     mock_patients_coll = MockCollection("patients", mock_patients)
     mock_scales_coll = MockCollection("scales", mock_scales)
     mock_evals_coll = MockCollection("evaluations", mock_evaluations)
+    mock_ai_analyses_coll = MockCollection("ai_analyses", [])
 
     patches = [
         patch("app.routes.patients_collection", mock_patients_coll),
         patch("app.routes.scales_collection", mock_scales_coll),
         patch("app.routes.evaluations_collection", mock_evals_coll),
+        patch("app.routes.ai_analyses_collection", mock_ai_analyses_coll),
     ]
 
     for p in patches:
@@ -237,7 +239,8 @@ def setup_mock_db(mock_patients, mock_scales, mock_evaluations):
     yield {
         "patients": mock_patients_coll,
         "scales": mock_scales_coll,
-        "evaluations": mock_evals_coll
+        "evaluations": mock_evals_coll,
+        "ai_analyses": mock_ai_analyses_coll
     }
 
     for p in patches:

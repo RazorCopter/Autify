@@ -6,7 +6,7 @@ services:
     build:
       context: ./backend
       args:
-        - CACHE_BUST=2.18.37
+        - CACHE_BUST=2.18.38
     pull_policy: build
     environment:
       - MONGODB_URL=mongodb://autify-db:27017
@@ -22,7 +22,7 @@ services:
     build:
       context: ./frontend_admin
       args:
-        - CACHE_BUST=2.18.37
+        - CACHE_BUST=2.18.38
     pull_policy: build
     ports:
       - "8090:80"

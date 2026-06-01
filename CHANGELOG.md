@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.18.38] - 2026-06-01
+- **Indicatori di Presenza per Nuove Scale (OGVA, SABS, OSO)**:
+  - Aggiunti i badge degli indicatori di completamento per le scale OGVA, SABS e OSO sopra a quelli preesistenti (POS, SM, SIS) in tutte le visualizzazioni degli utenti (griglia card, visualizzazione mobile e tabella desktop nella sezione Utenza).
+  - Estesa la logica di scansione dinamica delle compilazioni nel backend (FastAPI) per recuperare le date degli ultimi test OGVA, SABS e OSO.
+- **Correzione ed Arricchimento Esportazione CSV**:
+  - Incluse le colonne "Ultimo OGVA", "Ultimo SABS" e "Ultimo OSO" all'interno del file CSV generato dall'esportazione degli utenti.
+  - Risolto il bug nell'esportazione CSV che impediva la scrittura dei dati corretti a causa di una discrepanza tra le chiavi camelCase utilizzate e quelle snake_case persistite nel DB MongoDB (e.g. data_nascita, ultimo_pos_compilato, etc.).
+
 ## [2.18.37] - 2026-06-01
 - **Fondo Scala Dinamico dei Grafici a Barre**:
   - Implementato il calcolo del fondo scala dinamico (`maxY` / `dynamicMaxY`) in base ai punteggi reali ottenuti (`max(punteggi) + 5`) sia nella pagina di dettaglio della valutazione che nei pannelli della dashboard multidimensionale. Questo evita che i grafici appaiano schiacciati sul fondo per scale con punteggi massimi teorici molto elevati (come la scala SIS).

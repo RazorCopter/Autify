@@ -421,6 +421,9 @@ async def get_patients():
         pat_dict["ultimo_pos_compilato"] = None
         pat_dict["ultimo_san_martin_compilato"] = None
         pat_dict["ultimo_sis_compilato"] = None
+        pat_dict["ultimo_ogva_compilato"] = None
+        pat_dict["ultimo_sabs_compilato"] = None
+        pat_dict["ultimo_oso_compilato"] = None
         pat_dict["ultima_analisi_ia"] = None
         
         # Recupera la data dell'ultima analisi IA per questo utente
@@ -460,11 +463,38 @@ async def get_patients():
             # Se la scala è SIS ed è la prima che incontriamo
             if not pat_dict.get("ultimo_sis_compilato") and ("sis" in scale_name or "sis" in scale_id_str.lower()):
                 pat_dict["ultimo_sis_compilato"] = data_str
+
+            # Se la scala è OGVA ed è la prima che incontriamo
+            if not pat_dict.get("ultimo_ogva_compilato") and (
+                "ogva" in scale_name or 
+                "griglia_autonomia" in scale_name or
+                "autonomie" in scale_name or 
+                "ogva" in scale_id_str.lower() or 
+                "griglia_autonomia" in scale_id_str.lower()
+            ):
+                pat_dict["ultimo_ogva_compilato"] = data_str
+
+            # Se la scala è SABS ed è la prima che incontriamo
+            if not pat_dict.get("ultimo_sabs_compilato") and ("sabs" in scale_name or "sabs" in scale_id_str.lower()):
+                pat_dict["ultimo_sabs_compilato"] = data_str
+
+            # Se la scala è OSO ed è la prima che incontriamo
+            if not pat_dict.get("ultimo_oso_compilato") and (
+                "oso" in scale_name or 
+                "scheda_osservativa" in scale_name or 
+                "scheda osservativa" in scale_name or 
+                "oso" in scale_id_str.lower() or 
+                "scheda_osservativa" in scale_id_str.lower()
+            ):
+                pat_dict["ultimo_oso_compilato"] = data_str
                 
-            # Se abbiamo trovato tutte e tre, possiamo interrompere la ricerca per questo utente
+            # Se abbiamo trovato tutte le scale, possiamo interrompere la ricerca per questo utente
             if (pat_dict.get("ultimo_pos_compilato") and 
                 pat_dict.get("ultimo_san_martin_compilato") and
-                pat_dict.get("ultimo_sis_compilato")):
+                pat_dict.get("ultimo_sis_compilato") and
+                pat_dict.get("ultimo_ogva_compilato") and
+                pat_dict.get("ultimo_sabs_compilato") and
+                pat_dict.get("ultimo_oso_compilato")):
                 break
                 
     return patients
@@ -1612,22 +1642,120 @@ async def export_patients_csv():
     patients_cursor = patients_collection.find({})
     patients = await patients_cursor.to_list(length=2000)
     
+    # Recupera tutte le scale per mappare l'ID al nome
+    scales_cursor = scales_collection.find({})
+    scales_list = await scales_cursor.to_list(length=100)
+    scale_map = {}
+    for s in scales_list:
+        nome_lower = s["nome"].lower()
+        scale_map[s["id"]] = nome_lower
+        mongo_id = s.get("_id")
+        if mongo_id:
+            scale_map[str(mongo_id)] = nome_lower
+
     output = StringIO()
     # Aggiungi il BOM (Byte Order Mark) per far riconoscere a Excel il formato UTF-8 automaticamente
     output.write('\ufeff')
     writer = csv.writer(output, delimiter=';')
-    writer.writerow(["Nome", "Cognome", "Sesso", "Data di Nascita", "Ultimo POS", "Ultimo San Martin", "Ultima SIS"])
+    writer.writerow([
+        "Nome", "Cognome", "Sesso", "Data di Nascita", 
+        "Ultimo OGVA", "Ultimo SABS", "Ultimo OSO", 
+        "Ultimo POS", "Ultimo San Martin", "Ultima SIS"
+    ])
     
     for pat in patients:
+        pat_id = pat["id"]
+        
+        # Recupera tutte le valutazioni per questo utente, ordinate per data decrescente
+        evals_cursor = evaluations_collection.find({"id_paziente": pat_id}).sort("data_compilazione", -1)
+        evals = await evals_cursor.to_list(length=100)
+        
+        # Inizializziamo i campi
+        ultimo_pos = None
+        ultimo_sm = None
+        ultima_sis = None
+        ultimo_ogva = None
+        ultimo_sabs = None
+        ultimo_oso = None
+        
+        for ev in evals:
+            scale_id = ev.get("id_scala")
+            scale_id_str = str(scale_id) if scale_id else ""
+            scale_name = scale_map.get(scale_id, scale_map.get(scale_id_str, "")).lower()
+            
+            data_val = ev.get("data_compilazione")
+            data_str = ""
+            if data_val:
+                if isinstance(data_val, datetime):
+                    data_str = data_val.isoformat()
+                else:
+                    data_str = str(data_val)
+            
+            # Se la scala è POS
+            if not ultimo_pos and ("pos" in scale_name or "pos" in scale_id_str.lower()):
+                ultimo_pos = data_str
+                
+            # Se la scala è San Martín
+            scale_name_clean = scale_name.replace('í', 'i').replace('ì', 'i')
+            if not ultimo_sm and ("martin" in scale_name_clean or "martin" in scale_id_str.lower()):
+                ultimo_sm = data_str
+
+            # Se la scala è SIS
+            if not ultima_sis and ("sis" in scale_name or "sis" in scale_id_str.lower()):
+                ultima_sis = data_str
+
+            # Se la scala è OGVA
+            if not ultimo_ogva and (
+                "ogva" in scale_name or 
+                "griglia_autonomia" in scale_name or
+                "autonomie" in scale_name or 
+                "ogva" in scale_id_str.lower() or 
+                "griglia_autonomia" in scale_id_str.lower()
+            ):
+                ultimo_ogva = data_str
+
+            # Se la scala è SABS
+            if not ultimo_sabs and ("sabs" in scale_name or "sabs" in scale_id_str.lower()):
+                ultimo_sabs = data_str
+
+            # Se la scala è OSO
+            if not ultimo_oso and (
+                "oso" in scale_name or 
+                "scheda_osservativa" in scale_name or 
+                "scheda osservativa" in scale_name or 
+                "oso" in scale_id_str.lower() or 
+                "scheda_osservativa" in scale_id_str.lower()
+            ):
+                ultimo_oso = data_str
+                
+            # Se abbiamo trovato tutte le date, possiamo interrompere
+            if ultimo_pos and ultimo_sm and ultima_sis and ultimo_ogva and ultimo_sabs and ultimo_oso:
+                break
+                
         nome = pat.get("nome", "")
         cognome = pat.get("cognome", "")
         sesso = pat.get("sesso", "")
-        data_nascita = pat.get("dataNascita", "")
-        ultimo_pos = pat.get("ultimoPosCompilato", "")
-        ultimo_sm = pat.get("ultimoSanMartinCompilato", "")
-        ultima_sis = pat.get("ultimaSisCompilata", "")
+        data_nascita = pat.get("data_nascita", pat.get("dataNascita", ""))
         
-        writer.writerow([nome, cognome, sesso, data_nascita, ultimo_pos, ultimo_sm, ultima_sis])
+        # Se non trovate dinamicamente, prova con i valori storici nel DB
+        if not ultimo_pos:
+            ultimo_pos = pat.get("ultimo_pos_compilato", pat.get("ultimoPosCompilato", ""))
+        if not ultimo_sm:
+            ultimo_sm = pat.get("ultimo_san_martin_compilato", pat.get("ultimoSanMartinCompilato", ""))
+        if not ultima_sis:
+            ultima_sis = pat.get("ultimo_sis_compilato", pat.get("ultimaSisCompilata", ""))
+        if not ultimo_ogva:
+            ultimo_ogva = pat.get("ultimo_ogva_compilato", "")
+        if not ultimo_sabs:
+            ultimo_sabs = pat.get("ultimo_sabs_compilato", "")
+        if not ultimo_oso:
+            ultimo_oso = pat.get("ultimo_oso_compilato", "")
+            
+        writer.writerow([
+            nome, cognome, sesso, data_nascita, 
+            ultimo_ogva, ultimo_sabs, ultimo_oso, 
+            ultimo_pos, ultimo_sm, ultima_sis
+        ])
         
     csv_bytes = output.getvalue().encode('utf-8')
     filename = f"autify_utenti_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
