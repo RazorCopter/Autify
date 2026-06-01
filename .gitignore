@@ -32,3 +32,10 @@ node_modules/
 backend/app/auth_config.json
 backend/app/viewer_logs.json
 
+# SDK binaries usati dal Dockerfile - troppo pesanti per GitHub (>100MB)
+flutter.zip
+dart.zip
+dart-sdk.zip
+dart-sdk-extracted/
+flutter-sdk/
+

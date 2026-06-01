@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.19.0] - 2026-06-01
+- **Ristrutturazione UI "Analisi Utente" — Navigazione a Tab + Accordion Premium**:
+  - Sostituita la precedente unica vista a scorrimento verticale con una navigazione a **3 tab**: "Qualità della Vita", "Comportamento Adattivo" e "Analisi IA".
+  - **Tab 1 — Qualità della Vita**: contiene POS, San Martín e SIS (tutte le scale utilizzate nell'interrogazione IA), con compare toggle POS/SM mantenuto.
+  - **Tab 2 — Comportamento Adattivo**: contiene ODFLAB, SABS e qualsiasi futura scala comportamentale, con header utente dedicato (gradiente viola).
+  - **Tab 3 — Analisi IA**: invariato rispetto alla versione precedente.
+  - Introdotto nuovo widget `ExpandableScaleCard` (accordion): ogni scala è mostrata **chiusa di default** con header colorato a gradiente, icona scala e summary chips (indici, percentili, punteggi); cliccando si espande fluidamente con `AnimatedSize` rivelando tutti i grafici e gli indicatori.
+  - Introdotto `ScaleSummaryChip`: chip di riepilogo visibili nel collasso della card (Indice QV, Percentile, Totale, Media, Data).
+  - Il pulsante "Storico" e "Dettaglio" sono stati integrati come azioni compatte nell'header dell'accordion.
+  - Aggiornata la `TabBar` con stile premium (peso font differenziato, `indicatorWeight: 3`, separatore sottile).
+
 ## [2.18.38] - 2026-06-01
 - **Indicatori di Presenza per Nuove Scale (OGVA, SABS, OSO)**:
   - Aggiunti i badge degli indicatori di completamento per le scale OGVA, SABS e OSO sopra a quelli preesistenti (POS, SM, SIS) in tutte le visualizzazioni degli utenti (griglia card, visualizzazione mobile e tabella desktop nella sezione Utenza).

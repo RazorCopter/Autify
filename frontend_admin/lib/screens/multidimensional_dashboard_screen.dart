@@ -11,6 +11,7 @@ import '../services/api_service.dart';
 import '../services/gemini_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/responsive_helper.dart';
+import '../widgets/expandable_scale_card.dart';
 import 'evaluation_detail_screen.dart';
 import 'settings_screen.dart';
 import 'document_reader_screen.dart';
@@ -503,27 +504,34 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Stack(
         children: [
           Scaffold(
             backgroundColor: AppTheme.backgroundColor,
             appBar: AppBar(
               title: const Text('Analisi Utente', style: TextStyle(fontWeight: FontWeight.bold)),
-              bottom: const TabBar(
-                tabs: [
-                  Tab(icon: Icon(Icons.dashboard_outlined), text: 'Overview'),
+              bottom: TabBar(
+                tabs: const [
+                  Tab(icon: Icon(Icons.self_improvement_outlined), text: 'Qualità della Vita'),
+                  Tab(icon: Icon(Icons.accessibility_new_outlined), text: 'Comp. Adattivo'),
                   Tab(icon: Icon(Icons.psychology_outlined), text: 'Analisi IA'),
                 ],
                 indicatorColor: AppTheme.primaryColor,
                 labelColor: AppTheme.primaryColor,
+                unselectedLabelColor: AppTheme.textSecondary,
+                labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                indicatorWeight: 3,
+                dividerColor: const Color(0xFFE8EEF8),
               ),
             ),
             body: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : TabBarView(
                     children: [
-                      _buildOverviewTab(),
+                      _buildQualitaVitaTab(),
+                      _buildBehaviorTab(),
                       _buildAiTab(),
                     ],
                   ),
@@ -582,144 +590,70 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  // TAB 1: OVERVIEW
+  // TAB 1: QUALITÀ DELLA VITA (POS + San Martín + SIS)
   // ════════════════════════════════════════════════════════════════════════════
 
-  Widget _buildOverviewTab() {
+  Widget _buildQualitaVitaTab() {
+    final lifeScales = _availableScales
+        .where((s) => _latestEvaluations.containsKey(s.id) && !_isBehaviorScale(s.id, s.nome))
+        .toList();
+
+    // Rileva se POS e SM entrambi presenti per il compare toggle
     AggregatedEvaluation? posEval;
     AggregatedEvaluation? smEval;
-    ScaleModel? posScale;
-    ScaleModel? smScale;
-
-    for (final scale in _availableScales) {
-      if (!_latestEvaluations.containsKey(scale.id)) continue;
+    for (final scale in lifeScales) {
       final isSM = _isSanMartinScale(scale.id, scale.nome);
-      final isSis = _isSisScale(scale.id, scale.nome);
       if (isSM) {
         smEval = _latestEvaluations[scale.id];
-        smScale = scale;
-      } else if (!isSis) {
+      } else if (!_isSisScale(scale.id, scale.nome)) {
         posEval = _latestEvaluations[scale.id];
-        posScale = scale;
       }
     }
-
     final bool canCompare = posEval != null && smEval != null;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Patient Header Card ──────────────────────────────────────────
+          // ── Header utente fisso ──────────────────────────────────────────
           _buildPatientHeader(),
-          const SizedBox(height: 28),
+          const SizedBox(height: 20),
 
-          if (_latestEvaluations.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(48.0),
-                child: Column(
-                  children: [
-                    Icon(Icons.assignment_outlined, size: 64, color: Colors.grey.shade300),
-                    const SizedBox(height: 16),
-                    const Text('Nessuna valutazione compilata per questo utente.',
-                      style: TextStyle(fontSize: 16, color: AppTheme.textSecondary)),
-                  ],
-                ),
-              ),
-            )
-          else ...[
-            // ── Compare Toggle ──
-            _buildCompareToggle(canCompare),
-            const SizedBox(height: 24),
+          if (lifeScales.isEmpty) ...[
+            _buildEmptyScalesPlaceholder(
+              icon: Icons.self_improvement_outlined,
+              message: 'Nessuna scala di Qualità della Vita compilata.',
+            ),
+          ] else ...[
+            // ── Compare Toggle (solo se POS + SM presenti) ──────────────
+            if (canCompare) ...[
+              _buildCompareToggle(canCompare),
+              const SizedBox(height: 16),
+            ],
 
-            // ── Scale cards or Unified Comparison ──
+            // ── Compare Panel o Accordion Cards ─────────────────────────
             AnimatedSwitcher(
-              duration: const Duration(milliseconds: 400),
+              duration: const Duration(milliseconds: 350),
               switchInCurve: Curves.easeOutCubic,
               switchOutCurve: Curves.easeInCubic,
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0.0, 0.04),
-                      end: Offset.zero,
-                    ).animate(animation),
-                    child: child,
-                  ),
-                );
-              },
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(begin: const Offset(0, 0.03), end: Offset.zero).animate(animation),
+                  child: child,
+                ),
+              ),
               child: _isCompareMode && canCompare
                   ? _buildComparePanel(posEval!, smEval!)
-                  : LayoutBuilder(
-                      key: const ValueKey('standard_panels'),
-                      builder: (context, constraints) {
-                        final availableCards = _availableScales
-                            .where((scale) => _latestEvaluations.containsKey(scale.id))
-                            .toList();
-
-                        final lifeProjectScales = availableCards.where((s) => !_isBehaviorScale(s.id, s.nome)).toList();
-                        final behaviorScales = availableCards.where((s) => _isBehaviorScale(s.id, s.nome)).toList();
-
-                        Widget buildCardSection(String title, List<ScaleModel> scales) {
-                          if (scales.isEmpty) return const SizedBox.shrink();
-                          
-                          final cards = scales.map((scale) => _buildScalePanel(scale, useExpanded: false)).toList();
-                          Widget grid;
-                          if (constraints.maxWidth > 800 && cards.length >= 2) {
-                             List<Widget> rows = [];
-                             for (int i=0; i<cards.length; i+=2) {
-                                if (i+1 < cards.length) {
-                                  rows.add(IntrinsicHeight(
-                                    child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                                      children: [
-                                        Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: cards[i])),
-                                        Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: cards[i+1])),
-                                      ],
-                                    )
-                                  ));
-                                } else {
-                                  rows.add(Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: cards[i]));
-                                }
-                                rows.add(const SizedBox(height: 16));
-                             }
-                             grid = Column(children: rows);
-                          } else {
-                             grid = Column(
-                               children: cards.map((c) => Padding(
-                                 padding: const EdgeInsets.only(bottom: 20),
-                                 child: c,
-                               )).toList(),
-                             );
-                          }
-                          
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 16, left: 8, top: 16),
-                                child: Text(
-                                  title,
-                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-                                ),
-                              ),
-                              grid,
-                            ],
-                          );
-                        }
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                             buildCardSection('Progetto di Vita e Qualità della Vita', lifeProjectScales),
-                             if (behaviorScales.isNotEmpty && lifeProjectScales.isNotEmpty) const Divider(height: 32),
-                             buildCardSection('Comportamento Adattivo', behaviorScales),
-                          ]
+                  : Column(
+                      key: const ValueKey('qdv_accordion'),
+                      children: lifeScales.map((scale) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _buildExpandableScaleCard(scale),
                         );
-                      }
+                      }).toList(),
                     ),
             ),
           ],
@@ -728,8 +662,366 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     );
   }
 
+  // ════════════════════════════════════════════════════════════════════════════
+  // TAB 2: COMPORTAMENTO ADATTIVO (ODFLAB + SABS)
+  // ════════════════════════════════════════════════════════════════════════════
+
+  Widget _buildBehaviorTab() {
+    final behaviorScales = _availableScales
+        .where((s) => _latestEvaluations.containsKey(s.id) && _isBehaviorScale(s.id, s.nome))
+        .toList();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header compatto per comportamento adattivo ──────────────────
+          _buildBehaviorTabHeader(),
+          const SizedBox(height: 20),
+
+          if (behaviorScales.isEmpty) ...[
+            _buildEmptyScalesPlaceholder(
+              icon: Icons.accessibility_new_outlined,
+              message: 'Nessuna scala di Comportamento Adattivo compilata.',
+            ),
+          ] else ...[
+            ...behaviorScales.map((scale) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildExpandableScaleCard(scale),
+            )),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Header compatto per il tab Comportamento Adattivo
+  Widget _buildBehaviorTabHeader() {
+    final p = widget.patient;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF4A148C), Color(0xFF7B1FA2), Color(0xFFAB47BC)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF4A148C).withValues(alpha: 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+            ),
+            child: Center(
+              child: Text(
+                '${p.nome.isNotEmpty ? p.nome[0] : ''}${p.cognome.isNotEmpty ? p.cognome[0] : ''}',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${p.nome} ${p.cognome}',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Comportamento Adattivo — Scale di valutazione funzionale',
+                  style: TextStyle(fontSize: 11, color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.assessment_outlined, color: Colors.white70, size: 14),
+                const SizedBox(width: 6),
+                Text(
+                  '${_availableScales.where((s) => _latestEvaluations.containsKey(s.id) && _isBehaviorScale(s.id, s.nome)).length} scale',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Costruisce una ExpandableScaleCard per qualsiasi scala
+  Widget _buildExpandableScaleCard(ScaleModel scale) {
+    final eval = _latestEvaluations[scale.id]!;
+    final analysis = _analyses[scale.id];
+    final isSM = _isSanMartinScale(scale.id, scale.nome);
+    final isSis = _isSisScale(scale.id, scale.nome);
+    final isBehavior = _isBehaviorScale(scale.id, scale.nome);
+
+    // Colori gradiente per tipo di scala
+    final List<Color> gradientColors = isSis
+        ? const [Color(0xFF00695C), Color(0xFF26A69A)]
+        : isBehavior
+            ? const [Color(0xFF4A148C), Color(0xFF7B1FA2)]
+            : isSM
+                ? const [Color(0xFF1A237E), Color(0xFF3949AB)]
+                : const [Color(0xFF0D47A1), Color(0xFF1565C0)];
+
+    // Icona per tipo di scala
+    final IconData scaleIcon = isSis
+        ? Icons.support_outlined
+        : isBehavior
+            ? Icons.accessibility_new_outlined
+            : isSM
+                ? Icons.psychology_alt_outlined
+                : Icons.self_improvement_outlined;
+
+    // Summary chips per stato chiuso
+    final List<Widget> summaryChips = _buildSummaryChips(eval, analysis, isSM, isSis, isBehavior, gradientColors.first);
+
+    // Azioni header (Storico + Dettaglio)
+    final List<Widget> headerActions = [
+      if ((_evaluationsHistory[scale.id]?.length ?? 0) > 1)
+        _headerActionButton(
+          icon: Icons.timeline,
+          label: 'Storico',
+          color: Colors.amber.shade700,
+          onTap: () => _showTimelineDialog(scale),
+        ),
+      _headerActionButton(
+        icon: Icons.open_in_new,
+        label: 'Dettaglio',
+        color: Colors.white.withValues(alpha: 0.18),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => EvaluationDetailScreen(patient: widget.patient, scale: scale)),
+        ),
+      ),
+    ];
+
+    // Contenuto espanso (riusa esattamente i widget già esistenti)
+    final Widget expandedContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildMetaRow(eval),
+        const SizedBox(height: 20),
+        if (isSis)
+          _buildSisIndicators(eval, analysis)
+        else if (isSM && analysis != null)
+          _buildSanMartinIndicators(analysis)
+        else if (!isSM)
+          _buildPosIndicators(eval),
+        const SizedBox(height: 20),
+        if (eval.domini.isNotEmpty)
+          SizedBox(
+            height: (isSM && analysis != null && analysis.domini.isNotEmpty) ? 250 : (eval.domini.length > 10 ? 295 : 250),
+            child: isSM && analysis != null && analysis.domini.isNotEmpty
+                ? _buildRadarChartForPanel(analysis)
+                : _buildBarChartForPanel(
+                    eval.domini,
+                    isSm: isSM,
+                    isSis: isSis,
+                    isSabs: scale.id.toLowerCase().contains("sabs") || scale.nome.toLowerCase().contains("sabs"),
+                  ),
+          ),
+      ],
+    );
+
+    return ExpandableScaleCard(
+      title: isSis
+          ? 'Supports Intensity Scale (SIS)'
+          : isSM
+              ? 'Scala San Martín'
+              : scale.nome,
+      subtitle: isBehavior
+          ? 'Valutazione comportamenti adattivi e abilità funzionali'
+          : isSis
+              ? 'Valutazione dell\'intensità dei bisogni di sostegno'
+              : isSM
+                  ? 'Valutazione osservativa della qualità di vita'
+                  : 'Valutazione degli esiti personali e della QdV percepita',
+      icon: scaleIcon,
+      gradientColors: gradientColors,
+      summaryChips: summaryChips,
+      expandedContent: expandedContent,
+      headerActions: headerActions,
+    );
+  }
+
+  /// Costruisce i chip di summary per lo stato chiuso della card
+  List<Widget> _buildSummaryChips(
+    AggregatedEvaluation eval,
+    PsychometricAnalysis? analysis,
+    bool isSM,
+    bool isSis,
+    bool isBehavior,
+    Color accentColor,
+  ) {
+    final List<Widget> chips = [];
+
+    if (isSM && analysis != null) {
+      if (analysis.indiceQv != null) {
+        chips.add(ScaleSummaryChip(
+          label: 'Indice QV',
+          value: analysis.indiceQv.toString(),
+          accentColor: accentColor,
+          icon: Icons.favorite_outline,
+        ));
+      }
+      if (analysis.percentile != null) {
+        chips.add(ScaleSummaryChip(
+          label: 'Percentile',
+          value: '${analysis.percentile}°',
+          accentColor: accentColor,
+          icon: Icons.leaderboard_outlined,
+        ));
+      }
+      if (analysis.fasciaQv != null) {
+        chips.add(ScaleSummaryChip(
+          label: 'Fascia',
+          value: analysis.fasciaQv!,
+          accentColor: accentColor,
+          icon: Icons.verified_outlined,
+        ));
+      }
+    } else if (isSis) {
+      int total = eval.domini.fold(0, (s, d) => s + d.punteggio);
+      chips.add(ScaleSummaryChip(
+        label: analysis != null && analysis.indiceQv != null ? 'Indice SIS' : 'Punteggio',
+        value: analysis != null && analysis.indiceQv != null
+            ? analysis.indiceQv.toString()
+            : total.toString(),
+        accentColor: accentColor,
+        icon: Icons.analytics_outlined,
+      ));
+      if (analysis != null && analysis.percentile != null) {
+        chips.add(ScaleSummaryChip(
+          label: 'Percentile',
+          value: '${analysis.percentile}°',
+          accentColor: accentColor,
+          icon: Icons.speed_outlined,
+        ));
+      }
+      chips.add(ScaleSummaryChip(
+        label: 'Domini',
+        value: '${eval.domini.length}',
+        accentColor: accentColor,
+        icon: Icons.grid_view_outlined,
+      ));
+    } else {
+      // POS o scale behavior (SABS, ODFLAB)
+      int total = eval.domini.fold(0, (s, d) => s + d.punteggio);
+      chips.add(ScaleSummaryChip(
+        label: 'Totale',
+        value: total.toString(),
+        accentColor: accentColor,
+        icon: Icons.score_outlined,
+      ));
+      if (eval.domini.isNotEmpty) {
+        chips.add(ScaleSummaryChip(
+          label: 'Media',
+          value: (total / eval.domini.length).toStringAsFixed(1),
+          accentColor: accentColor,
+          icon: Icons.bar_chart_outlined,
+        ));
+      }
+      chips.add(ScaleSummaryChip(
+        label: 'Compilata il',
+        value: eval.dataCompilazione.split('T')[0].split('-').reversed.join('/'),
+        accentColor: accentColor,
+        icon: Icons.calendar_today_outlined,
+      ));
+    }
+
+    return chips;
+  }
+
+  /// Bottone azione compatto per l'header della ExpandableScaleCard
+  Widget _headerActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 13, color: Colors.white),
+              const SizedBox(width: 4),
+              Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Placeholder quando un tab non ha scale compilate
+  Widget _buildEmptyScalesPlaceholder({required IconData icon, required String message}) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 64),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withValues(alpha: 0.06),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 40, color: AppTheme.primaryColor.withValues(alpha: 0.3)),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: const TextStyle(fontSize: 15, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCompareToggle(bool canCompare) {
     return Container(
+
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
