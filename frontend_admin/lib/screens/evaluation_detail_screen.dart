@@ -1672,9 +1672,16 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
   Widget _buildBarChart() {
     final hasAnalysis = _analysis != null && _analysis!.domini.isNotEmpty;
     final List<dynamic> items = hasAnalysis ? _analysis!.domini : _eval!.domini;
-    final isPos = widget.scale.id.toLowerCase().contains("pos") || widget.scale.nome.toLowerCase().contains("pos");
-    final isSabs = widget.scale.id.toLowerCase().contains("sabs") || widget.scale.nome.toLowerCase().contains("sabs");
-    final maxY = isPos ? 18.0 : (isSabs ? 49.0 : 60.0);
+    // Calcola il maxY dinamico basato sul valore massimo reale + 5
+    double maxVal = 0;
+    for (final item in items) {
+      final double val = item is DomainAnalysis
+          ? item.punteggioDiretto.toDouble()
+          : (item as DomainScore).punteggio.toDouble();
+      if (val > maxVal) maxVal = val;
+    }
+    double maxY = maxVal + 5.0;
+    if (maxY < 10.0) maxY = 10.0;
 
     return BarChart(
       BarChartData(
@@ -1744,7 +1751,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 32,
-              interval: isPos ? 3.0 : 10.0,
+              interval: maxY <= 15 ? 3.0 : (maxY <= 35 ? 5.0 : 10.0),
               getTitlesWidget: (val, _) => Text(
                 val.toInt().toString(),
                 style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary),

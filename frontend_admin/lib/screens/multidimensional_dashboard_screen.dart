@@ -2160,22 +2160,14 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   Widget _buildBarChartForPanel(List<DomainScore> domini, {bool isSm = false, bool isSis = false, bool isSabs = false}) {
     if (domini.isEmpty) return const SizedBox();
 
-    // Calcola il maxY dinamico basato sui dati reali
-    double dynamicMaxY = 0;
-    if (isSabs) {
-      dynamicMaxY = 49.0;
-    } else {
-      for (final d in domini) {
-        final int maxValPerQuestion = isSis ? 12 : (isSm ? 4 : 3);
-        final maxScore = d.numDomande * maxValPerQuestion;
-        final score = d.punteggio.toDouble();
-        if (maxScore > dynamicMaxY) dynamicMaxY = maxScore.toDouble();
-        if (score > dynamicMaxY) dynamicMaxY = score.toDouble();
-      }
-      if (dynamicMaxY <= 0) dynamicMaxY = 20;
-      // Aggiungi un margine del 10% per estetica
-      dynamicMaxY = (dynamicMaxY * 1.1).ceilToDouble();
+    // Calcola il maxY dinamico basato sul punteggio massimo + 5
+    double maxVal = 0;
+    for (final d in domini) {
+      final double score = d.punteggio.toDouble();
+      if (score > maxVal) maxVal = score;
     }
+    double dynamicMaxY = maxVal + 5.0;
+    if (dynamicMaxY < 10.0) dynamicMaxY = 10.0;
 
     return ClipRect(
       child: BarChart(
@@ -2254,9 +2246,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           ),
           borderData: FlBorderData(show: false),
           barGroups: List.generate(domini.length, (i) {
-            final maxScore = domini[i].numDomande * (isSm ? 4 : 3);
             final double toYValue = domini[i].punteggio.toDouble();
-            final double backYValue = isSabs ? dynamicMaxY : maxScore.toDouble();
+            final double backYValue = dynamicMaxY;
             
             return BarChartGroupData(
               x: i,

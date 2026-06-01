@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.18.37] - 2026-06-01
+- **Fondo Scala Dinamico dei Grafici a Barre**:
+  - Implementato il calcolo del fondo scala dinamico (`maxY` / `dynamicMaxY`) in base ai punteggi reali ottenuti (`max(punteggi) + 5`) sia nella pagina di dettaglio della valutazione che nei pannelli della dashboard multidimensionale. Questo evita che i grafici appaiano schiacciati sul fondo per scale con punteggi massimi teorici molto elevati (come la scala SIS).
+  - Corretta l'altezza della barra di sfondo ghost (`backYValue`) sui grafici a pannello per adeguarla al fondo scala dinamico.
+  - Ottimizzato l'intervallo degli assi Y (`interval`) nel frontend per variare dinamicamente in base al valore massimo, prevenendo tick sovrapposte.
+- **Risoluzione Anomalie PDF ODFLAB**:
+  - Risolto il problema del grafico a barre troncato e dei numeri "volanti" sovrapposti nel PDF per scale con punteggi elevati (como ODFLAB), calcolando dinamicamente il fondoscala (`score_max = max(punteggi) + 5`, minimo 15) all'interno del modulo `pdf_generator.py`.
+  - Abilitata la rotazione a 45 gradi delle etichette dell'asse X nel PDF per scale con più di 10 domini (usando anche i codici abbreviati) per prevenire le sovrapposizioni di testo.
+  - Corretto l'allineamento della tabella "Riepilogo per Dominio" nel PDF: incapsulate le celle in elementi `Paragraph` per consentire l'auto-wrapping ed allargate le colonne (codice a `2.2 * cm`) per ospitare i codici più lunghi (es. `REG_COMP`) senza alcuna sovrapposizione di testi.
+
 ## [2.18.36] - 2026-06-01
 - **Miglioramento Data Visualization per Scale Complesse (ODFLAB)**: 
   - Risolto l'overflow e la sovrapposizione delle etichette dei domini nella scala ODFLAB (16 domini) ruotando i codici dei domini verticalmente a 90° e aumentando lo spazio riservato.

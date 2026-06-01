@@ -352,9 +352,29 @@ def _make_bar_chart(domains: List[dict], score_min: int = 0, score_max: int = 18
     Una barra colorata per dominio, barra di sfondo ghost, griglia orizzontale,
     etichette dominio sull'asse X, badge numerico sopra ogni barra.
     """
-    labels    = [_wrap_label(d['etichetta'], max_chars=14) for d in domains]
-    scores    = [d["punteggio_totale"] for d in domains]
-    n         = len(labels)
+    # Estrae i punteggi per determinare il fondoscala dinamico
+    scores = []
+    for d in domains:
+        val = d.get("punteggio_totale")
+        if val is None:
+            val = d.get("punteggio")
+        if val is None:
+            val = d.get("punteggio_diretto")
+        if val is None:
+            val = 0
+        scores.append(val)
+
+    max_val = max(scores) if scores else 0
+    score_max = max_val + 5
+    if score_max < 15:
+        score_max = 15
+
+    n = len(domains)
+    has_many = n > 10
+    labels = []
+    for d in domains:
+        name = d.get('codice') if has_many else d.get('etichetta', d.get('codice', ''))
+        labels.append(_wrap_label(name, max_chars=10 if has_many else 14))
 
     # Stessa palette del frontend Flutter (_domainColors)
     THEME_COLORS = [
@@ -410,11 +430,24 @@ def _make_bar_chart(domains: List[dict], score_min: int = 0, score_max: int = 18
 
     # Assi e griglia
     ax.set_xlim(-0.6, n - 0.4)
-    ax.set_ylim(0, score_max + 2.0)
+    ax.set_ylim(0, score_max)
     ax.set_xticks(x)
-    ax.set_xticklabels(labels, fontsize=8.5, color='#334155', fontweight='bold',
-                       ha='center', va='top', multialignment='center')
-    ax.set_yticks(range(0, score_max + 1, 3))
+    
+    if has_many:
+        ax.set_xticklabels(labels, fontsize=8.0, color='#334155', fontweight='bold',
+                           ha='right', va='top', rotation=45)
+    else:
+        ax.set_xticklabels(labels, fontsize=8.5, color='#334155', fontweight='bold',
+                           ha='center', va='top', multialignment='center')
+
+    if score_max <= 20:
+        tick_interval = 3
+    elif score_max <= 50:
+        tick_interval = 5
+    else:
+        tick_interval = 10
+
+    ax.set_yticks(range(0, int(score_max) + 1, tick_interval))
     ax.tick_params(axis='y', colors='#94A3B8', labelsize=9)
     ax.tick_params(axis='x', bottom=False)
 
@@ -1293,14 +1326,43 @@ def generate_evaluation_pdf(
         domain_table = _make_sis_domain_table(analysis)
     else:
         story.append(Paragraph("Riepilogo per Dominio", section_header))
+        cell_style = ParagraphStyle(
+            'DomainTableCell',
+            parent=styles['Normal'],
+            fontSize=9,
+            leading=11,
+            textColor=DARK_TEXT
+        )
+        cell_style_bold = ParagraphStyle(
+            'DomainTableCellBold',
+            parent=styles['Normal'],
+            fontSize=9,
+            leading=11,
+            textColor=DARK_TEXT,
+            fontName='Helvetica-Bold'
+        )
+        cell_style_center = ParagraphStyle(
+            'DomainTableCellCenter',
+            parent=styles['Normal'],
+            fontSize=9,
+            leading=11,
+            textColor=DARK_TEXT,
+            alignment=TA_CENTER
+        )
+
         domain_headers = ["Cod.", "Dominio", "Punteggio Totale", "N° Domande"]
         domain_rows = [
-            [d["codice"], d["etichetta"], str(d["punteggio_totale"]), str(d["num_domande"])]
+            [
+                Paragraph(d["codice"], cell_style_bold),
+                Paragraph(d["etichetta"], cell_style),
+                Paragraph(str(d["punteggio_totale"]), cell_style_center),
+                Paragraph(str(d["num_domande"]), cell_style_center)
+            ]
             for d in domains
         ]
-        col_widths = [1.5*cm, 7*cm, 4*cm, 3*cm]
+        col_widths = [2.2*cm, 8.2*cm, 4.0*cm, 3.0*cm]
         style_extras = [
-            ('ALIGN', (2, 0), (3, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ]
 
         domain_table = _make_table(
