@@ -90,6 +90,21 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
         normalizedId.contains('supportsintensity');
   }
 
+  bool get _isBehaviorScale {
+    final normalizedName =
+        _normalizeScaleIdentifier(_analysis?.scalaNome ?? widget.scale.nome);
+    final normalizedId =
+        _normalizeScaleIdentifier(_analysis?.idScala ?? widget.scale.id);
+    return normalizedId.contains('sabs') ||
+        normalizedId.contains('behavior') ||
+        normalizedId.contains('comportament') ||
+        normalizedId.contains('odflab') ||
+        normalizedName.contains('sabs') ||
+        normalizedName.contains('behavior') ||
+        normalizedName.contains('comportament') ||
+        normalizedName.contains('odflab');
+  }
+
   bool get _hasStandardProfile =>
       _analysis?.domini.any((domain) => domain.punteggioStandard != null) ?? false;
 
@@ -531,8 +546,10 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               _buildMetaCard(),
               const SizedBox(height: 20),
               _buildClinicalCard(),
-              const SizedBox(height: 20),
-              _buildDemographicsCard(),
+              if (!_isBehaviorScale) ...[
+                const SizedBox(height: 20),
+                _buildDemographicsCard(),
+              ],
               const SizedBox(height: 20),
               if (isSis && _analysis != null) ...[
                 _buildSisDashboard(),
@@ -1464,6 +1481,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
   Widget _buildChartCard() {
     final hasAnalysis = _analysis != null && _analysis!.domini.isNotEmpty;
     final useRadar = hasAnalysis && _shouldUseSanMartinUi;
+    final itemsCount = hasAnalysis ? _analysis!.domini.length : (_eval?.domini.length ?? 0);
 
     return Card(
       child: Padding(
@@ -1503,7 +1521,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               )
             else
               SizedBox(
-                height: useRadar ? 520 : 320,
+                height: useRadar ? 520 : (itemsCount > 8 ? 365 : 320),
                 child: useRadar ? _buildRadarChart() : _buildBarChart(),
               ),
           ],
@@ -1666,10 +1684,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
           touchTooltipData: BarTouchTooltipData(
             getTooltipItem: (group, groupIdx, rod, rodIdx) {
               if (group.x < 0 || group.x >= items.length) return null;
-              final item = items is List<DomainAnalysis>
-                  ? items[group.x]
-                  : (items as List<DomainScore>)[group.x];
-              final label = item is DomainAnalysis ? item.etichetta : (item as DomainScore).etichetta;
+              final item = items[group.x];
+              final label = item.etichetta;
               final suffix = ' pt';
               return BarTooltipItem(
                 '$label\n${rod.toY.toInt()}$suffix',
@@ -1682,30 +1698,45 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 48,
-              getTitlesWidget: (val, _) {
+              reservedSize: items.length > 8 ? 75 : 48,
+              getTitlesWidget: (val, meta) {
                 final idx = val.toInt();
                 if (idx < 0 || idx >= items.length) return const SizedBox();
-                final name = items is List<DomainAnalysis>
-                    ? items[idx].etichetta
-                    : (items as List<DomainScore>)[idx].etichetta;
-                return Padding(
+                
+                final bool hasMany = items.length > 8;
+                final item = items[idx];
+                final name = hasMany ? item.codice : item.etichetta;
+
+                final titleWidget = Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: SizedBox(
-                    width: 70,
+                    width: hasMany ? null : 70,
                     child: Text(
                       name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 11,
+                        fontSize: hasMany ? 10 : 11,
                         color: AppTheme.textPrimary,
                       ),
-                      maxLines: 2,
+                      maxLines: hasMany ? 1 : 2,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                     ),
                   ),
                 );
+
+                if (hasMany) {
+                  return SideTitleWidget(
+                    axisSide: meta.axisSide,
+                    space: 2,
+                    child: RotatedBox(
+                      quarterTurns: 3,
+                      child: titleWidget,
+                    ),
+                  );
+                }
+
+                return titleWidget;
               },
             ),
           ),
@@ -1732,14 +1763,15 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
         ),
         barGroups: items.asMap().entries.map((e) {
           final color = _domainColors[e.key % _domainColors.length];
-          final value = items is List<DomainAnalysis>
-              ? items[e.key].punteggioDiretto
-              : (items as List<DomainScore>)[e.key].punteggio;
+          final item = items[e.key];
+          final double value = item is DomainAnalysis
+              ? item.punteggioDiretto.toDouble()
+              : (item as DomainScore).punteggio.toDouble();
           return BarChartGroupData(
             x: e.key,
             barRods: [
               BarChartRodData(
-                toY: value.toDouble(),
+                toY: value,
                 color: color,
                 width: 28,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),

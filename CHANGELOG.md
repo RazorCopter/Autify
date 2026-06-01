@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.18.36] - 2026-06-01
+- **Miglioramento Data Visualization per Scale Complesse (ODFLAB)**: 
+  - Risolto l'overflow e la sovrapposizione delle etichette dei domini nella scala ODFLAB (16 domini) ruotando i codici dei domini verticalmente a 90° e aumentando lo spazio riservato.
+  - Rimossa la dipendenza fragile dal type check statico del generic list runtime per correggere il rendering dei nomi abbreviati dei domini nel dettaglio delle scale senza tabelle di scoring.
+- **Rimozione Dati Demografici Inutilizzati**:
+  - Rimossa completamente l'area "Dati Socio-Demografici di Contesto" nel dettaglio delle valutazioni per tutte le scale categorizzate come "Comportamento Adattivo" (come ODFLAB e SABS) in quanto non verranno mai popolati per queste tipologie di scala.
+
 ## [2.18.35] - 2026-05-31
 - **Fix Esportazione PDF SABS**: Risolto il problema dell'esportazione PDF per la scala SABS che risultava con nome errato ("POS ETEROVALUTATIVA") e senza valori:
   - Aggiornata la chiamata `compute_direct_scores` nell'endpoint di generazione PDF in `routes.py` inserendo il parametro `scale_doc`, in modo da attivare la mappatura dinamica degli item per le scale custom invece del fallimentare prefix-matching.

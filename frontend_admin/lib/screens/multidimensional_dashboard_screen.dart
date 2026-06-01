@@ -1321,7 +1321,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         // ── Chart ──
         if (eval.domini.isNotEmpty)
           SizedBox(
-            height: 250,
+            height: (isSM && analysis != null && analysis.domini.isNotEmpty) ? 250 : (eval.domini.length > 8 ? 295 : 250),
             child: isSM && analysis != null && analysis.domini.isNotEmpty
                 ? _buildRadarChartForPanel(analysis)
                 : _buildBarChartForPanel(eval.domini, isSm: isSM, isSis: isSis, isSabs: scale.id.toLowerCase().contains("sabs") || scale.nome.toLowerCase().contains("sabs")),
@@ -2198,11 +2198,12 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: 40,
+                reservedSize: domini.length > 8 ? 75 : 40,
                 getTitlesWidget: (value, meta) {
                   final idx = value.toInt();
                   if (idx < 0 || idx >= domini.length) return const SizedBox.shrink();
-                  return Padding(
+                  
+                  final titleWidget = Padding(
                     padding: const EdgeInsets.only(top: 6),
                     child: Text(
                       domini[idx].codice,
@@ -2210,6 +2211,19 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                       textAlign: TextAlign.center,
                     ),
                   );
+
+                  if (domini.length > 8) {
+                    return SideTitleWidget(
+                      axisSide: meta.axisSide,
+                      space: 2,
+                      child: RotatedBox(
+                        quarterTurns: 3,
+                        child: titleWidget,
+                      ),
+                    );
+                  }
+
+                  return titleWidget;
                 },
               ),
             ),
