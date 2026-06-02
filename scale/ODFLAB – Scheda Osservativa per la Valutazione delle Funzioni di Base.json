@@ -1,0 +1,1674 @@
+{
+  "scala": {
+    "nome": "ODFLAB – Scheda Osservativa per la Valutazione delle Funzioni di Base di Soggetti Autistici",
+    "sottotitolo": "Versione 2026 – Gennaio",
+    "autori": "ODFLAB / Alessandro Cogliati",
+    "anno": 2026,
+    "editore": null,
+    "target": "Soggetti con disturbo dello spettro autistico (adulti e adolescenti)",
+    "eta": null,
+    "informatori": "Educatore, terapista o caregiver che conosce la persona da almeno 3 mesi",
+    "tempo_somministrazione": "circa 30-45 minuti",
+    "proprieta_psicometriche": null,
+    "struttura_punteggi": {
+      "punteggi_item": "Scala Likert 1-5 (1 = assenza/peggiore, 5 = molto frequente/migliore) con alcuni item invertiti (scala 5-1).",
+      "punteggio_grezzo_dominio": "Somma dei punteggi attribuiti a ciascun item del dominio (dopo eventuale inversione)",
+      "punteggio_normalizzato_dominio": "Punteggio grezzo / (numero_item * 5)",
+      "punteggio_totale": "Somma dei punteggi grezzi di tutti i domini (massimo variabile)"
+    },
+    "note_operative": [
+      "Valutare il comportamento osservato nelle ultime 4 settimane.",
+      "Per i Likert: 1 = assenza del comportamento/competenza scarsa; 5 = comportamento molto frequente/competenza elevata (salvo inversione).",
+      "Gli item con scala invertita (comportamenti disadattivi) richiedono di convertire il punteggio prima della somma: punteggio_corretto = 6 - punteggio_originale (1→5, 2→4, 3→3, 4→2, 5→1).",
+      "Nella colonna 'attribuzione' del foglio originale sono riportati i punteggi attribuiti a un caso esempio (Alessandro Cogliati)."
+    ],
+    "domini": [
+      {
+        "codice": "SENS",
+        "nome": "Sensorialità",
+        "descrizione": "Reazioni e comportamenti legati agli stimoli sensoriali (dolore, temperatura, tatto, udito, vista, gusto, olfatto).",
+        "domande": [
+          {
+            "codice": "SENS-1",
+            "testo": "Sensibilità al dolore",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": "Comportamento normale (più frequenza = maggiore sensibilità)"
+          },
+          {
+            "codice": "SENS-2",
+            "testo": "Sensibilità al caldo",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SENS-3",
+            "testo": "Sensibilità al freddo",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SENS-4",
+            "testo": "Manifestare reazioni al contatto tattile esercitato da un'altra persona su parti del proprio corpo",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SENS-5",
+            "testo": "Iperattività ai suoni e/o ai rumori",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": "Comportamento problematico (invertito)"
+          },
+          {
+            "codice": "SENS-6",
+            "testo": "Indifferenza ai suoni e/o ai rumori",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SENS-7",
+            "testo": "Attrazione per luci forti e/o intermittenti",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SENS-8",
+            "testo": "Evitamento di luci forti e/o intermittenti",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SENS-9",
+            "testo": "Annusare gli oggetti",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SENS-10",
+            "testo": "Assaggiare gli oggetti",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SENS-11",
+            "testo": "Autostimolazione sensoriale",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "PERC",
+        "nome": "Percezione",
+        "descrizione": "Capacità percettive e comportamenti visivi/uditivi atipici.",
+        "domande": [
+          {
+            "codice": "PERC-1",
+            "testo": "Individua le parti del corpo toccate da un'altra persona",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "PERC-2",
+            "testo": "Avere lo sguardo 'perso nel vuoto'",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": "Comportamento problematico (invertito)"
+          },
+          {
+            "codice": "PERC-3",
+            "testo": "Avere lo sguardo 'furtivo' (guardare di sfuggita)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "PERC-4",
+            "testo": "Attrazione visiva per trame, disegni e colori",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "PERC-5",
+            "testo": "Ricerca di fonti di riproduzione del suono",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "PERC-6",
+            "testo": "Attrazione per suoni particolari",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "PERC-7",
+            "testo": "Attrazione per strutture ritmiche particolari",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "ATT",
+        "nome": "Attenzione",
+        "descrizione": "Capacità di orientamento, mantenimento e controllo dell'attenzione.",
+        "domande": [
+          {
+            "codice": "ATT-1",
+            "testo": "Capacità ad orientare lo sguardo",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "ATT-2",
+            "testo": "Capacità a mantenere l'attenzione su un oggetto",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "ATT-3",
+            "testo": "Capacità a mantenere l'attenzione su una azione",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "ATT-4",
+            "testo": "Capacità a portare a termine ciò che comincia",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "ATT-5",
+            "testo": "Cambiamenti troppo rapidi da una attività all'altra",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": "Comportamento problematico (invertito)"
+          },
+          {
+            "codice": "ATT-6",
+            "testo": "Eccessiva attenzione ai dettagli",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "EMO",
+        "nome": "Emozione",
+        "descrizione": "Espressione, comprensione e regolazione delle emozioni.",
+        "domande": [
+          {
+            "codice": "EMO-1",
+            "testo": "Mostrare le emozioni in modo adeguato",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "EMO-2",
+            "testo": "Mostrare le emozioni in maniera particolare",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": "Comportamento problematico (invertito)"
+          },
+          {
+            "codice": "EMO-3",
+            "testo": "Espressività mimica del viso",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "EMO-4",
+            "testo": "Capacità mimica gestuale e corporea",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "EMO-5",
+            "testo": "Capacità a comprendere le emozioni",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "EMO-6",
+            "testo": "Reagire alle manifestazioni emotivo/affettive",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "EMO-7",
+            "testo": "Condivisione delle emozioni altrui",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "EMO-8",
+            "testo": "Reazioni irascibili e aggressive",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": "Comportamento problematico (invertito)"
+          },
+          {
+            "codice": "EMO-9",
+            "testo": "Irrequietezza ai cambiamenti",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "MOT1",
+        "nome": "Schema 1 - Motricità generale",
+        "descrizione": "Capacità motorie di base e presenza di stereotipie motorie.",
+        "domande": [
+          {
+            "codice": "MOT1-1",
+            "testo": "Generale irrigidimento posturale",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": "Comportamento problematico (invertito)"
+          },
+          {
+            "codice": "MOT1-2",
+            "testo": "Capacità di tenere l'equilibrio",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "MOT1-3",
+            "testo": "Camminare in maniera adeguata",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "MOT1-4",
+            "testo": "Essere capaci di correre",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "MOT1-5",
+            "testo": "Agilità (saltare, arrampicarsi, scivolare)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "MOT1-6",
+            "testo": "Coordinazione grosso-motoria",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "MOT1-7",
+            "testo": "Coordinazione fino-motoria",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "MOT1-8",
+            "testo": "Capacità di afferrare al volo",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "MOT1-9",
+            "testo": "Capacità di lanciare",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "MOT1-10",
+            "testo": "Provare piacere nel dondolarsi o girare su se stessi",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": "Comportamento problematico (invertito)"
+          },
+          {
+            "codice": "MOT1-11",
+            "testo": "Eseguire abitudinariamente movimenti ripetitivi",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "MOT2",
+        "nome": "Schema 2 - Modo di camminare",
+        "descrizione": "Anomalie della deambulazione e postura.",
+        "domande": [
+          {
+            "codice": "MOT2-1",
+            "testo": "Il piede tocca il pavimento secondo la modalità punta-tacco",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": "Tutti gli item di questa sezione descrivono anomalie (invertiti)"
+          },
+          {
+            "codice": "MOT2-2",
+            "testo": "Il soggetto cammina sulle punte dei piedi",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "MOT2-3",
+            "testo": "Il movimento è a scatti",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "MOT2-4",
+            "testo": "Almeno un piede nel movimento in avanti volge verso l'esterno",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "MOT2-5",
+            "testo": "Le braccia sono mantenute in maniera parallela al pavimento",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "MOT2-6",
+            "testo": "Le braccia sono asimmetriche tra loro",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "MOT2-7",
+            "testo": "Le braccia non scendono lungo il corpo e gli avambracci sono mantenuti rigidi",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "MOT3",
+        "nome": "Schema 3 - Tappe fondamentali dello sviluppo",
+        "descrizione": "Raggiungimento delle tappe motorie nello sviluppo.",
+        "domande": [
+          {
+            "codice": "MOT3-1",
+            "testo": "Simmetria mentre giace sullo stomaco e sulla schiena (prima dei 14 mesi)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": "Item normali (competenze)"
+          },
+          {
+            "codice": "MOT3-2",
+            "testo": "Distribuzione uniforme del peso quando è seduto (da 3 a 24 mesi)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "MOT3-3",
+            "testo": "Coordinazione mentre esegue il movimento di raddrizzamento da prono a supino (da 3 a 18 mesi)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "MOT3-4",
+            "testo": "Simmetria nell'appoggiarsi mentre cammina carponi (da 6-7 a 15 mesi)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "MOT3-5",
+            "testo": "Resta immobile nel camminare a carponi",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": "Comportamento problematico (invertito)"
+          },
+          {
+            "codice": "MOT3-6",
+            "testo": "Ricerca della posizione eretta",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "ASS",
+        "nome": "Associazione",
+        "descrizione": "Capacità di integrare canali percettivi e di risposta.",
+        "domande": [
+          {
+            "codice": "ASS-1",
+            "testo": "Capacità di guardare e fare (sguardo su ciò che fa)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "ASS-2",
+            "testo": "Capacità di guardare e ascoltare (guardare chi parla)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "ASS-3",
+            "testo": "Capacità di ascoltare e fare (eseguire istruzioni)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "ASS-4",
+            "testo": "Capacità di parlare e fare (descrivere ciò che si fa)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "ASS-5",
+            "testo": "Risposta motoria al suono, alla vista, alla voce",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "ASS-6",
+            "testo": "Risposte non linguistiche (es: sorriso, vocalizzo) al suono e alla vista",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "ASS-7",
+            "testo": "Risposta verbale al suono, alla vista, alla voce",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "INTENZ",
+        "nome": "Intenzionalità",
+        "descrizione": "Iniziativa spontanea in diverse aree.",
+        "domande": [
+          {
+            "codice": "INTENZ-1",
+            "testo": "Produzione spontanea di azioni conosciute",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "INTENZ-2",
+            "testo": "Iniziativa nel gioco",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "INTENZ-3",
+            "testo": "Iniziativa nell'espressione della volontà (uscire, vedere la TV, ascoltare radio)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "INTENZ-4",
+            "testo": "Iniziativa nella comunicazione con la voce",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "INTENZ-5",
+            "testo": "Iniziativa nella comunicazione con i gesti",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "INTENZ-6",
+            "testo": "Iniziativa negli spostamenti",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "INTENZ-7",
+            "testo": "Iniziativa nell'alimentazione",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "INTENZ-8",
+            "testo": "Inattività prolungata",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": "Comportamento problematico (invertito)"
+          }
+        ]
+      },
+      {
+        "codice": "IMIT",
+        "nome": "Imitazione",
+        "descrizione": "Capacità di imitare gesti, azioni, suoni e parole.",
+        "domande": [
+          {
+            "codice": "IMIT-1",
+            "testo": "Imitazione di gesti",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "IMIT-2",
+            "testo": "Imitazione di azioni semplici",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "IMIT-3",
+            "testo": "Imitazione della mimica (sorrisi, smorfie…)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "IMIT-4",
+            "testo": "Imitazione di suoni",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "IMIT-5",
+            "testo": "Imitazione di parole",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "IMIT-6",
+            "testo": "Riproduzione di un tratto o di un disegno",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "CONT",
+        "nome": "Contatto",
+        "descrizione": "Reazioni alla presenza altrui, contatto visivo e fisico.",
+        "domande": [
+          {
+            "codice": "CONT-1",
+            "testo": "Reagire adeguatamente alla presenza degli altri",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "CONT-2",
+            "testo": "Reagire in modo non adeguato alla presenza degli altri",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": "Comportamento problematico (invertito)"
+          },
+          {
+            "codice": "CONT-3",
+            "testo": "Tendenza all'essere solitario",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "CONT-4",
+            "testo": "Evitamento degli altri",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "CONT-5",
+            "testo": "Contatto visivo con le persone",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "CONT-6",
+            "testo": "Osservare ciò che fanno gli altri",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "CONT-7",
+            "testo": "Manifestare piacere al contatto fisico",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "INTER",
+        "nome": "Interazione",
+        "descrizione": "Capacità di condividere attenzione, azioni e turni.",
+        "domande": [
+          {
+            "codice": "INTER-1",
+            "testo": "Capacità di condividere lo sguardo",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "INTER-2",
+            "testo": "Capacità di condividere l'attenzione",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "INTER-3",
+            "testo": "Capacità di condividere una azione (o gioco)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "INTER-4",
+            "testo": "Ricercare la presenza di una persona in particolare",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "INTER-5",
+            "testo": "Ricercare la presenza degli altri",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "INTER-6",
+            "testo": "Capacità di rispettare l'alternanza di turno",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "COMLING",
+        "nome": "Comunicazione e linguaggio",
+        "descrizione": "Uso di gesti, richieste, linguaggio verbale e ecolalia.",
+        "domande": [
+          {
+            "codice": "COMLING-1",
+            "testo": "Capacità di usare i gesti convenzionali (sorriso, saluto)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "COMLING-2",
+            "testo": "Capacità di richiedere a gesti (indicare)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "COMLING-3",
+            "testo": "Capacità di richiedere verbalmente",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "COMLING-4",
+            "testo": "Presenza di linguaggio ecolalico",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": "Comportamento problematico (invertito)"
+          },
+          {
+            "codice": "COMLING-5",
+            "testo": "Capacità di comunicare verbalmente",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "COMLING-6",
+            "testo": "Risposta motoria alle richieste",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "COMLING-7",
+            "testo": "Risposta verbale alle richieste",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "IST",
+        "nome": "Istinto",
+        "descrizione": "Comportamenti istintuali (attività, sonno, alimentazione, sessualità).",
+        "domande": [
+          {
+            "codice": "IST-1",
+            "testo": "Iperattività",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": "Tutti gli item di questa sezione sono comportamenti problematici (invertiti)"
+          },
+          {
+            "codice": "IST-2",
+            "testo": "Ipoattività",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "IST-3",
+            "testo": "Dormire male",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "IST-4",
+            "testo": "Alimentazione 'strana'",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "IST-5",
+            "testo": "Portare oggetti non commestibili alla bocca",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "IST-6",
+            "testo": "Masturbazione",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "REG",
+        "nome": "Regolazione",
+        "descrizione": "Controllo dell'attenzione, comportamento, umore e ripetitività.",
+        "domande": [
+          {
+            "codice": "REG-1",
+            "testo": "Usare in maniera adeguata le proprie capacità",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "REG-2",
+            "testo": "Variazione eccessiva dell'attenzione",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": "Comportamento problematico (invertito)"
+          },
+          {
+            "codice": "REG-3",
+            "testo": "Imprevedibilità nel comportamento",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "REG-4",
+            "testo": "Rapidi sbalzi di umore",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "REG-5",
+            "testo": "Brusca interruzione dell'attività",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "REG-6",
+            "testo": "Uso smodato di un oggetto",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "REG-7",
+            "testo": "Ripetizione eccessiva della stessa azione",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "REG-8",
+            "testo": "Ripetizione eccessiva della stessa frase",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 5, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 1, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      },
+      {
+        "codice": "AUT",
+        "nome": "Autonomia",
+        "descrizione": "Autonomia nelle attività di vita quotidiana (alimentazione, controllo sfinterico, vestizione, igiene, uscite).",
+        "domande": [
+          {
+            "codice": "AUT-1",
+            "testo": "Capacità autonoma nell'alimentarsi",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "AUT-2",
+            "testo": "Acquisizione del controllo sfinterico",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "AUT-3",
+            "testo": "Capacità di svestirsi autonomamente",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "AUT-4",
+            "testo": "Capacità di vestirsi autonomamente",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "AUT-5",
+            "testo": "Capacità di lavarsi autonomamente",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "AUT-6",
+            "testo": "Capacità di uscire autonomamente",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Assenza del comportamento", "descrizione": null },
+              { "punteggio": 2, "etichetta": "Frequenza rara e scarsa", "descrizione": null },
+              { "punteggio": 3, "etichetta": "Alquanto frequente", "descrizione": null },
+              { "punteggio": 4, "etichetta": "Frequente e intenso", "descrizione": null },
+              { "punteggio": 5, "etichetta": "Molto frequente e intenso", "descrizione": null }
+            ],
+            "note": null
+          }
+        ]
+      }
+    ]
+  }
+}

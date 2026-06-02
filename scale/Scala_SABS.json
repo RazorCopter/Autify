@@ -11,14 +11,13 @@
     "tempo_somministrazione": "circa 15-20 minuti",
     "proprieta_psicometriche": null,
     "struttura_punteggi": {
-      "punteggi_item": "variabili: alcuni item Likert da 0 a 6, altri somma di sub‑item dicotomici (0/1)",
+      "punteggi_item": "Likert a scelta singola con punteggi predefiniti (es. 0-6, 0-1, ecc.)",
       "punteggio_grezzo_sottoscala": "somma dei punteggi degli item della sottoscala",
       "punteggio_totale": "somma delle tre sottoscale (0-114)"
     },
     "note_operative": [
-      "Non esistono tabelle nazionali di conversione in punteggi standard; la scala va usata a livello di punteggi grezzi.",
-      "Per i sub‑item dicotomici: 1 = comportamento presente / abilità acquisita, 0 = assente.",
       "Compilare tutti gli item basandosi sulle ultime 4 settimane di osservazione.",
+      "Per gli item binari: Sì=1, No=0 salvo diversa indicazione nella nota.",
       "Il punteggio totale e di sottoscala più alto indica maggiori competenze adattive."
     ],
     "domini": [
@@ -30,6 +29,7 @@
           {
             "codice": "SABS-1",
             "testo": "Utilizzo delle posate",
+            "tipo": "likert",
             "opzioni": [
               { "punteggio": 6, "etichetta": "Usa il coltello per tagliare o spalmare", "descrizione": null },
               { "punteggio": 5, "etichetta": "Mangia con forchetta e cucchiaio in modo appropriato", "descrizione": null },
@@ -42,22 +42,69 @@
             "note": null
           },
           {
-            "codice": "SABS-6",
-            "testo": "Cura di sé in bagno (somma di: si abbassa i pantaloni, si siede, usa carta igienica, tira l'acqua, si rimette i vestiti, lava le mani)",
+            "codice": "SABS-2",
+            "testo": "Cura di sé in bagno - Si abbassa i pantaloni senza aiuto",
+            "tipo": "likert",
             "opzioni": [
-              { "punteggio": 0, "etichetta": "0", "descrizione": null },
-              { "punteggio": 1, "etichetta": "1", "descrizione": null },
-              { "punteggio": 2, "etichetta": "2", "descrizione": null },
-              { "punteggio": 3, "etichetta": "3", "descrizione": null },
-              { "punteggio": 4, "etichetta": "4", "descrizione": null },
-              { "punteggio": 5, "etichetta": "5", "descrizione": null },
-              { "punteggio": 6, "etichetta": "6", "descrizione": null }
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
             ],
-            "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no)."
+            "note": "Punteggio: 1 = Sì, 0 = No"
+          },
+          {
+            "codice": "SABS-3",
+            "testo": "Cura di sé in bagno - Si siede sul water senza aiuto",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-4",
+            "testo": "Cura di sé in bagno - Usa con competenza la carta igienica",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-5",
+            "testo": "Cura di sé in bagno - Tira l'acqua dopo l'uso",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-6",
+            "testo": "Cura di sé in bagno - Si rimette i vestiti senza aiuto",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-7",
+            "testo": "Cura di sé in bagno - Si lava le mani senza aiuto",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
           },
           {
             "codice": "SABS-8",
             "testo": "Fare il bagno",
+            "tipo": "likert",
             "opzioni": [
               { "punteggio": 6, "etichetta": "Prepara e si fa il bagno (o la doccia) da solo", "descrizione": null },
               { "punteggio": 5, "etichetta": "Si lava e asciuga senza aiuto e senza che gli venga richiesto", "descrizione": null },
@@ -70,20 +117,9 @@
             "note": null
           },
           {
-            "codice": "SABS-13",
-            "testo": "Cura degli indumenti (somma di: pulisce scarpe, mette vestiti nei cassetti, appende, nota buchi/ripara)",
-            "opzioni": [
-              { "punteggio": 0, "etichetta": "0", "descrizione": null },
-              { "punteggio": 1, "etichetta": "1", "descrizione": null },
-              { "punteggio": 2, "etichetta": "2", "descrizione": null },
-              { "punteggio": 3, "etichetta": "3", "descrizione": null },
-              { "punteggio": 4, "etichetta": "4", "descrizione": null }
-            ],
-            "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no)."
-          },
-          {
-            "codice": "SABS-15",
+            "codice": "SABS-9",
             "testo": "Vestirsi",
+            "tipo": "likert",
             "opzioni": [
               { "punteggio": 5, "etichetta": "Si veste da solo in modo completo", "descrizione": null },
               { "punteggio": 4, "etichetta": "Si veste da solo in modo completo con suggerimenti verbali", "descrizione": null },
@@ -95,17 +131,104 @@
             "note": null
           },
           {
-            "codice": "SABS-17",
-            "testo": "Scarpe (somma di: mette scarpe, allaccia stringhe, slaccia, toglie, usa velcro)",
+            "codice": "SABS-10",
+            "testo": "Scarpe - Mette le scarpe correttamente e senza assistenza",
+            "tipo": "likert",
             "opzioni": [
-              { "punteggio": 0, "etichetta": "0", "descrizione": null },
-              { "punteggio": 1, "etichetta": "1", "descrizione": null },
-              { "punteggio": 2, "etichetta": "2", "descrizione": null },
-              { "punteggio": 3, "etichetta": "3", "descrizione": null },
-              { "punteggio": 4, "etichetta": "4", "descrizione": null },
-              { "punteggio": 5, "etichetta": "5", "descrizione": null }
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
             ],
-            "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no)."
+            "note": null
+          },
+          {
+            "codice": "SABS-11",
+            "testo": "Scarpe - Allaccia le stringhe senza assistenza",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-12",
+            "testo": "Scarpe - Slaccia le stringhe senza assistenza",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-13",
+            "testo": "Scarpe - Toglie le scarpe senza assistenza",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-14",
+            "testo": "Scarpe - Sa usare il velcro sulle scarpe",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-15",
+            "testo": "Camminare e correre - Sa camminare da solo",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-16",
+            "testo": "Camminare e correre - Sale e scende le scale da solo",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-17",
+            "testo": "Camminare e correre - Scende le scale correttamente (alternando i piedi)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-18",
+            "testo": "Camminare e correre - Corre senza cadere quasi mai",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-19",
+            "testo": "Camminare e correre - Sa saltare o saltellare",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
           }
         ]
       },
@@ -115,8 +238,9 @@
         "descrizione": "Punteggio massimo: 49",
         "domande": [
           {
-            "codice": "SABS-2",
+            "codice": "SABS-20",
             "testo": "Mangiare in luoghi pubblici",
+            "tipo": "likert",
             "opzioni": [
               { "punteggio": 3, "etichetta": "Ordina pasti completi, al ristorante", "descrizione": null },
               { "punteggio": 2, "etichetta": "Ordina pasti semplici come panini o insalate", "descrizione": null },
@@ -126,23 +250,119 @@
             "note": null
           },
           {
-            "codice": "SABS-23",
-            "testo": "Indipendenza nel funzionamento (varie) – somma di 7 item: controllo appetito, francobolli, cura salute, ferite, medico/dentista, assistenza sociale, indirizzo",
+            "codice": "SABS-21",
+            "testo": "Cura degli indumenti - Pulisce le scarpe quando necessario",
+            "tipo": "likert",
             "opzioni": [
-              { "punteggio": 0, "etichetta": "0", "descrizione": null },
-              { "punteggio": 1, "etichetta": "1", "descrizione": null },
-              { "punteggio": 2, "etichetta": "2", "descrizione": null },
-              { "punteggio": 3, "etichetta": "3", "descrizione": null },
-              { "punteggio": 4, "etichetta": "4", "descrizione": null },
-              { "punteggio": 5, "etichetta": "5", "descrizione": null },
-              { "punteggio": 6, "etichetta": "6", "descrizione": null },
-              { "punteggio": 7, "etichetta": "7", "descrizione": null }
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
             ],
-            "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no)."
+            "note": null
+          },
+          {
+            "codice": "SABS-22",
+            "testo": "Cura degli indumenti - Mette i vestiti nei cassetti, nel comò, o nell'armadio",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-23",
+            "testo": "Cura degli indumenti - Appende i vestiti senza che gli venga ricordato",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
           },
           {
             "codice": "SABS-24",
+            "testo": "Cura degli indumenti - Fa notare quando manca un bottone o c'è un buco, e/o ripara i vestiti",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-25",
+            "testo": "Indipendenza nel funzionamento (varie) - Ha un normale controllo dell'appetito, mangia con moderazione",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-26",
+            "testo": "Indipendenza nel funzionamento (varie) - Conosce il prezzo dei francobolli, o li sa comprare in posta",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-27",
+            "testo": "Indipendenza nel funzionamento (varie) - Si prende cura della propria salute (ad esempio cambiandosi se bagnato)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-28",
+            "testo": "Indipendenza nel funzionamento (varie) - Cura piccole ferite (tagli, scottature...)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-29",
+            "testo": "Indipendenza nel funzionamento (varie) - Sa quando e come chiedere l'aiuto di un dottore o dentista",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-30",
+            "testo": "Indipendenza nel funzionamento (varie) - È informato sulle strutture di assistenza sociale",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-31",
+            "testo": "Indipendenza nel funzionamento (varie) - Conosce il proprio indirizzo (di casa o della struttura)",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-32",
             "testo": "Sicurezza nella struttura residenziale o a casa",
+            "tipo": "likert",
             "opzioni": [
               { "punteggio": 3, "etichetta": "Chiede se un oggetto non famigliare è sicuro da toccare o da mangiare", "descrizione": null },
               { "punteggio": 2, "etichetta": "Riconosce la pericolosità di prese e spine elettriche", "descrizione": null },
@@ -152,21 +372,9 @@
             "note": null
           },
           {
-            "codice": "SABS-28",
-            "testo": "Camminare e correre (somma di: camminare, scale salire, scale scendere alternando, correre, saltare)",
-            "opzioni": [
-              { "punteggio": 0, "etichetta": "0", "descrizione": null },
-              { "punteggio": 1, "etichetta": "1", "descrizione": null },
-              { "punteggio": 2, "etichetta": "2", "descrizione": null },
-              { "punteggio": 3, "etichetta": "3", "descrizione": null },
-              { "punteggio": 4, "etichetta": "4", "descrizione": null },
-              { "punteggio": 5, "etichetta": "5", "descrizione": null }
-            ],
-            "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no)."
-          },
-          {
-            "codice": "SABS-31",
+            "codice": "SABS-33",
             "testo": "Maneggiare il denaro",
+            "tipo": "likert",
             "opzioni": [
               { "punteggio": 4, "etichetta": "Amministra da solo il proprio denaro", "descrizione": null },
               { "punteggio": 3, "etichetta": "Sa usare il denaro contante, facendosi dare il resto esatto, ma non usa strumenti bancari", "descrizione": null },
@@ -177,8 +385,9 @@
             "note": null
           },
           {
-            "codice": "SABS-35",
+            "codice": "SABS-34",
             "testo": "Comprare",
+            "tipo": "likert",
             "opzioni": [
               { "punteggio": 5, "etichetta": "Compra vestiti da solo", "descrizione": null },
               { "punteggio": 4, "etichetta": "Compra da solo accessori di abbigliamento", "descrizione": null },
@@ -190,8 +399,9 @@
             "note": null
           },
           {
-            "codice": "SABS-41",
+            "codice": "SABS-35",
             "testo": "Utilizzo di frasi",
+            "tipo": "likert",
             "opzioni": [
               { "punteggio": 3, "etichetta": "A volte usa frasi complesse collegate dalle congiunzioni 'perché', 'ma', ecc.", "descrizione": null },
               { "punteggio": 2, "etichetta": "Fa domande che iniziano con 'perché', 'dove', ecc.", "descrizione": null },
@@ -201,8 +411,9 @@
             "note": null
           },
           {
-            "codice": "SABS-44",
+            "codice": "SABS-36",
             "testo": "Comprensione di istruzioni verbali",
+            "tipo": "likert",
             "opzioni": [
               { "punteggio": 4, "etichetta": "Comprende istruzioni complesse che implicano una decisione ('Se.... allora')", "descrizione": null },
               { "punteggio": 3, "etichetta": "Comprende istruzioni che comportano una serie di passaggi ('Fai questo.... Poi quello...')", "descrizione": null },
@@ -213,8 +424,9 @@
             "note": null
           },
           {
-            "codice": "SABS-47",
+            "codice": "SABS-37",
             "testo": "Numeri",
+            "tipo": "likert",
             "opzioni": [
               { "punteggio": 6, "etichetta": "Sa fare divisioni e moltiplicazioni", "descrizione": null },
               { "punteggio": 5, "etichetta": "Sa fare addizioni e sottrazioni, anche semplici", "descrizione": null },
@@ -227,8 +439,9 @@
             "note": null
           },
           {
-            "codice": "SABS-53",
+            "codice": "SABS-38",
             "testo": "Preparazione del cibo",
+            "tipo": "likert",
             "opzioni": [
               { "punteggio": 4, "etichetta": "Sa preparare e cuocere un pasto", "descrizione": null },
               { "punteggio": 3, "etichetta": "Prepara un pasto abbastanza correttamente", "descrizione": null },
@@ -239,18 +452,64 @@
             "note": null
           },
           {
-            "codice": "SABS-55",
-            "testo": "Attività domestiche varie (somma di: lava piatti, fa letto, aiuta, lavori domestici da solo, lavastoviglie, accessori elettrici)",
+            "codice": "SABS-39",
+            "testo": "Attività domestiche varie - Lava bene i piatti",
+            "tipo": "likert",
             "opzioni": [
-              { "punteggio": 0, "etichetta": "0", "descrizione": null },
-              { "punteggio": 1, "etichetta": "1", "descrizione": null },
-              { "punteggio": 2, "etichetta": "2", "descrizione": null },
-              { "punteggio": 3, "etichetta": "3", "descrizione": null },
-              { "punteggio": 4, "etichetta": "4", "descrizione": null },
-              { "punteggio": 5, "etichetta": "5", "descrizione": null },
-              { "punteggio": 6, "etichetta": "6", "descrizione": null }
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
             ],
-            "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no)."
+            "note": null
+          },
+          {
+            "codice": "SABS-40",
+            "testo": "Attività domestiche varie - Fa il letto correttamente",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-41",
+            "testo": "Attività domestiche varie - Aiuta nei lavori domestici",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-42",
+            "testo": "Attività domestiche varie - Fa abitualmente lavori domestici, da solo",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-43",
+            "testo": "Attività domestiche varie - Usa correttamente e da solo la lavastoviglie",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-44",
+            "testo": "Attività domestiche varie - Sa usare correttamente piccoli accessori elettrici",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
           }
         ]
       },
@@ -260,36 +519,129 @@
         "descrizione": "Punteggio massimo: 32",
         "domande": [
           {
-            "codice": "SABS-60",
-            "testo": "Passività – somma di 7 comportamenti (assenza = 1, presenza = 0): bisogno supporto, costrizione, aspirazioni, interesse, puntualità, dipendenza, lentezza",
+            "codice": "SABS-45",
+            "testo": "Passività - Ha bisogno di costante supporto per completare un compito",
+            "tipo": "likert",
             "opzioni": [
-              { "punteggio": 0, "etichetta": "0", "descrizione": null },
-              { "punteggio": 1, "etichetta": "1", "descrizione": null },
-              { "punteggio": 2, "etichetta": "2", "descrizione": null },
-              { "punteggio": 3, "etichetta": "3", "descrizione": null },
-              { "punteggio": 4, "etichetta": "4", "descrizione": null },
-              { "punteggio": 5, "etichetta": "5", "descrizione": null },
-              { "punteggio": 6, "etichetta": "6", "descrizione": null },
-              { "punteggio": 7, "etichetta": "7", "descrizione": null }
+              { "punteggio": 1, "etichetta": "No", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Sì", "descrizione": null }
             ],
-            "note": "Punteggio = somma dei sub-item. Per ogni sub-item: 1 se il comportamento problematico è assente (No), 0 se presente (Sì)."
+            "note": "Punteggio invertito: 1 = No (comportamento assente), 0 = Sì (comportamento presente)"
           },
           {
-            "codice": "SABS-62",
-            "testo": "Costanza – somma di 5 comportamenti (assenza = 1, presenza = 0): organizzazione, scoraggiamento, completamento, salto attività, incoraggiamento",
+            "codice": "SABS-46",
+            "testo": "Passività - Dev'essere costretto a fare le cose",
+            "tipo": "likert",
             "opzioni": [
-              { "punteggio": 0, "etichetta": "0", "descrizione": null },
-              { "punteggio": 1, "etichetta": "1", "descrizione": null },
-              { "punteggio": 2, "etichetta": "2", "descrizione": null },
-              { "punteggio": 3, "etichetta": "3", "descrizione": null },
-              { "punteggio": 4, "etichetta": "4", "descrizione": null },
-              { "punteggio": 5, "etichetta": "5", "descrizione": null }
+              { "punteggio": 1, "etichetta": "No", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Sì", "descrizione": null }
             ],
-            "note": "Punteggio = somma dei sub-item. 1 = comportamento problematico assente, 0 = presente."
+            "note": null
           },
           {
-            "codice": "SABS-63",
+            "codice": "SABS-47",
+            "testo": "Passività - Non ha aspirazioni",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "No", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Sì", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-48",
+            "testo": "Passività - Sembra non avere interesse per nulla",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "No", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Sì", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-49",
+            "testo": "Passività - Finisce i compiti in ritardo perché perde tempo",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "No", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Sì", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-50",
+            "testo": "Passività - Dipende dall'aiuto altrui, anche quando non necessario",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "No", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Sì", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-51",
+            "testo": "Passività - È lento e pigro nei movimenti",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "No", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Sì", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-52",
+            "testo": "Costanza - Non riesce ad organizzarsi nelle attività",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "No", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Sì", "descrizione": null }
+            ],
+            "note": "Punteggio invertito: 1 = No (comportamento assente), 0 = Sì (comportamento presente)"
+          },
+          {
+            "codice": "SABS-53",
+            "testo": "Costanza - Si scoraggia facilmente",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "No", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Sì", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-54",
+            "testo": "Costanza - Non riesce a portare a termine i compiti",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "No", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Sì", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-55",
+            "testo": "Costanza - Salta da un'attività all'altra",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "No", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Sì", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-56",
+            "testo": "Costanza - Ha bisogno di incoraggiamento costante",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "No", "descrizione": null },
+              { "punteggio": 0, "etichetta": "Sì", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-57",
             "testo": "Tempo libero",
+            "tipo": "likert",
             "opzioni": [
               { "punteggio": 4, "etichetta": "Organizza attività ricreative abbastanza complesse (pescare, giocare a biliardo, giocare al computer...)", "descrizione": null },
               { "punteggio": 3, "etichetta": "Si interessa attivamente in hobby (pittura, collezionismo..)", "descrizione": null },
@@ -300,8 +652,9 @@
             "note": null
           },
           {
-            "codice": "SABS-65",
+            "codice": "SABS-58",
             "testo": "Responsabilità generale",
+            "tipo": "likert",
             "opzioni": [
               { "punteggio": 3, "etichetta": "Molto coscienzioso, si assume molte responsabilità; si impegna; le attività assegnate sono sempre svolte", "descrizione": null },
               { "punteggio": 2, "etichetta": "Di solito è affidabile; si sforza per ciò di cui è responsabile; ci si attende di solito che svolga le attività assegnate", "descrizione": null },
@@ -311,41 +664,134 @@
             "note": null
           },
           {
-            "codice": "SABS-66",
-            "testo": "Responsabilità personale – somma di: autocontrollo, concetto di orario, chiede aiuto, riferisce problemi",
+            "codice": "SABS-59",
+            "testo": "Responsabilità personale - Di solito mantiene l'autocontrollo",
+            "tipo": "likert",
             "opzioni": [
-              { "punteggio": 0, "etichetta": "0", "descrizione": null },
-              { "punteggio": 1, "etichetta": "1", "descrizione": null },
-              { "punteggio": 2, "etichetta": "2", "descrizione": null },
-              { "punteggio": 3, "etichetta": "3", "descrizione": null },
-              { "punteggio": 4, "etichetta": "4", "descrizione": null }
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
             ],
-            "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no)."
+            "note": null
+          },
+          {
+            "codice": "SABS-60",
+            "testo": "Responsabilità personale - Capisce il concetto di 'essere in orario', 'rispettare i tempi'",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-61",
+            "testo": "Responsabilità personale - Cerca e accetta aiuto sulle istruzioni date",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-62",
+            "testo": "Responsabilità personale - Riferisce quando c'è un problema",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-63",
+            "testo": "Considerazione per gli altri - Mostra interesse per ciò che fanno gli altri",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-64",
+            "testo": "Considerazione per gli altri - Tratta con cura le cose altrui",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-65",
+            "testo": "Considerazione per gli altri - Dirige o gestisce gli affari altrui, quando necessario",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-66",
+            "testo": "Considerazione per gli altri - Mostra di prendere in considerazione i sentimenti altrui",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-67",
+            "testo": "Coscienza dell'altro - Riconosce i propri familiari",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
           },
           {
             "codice": "SABS-68",
-            "testo": "Considerazione per gli altri – somma di: interesse per gli altri, cura cose altrui, dirige affari, considerazione sentimenti",
+            "testo": "Coscienza dell'altro - Riconosce persone diverse dai propri familiari",
+            "tipo": "likert",
             "opzioni": [
-              { "punteggio": 0, "etichetta": "0", "descrizione": null },
-              { "punteggio": 1, "etichetta": "1", "descrizione": null },
-              { "punteggio": 2, "etichetta": "2", "descrizione": null },
-              { "punteggio": 3, "etichetta": "3", "descrizione": null },
-              { "punteggio": 4, "etichetta": "4", "descrizione": null }
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
             ],
-            "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no)."
+            "note": null
           },
           {
             "codice": "SABS-69",
-            "testo": "Coscienza dell'altro – somma di: riconosce familiari, riconosce non familiari, ricorda info, nomi vicini, nomi saltuari",
+            "testo": "Coscienza dell'altro - Ricorda informazioni sugli altri (lavoro, indirizzo, rapporto rispetto a lui)",
+            "tipo": "likert",
             "opzioni": [
-              { "punteggio": 0, "etichetta": "0", "descrizione": null },
-              { "punteggio": 1, "etichetta": "1", "descrizione": null },
-              { "punteggio": 2, "etichetta": "2", "descrizione": null },
-              { "punteggio": 3, "etichetta": "3", "descrizione": null },
-              { "punteggio": 4, "etichetta": "4", "descrizione": null },
-              { "punteggio": 5, "etichetta": "5", "descrizione": null }
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
             ],
-            "note": "Punteggio = somma dei sub-item (1 = sì, 0 = no)."
+            "note": null
+          },
+          {
+            "codice": "SABS-70",
+            "testo": "Coscienza dell'altro - Conosce il nome di persone a lui vicine",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
+          },
+          {
+            "codice": "SABS-71",
+            "testo": "Coscienza dell'altro - Conosce il nome di persone che vede saltuariamente",
+            "tipo": "likert",
+            "opzioni": [
+              { "punteggio": 1, "etichetta": "Sì", "descrizione": null },
+              { "punteggio": 0, "etichetta": "No", "descrizione": null }
+            ],
+            "note": null
           }
         ]
       }

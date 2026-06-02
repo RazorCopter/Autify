@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.19.1] - 2026-06-02
+- **Gestione Scadenza Sessione (Re-routing a Login)**: Implementata la gestione globale degli errori `401 Unauthorized` in `ApiService`. Qualsiasi chiamata HTTP al backend che fallisca con stato `401` a causa del token JWT scaduto pulisce ora programmaticamente il `localStorage`/`sessionStorage` ed esegue un ricaricamento forzato (`window.location.reload`) bypassando la cache, reindirizzando automaticamente e in modo sicuro l'utente alla schermata di login.
+
 ## [2.19.0] - 2026-06-01
 - **Ristrutturazione UI "Analisi Utente" — Navigazione a Tab + Accordion Premium**:
   - Sostituita la precedente unica vista a scorrimento verticale con una navigazione a **3 tab**: "Qualità della Vita", "Comportamento Adattivo" e "Analisi IA".

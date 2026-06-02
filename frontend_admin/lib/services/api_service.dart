@@ -1,12 +1,59 @@
 import 'dart:convert';
 import 'dart:html' as html;
-import 'package:http/http.dart' as http;
+import 'package:http/http.dart' as raw_http;
 import 'package:file_picker/file_picker.dart';
 import '../config.dart' as cfg;
 import '../models/scale_model.dart';
 import '../models/patient_model.dart';
 import '../models/evaluation_model.dart';
 import '../models/audit_log.dart';
+
+class _Http {
+  const _Http();
+  
+  void _handleUnauthorized() {
+    try {
+      html.window.localStorage.clear();
+      html.window.sessionStorage.clear();
+      final reloadUrl = (html.window.location.pathname ?? '/') + "?v=${DateTime.now().millisecondsSinceEpoch}";
+      html.window.location.href = reloadUrl;
+    } catch (_) {}
+  }
+
+  Future<raw_http.Response> get(Uri url, {Map<String, String>? headers}) async {
+    final response = await raw_http.get(url, headers: headers);
+    if (response.statusCode == 401) {
+      _handleUnauthorized();
+    }
+    return response;
+  }
+
+  Future<raw_http.Response> post(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
+    final response = await raw_http.post(url, headers: headers, body: body, encoding: encoding);
+    if (response.statusCode == 401 && !url.path.contains('/auth/login')) {
+      _handleUnauthorized();
+    }
+    return response;
+  }
+
+  Future<raw_http.Response> put(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
+    final response = await raw_http.put(url, headers: headers, body: body, encoding: encoding);
+    if (response.statusCode == 401) {
+      _handleUnauthorized();
+    }
+    return response;
+  }
+
+  Future<raw_http.Response> delete(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
+    final response = await raw_http.delete(url, headers: headers, body: body, encoding: encoding);
+    if (response.statusCode == 401) {
+      _handleUnauthorized();
+    }
+    return response;
+  }
+}
+
+const _Http http = _Http();
 
 class ApiService {
   static String get kAuthToken {
@@ -195,7 +242,7 @@ class ApiService {
 
   Future<bool> uploadProtocolJSON(PlatformFile file) async {
     try {
-      final request = http.MultipartRequest(
+      final request = raw_http.MultipartRequest(
         'POST',
         Uri.parse('$baseUrl/import-scale'),
       );
@@ -203,7 +250,7 @@ class ApiService {
       
       // In Flutter Web, il file ha i bytes esposti direttamente se letto con withData: true
       if (file.bytes != null) {
-        request.files.add(http.MultipartFile.fromBytes(
+        request.files.add(raw_http.MultipartFile.fromBytes(
           'file',
           file.bytes!,
           filename: file.name,
@@ -213,6 +260,9 @@ class ApiService {
       }
 
       final response = await request.send();
+      if (response.statusCode == 401) {
+        http._handleUnauthorized();
+      }
       return response.statusCode == 200;
     } catch (e) {
       print('Errore upload: $e');
@@ -525,13 +575,13 @@ class ApiService {
 
   Future<bool> importDatabase(PlatformFile file) async {
     try {
-      final request = http.MultipartRequest(
+      final request = raw_http.MultipartRequest(
         'POST',
         Uri.parse('$baseUrl/import-db'),
       );
       request.headers['Authorization'] = 'Bearer $kAuthToken';
       if (file.bytes != null) {
-        request.files.add(http.MultipartFile.fromBytes(
+        request.files.add(raw_http.MultipartFile.fromBytes(
           'file',
           file.bytes!,
           filename: file.name,
@@ -540,6 +590,9 @@ class ApiService {
         throw Exception("Impossibile leggere i bytes del file");
       }
       final response = await request.send();
+      if (response.statusCode == 401) {
+        http._handleUnauthorized();
+      }
       return response.statusCode == 200;
     } catch (e) {
       print('Errore import database: $e');
