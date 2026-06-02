@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.19.2] - 2026-06-02
+- **Layout a Colonne Desktop in "Qualità della Vita"**: Implementata la visualizzazione a 3 colonne affiancate verticalmente ed espanse di default su dispositivi desktop per le tre scale di qualità della vita (POS, San Martín e SIS). Su dispositivi mobili rimane la visualizzazione a singola colonna con accordion.
+
 ## [2.19.1] - 2026-06-02
 - **Gestione Scadenza Sessione (Re-routing a Login)**: Implementata la gestione globale degli errori `401 Unauthorized` in `ApiService`. Qualsiasi chiamata HTTP al backend che fallisca con stato `401` a causa del token JWT scaduto pulisce ora programmaticamente il `localStorage`/`sessionStorage` ed esegue un ricaricamento forzato (`window.location.reload`) bypassando la cache, reindirizzando automaticamente e in modo sicuro l'utente alla schermata di login.
 

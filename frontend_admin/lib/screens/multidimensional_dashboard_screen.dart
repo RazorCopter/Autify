@@ -598,6 +598,18 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         .where((s) => _latestEvaluations.containsKey(s.id) && !_isBehaviorScale(s.id, s.nome))
         .toList();
 
+    // Ordina le scale per stabilità di visualizzazione: POS, San Martín, SIS
+    lifeScales.sort((a, b) {
+      final isASis = _isSisScale(a.id, a.nome);
+      final isBSis = _isSisScale(b.id, b.nome);
+      final isASM = _isSanMartinScale(a.id, a.nome);
+      final isBSM = _isSanMartinScale(b.id, b.nome);
+      
+      int valA = isASis ? 2 : (isASM ? 1 : 0);
+      int valB = isBSis ? 2 : (isBSM ? 1 : 0);
+      return valA.compareTo(valB);
+    });
+
     // Rileva se POS e SM entrambi presenti per il compare toggle
     AggregatedEvaluation? posEval;
     AggregatedEvaluation? smEval;
@@ -610,6 +622,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       }
     }
     final bool canCompare = posEval != null && smEval != null;
+    final isMobile = ResponsiveHelper.isMobile(context);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
@@ -646,15 +659,28 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               ),
               child: _isCompareMode && canCompare
                   ? _buildComparePanel(posEval!, smEval!)
-                  : Column(
-                      key: const ValueKey('qdv_accordion'),
-                      children: lifeScales.map((scale) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _buildExpandableScaleCard(scale),
-                        );
-                      }).toList(),
-                    ),
+                  : (!isMobile
+                      ? Row(
+                          key: const ValueKey('qdv_row_desktop'),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: lifeScales.map((scale) {
+                            return Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 6),
+                                child: _buildExpandableScaleCard(scale, initiallyExpanded: true),
+                              ),
+                            );
+                          }).toList(),
+                        )
+                      : Column(
+                          key: const ValueKey('qdv_accordion_mobile'),
+                          children: lifeScales.map((scale) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _buildExpandableScaleCard(scale),
+                            );
+                          }).toList(),
+                        )),
             ),
           ],
         ],
@@ -774,7 +800,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   }
 
   /// Costruisce una ExpandableScaleCard per qualsiasi scala
-  Widget _buildExpandableScaleCard(ScaleModel scale) {
+  Widget _buildExpandableScaleCard(ScaleModel scale, {bool initiallyExpanded = false}) {
     final eval = _latestEvaluations[scale.id]!;
     final analysis = _analyses[scale.id];
     final isSM = _isSanMartinScale(scale.id, scale.nome);
@@ -868,6 +894,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       summaryChips: summaryChips,
       expandedContent: expandedContent,
       headerActions: headerActions,
+      initiallyExpanded: initiallyExpanded,
     );
   }
 
