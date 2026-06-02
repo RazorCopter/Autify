@@ -439,18 +439,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // Row 2: Charts (Doughnut e LineChart)
             if (isDesktop)
               SizedBox(
-                height: 380,
+                height: 340,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(
                       flex: 2,
-                      child: _buildDocumentCoverageCard(coveredCount, expiredCount, coveragePercent),
+                      child: _buildDocumentCoverageCard(coveredCount, expiredCount, coveragePercent, height: 340),
                     ),
                     const SizedBox(width: 24),
                     Expanded(
                       flex: 3,
-                      child: _buildDistributionCard(distributions, activePatients, height: 380),
+                      child: _buildDistributionCard(distributions, activePatients, height: 340),
                     ),
                   ],
                 ),
@@ -458,7 +458,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             else
               Column(
                 children: [
-                  _buildDocumentCoverageCard(coveredCount, expiredCount, coveragePercent),
+                  _buildDocumentCoverageCard(coveredCount, expiredCount, coveragePercent, height: 380),
                   const SizedBox(height: 24),
                   _buildDistributionCard(distributions, activePatients, height: 420),
                 ],
@@ -468,18 +468,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             // Row 3: Alert list & Demographics
             if (isDesktop)
-              IntrinsicHeight(
+              SizedBox(
+                height: 440,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(
-                      flex: 3,
-                      child: _buildAlertListCard(alertList),
+                      flex: 7, // 70% width
+                      child: _buildAlertListCard(alertList, height: 440),
                     ),
                     const SizedBox(width: 24),
                     Expanded(
-                      flex: 2,
-                      child: _buildDemographicsCard(demographics),
+                      flex: 3, // 30% width
+                      child: _buildDemographicsCard(demographics, height: 440),
                     ),
                   ],
                 ),
@@ -671,9 +672,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ─── DOCUMENT COVERAGE CARD ────────────────────────────────────────────────
-  Widget _buildDocumentCoverageCard(int covered, int expired, double percent) {
+  Widget _buildDocumentCoverageCard(int covered, int expired, double percent, {double? height}) {
     return _HoverBentoCard(
-      height: 380,
+      height: height ?? 380,
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
