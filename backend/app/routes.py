@@ -1513,34 +1513,107 @@ async def get_dashboard_stats():
             else:
                 sis_scaduti += 1
                 
-            # Alert candidates: se non ha POS valida o non ha San Martín valida o non ha SIS valida
-            if not has_valid_pos or not has_valid_sm or not has_valid_sis:
-                if not pat_evals:
+            # Generazione alert puntuali per singola scala (se non valida o in scadenza)
+            # POS
+            if not pat_pos_evals:
+                alert_candidates.append({
+                    "paziente_id": pat_display_id,
+                    "paziente_nome": pat.get("nome", ""),
+                    "paziente_cognome": pat.get("cognome", ""),
+                    "ultima_valutazione_data": None,
+                    "giorni_da_ultima_valutazione": 9999,
+                    "stato": "mai_valutato",
+                    "scala_nome": "POS"
+                })
+            else:
+                days_since_pos = (now - latest_pos_date).days
+                if days_since_pos > 180:
                     alert_candidates.append({
                         "paziente_id": pat_display_id,
                         "paziente_nome": pat.get("nome", ""),
                         "paziente_cognome": pat.get("cognome", ""),
-                        "ultima_valutazione_data": None,
-                        "giorni_da_ultima_valutazione": 9999,
-                        "stato": "mai_valutato",
-                        "scala_nome": "Nessuna scala somministrata"
-                    })
-                else:
-                    sorted_evals = sorted(pat_evals, key=parse_eval_date, reverse=True)
-                    latest_ev = sorted_evals[0]
-                    latest_date = parse_eval_date(latest_ev)
-                    days_since = (now - latest_date).days
-                    scale_id = latest_ev.get("id_scala")
-                    scale_id_str = str(scale_id) if scale_id else ""
-                    scala_nome = scale_names.get(scale_id_str) or scale_names.get(str(scale_id)) or scale_id_str or "Scala sconosciuta"
-                    alert_candidates.append({
-                        "paziente_id": pat_display_id,
-                        "paziente_nome": pat.get("nome", ""),
-                        "paziente_cognome": pat.get("cognome", ""),
-                        "ultima_valutazione_data": latest_date.isoformat(),
-                        "giorni_da_ultima_valutazione": days_since,
+                        "ultima_valutazione_data": latest_pos_date.isoformat(),
+                        "giorni_da_ultima_valutazione": days_since_pos,
                         "stato": "scaduto",
-                        "scala_nome": scala_nome
+                        "scala_nome": "POS"
+                    })
+                elif days_since_pos > 150:
+                    alert_candidates.append({
+                        "paziente_id": pat_display_id,
+                        "paziente_nome": pat.get("nome", ""),
+                        "paziente_cognome": pat.get("cognome", ""),
+                        "ultima_valutazione_data": latest_pos_date.isoformat(),
+                        "giorni_da_ultima_valutazione": days_since_pos,
+                        "stato": "in_scadenza",
+                        "scala_nome": "POS"
+                    })
+
+            # San Martín
+            if not pat_sm_evals:
+                alert_candidates.append({
+                    "paziente_id": pat_display_id,
+                    "paziente_nome": pat.get("nome", ""),
+                    "paziente_cognome": pat.get("cognome", ""),
+                    "ultima_valutazione_data": None,
+                    "giorni_da_ultima_valutazione": 9999,
+                    "stato": "mai_valutato",
+                    "scala_nome": "San Martín"
+                })
+            else:
+                days_since_sm = (now - latest_sm_date).days
+                if days_since_sm > 180:
+                    alert_candidates.append({
+                        "paziente_id": pat_display_id,
+                        "paziente_nome": pat.get("nome", ""),
+                        "paziente_cognome": pat.get("cognome", ""),
+                        "ultima_valutazione_data": latest_sm_date.isoformat(),
+                        "giorni_da_ultima_valutazione": days_since_sm,
+                        "stato": "scaduto",
+                        "scala_nome": "San Martín"
+                    })
+                elif days_since_sm > 150:
+                    alert_candidates.append({
+                        "paziente_id": pat_display_id,
+                        "paziente_nome": pat.get("nome", ""),
+                        "paziente_cognome": pat.get("cognome", ""),
+                        "ultima_valutazione_data": latest_sm_date.isoformat(),
+                        "giorni_da_ultima_valutazione": days_since_sm,
+                        "stato": "in_scadenza",
+                        "scala_nome": "San Martín"
+                    })
+
+            # SIS
+            if not pat_sis_evals:
+                alert_candidates.append({
+                    "paziente_id": pat_display_id,
+                    "paziente_nome": pat.get("nome", ""),
+                    "paziente_cognome": pat.get("cognome", ""),
+                    "ultima_valutazione_data": None,
+                    "giorni_da_ultima_valutazione": 9999,
+                    "stato": "mai_valutato",
+                    "scala_nome": "SIS"
+                })
+            else:
+                days_since_sis = (now - latest_sis_date).days
+                if days_since_sis > 365:
+                    alert_candidates.append({
+                        "paziente_id": pat_display_id,
+                        "paziente_nome": pat.get("nome", ""),
+                        "paziente_cognome": pat.get("cognome", ""),
+                        "ultima_valutazione_data": latest_sis_date.isoformat(),
+                        "giorni_da_ultima_valutazione": days_since_sis,
+                        "stato": "scaduto",
+                        "scala_nome": "SIS"
+                    })
+                elif days_since_sis > 335:
+                    alert_candidates.append({
+                        "paziente_id": pat_display_id,
+                        "paziente_nome": pat.get("nome", ""),
+                        "paziente_cognome": pat.get("cognome", ""),
+                        "ultima_valutazione_data": latest_sis_date.isoformat(),
+                        "giorni_da_ultima_valutazione": days_since_sis,
+                        "stato": "in_scadenza",
+                        "scala_nome": "SIS"
                     })
 
         # Calcolo percentuale di copertura
@@ -1551,9 +1624,14 @@ async def get_dashboard_stats():
         max_scale_teoriche = 3 * totale_pazienti_attivi
         copertura_percentuale = (coperti_count / max_scale_teoriche * 100) if max_scale_teoriche > 0 else 0.0
         
-        # 5. Ordina gli alert: prima chi non ne ha mai fatte, poi chi ha valutazioni scadute da più tempo
-        alert_candidates.sort(key=lambda x: x.get("giorni_da_ultima_valutazione", 0), reverse=True)
-        ultimi_alert = alert_candidates[:5]
+        # 5. Ordina gli alert: prima chi non ne ha mai fatte o scadute da più tempo, poi in scadenza
+        alert_candidates.sort(
+            key=lambda x: (
+                0 if x.get("stato") in ("scaduto", "mai_valutato") else 1,
+                -x.get("giorni_da_ultima_valutazione", 0)
+            )
+        )
+        ultimi_alert = alert_candidates[:10]
         
         # 6. Distribuzione per tipo di scala (saltando orfane o non valide)
         distribuzione_raw = {}

@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.19.9] - 2026-06-02
+- **Alert Center per Singola Scala (POS, San Martín, SIS)**:
+  - Modificata la logica del backend per calcolare la scadenza e la compilazione mancante per ciascuna delle tre scale fondamentali in modo autonomo, scorporando gli alert precedentemente accorpati per utente.
+  - Implementata la visualizzazione puntuale nel frontend con badge cromatici precisi: Rosso (`MAI COMPILATA`, `SCADUTA`) e Arancio (`IN SCADENZA`).
+  - Il testo descrittivo dell'alert indica ora in modo esplicito quale scala specifica necessita di intervento (es. "Nessuna scala POS compilata" o "Ultima compilazione SIS 200 giorni fa").
+
 ## [2.19.8] - 2026-06-02
 - **Correzioni Pixel-Perfect Area Chart Dashboard**:
   - Risolto il problema di sovrapposizione dell'asse X (Timeline) nel grafico "Attività Redazione Documentazione" tramite l'inserimento di un intervallo discreto basato sulla dimensione dei dati (`interval`) e formattando le etichette per visualizzare solo la sigla del mese abbreviata a 3 lettere (es. "Gen", "Feb"), escludendo l'anno.

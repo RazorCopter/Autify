@@ -1047,34 +1047,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     itemBuilder: (context, index) {
                       final item = sortedAlerts[index];
                       final name = '${item['paziente_nome'] ?? ''} ${item['paziente_cognome'] ?? ''}'.trim();
-                      final isNever = item['stato'] == 'mai_valutato';
+                      final stato = item['stato'] ?? 'scaduto';
                       final days = (item['giorni_da_ultima_valutazione'] ?? 0) as int;
+                      final scalaNome = item['scala_nome'] ?? '';
                       
                       Color badgeColor;
                       Color badgeBg;
                       String badgeText;
                       IconData leadIcon;
 
-                      if (isNever) {
-                        badgeColor = const Color(0xFFD97706); // Amber/Giallo
-                        badgeBg = const Color(0xFFFEF3C7);
-                        badgeText = 'DA VERIFICARE';
-                        leadIcon = Icons.help_outline_rounded;
-                      } else if (days <= 395) {
-                        badgeColor = const Color(0xFFEAB308); // Yellow/Arancio
+                      if (stato == 'mai_valutato') {
+                        badgeColor = const Color(0xFFDC2626); // Red
+                        badgeBg = const Color(0xFFFEE2E2);
+                        badgeText = 'MAI COMPILATA';
+                        leadIcon = Icons.dangerous_outlined;
+                      } else if (stato == 'in_scadenza') {
+                        badgeColor = const Color(0xFFEAB308); // Amber/Arancio
                         badgeBg = const Color(0xFFFEF9C3);
                         badgeText = 'IN SCADENZA';
                         leadIcon = Icons.timer_outlined;
                       } else {
                         badgeColor = const Color(0xFFDC2626); // Red
                         badgeBg = const Color(0xFFFEE2E2);
-                        badgeText = 'SCADUTO';
+                        badgeText = 'SCADUTA';
                         leadIcon = Icons.warning_amber_rounded;
                       }
 
-                      final daysText = isNever
-                          ? 'Nessuna scala compilata a sistema'
-                          : 'Ultimo test $days giorni fa (${item['scala_nome']})';
+                      final daysText = stato == 'mai_valutato'
+                          ? 'Nessuna scala $scalaNome compilata a sistema'
+                          : 'Ultima compilazione $scalaNome $days giorni fa';
 
                       return TweenAnimationBuilder<double>(
                         tween: Tween<double>(begin: 0, end: 1),

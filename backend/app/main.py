@@ -6,7 +6,7 @@ from . import auth as auth_module
 app = FastAPI(
     title="Autify API",
     description="API per la piattaforma Multi-Frontend (Admin/Client) Autify di Valutazione Multidimensionale.",
-    version="2.19.8"
+    version="2.19.9"
 )
 
 @app.on_event("startup")
