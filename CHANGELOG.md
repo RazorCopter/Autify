@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.19.3] - 2026-06-02
+- **Riepilogo per Dominio Transposto in Caso di Molti Domini**: Nelle schermate di dettaglio delle scale di valutazione, la tabella "Riepilogo per Dominio" viene ora automaticamente trasposta se la scala contiene più di 5 domini (es. ODFLAB con 16 domini, POS, SIS). In questo layout verticale ogni dominio corrisponde a una riga della tabella (con wrapping del testo per evitare overflow), e le metriche a colonne, ottimizzando lo spazio ed evitando tagli o scorrimenti orizzontali complessi a qualsiasi risoluzione.
+
 ## [2.19.2] - 2026-06-02
 - **Layout a Colonne Desktop in "Qualità della Vita"**: Implementata la visualizzazione a 3 colonne affiancate verticalmente ed espanse di default su dispositivi desktop per le tre scale di qualità della vita (POS, San Martín e SIS). Su dispositivi mobili rimane la visualizzazione a singola colonna con accordion.
 

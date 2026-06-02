@@ -1810,133 +1810,214 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
         ? _analysis!.domini
         : (_eval?.domini ?? <DomainScore>[]);
 
-    final List<DataColumn> columns = [
-      const DataColumn(
-        label: Text(
-          'Metrica',
-          style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor, fontSize: 13),
-        ),
-      ),
-      ...domainsList.map((d) {
-        final code = (d is DomainAnalysis) ? d.codice : (d as DomainScore).codice;
-        final labelText = (d is DomainAnalysis) ? d.etichetta : (d as DomainScore).etichetta;
-        
-        // Abbreviazioni per far rientrare la tabella nello schermo
-        String displayLabel = labelText;
-        final upperCode = code.toUpperCase();
-        if (upperCode == 'AU') {
-          displayLabel = 'Autodeter.';
-        } else if (upperCode == 'BE') {
-          displayLabel = 'Ben. Emotivo';
-        } else if (upperCode == 'BF') {
-          displayLabel = 'Ben. Fisico';
-        } else if (upperCode == 'BM') {
-          displayLabel = 'Ben. Materiale';
-        } else if (upperCode == 'DI') {
-          displayLabel = 'Diritti';
-        } else if (upperCode == 'SP') {
-          displayLabel = 'Svilup. Pers.';
-        } else if (upperCode == 'IS') {
-          displayLabel = 'Inclus. Soc.';
-        } else if (upperCode == 'RI') {
-          displayLabel = 'Relaz. Interp.';
-        } else if (upperCode == 'A') {
-          displayLabel = 'A - Domestico';
-        } else if (upperCode == 'B') {
-          displayLabel = 'B - Comunità';
-        } else if (upperCode == 'C') {
-          displayLabel = 'C - Apprend.';
-        } else if (upperCode == 'D') {
-          displayLabel = 'D - Occupaz.';
-        } else if (upperCode == 'E') {
-          displayLabel = 'E - Salute/Sic.';
-        } else if (upperCode == 'F') {
-          displayLabel = 'F - Sociale';
-        } else if (upperCode == 'SEZ2' || upperCode == 'P') {
-          displayLabel = 'SEZ2 - Protez.';
-        } else if (upperCode == 'SEZ3M' || upperCode == 'M') {
-          displayLabel = 'SEZ3M - Medico';
-        } else if (upperCode == 'SEZ3C' || upperCode == 'BC') {
-          displayLabel = 'SEZ3C - Comport.';
-        }
+    final bool useVerticalLayout = domainsList.length > 5;
 
-        return DataColumn(
-          label: SizedBox(
-            width: 95,
-            child: Text(
-              displayLabel,
-              softWrap: true,
-              maxLines: 2,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppTheme.primaryColor,
-                fontSize: 12,
-                height: 1.1,
-              ),
-            ),
-          ),
-        );
-      }),
-    ];
-
+    final List<DataColumn> columns = [];
     final List<DataRow> rows = [];
 
-    // 1. Punteggio Grezzo
-    rows.add(DataRow(
-      cells: [
-        const DataCell(Text('Punteggio Grezzo', style: TextStyle(fontWeight: FontWeight.bold))),
-        ...domainsList.map((d) {
-          final val = (d is DomainAnalysis) ? d.punteggioDiretto : (d as DomainScore).punteggio;
-          return DataCell(Text(val.toString(), style: const TextStyle(fontSize: 13)));
-        }),
-      ],
-    ));
-
-    // Se abbiamo i dati della Scala San Martín (con conversione)
-    if (_shouldUseSanMartinUi && _analysis != null) {
-      // 2. Punteggio Standard
-      rows.add(DataRow(
-        cells: [
-          const DataCell(Text('Punteggio Standard', style: TextStyle(fontWeight: FontWeight.bold))),
-          ...domainsList.map((d) {
-            final val = (d as DomainAnalysis).punteggioStandard;
-            final fasciaColor = _getFasciaColor(d.fascia);
-            return DataCell(_standardScoreBadge(val, fasciaColor));
-          }),
+    if (useVerticalLayout) {
+      columns.addAll([
+        const DataColumn(
+          label: Text(
+            'Dominio',
+            style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor, fontSize: 13),
+          ),
+        ),
+        const DataColumn(
+          label: Text(
+            'Punteggio Grezzo',
+            style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor, fontSize: 13),
+          ),
+        ),
+        if (_shouldUseSanMartinUi && _analysis != null) ...[
+          const DataColumn(
+            label: Text(
+              'Punteggio Standard',
+              style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor, fontSize: 13),
+            ),
+          ),
+          const DataColumn(
+            label: Text(
+              'Percentile',
+              style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor, fontSize: 13),
+            ),
+          ),
+          const DataColumn(
+            label: Text(
+              'Fascia',
+              style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor, fontSize: 13),
+            ),
+          ),
         ],
-      ));
+      ]);
 
-      // 3. Percentile
-      rows.add(DataRow(
-        cells: [
-          const DataCell(Text('Percentile', style: TextStyle(fontWeight: FontWeight.bold))),
-          ...domainsList.map((d) {
-            final val = (d as DomainAnalysis).percentileDominio;
-            final fasciaColor = _getFasciaColor(d.fascia);
-            final valText = val != null ? '$val°' : '—';
-            return DataCell(Text(
-              valText,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: val != null ? fasciaColor : AppTheme.textSecondary,
+      for (final d in domainsList) {
+        final code = (d is DomainAnalysis) ? d.codice : (d as DomainScore).codice;
+        final labelText = (d is DomainAnalysis) ? d.etichetta : (d as DomainScore).etichetta;
+        final rawScore = (d is DomainAnalysis) ? d.punteggioDiretto : (d as DomainScore).punteggio;
+
+        rows.add(DataRow(
+          cells: [
+            DataCell(
+              SizedBox(
+                width: 250,
+                child: Text(
+                  '$labelText ($code)',
+                  softWrap: true,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
               ),
-            ));
+            ),
+            DataCell(Text(rawScore.toString(), style: const TextStyle(fontSize: 13))),
+            if (_shouldUseSanMartinUi && _analysis != null) ...[
+              DataCell(_standardScoreBadge((d as DomainAnalysis).punteggioStandard, _getFasciaColor(d.fascia))),
+              DataCell(Builder(
+                builder: (context) {
+                  final val = (d as DomainAnalysis).percentileDominio;
+                  final fasciaColor = _getFasciaColor(d.fascia);
+                  final valText = val != null ? '$val°' : '—';
+                  return Text(
+                    valText,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: val != null ? fasciaColor : AppTheme.textSecondary,
+                    ),
+                  );
+                },
+              )),
+              DataCell(_fasciaBadge((d as DomainAnalysis).fascia, _getFasciaColor(d.fascia))),
+            ],
+          ],
+        ));
+      }
+    } else {
+      columns.addAll([
+        const DataColumn(
+          label: Text(
+            'Metrica',
+            style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor, fontSize: 13),
+          ),
+        ),
+        ...domainsList.map((d) {
+          final code = (d is DomainAnalysis) ? d.codice : (d as DomainScore).codice;
+          final labelText = (d is DomainAnalysis) ? d.etichetta : (d as DomainScore).etichetta;
+          
+          // Abbreviazioni per far rientrare la tabella nello schermo
+          String displayLabel = labelText;
+          final upperCode = code.toUpperCase();
+          if (upperCode == 'AU') {
+            displayLabel = 'Autodeter.';
+          } else if (upperCode == 'BE') {
+            displayLabel = 'Ben. Emotivo';
+          } else if (upperCode == 'BF') {
+            displayLabel = 'Ben. Fisico';
+          } else if (upperCode == 'BM') {
+            displayLabel = 'Ben. Materiale';
+          } else if (upperCode == 'DI') {
+            displayLabel = 'Diritti';
+          } else if (upperCode == 'SP') {
+            displayLabel = 'Svilup. Pers.';
+          } else if (upperCode == 'IS') {
+            displayLabel = 'Inclus. Soc.';
+          } else if (upperCode == 'RI') {
+            displayLabel = 'Relaz. Interp.';
+          } else if (upperCode == 'A') {
+            displayLabel = 'A - Domestico';
+          } else if (upperCode == 'B') {
+            displayLabel = 'B - Comunità';
+          } else if (upperCode == 'C') {
+            displayLabel = 'C - Apprend.';
+          } else if (upperCode == 'D') {
+            displayLabel = 'D - Occupaz.';
+          } else if (upperCode == 'E') {
+            displayLabel = 'E - Salute/Sic.';
+          } else if (upperCode == 'F') {
+            displayLabel = 'F - Sociale';
+          } else if (upperCode == 'SEZ2' || upperCode == 'P') {
+            displayLabel = 'SEZ2 - Protez.';
+          } else if (upperCode == 'SEZ3M' || upperCode == 'M') {
+            displayLabel = 'SEZ3M - Medico';
+          } else if (upperCode == 'SEZ3C' || upperCode == 'BC') {
+            displayLabel = 'SEZ3C - Comport.';
+          }
+
+          return DataColumn(
+            label: SizedBox(
+              width: 95,
+              child: Text(
+                displayLabel,
+                softWrap: true,
+                maxLines: 2,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryColor,
+                  fontSize: 12,
+                  height: 1.1,
+                ),
+              ),
+            ),
+          );
+        }),
+      ]);
+
+      // 1. Punteggio Grezzo
+      rows.add(DataRow(
+        cells: [
+          const DataCell(Text('Punteggio Grezzo', style: TextStyle(fontWeight: FontWeight.bold))),
+          ...domainsList.map((d) {
+            final val = (d is DomainAnalysis) ? d.punteggioDiretto : (d as DomainScore).punteggio;
+            return DataCell(Text(val.toString(), style: const TextStyle(fontSize: 13)));
           }),
         ],
       ));
 
-      // 4. Fascia
-      rows.add(DataRow(
-        cells: [
-          const DataCell(Text('Fascia', style: TextStyle(fontWeight: FontWeight.bold))),
-          ...domainsList.map((d) {
-            final val = (d as DomainAnalysis).fascia;
-            final fasciaColor = _getFasciaColor(d.fascia);
-            return DataCell(_fasciaBadge(val, fasciaColor));
-          }),
-        ],
-      ));
+      // Se abbiamo i dati della Scala San Martín (con conversione)
+      if (_shouldUseSanMartinUi && _analysis != null) {
+        // 2. Punteggio Standard
+        rows.add(DataRow(
+          cells: [
+            const DataCell(Text('Punteggio Standard', style: TextStyle(fontWeight: FontWeight.bold))),
+            ...domainsList.map((d) {
+              final val = (d as DomainAnalysis).punteggioStandard;
+              final fasciaColor = _getFasciaColor(d.fascia);
+              return DataCell(_standardScoreBadge(val, fasciaColor));
+            }),
+          ],
+        ));
+
+        // 3. Percentile
+        rows.add(DataRow(
+          cells: [
+            const DataCell(Text('Percentile', style: TextStyle(fontWeight: FontWeight.bold))),
+            ...domainsList.map((d) {
+              final val = (d as DomainAnalysis).percentileDominio;
+              final fasciaColor = _getFasciaColor(d.fascia);
+              final valText = val != null ? '$val°' : '—';
+              return DataCell(Text(
+                valText,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: val != null ? fasciaColor : AppTheme.textSecondary,
+                ),
+              ));
+            }),
+          ],
+        ));
+
+        // 4. Fascia
+        rows.add(DataRow(
+          cells: [
+            const DataCell(Text('Fascia', style: TextStyle(fontWeight: FontWeight.bold))),
+            ...domainsList.map((d) {
+              final val = (d as DomainAnalysis).fascia;
+              final fasciaColor = _getFasciaColor(d.fascia);
+              return DataCell(_fasciaBadge(val, fasciaColor));
+            }),
+          ],
+        ));
+      }
     }
 
     return Card(
