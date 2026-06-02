@@ -235,16 +235,26 @@ async def get_viewer_logs(auth: dict = Depends(verify_auth)):
 
 @admin_router.get("/stats", tags=["Admin - Stats"])
 async def get_global_stats(auth: dict = Depends(verify_auth)):
-    """Restituisce le statistiche aggregate globali per la Dashboard (Fase 1)."""
+    """Restituisce le statistiche aggregate globali reali per la Dashboard."""
+    import collections
+    
     # 1. Totali
     active_users = await patients_collection.count_documents({"attivo": True})
     total_evals = await evaluations_collection.count_documents({})
     
-    # 2. Copertura Scale (mock logica o base)
-    # Per semplicità, consideriamo coperti quelli che hanno 'ultimo_sis_compilato' ecc.
-    # ma facciamo una stima veloce dal DB.
+    # Recupera tutti gli utenti attivi e tutte le valutazioni
     patients = await patients_collection.find({"attivo": True}).to_list(1000)
+    evaluations = await evaluations_collection.find({}).to_list(10000)
     
+    # Carica le scale disponibili per mappare l'ID al nome normalizzato
+    scales = await scales_collection.find({}).to_list(100)
+    scale_map = {}
+    for s in scales:
+        nome_lower = s["nome"].lower()
+        scale_map[s["id"]] = nome_lower
+        if s.get("_id"):
+            scale_map[str(s["_id"])] = nome_lower
+
     coperti_count = 0
     scaduti_count = 0
     pos_mancanti = 0
@@ -254,49 +264,201 @@ async def get_global_stats(auth: dict = Depends(verify_auth)):
     
     now = datetime.now(timezone.utc)
     
+    # Calcolo Copertura, Alert e Dati Demografici
+    sesso_counts = {"M": 0, "F": 0}
+    fasce_eta = {"0-18": 0, "19-35": 0, "36-50": 0, "51+": 0}
+    
     for p in patients:
-        # Molto semplice: se ha almeno una valutazione recente (es. ultimo anno) è coperto
-        # Assumiamo per ora una logica random o calcolata sui dati reali
-        has_sis = p.get("ultimo_sis_compilato") is not None
-        has_pos = p.get("ultimo_pos_compilato") is not None
+        # Dati socio-demografici: Genere
+        gender = (p.get("sesso") or "").upper().strip()
+        if gender in ("M", "F"):
+            sesso_counts[gender] += 1
+            
+        # Dati socio-demografici: Età
+        dob_str = p.get("data_nascita")
+        if dob_str:
+            try:
+                # Supporta sia datetime ISO sia solo date YYYY-MM-DD
+                dob = datetime.fromisoformat(dob_str.replace("Z", "+00:00"))
+                age = now.year - dob.year
+                if (now.month, now.day) < (dob.month, dob.day):
+                    age -= 1
+                
+                if age <= 18:
+                    fasce_eta["0-18"] += 1
+                elif age <= 35:
+                    fasce_eta["19-35"] += 1
+                elif age <= 50:
+                    fasce_eta["36-50"] += 1
+                else:
+                    fasce_eta["51+"] += 1
+            except Exception:
+                try:
+                    parts = dob_str.split('-')
+                    if len(parts) >= 1 and len(parts[0]) == 4:
+                        year = int(parts[0])
+                        age = now.year - year
+                        if age <= 18:
+                            fasce_eta["0-18"] += 1
+                        elif age <= 35:
+                            fasce_eta["19-35"] += 1
+                        elif age <= 50:
+                            fasce_eta["36-50"] += 1
+                        else:
+                            fasce_eta["51+"] += 1
+                except Exception:
+                    pass
+
+        # Valutazioni specifiche per questo utente
+        patient_evals = [e for e in evaluations if e.get("id_paziente") == p["id"]]
         
-        if has_sis or has_pos:
+        latest_pos_date = None
+        latest_sm_date = None
+        latest_sis_date = None
+        
+        for ev in patient_evals:
+            scale_id = ev.get("id_scala")
+            scale_id_str = str(scale_id) if scale_id else ""
+            scale_name = scale_map.get(scale_id, scale_map.get(scale_id_str, "")).lower()
+            
+            dt = ev.get("data_compilazione")
+            if dt:
+                if isinstance(dt, str):
+                    try:
+                        dt = datetime.fromisoformat(dt.replace("Z", "+00:00"))
+                    except Exception:
+                        continue
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                    
+                if "pos" in scale_name or "pos" in scale_id_str.lower():
+                    if latest_pos_date is None or dt > latest_pos_date:
+                        latest_pos_date = dt
+                elif "martin" in scale_name.replace('í', 'i').replace('ì', 'i') or "martin" in scale_id_str.lower():
+                    if latest_sm_date is None or dt > latest_sm_date:
+                        latest_sm_date = dt
+                elif "sis" in scale_name or "sis" in scale_id_str.lower():
+                    if latest_sis_date is None or dt > latest_sis_date:
+                        latest_sis_date = dt
+                        
+        # Verifica la validità (attiva se eseguita negli ultimi 365 giorni)
+        has_active_pos = latest_pos_date is not None and (now - latest_pos_date).days <= 365
+        has_active_sm = latest_sm_date is not None and (now - latest_sm_date).days <= 365
+        has_active_sis = latest_sis_date is not None and (now - latest_sis_date).days <= 365
+        
+        if has_active_pos or has_active_sm or has_active_sis:
             coperti_count += 1
         else:
             scaduti_count += 1
-            if not has_sis: sis_mancanti += 1
-            if not has_pos: pos_mancanti += 1
             
-            # Genera alert per non valutati
-            ultimi_alert.append({
-                "paziente_nome": p.get("nome", ""),
-                "paziente_cognome": p.get("cognome", ""),
-                "stato": "mai_valutato",
-                "giorni_da_ultima_valutazione": 0,
-                "scala_nome": "SIS/POS"
-            })
+        if not has_active_pos:
+            pos_mancanti += 1
+        if not has_active_sm:
+            san_martin_mancanti += 1
+        if not has_active_sis:
+            sis_mancanti += 1
             
+        # Generazione dell'alert se non coperto da alcuna valutazione attiva
+        if not (has_active_pos or has_active_sm or has_active_sis):
+            valid_dates = [d for d in [latest_pos_date, latest_sm_date, latest_sis_date] if d is not None]
+            if not valid_dates:
+                ultimi_alert.append({
+                    "paziente_nome": p.get("nome", ""),
+                    "paziente_cognome": p.get("cognome", ""),
+                    "stato": "mai_valutato",
+                    "giorni_da_ultima_valutazione": 0,
+                    "scala_nome": "SIS/POS/San Martín"
+                })
+            else:
+                most_recent_date = max(valid_dates)
+                giorni = (now - most_recent_date).days
+                if most_recent_date == latest_pos_date:
+                    scala_alert = "POS"
+                elif most_recent_date == latest_sm_date:
+                    scala_alert = "San Martín"
+                else:
+                    scala_alert = "SIS"
+                    
+                ultimi_alert.append({
+                    "paziente_nome": p.get("nome", ""),
+                    "paziente_cognome": p.get("cognome", ""),
+                    "stato": "scaduto",
+                    "giorni_da_ultima_valutazione": giorni,
+                    "scala_nome": scala_alert
+                })
+                
+    # Ordina gli alert: "mai_valutato" in cima, poi in base ai giorni di ritardo decrescenti
+    ultimi_alert.sort(key=lambda x: (0 if x["stato"] == "mai_valutato" else 1, -x["giorni_da_ultima_valutazione"]))
+    ultimi_alert = ultimi_alert[:10]
+    
     coperti_percentuale = (coperti_count / active_users * 100) if active_users > 0 else 0
     
-    # Prendi solo i primi 10 alert
-    ultimi_alert = ultimi_alert[:10]
-
-    # 3. Trend Somministrazioni (ultimi 6 mesi base)
-    trend_somministrazioni = [
-        {"mese": "Gen", "count": 2},
-        {"mese": "Feb", "count": 5},
-        {"mese": "Mar", "count": 3},
-        {"mese": "Apr", "count": 8},
-        {"mese": "Mag", "count": 4},
-        {"mese": "Giu", "count": 7},
-    ] # Mock data for now, ideally group by month from DB
+    # 3. Trend Somministrazioni (ultimi 6 mesi dinamico)
+    months_names = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"]
+    trend_dict = collections.OrderedDict()
+    for i in range(5, -1, -1):
+        m = now.month - i
+        y = now.year
+        while m <= 0:
+            m += 12
+            y -= 1
+        trend_dict[(y, m)] = {"mese": months_names[m - 1], "count": 0}
+        
+    for ev in evaluations:
+        dt = ev.get("data_compilazione")
+        if dt:
+            if isinstance(dt, str):
+                try:
+                    dt = datetime.fromisoformat(dt.replace("Z", "+00:00"))
+                except Exception:
+                    continue
+            key = (dt.year, dt.month)
+            if key in trend_dict:
+                trend_dict[key]["count"] += 1
+                
+    trend_somministrazioni = list(trend_dict.values())
     
-    # 4. Distribuzione Scale
-    distribuzione_scale = [
-        {"nome": "SIS", "count": 15, "colore": "#3B82F6"},
-        {"nome": "POS", "count": 8, "colore": "#10B981"}
-    ]
-
+    # 4. Distribuzione Reale delle Scale (garantisce esattamente 6 item)
+    dist_dict = {
+        "SIS": 0,
+        "POS": 0,
+        "San Martín": 0,
+        "OGVA": 0,
+        "SABS": 0,
+        "OSO": 0
+    }
+    for ev in evaluations:
+        scale_id = ev.get("id_scala")
+        scale_id_str = str(scale_id) if scale_id else ""
+        scale_name = scale_map.get(scale_id, scale_map.get(scale_id_str, "Altro")).upper()
+        
+        target_key = None
+        if "MARTIN" in scale_name:
+            target_key = "San Martín"
+        elif "POS" in scale_name:
+            target_key = "POS"
+        elif "SIS" in scale_name:
+            target_key = "SIS"
+        elif "SABS" in scale_name:
+            target_key = "SABS"
+        elif "OSO" in scale_name:
+            target_key = "OSO"
+        elif "OGVA" in scale_name:
+            target_key = "OGVA"
+            
+        if target_key and target_key in dist_dict:
+            dist_dict[target_key] += 1
+        
+    colors = ["#3B82F6", "#10B981", "#F59E0B", "#A78BFA", "#F87171", "#38BDF8"]
+    distribuzione_scale = []
+    for idx, (name, count) in enumerate(dist_dict.items()):
+        colore = colors[idx % len(colors)]
+        distribuzione_scale.append({
+            "scala_nome": name,
+            "count": count,
+            "colore": colore
+        })
+        
     return {
         "totale_utenze_attive": active_users,
         "totale_valutazioni_eseguite": total_evals,
@@ -310,7 +472,11 @@ async def get_global_stats(auth: dict = Depends(verify_auth)):
         },
         "ultimi_alert": ultimi_alert,
         "trend_somministrazioni": trend_somministrazioni,
-        "distribuzione_scale": distribuzione_scale
+        "distribuzione_scale": distribuzione_scale,
+        "demographics": {
+            "sesso": sesso_counts,
+            "fasce_eta": fasce_eta
+        }
     }
 
 # ── CRUD Utenze ─────────────────────────────────────────────────────────────

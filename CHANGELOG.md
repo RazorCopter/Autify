@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.19.4] - 2026-06-02
+- **Dashboard Globale Dinamica**:
+  - Collegato l'endpoint `/api/admin/stats` del backend al database MongoDB per estrarre dati reali.
+  - Implementato il calcolo dinamico dei dati demografici di contesto (genere e fasce d'età degli utenti).
+  - Introdotto il calcolo delle scadenze e copertura basato su una validità temporale di 365 giorni, ordinando gli alert per gravità (utenti mai valutati o scaduti da più giorni).
+  - Ottimizzato il trend storico delle somministrazioni degli ultimi 6 mesi e la distribuzione delle scale, forzata a contenere esattamente 6 elementi fissi (SIS, POS, San Martín, OGVA, SABS, OSO) per garantire consistenza visiva.
+
 ## [2.19.3] - 2026-06-02
 - **Riepilogo per Dominio Transposto in Caso di Molti Domini**: Nelle schermate di dettaglio delle scale di valutazione, la tabella "Riepilogo per Dominio" viene ora automaticamente trasposta se la scala contiene più di 5 domini (es. ODFLAB con 16 domini, POS, SIS). In questo layout verticale ogni dominio corrisponde a una riga della tabella (con wrapping del testo per evitare overflow), e le metriche a colonne, ottimizzando lo spazio ed evitando tagli o scorrimenti orizzontali complessi a qualsiasi risoluzione.
 
