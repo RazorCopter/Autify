@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.19.6] - 2026-06-02
+- **Redesign UI/UX Dashboard (SaaS 2025)**:
+  - Ridotta l'opacità del watermark di sfondo (`kSlothWatermarkOpacity`) all'1.5% in `main.dart` per massimizzare la leggibilità del testo.
+  - Riprogettata la barra laterale (sidebar) con sezioni attive evidenziate da una capsula a pillola Material 3 dietro le icone ed effetti hover moderni.
+  - Ridisegnate le card KPI (Bento KPI Cards) con sfondo bianco, bordi ardesia sottili, badge pastello arrotondati per le icone e indicatore di trend/variazione.
+  - Aggiornato il grafico "Attività di Redazione" sostituendo il grafico a barre con un grafico a linee curve (spline line) con gradiente sfumato sottostante.
+  - Riprogettato il centro di controllo delle "Azioni Richieste Urgenti" (Alert Center) con badge di gravità semantica basati sulla scadenza temporale.
+  - Ottimizzata la "Distribuzione Documentazione" ordinando gli elementi in base alla criticità di copertura e applicando colori semantici dinamici (rosso <30%, ambra <70%, verde >=70%) per un totale fisso di 6 elementi.
+
 ## [2.19.5] - 2026-06-02
 - **Miglioramento Layout Dashboard**:
   - Aumentata l'altezza delle card "Azioni Richieste Urgenti" (Alert List) e "Distribuzione Documentazione" da `360` a `420` pixel.

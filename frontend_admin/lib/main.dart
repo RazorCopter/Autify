@@ -171,7 +171,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               Positioned.fill(
                 child: IgnorePointer(
                   child: Opacity(
-                    opacity: 0.08, // Trasparenza soft ottimizzata all'8% per un watermark elegante e discreto
+                    opacity: 0.015, // Trasparenza soft ottimizzata all'1.5% per garantire contrasto ottimale
                     child: Image.asset(
                       'assets/images/bradipo_hd_BG.png',
                       fit: BoxFit.cover,
@@ -197,7 +197,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         Positioned.fill(
           child: IgnorePointer(
             child: Opacity(
-              opacity: 0.05,
+              opacity: 0.015, // Trasparenza soft ottimizzata all'1.5% per garantire contrasto ottimale
               child: Image.asset(
                 'assets/images/bradipo_hd_BG.png',
                 fit: BoxFit.cover,
@@ -470,33 +470,43 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final isSelected = _selectedIndex == index;
     final color = isSelected ? AppTheme.puzzleColorAt(index) : AppTheme.textSecondary;
 
-    return GestureDetector(
-      onTap: () => setState(() => _selectedIndex = index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.only(bottom: 4),
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.12) : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              isSelected ? item.active : item.icon,
-              color: color,
-              size: isSelected ? 26 : 22,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              item.label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: color,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+      child: InkWell(
+        onTap: () => setState(() => _selectedIndex = index),
+        borderRadius: BorderRadius.circular(16),
+        hoverColor: color.withValues(alpha: 0.08),
+        splashColor: color.withValues(alpha: 0.12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Capsula attiva Material 3 per l'icona
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  isSelected ? item.active : item.icon,
+                  color: color,
+                  size: 22,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 6),
+              Text(
+                item.label,
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

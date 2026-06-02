@@ -343,7 +343,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       value: activePatients.toDouble(),
                       subtitle: 'su $totalPatients utenti censiti',
                       icon: Icons.people_alt_outlined,
-                      gradientColors: const [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+                      themeColor: const Color(0xFF3B82F6),
+                      trendText: '+1',
+                      isTrendPositive: true,
                       onTap: () => widget.onNavigate(2), // Vai a Utenza
                     ),
                   ),
@@ -354,7 +356,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       value: coveredCount.toDouble(),
                       subtitle: 'Documentazione in corso di validità',
                       icon: Icons.verified_user_outlined,
-                      gradientColors: const [Color(0xFF065F46), Color(0xFF10B981)],
+                      themeColor: const Color(0xFF10B981),
+                      trendText: '+5.2%',
+                      isTrendPositive: true,
                       suffix: ' ($coveragePercent%)',
                       onTap: () => widget.onNavigate(2), // Vai a Utenza
                     ),
@@ -366,7 +370,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       value: expiredCount.toDouble(),
                       subtitle: 'Documentazione scaduta o assente',
                       icon: Icons.warning_amber_rounded,
-                      gradientColors: const [Color(0xFF9A3412), Color(0xFFF97316)],
+                      themeColor: const Color(0xFFEF4444),
+                      trendText: '-2',
+                      isTrendPositive: true,
                       onTap: () => widget.onNavigate(2), // Vai a Utenza
                       tooltip: 'Scale Mancanti o Scadute:\n\nPOS: $posMancanti\nSan Martín: $sanMartinMancanti\nSIS: $sisMancanti',
                     ),
@@ -381,7 +387,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     value: activePatients.toDouble(),
                     subtitle: 'su $totalPatients utenti censiti',
                     icon: Icons.people_alt_outlined,
-                    gradientColors: const [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+                    themeColor: const Color(0xFF3B82F6),
+                    trendText: '+1',
+                    isTrendPositive: true,
                     onTap: () => widget.onNavigate(2),
                   ),
                   const SizedBox(height: 16),
@@ -390,7 +398,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     value: coveredCount.toDouble(),
                     subtitle: 'Documentazione in corso di validità',
                     icon: Icons.verified_user_outlined,
-                    gradientColors: const [Color(0xFF065F46), Color(0xFF10B981)],
+                    themeColor: const Color(0xFF10B981),
+                    trendText: '+5.2%',
+                    isTrendPositive: true,
                     suffix: ' ($coveragePercent%)',
                     onTap: () => widget.onNavigate(2),
                   ),
@@ -400,7 +410,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     value: expiredCount.toDouble(),
                     subtitle: 'Documentazione scaduta o assente',
                     icon: Icons.warning_amber_rounded,
-                    gradientColors: const [Color(0xFF9A3412), Color(0xFFF97316)],
+                    themeColor: const Color(0xFFEF4444),
+                    trendText: '-2',
+                    isTrendPositive: true,
                     onTap: () => widget.onNavigate(2),
                     tooltip: 'Scale Mancanti o Scadute:\n\nPOS: $posMancanti\nSan Martín: $sanMartinMancanti\nSIS: $sisMancanti',
                   ),
@@ -409,7 +421,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             const SizedBox(height: 24),
 
-            // Row 2: Charts (Doughnut e BarChart)
+            // Row 2: Charts (Doughnut e LineChart)
             if (isDesktop)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -421,7 +433,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 24),
                   Expanded(
                     flex: 3,
-                    child: _buildBarChartCard(trendData),
+                    child: _buildLineChartCard(trendData),
                   ),
                 ],
               )
@@ -430,7 +442,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   _buildDoughnutChartCard(coveredCount, expiredCount, coveragePercent),
                   const SizedBox(height: 24),
-                  _buildBarChartCard(trendData),
+                  _buildLineChartCard(trendData),
                 ],
               ),
 
@@ -589,8 +601,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ─── BAR CHART CARD ────────────────────────────────────────────────────────
-  Widget _buildBarChartCard(List<dynamic> trend) {
+  // ─── LINE CHART CARD ───────────────────────────────────────────────────────
+  Widget _buildLineChartCard(List<dynamic> trend) {
+    final spots = List.generate(trend.length, (index) {
+      final item = trend[index];
+      final count = (item['count'] ?? 0).toDouble();
+      return FlSpot(index.toDouble(), count);
+    });
+
+    final maxY = _getMaxY(trend);
+
     return _HoverBentoCard(
       height: 380,
       child: Padding(
@@ -609,21 +629,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 32),
             Expanded(
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  maxY: _getMaxY(trend),
-                  barTouchData: BarTouchData(
-                    touchTooltipData: BarTouchTooltipData(
+              child: LineChart(
+                LineChartData(
+                  maxY: maxY,
+                  minY: 0,
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
                       getTooltipColor: (_) => AppTheme.textPrimary,
-                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                        return BarTooltipItem(
-                          '${rod.toY.toInt()} Valutazioni',
-                          const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        );
+                      getTooltipItems: (touchedSpots) {
+                        return touchedSpots.map((spot) {
+                          return LineTooltipItem(
+                            '${spot.y.toInt()} Valutazioni',
+                            const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          );
+                        }).toList();
                       },
                     ),
                   ),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    getDrawingHorizontalLine: (value) => const FlLine(
+                      color: Color(0xFFE2E8F0),
+                      strokeWidth: 1,
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
                   titlesData: FlTitlesData(
                     show: true,
                     bottomTitles: AxisTitles(
@@ -659,42 +690,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    getDrawingHorizontalLine: (value) => const FlLine(
-                      color: Color(0xFFE2E8F0),
-                      strokeWidth: 1,
-                    ),
-                  ),
-                  borderData: FlBorderData(show: false),
-                  barGroups: List.generate(trend.length, (index) {
-                    final item = trend[index];
-                    final count = (item['count'] ?? 0).toDouble();
-                    return BarChartGroupData(
-                      x: index,
-                      barRods: [
-                        BarChartRodData(
-                          toY: count,
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF60A5FA), Color(0xFF2563EB)],
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                          ),
-                          width: 18,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(6),
-                            topRight: Radius.circular(6),
-                          ),
-                          backDrawRodData: BackgroundBarChartRodData(
-                            show: true,
-                            toY: _getMaxY(trend),
-                            color: const Color(0xFFF1F5F9),
-                          ),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: spots,
+                      isCurved: true,
+                      color: const Color(0xFF2563EB),
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: const FlDotData(show: true),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF2563EB).withValues(alpha: 0.2),
+                            const Color(0xFF2563EB).withValues(alpha: 0.0),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
                         ),
-                      ],
-                    );
-                  }),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -715,7 +731,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return maxVal + 1.0;
   }
 
-  // ─── ALERT LIST CARD ───────────────────────────────────────────────────────
+  // ─── ALERT CENTER (AZIONI URGENTI) ─────────────────────────────────────────
   Widget _buildAlertListCard(List<dynamic> alerts) {
     return _HoverBentoCard(
       height: 420,
@@ -728,25 +744,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Azioni Richieste Urgenti',
+                  'Alert Center: Azioni Richieste Urgenti',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppTheme.errorColor.withValues(alpha: 0.12),
+                    color: const Color(0xFFFEE2E2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '${alerts.length} Alert',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppTheme.errorColor),
+                    '${alerts.length} Criticità',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFFDC2626)),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 4),
             const Text(
-              'Utenti che necessitano la compilazione di una scala',
+              'Utenti che necessitano di una nuova valutazione o rinnovo',
               style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 18),
@@ -764,10 +780,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       final item = alerts[index];
                       final name = '${item['paziente_nome'] ?? ''} ${item['paziente_cognome'] ?? ''}'.trim();
                       final isNever = item['stato'] == 'mai_valutato';
-                      final days = item['giorni_da_ultima_valutazione'];
+                      final days = (item['giorni_da_ultima_valutazione'] ?? 0) as int;
+                      
+                      Color badgeColor;
+                      Color badgeBg;
+                      String badgeText;
+                      IconData leadIcon;
+
+                      if (isNever) {
+                        badgeColor = const Color(0xFFD97706); // Amber/Giallo
+                        badgeBg = const Color(0xFFFEF3C7);
+                        badgeText = 'DA VERIFICARE';
+                        leadIcon = Icons.help_outline_rounded;
+                      } else if (days <= 395) {
+                        badgeColor = const Color(0xFFEAB308); // Yellow/Arancio
+                        badgeBg = const Color(0xFFFEF9C3);
+                        badgeText = 'IN SCADENZA';
+                        leadIcon = Icons.timer_outlined;
+                      } else {
+                        badgeColor = const Color(0xFFDC2626); // Red
+                        badgeBg = const Color(0xFFFEE2E2);
+                        badgeText = 'SCADUTO';
+                        leadIcon = Icons.warning_amber_rounded;
+                      }
+
                       final daysText = isNever
-                          ? 'Mai valutato'
-                          : '$days giorni fa (${item['scala_nome']})';
+                          ? 'Nessuna scala compilata a sistema'
+                          : 'Ultimo test $days giorni fa (${item['scala_nome']})';
 
                       return TweenAnimationBuilder<double>(
                         tween: Tween<double>(begin: 0, end: 1),
@@ -791,15 +830,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           child: ListTile(
                             dense: true,
                             onTap: () {
-                              // Naviga alla lista pazienti con il filtro di ricerca sul cognome!
                               widget.onNavigate(2, searchFilter: item['paziente_cognome']);
                             },
                             leading: CircleAvatar(
-                              backgroundColor: (isNever ? AppTheme.errorColor : AppTheme.secondaryColor).withValues(alpha: 0.15),
+                              backgroundColor: badgeColor.withValues(alpha: 0.12),
                               radius: 16,
                               child: Icon(
-                                isNever ? Icons.person_off_outlined : Icons.timer_outlined,
-                                color: isNever ? AppTheme.errorColor : AppTheme.secondaryColor,
+                                leadIcon,
+                                color: badgeColor,
                                 size: 16,
                               ),
                             ),
@@ -814,15 +852,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             trailing: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: (isNever ? AppTheme.errorColor : AppTheme.secondaryColor).withValues(alpha: 0.1),
+                                color: badgeBg,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                isNever ? 'MAI' : 'SCADUTO',
+                                badgeText,
                                 style: TextStyle(
                                   fontSize: 9,
                                   fontWeight: FontWeight.bold,
-                                  color: isNever ? AppTheme.errorColor : AppTheme.secondaryColor,
+                                  color: badgeColor,
                                 ),
                               ),
                             ),
@@ -944,6 +982,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // ─── DISTRIBUTION CARD ─────────────────────────────────────────────────────
   Widget _buildDistributionCard(List<dynamic> distributions, int totalPatients) {
+    // Ordina una copia locale delle scale dalla copertura più bassa (più critica) alla più alta
+    final sortedDistributions = List<dynamic>.from(distributions);
+    sortedDistributions.sort((a, b) {
+      final countA = (a['count'] ?? 0) as int;
+      final countB = (b['count'] ?? 0) as int;
+      final percentA = totalPatients > 0 ? (countA / totalPatients) : 0.0;
+      final percentB = totalPatients > 0 ? (countB / totalPatients) : 0.0;
+      return percentA.compareTo(percentB);
+    });
+
     return _HoverBentoCard(
       height: 420,
       child: Padding(
@@ -962,7 +1010,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 24),
             Expanded(
-              child: distributions.isEmpty
+              child: sortedDistributions.isEmpty
                 ? const Center(
                     child: Text(
                       'Nessuna scala ancora compilata.',
@@ -970,16 +1018,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   )
                 : ListView.builder(
-                    itemCount: distributions.length,
+                    itemCount: sortedDistributions.length,
                     itemBuilder: (context, index) {
-                      final item = distributions[index];
+                      final item = sortedDistributions[index];
                       final name = item['scala_nome'] ?? '';
                       final count = (item['count'] ?? 0) as int;
-                      final color = AppTheme.puzzleColorAt(index);
-                      // Calcola la percentuale client-side per garantire coerenza con totalPatients
+                      
+                      // Calcola la percentuale client-side
                       final double percent = totalPatients > 0
                           ? double.parse((count / totalPatients * 100).toStringAsFixed(1))
                           : 0.0;
+
+                      // Colore progress bar semantico (Rosso < 30%, Arancio < 70%, Verde >= 70%)
+                      Color color;
+                      if (percent < 30.0) {
+                        color = const Color(0xFFDC2626); // Rosso
+                      } else if (percent < 70.0) {
+                        color = const Color(0xFFD97706); // Arancio/Amber
+                      } else {
+                        color = const Color(0xFF10B981); // Verde
+                      }
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 18),
@@ -1080,20 +1138,24 @@ class _BentoKpiCard extends StatefulWidget {
   final double value;
   final String subtitle;
   final IconData icon;
-  final List<Color> gradientColors;
+  final Color themeColor;
   final String suffix;
   final VoidCallback onTap;
   final String? tooltip;
+  final String? trendText;
+  final bool isTrendPositive;
 
   const _BentoKpiCard({
     required this.title,
     required this.value,
     required this.subtitle,
     required this.icon,
-    required this.gradientColors,
+    required this.themeColor,
     this.suffix = '',
     required this.onTap,
     this.tooltip,
+    this.trendText,
+    this.isTrendPositive = true,
   });
 
   @override
@@ -1113,16 +1175,16 @@ class _BentoKpiCardState extends State<_BentoKpiCard> {
         curve: Curves.easeOutCubic,
         transform: Matrix4.translationValues(0.0, _isHovered ? -4.0 : 0.0, 0.0),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: widget.gradientColors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: _isHovered ? widget.themeColor.withValues(alpha: 0.35) : const Color(0xFFE2E8F0),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: widget.gradientColors.last.withValues(alpha: _isHovered ? 0.28 : 0.15),
-              blurRadius: _isHovered ? 18 : 10,
+              color: Colors.black.withValues(alpha: _isHovered ? 0.06 : 0.02),
+              blurRadius: _isHovered ? 16 : 8,
               offset: Offset(0, _isHovered ? 8 : 4),
             ),
           ],
@@ -1132,7 +1194,7 @@ class _BentoKpiCardState extends State<_BentoKpiCard> {
           child: InkWell(
             onTap: widget.onTap,
             borderRadius: BorderRadius.circular(20),
-            splashColor: Colors.white.withValues(alpha: 0.1),
+            splashColor: widget.themeColor.withValues(alpha: 0.05),
             hoverColor: Colors.transparent,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
@@ -1145,36 +1207,71 @@ class _BentoKpiCardState extends State<_BentoKpiCard> {
                       children: [
                         Text(
                           widget.title,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
-                            color: Colors.white.withValues(alpha: 0.7),
+                            color: AppTheme.textSecondary,
                             letterSpacing: 0.8,
                           ),
                         ),
                         const SizedBox(height: 8),
-                        TweenAnimationBuilder<double>(
-                          tween: Tween<double>(begin: 0, end: widget.value),
-                          duration: const Duration(milliseconds: 800),
-                          curve: Curves.easeOutCubic,
-                          builder: (context, val, child) {
-                            return Text(
-                              '${val.toInt()}${widget.suffix}',
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                height: 1.0,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            TweenAnimationBuilder<double>(
+                              tween: Tween<double>(begin: 0, end: widget.value),
+                              duration: const Duration(milliseconds: 800),
+                              curve: Curves.easeOutCubic,
+                              builder: (context, val, child) {
+                                return Text(
+                                  '${val.toInt()}${widget.suffix}',
+                                  style: const TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppTheme.textPrimary,
+                                    height: 1.0,
+                                  ),
+                                );
+                              },
+                            ),
+                            if (widget.trendText != null) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: widget.isTrendPositive ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      widget.isTrendPositive ? Icons.arrow_upward : Icons.arrow_downward,
+                                      size: 10,
+                                      color: widget.isTrendPositive ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      widget.trendText!,
+                                      style: TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: widget.isTrendPositive ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            );
-                          },
+                            ],
+                          ],
                         ),
                         const SizedBox(height: 8),
                         Text(
                           widget.subtitle,
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.white.withValues(alpha: 0.8),
+                            color: AppTheme.textSecondary.withValues(alpha: 0.8),
                           ),
                         ),
                       ],
@@ -1183,12 +1280,12 @@ class _BentoKpiCardState extends State<_BentoKpiCard> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
+                      color: widget.themeColor.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       widget.icon,
-                      color: Colors.white,
+                      color: widget.themeColor,
                       size: 28,
                     ),
                   ),
