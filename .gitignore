@@ -39,3 +39,6 @@ dart-sdk.zip
 dart-sdk-extracted/
 flutter-sdk/
 
+# Antigravity CLI
+.antigravitycli/
+
