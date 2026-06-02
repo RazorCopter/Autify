@@ -1,7 +1,7 @@
 name: frontend_admin
 description: Dashboard Web Admin per Autify
 publish_to: 'none'
-version: 2.19.6
+version: 2.19.7
 
 environment:
   sdk: '>=3.2.0 <4.0.0'

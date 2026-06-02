@@ -521,12 +521,84 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
 
                     // Filtro per ricerca
                     if (query.isNotEmpty) {
-                      filteredList = filteredList.where((p) {
-                        final matchNome = p.nome.toLowerCase().contains(query);
-                        final matchCognome = p.cognome.toLowerCase().contains(query);
-                        final matchNote = (p.note ?? '').toLowerCase().contains(query);
-                        return matchNome || matchCognome || matchNote;
-                      }).toList();
+                      if (query == 'scaduti') {
+                        final settings = context.read<SettingsNotifier>().settings;
+                        filteredList = filteredList.where((p) {
+                          final dates = [
+                            (p.ultimoPosCompilato, 'POS'),
+                            (p.ultimoSanMartinCompilato, 'SanMartín'),
+                            (p.ultimoSisCompilato, 'SIS'),
+                            (p.ultimoOgvaCompilato, 'OGVA'),
+                            (p.ultimoSabsCompilato, 'SABS'),
+                            (p.ultimoOsoCompilato, 'OSO'),
+                          ];
+                          for (final item in dates) {
+                            if (item.$1 != null && item.$1!.isNotEmpty) {
+                              try {
+                                final d = DateTime.parse(item.$1!);
+                                final s = ValidityCalculator.getStatus(
+                                  completionDate: d,
+                                  scaleType: item.$2,
+                                  currentSettings: settings,
+                                );
+                                if (s == EvaluationStatus.expired) return true;
+                              } catch (_) {}
+                            }
+                          }
+                          return false;
+                        }).toList();
+                      } else if (query == 'in scadenza') {
+                        final settings = context.read<SettingsNotifier>().settings;
+                        filteredList = filteredList.where((p) {
+                          final dates = [
+                            (p.ultimoPosCompilato, 'POS'),
+                            (p.ultimoSanMartinCompilato, 'SanMartín'),
+                            (p.ultimoSisCompilato, 'SIS'),
+                            (p.ultimoOgvaCompilato, 'OGVA'),
+                            (p.ultimoSabsCompilato, 'SABS'),
+                            (p.ultimoOsoCompilato, 'OSO'),
+                          ];
+                          for (final item in dates) {
+                            if (item.$1 != null && item.$1!.isNotEmpty) {
+                              try {
+                                final d = DateTime.parse(item.$1!);
+                                final s = ValidityCalculator.getStatus(
+                                  completionDate: d,
+                                  scaleType: item.$2,
+                                  currentSettings: settings,
+                                );
+                                if (s == EvaluationStatus.expiring) return true;
+                              } catch (_) {}
+                            }
+                          }
+                          return false;
+                        }).toList();
+                      } else if (query == 'incompleti') {
+                        filteredList = filteredList.where((p) {
+                          return p.ultimoPosCompilato == null || p.ultimoPosCompilato!.isEmpty ||
+                              p.ultimoSanMartinCompilato == null || p.ultimoSanMartinCompilato!.isEmpty ||
+                              p.ultimoSisCompilato == null || p.ultimoSisCompilato!.isEmpty ||
+                              p.ultimoOgvaCompilato == null || p.ultimoOgvaCompilato!.isEmpty ||
+                              p.ultimoSabsCompilato == null || p.ultimoSabsCompilato!.isEmpty ||
+                              p.ultimoOsoCompilato == null || p.ultimoOsoCompilato!.isEmpty;
+                        }).toList();
+                      } else if (query == 'mai valutati') {
+                        filteredList = filteredList.where((p) {
+                          return (p.ultimoPosCompilato == null || p.ultimoPosCompilato!.isEmpty) &&
+                              (p.ultimoSanMartinCompilato == null || p.ultimoSanMartinCompilato!.isEmpty) &&
+                              (p.ultimoSisCompilato == null || p.ultimoSisCompilato!.isEmpty) &&
+                              (p.ultimoOgvaCompilato == null || p.ultimoOgvaCompilato!.isEmpty) &&
+                              (p.ultimoSabsCompilato == null || p.ultimoSabsCompilato!.isEmpty) &&
+                              (p.ultimoOsoCompilato == null || p.ultimoOsoCompilato!.isEmpty);
+                        }).toList();
+                      } else {
+                        filteredList = filteredList.where((p) {
+                          final matchNome = p.nome.toLowerCase().contains(query);
+                          final matchCognome = p.cognome.toLowerCase().contains(query);
+                          final matchNote = (p.note ?? '').toLowerCase().contains(query);
+                          return matchNome || matchCognome || matchNote;
+                        }).toList();
+                      }
                     }
 
                     // Ordina per Cognome (Primario) e Nome (Secondario)

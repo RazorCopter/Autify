@@ -470,42 +470,46 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final isSelected = _selectedIndex == index;
     final color = isSelected ? AppTheme.puzzleColorAt(index) : AppTheme.textSecondary;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-      child: InkWell(
-        onTap: () => setState(() => _selectedIndex = index),
-        borderRadius: BorderRadius.circular(16),
-        hoverColor: color.withValues(alpha: 0.08),
-        splashColor: color.withValues(alpha: 0.12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Capsula attiva Material 3 per l'icona
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
+    return Tooltip(
+      message: item.label,
+      waitDuration: const Duration(milliseconds: 600),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+        child: InkWell(
+          onTap: () => setState(() => _selectedIndex = index),
+          borderRadius: BorderRadius.circular(16),
+          hoverColor: color.withValues(alpha: 0.08),
+          splashColor: color.withValues(alpha: 0.12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Capsula attiva Material 3 per l'icona
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    isSelected ? item.active : item.icon,
+                    color: color,
+                    size: 22,
+                  ),
                 ),
-                child: Icon(
-                  isSelected ? item.active : item.icon,
-                  color: color,
-                  size: 22,
+                const SizedBox(height: 6),
+                Text(
+                  item.label,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                item.label,
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

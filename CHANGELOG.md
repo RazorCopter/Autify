@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.19.7] - 2026-06-02
+- **Redesign UI/UX Dashboard - Fase 2 (Enterprise SaaS 2025)**:
+  - Introdotta la nuova `AlertBar` orizzontale reattiva con filtri cliccabili direttamente integrata sotto le card KPI.
+  - Sostituito il grafico a ciambella (Donut Chart) di Copertura con il nuovo layout lineare `_buildDocumentCoverageCard` con percentuale gigante, progress bar e statistiche numeriche delle documentazioni valide vs mancanti.
+  - Ottimizzato il grafico temporale `_buildLineChartCard` pulendo l'asse X con i soli mesi, e introducendo un badge di trend dinamico e confronto con il mese precedente (es. `+N vs mese prec.`).
+  - Potenziato l'Alert Center con ordinamento automatico per gravità di ritardo decrescente, badge di priorità semantici e azioni rapide (link diretto) per gestire l'utente interessato.
+  - Modificata la `Sidebar` di navigazione in `main.dart` inserendo tooltip descrittivi al passaggio del mouse su ciascuna voce e ottimizzando lo stato di hover e l'indicatore a capsula Material 3.
+  - Compattato il pannello socio-demografico `_buildDemographicsCard` ad altezza 220px, introducendo una progress bar di genere orizzontale a due colori (uomini/donne) e un layout a griglia per le fasce d'età.
+  - Integrata la logica di ricerca personalizzata per i tag `scaduti`, `in scadenza`, `incompleti` e `mai valutati` all'interno dell'anagrafica utenti per l'azione diretta dagli alert.
+
 ## [2.19.6] - 2026-06-02
 - **Redesign UI/UX Dashboard (SaaS 2025)**:
   - Ridotta l'opacità del watermark di sfondo (`kSlothWatermarkOpacity`) all'1.5% in `main.dart` per massimizzare la leggibilità del testo.
