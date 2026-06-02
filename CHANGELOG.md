@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.19.8] - 2026-06-02
+- **Correzioni Pixel-Perfect Area Chart Dashboard**:
+  - Risolto il problema di sovrapposizione dell'asse X (Timeline) nel grafico "Attività Redazione Documentazione" tramite l'inserimento di un intervallo discreto basato sulla dimensione dei dati (`interval`) e formattando le etichette per visualizzare solo la sigla del mese abbreviata a 3 lettere (es. "Gen", "Feb"), escludendo l'anno.
+  - Riposizionato il badge indicante il trend ("+N / -N vs mese prec.") in alto a sinistra della card, inserendolo all'interno di un layout flessibile `Wrap` immediatamente a fianco del titolo principale per garantire una gerarchia visiva coerente ed ottimizzata.
+  - Eseguito il check dei lints e l'analisi statica prima del deploy.
+
 ## [2.19.7] - 2026-06-02
 - **Redesign UI/UX Dashboard - Fase 2 (Enterprise SaaS 2025)**:
   - Introdotta la nuova `AlertBar` orizzontale reattiva con filtri cliccabili direttamente integrata sotto le card KPI.

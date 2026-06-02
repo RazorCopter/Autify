@@ -821,50 +821,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 12,
+                  runSpacing: 8,
                   children: [
                     const Text(
                       'Attività Redazione Documentazione',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Valutazioni multidimensionali eseguite negli ultimi 6 mesi',
-                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                    ),
+                    if (trend.length >= 2)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isTrendUp ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isTrendUp ? Icons.trending_up : Icons.trending_down,
+                              size: 14,
+                              color: isTrendUp ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              trendSub,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: isTrendUp ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
-                if (trend.length >= 2)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isTrendUp ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isTrendUp ? Icons.trending_up : Icons.trending_down,
-                          size: 14,
-                          color: isTrendUp ? const Color(0xFF059669) : const Color(0xFFDC2626),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          trendSub,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: isTrendUp ? const Color(0xFF059669) : const Color(0xFFDC2626),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Valutazioni multidimensionali eseguite negli ultimi 6 mesi',
+                  style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                ),
               ],
             ),
             const SizedBox(height: 32),
@@ -900,18 +902,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
+                        interval: trend.length <= 6
+                            ? 1.0
+                            : (trend.length / 5).ceilToDouble(),
                         getTitlesWidget: (value, meta) {
                           final idx = value.toInt();
                           if (idx >= 0 && idx < trend.length) {
+                            final rawMonth = trend[idx]['mese'] ?? '';
+                            final parts = rawMonth.trim().split(' ');
+                            String shortMonth = parts.isNotEmpty ? parts.first : '';
+                            if (shortMonth.length > 3) {
+                              shortMonth = shortMonth.substring(0, 3);
+                            }
                             return Padding(
                               padding: const EdgeInsets.only(top: 8),
                               child: Text(
-                                trend[idx]['mese'] ?? '',
+                                shortMonth,
                                 style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textSecondary),
                               ),
                             );
                           }
-                          return const Text('');
+                          return const SizedBox.shrink();
                         },
                       ),
                     ),
