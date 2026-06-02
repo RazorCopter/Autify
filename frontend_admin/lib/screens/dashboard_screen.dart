@@ -718,7 +718,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // ─── ALERT LIST CARD ───────────────────────────────────────────────────────
   Widget _buildAlertListCard(List<dynamic> alerts) {
     return _HoverBentoCard(
-      height: 360,
+      height: 420,
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -945,7 +945,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // ─── DISTRIBUTION CARD ─────────────────────────────────────────────────────
   Widget _buildDistributionCard(List<dynamic> distributions, int totalPatients) {
     return _HoverBentoCard(
-      height: 360,
+      height: 420,
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(

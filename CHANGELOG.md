@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.19.5] - 2026-06-02
+- **Miglioramento Layout Dashboard**:
+  - Aumentata l'altezza delle card "Azioni Richieste Urgenti" (Alert List) e "Distribuzione Documentazione" da `360` a `420` pixel.
+  - Questo incremento previene lo scorrimento (vertical scrolling) all'interno del pannello "Distribuzione Documentazione" quando vengono mostrati tutti i 6 elementi fissi previsti a sistema.
+
 ## [2.19.4] - 2026-06-02
 - **Dashboard Globale Dinamica**:
   - Collegato l'endpoint `/api/admin/stats` del backend al database MongoDB per estrarre dati reali.
