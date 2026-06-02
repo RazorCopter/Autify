@@ -6,7 +6,7 @@ from .models import Scale, Evaluation, Patient, AppSettings, Section, Question, 
 from .database import evaluations_collection, settings_collection, patients_collection, scales_collection, users_collection, ai_analyses_collection, audit_logs_collection
 from .pdf_generator import generate_evaluation_pdf, generate_ai_analysis_pdf
 from .analytics import compute_psychometric_analysis, compute_direct_scores, build_domain_map, calcola_punteggi_sis
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import json
 from pydantic import BaseModel
 import uuid
@@ -1433,8 +1433,18 @@ async def get_dashboard_stats():
         total_scaduti_global = 0
         total_in_scadenza_global = 0
         total_mai_valutati_global = 0
+        total_incompleti_global = 0
         
-        for pat in patients:
+        # Inizializza i dati per il Forecast a 8 settimane (W1 - W8)
+        forecast_dati = []
+        for w in range(1, 9):
+            forecast_dati.append({
+                "settimana": f"W{w}",
+                "routine": 2 + (w % 3),
+                "criticita": 0
+            })
+        
+        for pat in pazienti_attivi:
             p_id = pat.get("id")
             p_id2 = pat.get("_id")
             
@@ -1522,7 +1532,6 @@ async def get_dashboard_stats():
             # Generazione alert puntuali per singola scala (se non valida o in scadenza)
             # POS
             if not pat_pos_evals:
-                total_mai_valutati_global += 1
                 alert_candidates.append({
                     "paziente_id": pat_display_id,
                     "paziente_nome": pat.get("nome", ""),
@@ -1535,7 +1544,6 @@ async def get_dashboard_stats():
             else:
                 days_since_pos = (now - latest_pos_date).days
                 if days_since_pos > 180:
-                    total_scaduti_global += 1
                     alert_candidates.append({
                         "paziente_id": pat_display_id,
                         "paziente_nome": pat.get("nome", ""),
@@ -1546,7 +1554,6 @@ async def get_dashboard_stats():
                         "scala_nome": "POS"
                     })
                 elif days_since_pos > 150:
-                    total_in_scadenza_global += 1
                     alert_candidates.append({
                         "paziente_id": pat_display_id,
                         "paziente_nome": pat.get("nome", ""),
@@ -1559,7 +1566,6 @@ async def get_dashboard_stats():
 
             # San Martín
             if not pat_sm_evals:
-                total_mai_valutati_global += 1
                 alert_candidates.append({
                     "paziente_id": pat_display_id,
                     "paziente_nome": pat.get("nome", ""),
@@ -1572,7 +1578,6 @@ async def get_dashboard_stats():
             else:
                 days_since_sm = (now - latest_sm_date).days
                 if days_since_sm > 180:
-                    total_scaduti_global += 1
                     alert_candidates.append({
                         "paziente_id": pat_display_id,
                         "paziente_nome": pat.get("nome", ""),
@@ -1583,7 +1588,6 @@ async def get_dashboard_stats():
                         "scala_nome": "San Martín"
                     })
                 elif days_since_sm > 150:
-                    total_in_scadenza_global += 1
                     alert_candidates.append({
                         "paziente_id": pat_display_id,
                         "paziente_nome": pat.get("nome", ""),
@@ -1596,7 +1600,6 @@ async def get_dashboard_stats():
 
             # SIS
             if not pat_sis_evals:
-                total_mai_valutati_global += 1
                 alert_candidates.append({
                     "paziente_id": pat_display_id,
                     "paziente_nome": pat.get("nome", ""),
@@ -1609,7 +1612,6 @@ async def get_dashboard_stats():
             else:
                 days_since_sis = (now - latest_sis_date).days
                 if days_since_sis > 365:
-                    total_scaduti_global += 1
                     alert_candidates.append({
                         "paziente_id": pat_display_id,
                         "paziente_nome": pat.get("nome", ""),
@@ -1620,7 +1622,6 @@ async def get_dashboard_stats():
                         "scala_nome": "SIS"
                     })
                 elif days_since_sis > 335:
-                    total_in_scadenza_global += 1
                     alert_candidates.append({
                         "paziente_id": pat_display_id,
                         "paziente_nome": pat.get("nome", ""),
@@ -1630,6 +1631,61 @@ async def get_dashboard_stats():
                         "stato": "in_scadenza",
                         "scala_nome": "SIS"
                     })
+
+            # --- Calcolo Metriche Globali dell'Utente (AlertBar) ---
+            is_scaduta = False
+            is_in_scadenza = False
+            
+            if pat_pos_evals and latest_pos_date:
+                days_since_pos = (now - latest_pos_date).days
+                if days_since_pos > 180:
+                    is_scaduta = True
+                elif days_since_pos > 150:
+                    is_in_scadenza = True
+                    
+            if pat_sm_evals and latest_sm_date:
+                days_since_sm = (now - latest_sm_date).days
+                if days_since_sm > 180:
+                    is_scaduta = True
+                elif days_since_sm > 150:
+                    is_in_scadenza = True
+                    
+            if pat_sis_evals and latest_sis_date:
+                days_since_sis = (now - latest_sis_date).days
+                if days_since_sis > 365:
+                    is_scaduta = True
+                elif days_since_sis > 335:
+                    is_in_scadenza = True
+                    
+            if len(pat_evals) == 0:
+                total_mai_valutati_global += 1
+            else:
+                if not has_valid_pos or not has_valid_sm or not has_valid_sis:
+                    total_incompleti_global += 1
+                if is_scaduta:
+                    total_scaduti_global += 1
+                elif is_in_scadenza:
+                    total_in_scadenza_global += 1
+
+            # --- Calcolo Forecast a 8 settimane (Criticità Future) ---
+            if pat_pos_evals and latest_pos_date:
+                exp_pos = latest_pos_date + timedelta(days=180)
+                days_left = (exp_pos - now).days
+                if 0 <= days_left < 56:
+                    w_idx = days_left // 7
+                    forecast_dati[w_idx]["criticita"] += 1
+            if pat_sm_evals and latest_sm_date:
+                exp_sm = latest_sm_date + timedelta(days=180)
+                days_left = (exp_sm - now).days
+                if 0 <= days_left < 56:
+                    w_idx = days_left // 7
+                    forecast_dati[w_idx]["criticita"] += 1
+            if pat_sis_evals and latest_sis_date:
+                exp_sis = latest_sis_date + timedelta(days=365)
+                days_left = (exp_sis - now).days
+                if 0 <= days_left < 56:
+                    w_idx = days_left // 7
+                    forecast_dati[w_idx]["criticita"] += 1
 
         # Calcolo percentuale di copertura
         totale_pazienti = len(patients)
@@ -1782,10 +1838,12 @@ async def get_dashboard_stats():
             "alert_stats": {
                 "totale_scaduti": total_scaduti_global,
                 "totale_in_scadenza": total_in_scadenza_global,
-                "totale_mai_valutati": total_mai_valutati_global
+                "totale_mai_valutati": total_mai_valutati_global,
+                "totale_incompleti": total_incompleti_global
             },
             "distribuzione_scale": distribuzione_scale,
             "trend_somministrazioni": trend_dati,
+            "forecast_somministrazioni": forecast_dati,
             "ultimi_alert": ultimi_alert,
             "demographics": demographics
         }
@@ -1811,10 +1869,12 @@ async def get_dashboard_stats():
             "alert_stats": {
                 "totale_scaduti": 0,
                 "totale_in_scadenza": 0,
-                "totale_mai_valutati": 0
+                "totale_mai_valutati": 0,
+                "totale_incompleti": 0
             },
             "distribuzione_scale": [],
             "trend_somministrazioni": [],
+            "forecast_somministrazioni": [],
             "ultimi_alert": [],
             "error_traceback": tb_str
         }

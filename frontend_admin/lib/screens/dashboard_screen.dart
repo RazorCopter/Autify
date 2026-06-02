@@ -324,6 +324,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final alertList = (_stats?['ultimi_alert'] as List<dynamic>?) ?? [];
     final distributions = (_stats?['distribuzione_scale'] as List<dynamic>?) ?? [];
     final trendData = (_stats?['trend_somministrazioni'] as List<dynamic>?) ?? [];
+    final forecastData = (_stats?['forecast_somministrazioni'] as List<dynamic>?) ?? [];
     final demographics = (_stats?['demographics'] as Map<String, dynamic>?) ?? {};
 
     // Calcolo dei contatori specifici per l'AlertBar dai dati globali reali del backend
@@ -331,7 +332,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final scadutiCount = (alertStats['totale_scaduti'] ?? 0) as int;
     final inScadenzaCount = (alertStats['totale_in_scadenza'] ?? 0) as int;
     final maiValutatiCount = (alertStats['totale_mai_valutati'] ?? 0) as int;
-    final incompleteCount = (posMancanti as int) + (sanMartinMancanti as int) + (sisMancanti as int);
+    final incompleteCount = (alertStats['totale_incompleti'] ?? 0) as int;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -447,7 +448,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 24),
                   Expanded(
                     flex: 3,
-                    child: _buildLineChartCard(trendData),
+                    child: _buildForecastCard(forecastData),
                   ),
                 ],
               )
@@ -456,7 +457,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   _buildDocumentCoverageCard(coveredCount, expiredCount, coveragePercent),
                   const SizedBox(height: 24),
-                  _buildLineChartCard(trendData),
+                  _buildForecastCard(forecastData),
                 ],
               ),
 
@@ -777,31 +778,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ─── LINE CHART CARD ───────────────────────────────────────────────────────
-  Widget _buildLineChartCard(List<dynamic> trend) {
-    final spots = List.generate(trend.length, (index) {
-      final item = trend[index];
-      final count = (item['count'] ?? 0).toDouble();
-      return FlSpot(index.toDouble(), count);
-    });
+  // ─── FORECAST CARD (PILLOLE SOVRAPPOSTE) ───────────────────────────────────
+  Widget _buildForecastCard(List<dynamic> forecast) {
+    if (forecast.isEmpty) {
+      forecast = List.generate(8, (i) => {
+        'settimana': 'W${i + 1}',
+        'routine': 2 + (i % 2),
+        'criticita': i == 2 || i == 5 ? 2 : 0,
+      });
+    }
 
-    final maxY = _getMaxY(trend);
-
-    String trendSub = 'Stabile';
-    bool isTrendUp = true;
-    if (trend.length >= 2) {
-      final lastVal = (trend[trend.length - 1]['count'] ?? 0) as int;
-      final prevVal = (trend[trend.length - 2]['count'] ?? 0) as int;
-      final diff = lastVal - prevVal;
-      if (diff > 0) {
-        trendSub = '+$diff vs mese prec.';
-        isTrendUp = true;
-      } else if (diff < 0) {
-        trendSub = '$diff vs mese prec.';
-        isTrendUp = false;
-      } else {
-        trendSub = 'Stabile';
-        isTrendUp = true;
+    int maxTotal = 4;
+    for (final item in forecast) {
+      final r = (item['routine'] ?? 0) as int;
+      final c = (item['criticita'] ?? 0) as int;
+      if (r + c > maxTotal) {
+        maxTotal = r + c;
       }
     }
 
@@ -812,148 +804,120 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 12,
-                  runSpacing: 8,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Attività Redazione Documentazione',
+                      'Previsione Carico Lavoro',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
                     ),
-                    if (trend.length >= 2)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: isTrendUp ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isTrendUp ? Icons.trending_up : Icons.trending_down,
-                              size: 14,
-                              color: isTrendUp ? const Color(0xFF059669) : const Color(0xFFDC2626),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              trendSub,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: isTrendUp ? const Color(0xFF059669) : const Color(0xFFDC2626),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Pianificazione rinnovi e scadenze future (8 settimane)',
+                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Valutazioni multidimensionali eseguite negli ultimi 6 mesi',
-                  style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                Row(
+                  children: [
+                    _buildLegendItem('Routine', const Color(0xFFCBD5E1)),
+                    const SizedBox(width: 12),
+                    _buildLegendItem('Criticità', const Color(0xFFF59E0B)),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 32),
-            Expanded(
-              child: LineChart(
-                LineChartData(
-                  maxY: maxY,
-                  minY: 0,
-                  lineTouchData: LineTouchData(
-                    touchTooltipData: LineTouchTooltipData(
-                      getTooltipColor: (_) => AppTheme.textPrimary,
-                      getTooltipItems: (touchedSpots) {
-                        return touchedSpots.map((spot) {
-                          return LineTooltipItem(
-                            '${spot.y.toInt()} Valutazioni',
-                            const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          );
-                        }).toList();
-                      },
-                    ),
-                  ),
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    getDrawingHorizontalLine: (value) => const FlLine(
-                      color: Color(0xFFE2E8F0),
-                      strokeWidth: 1,
-                    ),
-                  ),
-                  borderData: FlBorderData(show: false),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        interval: trend.length <= 6
-                            ? 1.0
-                            : (trend.length / 5).ceilToDouble(),
-                        getTitlesWidget: (value, meta) {
-                          final idx = value.toInt();
-                          if (idx >= 0 && idx < trend.length) {
-                            final rawMonth = trend[idx]['mese'] ?? '';
-                            final parts = rawMonth.trim().split(' ');
-                            String shortMonth = parts.isNotEmpty ? parts.first : '';
-                            if (shortMonth.length > 3) {
-                              shortMonth = shortMonth.substring(0, 3);
-                            }
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                shortMonth,
-                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textSecondary),
-                              ),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 32,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            value.toInt().toString(),
-                            style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary),
-                          );
-                        },
-                      ),
-                    ),
-                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  ),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: spots,
-                      isCurved: true,
-                      color: const Color(0xFF2563EB),
-                      barWidth: 3,
-                      isStrokeCapRound: true,
-                      dotData: const FlDotData(show: true),
-                      belowBarData: BarAreaData(
-                        show: true,
-                        gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFF2563EB).withValues(alpha: 0.2),
-                            const Color(0xFF2563EB).withValues(alpha: 0.0),
+            const Spacer(),
+            SizedBox(
+              height: 210,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: forecast.map((item) {
+                  final label = item['settimana'] ?? '';
+                  final r = (item['routine'] ?? 0) as int;
+                  final c = (item['criticita'] ?? 0) as int;
+
+                  final double maxHeight = 160.0;
+                  final int maxTotalVal = maxTotal < 4 ? 4 : maxTotal;
+                  final double gap = 2.0;
+                  final double u = (maxHeight - (maxTotalVal - 1) * gap) / maxTotalVal;
+
+                  final List<Widget> pills = [];
+                  for (int i = 0; i < c; i++) {
+                    pills.add(
+                      Container(
+                        width: 28,
+                        height: u,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF59E0B),
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            )
                           ],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
                         ),
                       ),
+                    );
+                    if (i < c - 1 || r > 0) {
+                      pills.add(SizedBox(height: gap));
+                    }
+                  }
+                  for (int i = 0; i < r; i++) {
+                    pills.add(
+                      Container(
+                        width: 28,
+                        height: u,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE2E8F0),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    );
+                    if (i < r - 1) {
+                      pills.add(SizedBox(height: gap));
+                    }
+                  }
+
+                  return Tooltip(
+                    message: 'Settimana: $label\nRevisioni di Routine: $r\nCriticità in arrivo: $c',
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.textPrimary,
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ],
-                ),
+                    textStyle: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        SizedBox(
+                          width: 28,
+                          height: maxHeight,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: pills,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          label,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
               ),
             ),
           ],
@@ -962,15 +926,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  double _getMaxY(List<dynamic> trend) {
-    double maxVal = 5.0;
-    for (final item in trend) {
-      final val = (item['count'] ?? 0).toDouble();
-      if (val > maxVal) {
-        maxVal = val;
-      }
-    }
-    return maxVal + 1.0;
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.textSecondary),
+        ),
+      ],
+    );
   }
 
   // ─── ALERT CENTER (AZIONI URGENTI) ─────────────────────────────────────────

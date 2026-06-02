@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.19.11] - 2026-06-02
+- **Correzione Duplicazione Contatori AlertBar**:
+  - Modificato il backend in `routes.py` per iterare esclusivamente su `pazienti_attivi` invece che su `patients` (che includeva anche gli utenti disattivati/storici), risolvendo il bug di duplicazione del contatore "Da verificare" e "Documenti incompleti".
+- **Forecast a Pillole Sovrapposte (Stile Linear)**:
+  - Sostituito il rendering del grafico previsionale in `dashboard_screen.dart` con un design ultra-moderno a pillole sovrapposte verticali (Stile Linear). Ogni colonna settimanale mostra ora le singole pillole di routine (grigio tenue) e criticità (giallo/arancione) impilate con `BorderRadius.circular(8)` e separate da un gap trasparente di 2px.
+
 ## [2.19.10] - 2026-06-02
 - **Risoluzione Contatori Globali AlertBar**:
   - Introdotto l'oggetto `alert_stats` nel payload JSON di risposta delle statistiche della dashboard per calcolare i totali globali reali di utenti scaduti, in scadenza e mai valutati a livello di database.
