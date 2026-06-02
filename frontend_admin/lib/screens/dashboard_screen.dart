@@ -438,52 +438,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             // Row 2: Charts (Doughnut e LineChart)
             if (isDesktop)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: _buildDocumentCoverageCard(coveredCount, expiredCount, coveragePercent),
-                  ),
-                  const SizedBox(width: 24),
-                  Expanded(
-                    flex: 3,
-                    child: _buildDistributionCard(distributions, activePatients),
-                  ),
-                ],
+              SizedBox(
+                height: 380,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: _buildDocumentCoverageCard(coveredCount, expiredCount, coveragePercent),
+                    ),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      flex: 3,
+                      child: _buildDistributionCard(distributions, activePatients, height: 380),
+                    ),
+                  ],
+                ),
               )
             else
               Column(
                 children: [
                   _buildDocumentCoverageCard(coveredCount, expiredCount, coveragePercent),
-                  _buildDistributionCard(distributions, activePatients),
+                  const SizedBox(height: 24),
+                  _buildDistributionCard(distributions, activePatients, height: 420),
                 ],
               ),
 
             const SizedBox(height: 24),
 
-            // Row 3: Alert list & Distribution
+            // Row 3: Alert list & Demographics
             if (isDesktop)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: _buildAlertListCard(alertList),
-                  ),
-                  const SizedBox(width: 24),
-                  Expanded(
-                    flex: 2,
-                    child: _buildDemographicsCard(demographics),
-                  ),
-                ],
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: _buildAlertListCard(alertList),
+                    ),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      flex: 2,
+                      child: _buildDemographicsCard(demographics),
+                    ),
+                  ],
+                ),
               )
             else
               Column(
                 children: [
-                  _buildAlertListCard(alertList),
+                  _buildAlertListCard(alertList, height: 420),
                   const SizedBox(height: 24),
-                  _buildDemographicsCard(demographics),
+                  _buildDemographicsCard(demographics, height: 220),
                 ],
               ),
 
@@ -778,7 +784,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 
   // ─── ALERT CENTER (AZIONI URGENTI) ─────────────────────────────────────────
-  Widget _buildAlertListCard(List<dynamic> alerts) {
+  Widget _buildAlertListCard(List<dynamic> alerts, {double? height}) {
     // Ordina per gravità decrescente
     final sortedAlerts = List<dynamic>.from(alerts);
     sortedAlerts.sort((a, b) {
@@ -796,12 +802,143 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return daysB.compareTo(daysA); // Più giorni prima
     });
 
+    Widget listContent;
+    if (sortedAlerts.isEmpty) {
+      listContent = const Center(
+        child: Text(
+          'Tutti gli utenti sono coperti e monitorati.',
+          style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 13),
+        ),
+      );
+      if (height == null) {
+        listContent = Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: listContent,
+        );
+      }
+    } else {
+      listContent = ListView.builder(
+        shrinkWrap: height == null,
+        physics: height == null ? const NeverScrollableScrollPhysics() : null,
+        itemCount: sortedAlerts.length,
+        itemBuilder: (context, index) {
+          final item = sortedAlerts[index];
+          final name = '${item['paziente_nome'] ?? ''} ${item['paziente_cognome'] ?? ''}'.trim();
+          final stato = item['stato'] ?? 'scaduto';
+          final days = (item['giorni_da_ultima_valutazione'] ?? 0) as int;
+          final scalaNome = item['scala_nome'] ?? '';
+          
+          Color badgeColor;
+          Color badgeBg;
+          String badgeText;
+          IconData leadIcon;
+
+          if (stato == 'mai_valutato') {
+            badgeColor = const Color(0xFFDC2626); // Red
+            badgeBg = const Color(0xFFFEE2E2);
+            badgeText = 'MAI COMPILATA';
+            leadIcon = Icons.dangerous_outlined;
+          } else if (stato == 'in_scadenza') {
+            badgeColor = const Color(0xFFEAB308); // Amber/Arancio
+            badgeBg = const Color(0xFFFEF9C3);
+            badgeText = 'IN SCADENZA';
+            leadIcon = Icons.timer_outlined;
+          } else {
+            badgeColor = const Color(0xFFDC2626); // Red
+            badgeBg = const Color(0xFFFEE2E2);
+            badgeText = 'SCADUTA';
+            leadIcon = Icons.warning_amber_rounded;
+          }
+
+          final daysText = stato == 'mai_valutato'
+              ? 'Nessuna scala $scalaNome compilata a sistema'
+              : 'Ultima compilazione $scalaNome $days giorni fa';
+
+          return TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: 0, end: 1),
+            duration: Duration(milliseconds: (300 + (index * 100)).toInt()),
+            builder: (context, animValue, child) {
+              return Opacity(
+                opacity: animValue,
+                child: Transform.translate(
+                  offset: Offset(0, 20 * (1 - animValue)),
+                  child: child,
+                ),
+              );
+            },
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFF1F5F9)),
+              ),
+              child: ListTile(
+                dense: true,
+                onTap: () {
+                  widget.onNavigate(2, searchFilter: item['paziente_cognome']);
+                },
+                leading: CircleAvatar(
+                  backgroundColor: badgeColor.withValues(alpha: 0.12),
+                  radius: 16,
+                  child: Icon(
+                    leadIcon,
+                    color: badgeColor,
+                    size: 16,
+                  ),
+                ),
+                title: Text(
+                  name,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textPrimary),
+                ),
+                subtitle: Text(
+                  daysText,
+                  style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: badgeBg,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        badgeText,
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: badgeColor,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_forward_rounded, size: 16, color: AppTheme.primaryColor),
+                      tooltip: 'Gestisci utente',
+                      onPressed: () {
+                        widget.onNavigate(2, searchFilter: item['paziente_cognome']);
+                      },
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(4),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    }
+
     return _HoverBentoCard(
-      height: 420,
+      height: height,
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -829,126 +966,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 18),
-            Expanded(
-              child: sortedAlerts.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Tutti gli utenti sono coperti e monitorati.',
-                      style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 13),
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: sortedAlerts.length,
-                    itemBuilder: (context, index) {
-                      final item = sortedAlerts[index];
-                      final name = '${item['paziente_nome'] ?? ''} ${item['paziente_cognome'] ?? ''}'.trim();
-                      final stato = item['stato'] ?? 'scaduto';
-                      final days = (item['giorni_da_ultima_valutazione'] ?? 0) as int;
-                      final scalaNome = item['scala_nome'] ?? '';
-                      
-                      Color badgeColor;
-                      Color badgeBg;
-                      String badgeText;
-                      IconData leadIcon;
-
-                      if (stato == 'mai_valutato') {
-                        badgeColor = const Color(0xFFDC2626); // Red
-                        badgeBg = const Color(0xFFFEE2E2);
-                        badgeText = 'MAI COMPILATA';
-                        leadIcon = Icons.dangerous_outlined;
-                      } else if (stato == 'in_scadenza') {
-                        badgeColor = const Color(0xFFEAB308); // Amber/Arancio
-                        badgeBg = const Color(0xFFFEF9C3);
-                        badgeText = 'IN SCADENZA';
-                        leadIcon = Icons.timer_outlined;
-                      } else {
-                        badgeColor = const Color(0xFFDC2626); // Red
-                        badgeBg = const Color(0xFFFEE2E2);
-                        badgeText = 'SCADUTA';
-                        leadIcon = Icons.warning_amber_rounded;
-                      }
-
-                      final daysText = stato == 'mai_valutato'
-                          ? 'Nessuna scala $scalaNome compilata a sistema'
-                          : 'Ultima compilazione $scalaNome $days giorni fa';
-
-                      return TweenAnimationBuilder<double>(
-                        tween: Tween<double>(begin: 0, end: 1),
-                        duration: Duration(milliseconds: (300 + (index * 100)).toInt()),
-                        builder: (context, animValue, child) {
-                          return Opacity(
-                            opacity: animValue,
-                            child: Transform.translate(
-                              offset: Offset(0, 20 * (1 - animValue)),
-                              child: child,
-                            ),
-                          );
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFF1F5F9)),
-                          ),
-                          child: ListTile(
-                            dense: true,
-                            onTap: () {
-                              widget.onNavigate(2, searchFilter: item['paziente_cognome']);
-                            },
-                            leading: CircleAvatar(
-                              backgroundColor: badgeColor.withValues(alpha: 0.12),
-                              radius: 16,
-                              child: Icon(
-                                leadIcon,
-                                color: badgeColor,
-                                size: 16,
-                              ),
-                            ),
-                            title: Text(
-                              name,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textPrimary),
-                            ),
-                            subtitle: Text(
-                              daysText,
-                              style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: badgeBg,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    badgeText,
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                      color: badgeColor,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  icon: const Icon(Icons.arrow_forward_rounded, size: 16, color: AppTheme.primaryColor),
-                                  tooltip: 'Gestisci utente',
-                                  onPressed: () {
-                                    widget.onNavigate(2, searchFilter: item['paziente_cognome']);
-                                  },
-                                  constraints: const BoxConstraints(),
-                                  padding: const EdgeInsets.all(4),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-            ),
+            height != null ? Expanded(child: listContent) : listContent,
           ],
         ),
       ),
@@ -956,7 +974,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ─── DEMOGRAPHICS CARD ──────────────────────────────────────────────────
-  Widget _buildDemographicsCard(Map<String, dynamic> demographics) {
+  Widget _buildDemographicsCard(Map<String, dynamic> demographics, {double? height}) {
     if (demographics.isEmpty) return const SizedBox();
     
     final sesso = demographics['sesso'] as Map<String, dynamic>? ?? {};
@@ -970,11 +988,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final double womenPercent = total > 0 ? (women / total) : 0.5;
     
     return _HoverBentoCard(
-      height: 220,
+      height: height,
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
               'Dati Socio-Demografici',
@@ -1100,7 +1119,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ─── DISTRIBUTION CARD ─────────────────────────────────────────────────────
-  Widget _buildDistributionCard(List<dynamic> distributions, int totalPatients) {
+  Widget _buildDistributionCard(List<dynamic> distributions, int totalPatients, {double? height}) {
     // Ordina una copia locale delle scale dalla copertura più bassa (più critica) alla più alta
     final sortedDistributions = List<dynamic>.from(distributions);
     sortedDistributions.sort((a, b) {
@@ -1112,11 +1131,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
 
     return _HoverBentoCard(
-      height: 420,
+      height: height,
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
               'Distribuzione Documentazione',
