@@ -448,7 +448,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 24),
                   Expanded(
                     flex: 3,
-                    child: _buildForecastCard(forecastData),
+                    child: _buildDistributionCard(distributions, activePatients),
                   ),
                 ],
               )
@@ -456,8 +456,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Column(
                 children: [
                   _buildDocumentCoverageCard(coveredCount, expiredCount, coveragePercent),
-                  const SizedBox(height: 24),
-                  _buildForecastCard(forecastData),
+                  _buildDistributionCard(distributions, activePatients),
                 ],
               ),
 
@@ -475,7 +474,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 24),
                   Expanded(
                     flex: 2,
-                    child: _buildDistributionCard(distributions, activePatients),
+                    child: _buildDemographicsCard(demographics),
                   ),
                 ],
               )
@@ -484,14 +483,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   _buildAlertListCard(alertList),
                   const SizedBox(height: 24),
-                  _buildDistributionCard(distributions, activePatients),
+                  _buildDemographicsCard(demographics),
                 ],
               ),
 
-            const SizedBox(height: 24),
-
-            // Row 4: Demographics
-            _buildDemographicsCard(demographics),
+            // rimosso riga 4 (Demographics) poichè spostato in riga 3
           ],
         );
       },
@@ -779,173 +775,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ─── FORECAST CARD (PILLOLE SOVRAPPOSTE) ───────────────────────────────────
-  Widget _buildForecastCard(List<dynamic> forecast) {
-    if (forecast.isEmpty) {
-      forecast = List.generate(8, (i) => {
-        'settimana': 'W${i + 1}',
-        'routine': 2 + (i % 2),
-        'criticita': i == 2 || i == 5 ? 2 : 0,
-      });
-    }
 
-    int maxTotal = 4;
-    for (final item in forecast) {
-      final r = (item['routine'] ?? 0) as int;
-      final c = (item['criticita'] ?? 0) as int;
-      if (r + c > maxTotal) {
-        maxTotal = r + c;
-      }
-    }
-
-    return _HoverBentoCard(
-      height: 380,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Previsione Carico Lavoro',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Pianificazione rinnovi e scadenze future (8 settimane)',
-                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    _buildLegendItem('Routine', const Color(0xFFCBD5E1)),
-                    const SizedBox(width: 12),
-                    _buildLegendItem('Criticità', const Color(0xFFF59E0B)),
-                  ],
-                ),
-              ],
-            ),
-            const Spacer(),
-            SizedBox(
-              height: 210,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: forecast.map((item) {
-                  final label = item['settimana'] ?? '';
-                  final r = (item['routine'] ?? 0) as int;
-                  final c = (item['criticita'] ?? 0) as int;
-
-                  final double maxHeight = 160.0;
-                  final int maxTotalVal = maxTotal < 4 ? 4 : maxTotal;
-                  final double gap = 2.0;
-                  final double u = (maxHeight - (maxTotalVal - 1) * gap) / maxTotalVal;
-
-                  final List<Widget> pills = [];
-                  for (int i = 0; i < c; i++) {
-                    pills.add(
-                      Container(
-                        width: 28,
-                        height: u,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF59E0B),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            )
-                          ],
-                        ),
-                      ),
-                    );
-                    if (i < c - 1 || r > 0) {
-                      pills.add(SizedBox(height: gap));
-                    }
-                  }
-                  for (int i = 0; i < r; i++) {
-                    pills.add(
-                      Container(
-                        width: 28,
-                        height: u,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE2E8F0),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    );
-                    if (i < r - 1) {
-                      pills.add(SizedBox(height: gap));
-                    }
-                  }
-
-                  return Tooltip(
-                    message: 'Settimana: $label\nRevisioni di Routine: $r\nCriticità in arrivo: $c',
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppTheme.textPrimary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    textStyle: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        SizedBox(
-                          width: 28,
-                          height: maxHeight,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: pills,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          label,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(String label, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(3),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.textSecondary),
-        ),
-      ],
-    );
-  }
 
   // ─── ALERT CENTER (AZIONI URGENTI) ─────────────────────────────────────────
   Widget _buildAlertListCard(List<dynamic> alerts) {

@@ -1660,9 +1660,9 @@ async def get_dashboard_stats():
             if len(pat_evals) == 0:
                 total_mai_valutati_global += 1
             else:
-                if not has_valid_pos or not has_valid_sm or not has_valid_sis:
+                if not pat_pos_evals or not pat_sm_evals or not pat_sis_evals:
                     total_incompleti_global += 1
-                if is_scaduta:
+                elif is_scaduta:
                     total_scaduti_global += 1
                 elif is_in_scadenza:
                     total_in_scadenza_global += 1
