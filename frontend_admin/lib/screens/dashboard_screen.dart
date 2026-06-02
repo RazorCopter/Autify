@@ -326,20 +326,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final trendData = (_stats?['trend_somministrazioni'] as List<dynamic>?) ?? [];
     final demographics = (_stats?['demographics'] as Map<String, dynamic>?) ?? {};
 
-    // Calcolo dei contatori specifici per l'AlertBar
-    final scadutiCount = alertList.where((item) {
-      final isNever = item['stato'] == 'mai_valutato';
-      final days = (item['giorni_da_ultima_valutazione'] ?? 0) as int;
-      return !isNever && days > 395;
-    }).length;
-
-    final inScadenzaCount = alertList.where((item) {
-      final isNever = item['stato'] == 'mai_valutato';
-      final days = (item['giorni_da_ultima_valutazione'] ?? 0) as int;
-      return !isNever && days <= 395;
-    }).length;
-
-    final maiValutatiCount = alertList.where((item) => item['stato'] == 'mai_valutato').length;
+    // Calcolo dei contatori specifici per l'AlertBar dai dati globali reali del backend
+    final alertStats = _stats?['alert_stats'] ?? {};
+    final scadutiCount = (alertStats['totale_scaduti'] ?? 0) as int;
+    final inScadenzaCount = (alertStats['totale_in_scadenza'] ?? 0) as int;
+    final maiValutatiCount = (alertStats['totale_mai_valutati'] ?? 0) as int;
     final incompleteCount = (posMancanti as int) + (sanMartinMancanti as int) + (sisMancanti as int);
 
     return LayoutBuilder(

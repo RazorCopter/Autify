@@ -1430,6 +1430,9 @@ async def get_dashboard_stats():
         san_martin_scaduti = 0
         sis_scaduti = 0
         alert_candidates = []
+        total_scaduti_global = 0
+        total_in_scadenza_global = 0
+        total_mai_valutati_global = 0
         
         for pat in patients:
             p_id = pat.get("id")
@@ -1470,6 +1473,7 @@ async def get_dashboard_stats():
             
             # --- Valuta POS ---
             has_valid_pos = False
+            latest_pos_date = None
             if pat_pos_evals:
                 sorted_pos = sorted(pat_pos_evals, key=parse_eval_date, reverse=True)
                 latest_pos = sorted_pos[0]
@@ -1485,6 +1489,7 @@ async def get_dashboard_stats():
                 
             # --- Valuta San Martín ---
             has_valid_sm = False
+            latest_sm_date = None
             if pat_sm_evals:
                 sorted_sm = sorted(pat_sm_evals, key=parse_eval_date, reverse=True)
                 latest_sm = sorted_sm[0]
@@ -1500,6 +1505,7 @@ async def get_dashboard_stats():
                 
             # --- Valuta SIS ---
             has_valid_sis = False
+            latest_sis_date = None
             if pat_sis_evals:
                 sorted_sis = sorted(pat_sis_evals, key=parse_eval_date, reverse=True)
                 latest_sis = sorted_sis[0]
@@ -1516,6 +1522,7 @@ async def get_dashboard_stats():
             # Generazione alert puntuali per singola scala (se non valida o in scadenza)
             # POS
             if not pat_pos_evals:
+                total_mai_valutati_global += 1
                 alert_candidates.append({
                     "paziente_id": pat_display_id,
                     "paziente_nome": pat.get("nome", ""),
@@ -1528,6 +1535,7 @@ async def get_dashboard_stats():
             else:
                 days_since_pos = (now - latest_pos_date).days
                 if days_since_pos > 180:
+                    total_scaduti_global += 1
                     alert_candidates.append({
                         "paziente_id": pat_display_id,
                         "paziente_nome": pat.get("nome", ""),
@@ -1538,6 +1546,7 @@ async def get_dashboard_stats():
                         "scala_nome": "POS"
                     })
                 elif days_since_pos > 150:
+                    total_in_scadenza_global += 1
                     alert_candidates.append({
                         "paziente_id": pat_display_id,
                         "paziente_nome": pat.get("nome", ""),
@@ -1550,6 +1559,7 @@ async def get_dashboard_stats():
 
             # San Martín
             if not pat_sm_evals:
+                total_mai_valutati_global += 1
                 alert_candidates.append({
                     "paziente_id": pat_display_id,
                     "paziente_nome": pat.get("nome", ""),
@@ -1562,6 +1572,7 @@ async def get_dashboard_stats():
             else:
                 days_since_sm = (now - latest_sm_date).days
                 if days_since_sm > 180:
+                    total_scaduti_global += 1
                     alert_candidates.append({
                         "paziente_id": pat_display_id,
                         "paziente_nome": pat.get("nome", ""),
@@ -1572,6 +1583,7 @@ async def get_dashboard_stats():
                         "scala_nome": "San Martín"
                     })
                 elif days_since_sm > 150:
+                    total_in_scadenza_global += 1
                     alert_candidates.append({
                         "paziente_id": pat_display_id,
                         "paziente_nome": pat.get("nome", ""),
@@ -1584,6 +1596,7 @@ async def get_dashboard_stats():
 
             # SIS
             if not pat_sis_evals:
+                total_mai_valutati_global += 1
                 alert_candidates.append({
                     "paziente_id": pat_display_id,
                     "paziente_nome": pat.get("nome", ""),
@@ -1596,6 +1609,7 @@ async def get_dashboard_stats():
             else:
                 days_since_sis = (now - latest_sis_date).days
                 if days_since_sis > 365:
+                    total_scaduti_global += 1
                     alert_candidates.append({
                         "paziente_id": pat_display_id,
                         "paziente_nome": pat.get("nome", ""),
@@ -1606,6 +1620,7 @@ async def get_dashboard_stats():
                         "scala_nome": "SIS"
                     })
                 elif days_since_sis > 335:
+                    total_in_scadenza_global += 1
                     alert_candidates.append({
                         "paziente_id": pat_display_id,
                         "paziente_nome": pat.get("nome", ""),
@@ -1764,6 +1779,11 @@ async def get_dashboard_stats():
                 "san_martin_attivi": san_martin_attivi,
                 "sis_attivi": sis_attivi
             },
+            "alert_stats": {
+                "totale_scaduti": total_scaduti_global,
+                "totale_in_scadenza": total_in_scadenza_global,
+                "totale_mai_valutati": total_mai_valutati_global
+            },
             "distribuzione_scale": distribuzione_scale,
             "trend_somministrazioni": trend_dati,
             "ultimi_alert": ultimi_alert,
@@ -1787,6 +1807,11 @@ async def get_dashboard_stats():
                 "pos_attivi": 0,
                 "san_martin_attivi": 0,
                 "sis_attivi": 0
+            },
+            "alert_stats": {
+                "totale_scaduti": 0,
+                "totale_in_scadenza": 0,
+                "totale_mai_valutati": 0
             },
             "distribuzione_scale": [],
             "trend_somministrazioni": [],

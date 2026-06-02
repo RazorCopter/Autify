@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.19.10] - 2026-06-02
+- **Risoluzione Contatori Globali AlertBar**:
+  - Introdotto l'oggetto `alert_stats` nel payload JSON di risposta delle statistiche della dashboard per calcolare i totali globali reali di utenti scaduti, in scadenza e mai valutati a livello di database.
+  - Aggiornato il frontend in `dashboard_screen.dart` per leggere i contatori direttamente dal backend, superando la limitazione precedente che calcolava i contatori filtrando localmente la lista di preview (bloccata a un massimo di 10 elementi).
+
 ## [2.19.9] - 2026-06-02
 - **Alert Center per Singola Scala (POS, San Martín, SIS)**:
   - Modificata la logica del backend per calcolare la scadenza e la compilazione mancante per ciascuna delle tre scale fondamentali in modo autonomo, scorporando gli alert precedentemente accorpati per utente.
