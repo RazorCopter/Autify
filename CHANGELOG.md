@@ -1,5 +1,31 @@
 # Changelog
 
+## [2.20.0] - 2026-06-04
+
+### Bug Fix
+- **Fix import DB**: Aggiunta la collezione `audit_logs` al mapping di `import_database()` in `routes.py`. In precedenza i log di tracciabilità venivano esportati ma non reimportati dai backup, causando perdita silenziosa dei dati storici.
+- **Fix versione export DB**: La versione nel metadata del file di backup non era più hardcoded (`"2.18.8"`) ma letta dinamicamente dal file `VERSION`.
+- **Fix `delete_evaluation`**: L'endpoint DELETE non usava il resolver legacy `_find_evaluation_document`. Valutazioni con identificativi legacy (`idValutazione`, ObjectId) non potevano essere eliminate. Ora usa `_find_evaluation_document` e `_build_evaluation_selector` come gli altri endpoint.
+- **Fix forecast routine inventata**: Le colonne "routine" del grafico previsionale erano popolate con valori fake (`2 + (w % 3)`). Impostate a `0` in attesa di un modulo di pianificazione reale.
+
+### Sicurezza
+- **Rimozione print DEBUG**: Rimossi tutti i `print("DEBUG ANALYTICS - ...")` da `analytics.py` che spammavano i log Docker con dati psicometrici degli utenti ad ogni calcolo.
+- **Rimozione print client**: Rimossi tutti i `print('Errore ...')` e `print('DEBUG AUTANALYSIS ...')` da `api_service.dart`, visibili nella console del browser.
+- **CORS produzione**: `allow_origins` ristretto da `["*"]` a `["https://tiglio.autify.it"]` con metodi e header espliciti in `main.py`.
+- **Rate limiting login**: Aggiunta dipendenza `slowapi>=0.1.9` e limite di 10 tentativi/minuto per IP sull'endpoint `POST /auth/login`, a protezione da attacchi brute-force.
+
+### Performance
+- **Fix N+1 Query `GET /patients`**: Eliminato il pattern N+1 (1 query MongoDB per utente). Sostituito con 2 query bulk pre-caricamento (`all_evals`, `all_analyses`) e lookup in-memory tramite dict. Da O(n) query a O(1) query totali.
+- **Fix N+1 Query `export_patients_csv`**: Stesso refactoring applicato alla generazione CSV.
+- **Indici MongoDB**: Aggiunti 5 indici mancanti in `ensure_default_admin()`: `evaluations.id_valutazione`, `patients.id` (unique), `ai_analyses.id_paziente`, `ai_analyses.timestamp`, `audit_logs.timestamp`.
+- **Warning full-scan legacy**: Aggiunto log `WARNING` quando il fallback full-scan di `_find_evaluation_document` viene attivato, per identificare documenti legacy non indicizzati.
+
+### Architettura
+- **Deprecazione `/api/admin/stats`**: L'endpoint non è chiamato dal frontend (usa `/dashboard-stats`). Marcato `deprecated=True` nell'OpenAPI. Sarà rimosso nella prossima release major.
+- **ARCHITECTURE_MAP.md aggiornata**: Aggiunta tabella scale OGVA, SABS, OSO alla sezione 1.1. Versione aggiornata a v2.20.0.
+
+---
+
 ## [2.19.11] - 2026-06-02
 - **Correzione Duplicazione Contatori AlertBar**:
   - Modificato il backend in `routes.py` per iterare esclusivamente su `pazienti_attivi` invece che su `patients` (che includeva anche gli utenti disattivati/storici), risolvendo il bug di duplicazione del contatore "Da verificare" e "Documenti incompleti".

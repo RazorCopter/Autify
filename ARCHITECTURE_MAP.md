@@ -1,6 +1,6 @@
 # 🏗️ MAPPA TECNICO-FUNZIONALE: Autify
 
-*Single Source of Truth (SSOT) del Progetto — v2.19.11*
+*Single Source of Truth (SSOT) del Progetto — v2.20.0*
 
 > [!CAUTION]
 > **REGOLE DI INGAGGIO E PROTOCOLLO OPERATIVO PER L'AGENTE IA**
@@ -46,7 +46,7 @@ flowchart TD
 
     DOCS["6️⃣ Documentazione\nAggiorna CHANGELOG.md e ARCHITECTURE_MAP.md"] --> COMMIT
 
-    COMMIT["7️⃣ Deploy\ngit commit & push, esegui deploy_autify.ps1"] --> DONE([✅ Fine Task])
+    COMMIT["7️⃣ Deploy\ngit commit & push, esegui deploy.ps1 PATH: C:\Users\gianvito.bleve\OneDrive - Banca Mediolanum SPA\Documenti\Progetti\deploy.ps1"] --> DONE([✅ Fine Task])
 
     style START fill:#4CAF50,color:#fff
     style DONE fill:#4CAF50,color:#fff
@@ -78,6 +78,9 @@ flowchart TD
 | **POS** | Qualità della Vita | 8 domini (SP, AD, RI, IS, D, BE, BF, BM) | Somma grezza diretta |
 | **San Martín** | QoL avanzata | 8 domini standard | Conversione psicometrica → Punteggi Standard (1-20), Percentili, Fasce, Indice QdV Globale |
 | **SIS** | Intensità Supporti | 6 sottoscale (A-F) + Sezioni 2-3 | Punteggi tridimensionali (Frequenza, Durata, Tipo) → Indice SIS, Rank Priorità |
+| **OGVA** | Griglia Autonomie | Sezioni per aree di autonomia | Punteggio diretto per area |
+| **SABS** | Comportamento Adattivo | Domini comportamento adattivo | Punteggio diretto per dominio (fondoscala 49) |
+| **OSO** | Scheda Osservativa | Checklist comportamenti specifici | Punteggio composito per sottodomande |
 
 ### 1.2 Stack Tecnologico
 

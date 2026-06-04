@@ -1,5 +1,11 @@
+import logging
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Header, Depends, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from fastapi.responses import StreamingResponse
+
+_limiter = Limiter(key_func=get_remote_address)
+_logger = logging.getLogger("autify")
 from typing import List, Optional
 from bson import ObjectId
 from .models import Scale, Evaluation, Patient, AppSettings, Section, Question, Option, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest, AiAnalysis, AiAnalysisCreate, UserCreate, UserUpdate, UserResponse, AuditLogCreate, AuditLogResponse
@@ -73,6 +79,7 @@ async def _find_evaluation_document(evaluation_id: str):
 
     # Fallback ultra-tollerante per documenti legacy/importati da backup:
     # confronta in memoria i principali campi identificativi come stringhe.
+    _logger.warning("[_find_evaluation_document] Fallback full-scan per id '%s' — documento legacy senza indice applicabile", evaluation_id)
     async for doc in evaluations_collection.find({}):
         doc_identifiers = [
             doc.get("id_valutazione"),
@@ -186,7 +193,8 @@ def _hydrate_scale_doc(scale_doc: Optional[dict]) -> dict:
 # ==========================================
 
 @public_admin_router.post("/auth/login", tags=["Admin - Auth"])
-async def auth_login(payload: LoginRequest, request: Request):
+@_limiter.limit("10/minute")
+async def auth_login(request: Request, payload: LoginRequest):
     """
     Endpoint pubblico di login. Verifica username+password con bcrypt,
     restituisce un JWT con role e ai_enabled.
@@ -233,9 +241,13 @@ async def get_viewer_logs(auth: dict = Depends(verify_auth)):
 
 # ── Stats Globali (Dashboard) ────────────────────────────────────────────────
 
-@admin_router.get("/stats", tags=["Admin - Stats"])
+@admin_router.get("/stats", tags=["Admin - Stats"], deprecated=True,
+                  summary="[DEPRECATO] Usare /dashboard-stats")
 async def get_global_stats(auth: dict = Depends(verify_auth)):
-    """Restituisce le statistiche aggregate globali reali per la Dashboard."""
+    """
+    DEPRECATO — non è più chiamato dal frontend. Verrà rimosso nella prossima release major.
+    Usare /api/admin/dashboard-stats per le statistiche della dashboard.
+    """
     import collections
     
     # 1. Totali
@@ -560,12 +572,10 @@ async def get_patients():
     # Migrazione automatica dei vecchi documenti sprovvisti del campo 'attivo'
     await patients_collection.update_many({"attivo": {"$exists": False}}, {"$set": {"attivo": True}})
 
-    cursor = patients_collection.find({})
-    patients = await cursor.to_list(length=1000)
-    
-    # Recupera tutte le scale per mappare l'ID al nome
-    scales_cursor = scales_collection.find({})
-    scales_list = await scales_cursor.to_list(length=100)
+    patients = await patients_collection.find({}).to_list(length=1000)
+
+    # Recupera tutte le scale per mappare l'ID al nome (1 query)
+    scales_list = await scales_collection.find({}).to_list(length=100)
     scale_map = {}
     for s in scales_list:
         nome_lower = s["nome"].lower()
@@ -573,17 +583,28 @@ async def get_patients():
         mongo_id = s.get("_id")
         if mongo_id:
             scale_map[str(mongo_id)] = nome_lower
-        
+
+    # Pre-carica TUTTE le valutazioni ordinate per data decrescente (1 query, non N)
+    all_evals = await evaluations_collection.find({}).sort("data_compilazione", -1).to_list(length=50000)
+    evals_by_patient: dict = {}
+    for ev in all_evals:
+        pid = ev.get("id_paziente")
+        if pid:
+            evals_by_patient.setdefault(pid, []).append(ev)
+
+    # Pre-carica l'ultima analisi IA per ogni utente (1 query, non N)
+    all_analyses = await ai_analyses_collection.find({}).sort("timestamp", -1).to_list(length=10000)
+    latest_ia_by_patient: dict = {}
+    for an in all_analyses:
+        pid = an.get("id_paziente")
+        if pid and pid not in latest_ia_by_patient:
+            latest_ia_by_patient[pid] = an
+
     # Arricchisce ciascun utente con le date delle ultime scale compilate
     for pat in patients:
         pat_id = pat["id"]
-        
-        # Recupera tutte le valutazioni per questo utente, ordinate per data decrescente
-        evals_cursor = evaluations_collection.find({"id_paziente": pat_id}).sort("data_compilazione", -1)
-        evals = await evals_cursor.to_list(length=100)
-        
-        # Inizializziamo i campi come None (o stringhe vuote)
         pat_dict = pat if isinstance(pat, dict) else pat.__dict__
+
         pat_dict["ultimo_pos_compilato"] = None
         pat_dict["ultimo_san_martin_compilato"] = None
         pat_dict["ultimo_sis_compilato"] = None
@@ -591,78 +612,55 @@ async def get_patients():
         pat_dict["ultimo_sabs_compilato"] = None
         pat_dict["ultimo_oso_compilato"] = None
         pat_dict["ultima_analisi_ia"] = None
-        
-        # Recupera la data dell'ultima analisi IA per questo utente
-        latest_ai = await ai_analyses_collection.find_one(
-            {"id_paziente": pat_id},
-            sort=[("timestamp", -1)]
-        )
+
+        latest_ai = latest_ia_by_patient.get(pat_id)
         if latest_ai and latest_ai.get("timestamp"):
             ts = latest_ai["timestamp"]
-            if isinstance(ts, datetime):
-                pat_dict["ultima_analisi_ia"] = ts.isoformat()
-            else:
-                pat_dict["ultima_analisi_ia"] = str(ts)
-        
-        for ev in evals:
+            pat_dict["ultima_analisi_ia"] = ts.isoformat() if isinstance(ts, datetime) else str(ts)
+
+        for ev in evals_by_patient.get(pat_id, []):
             scale_id = ev.get("id_scala")
             scale_id_str = str(scale_id) if scale_id else ""
             scale_name = scale_map.get(scale_id, scale_map.get(scale_id_str, "")).lower()
-            
+
             data_val = ev.get("data_compilazione")
-            data_str = None
-            if data_val:
-                if isinstance(data_val, datetime):
-                    data_str = data_val.isoformat()
-                else:
-                    data_str = str(data_val)
-            
-            # Se la scala è POS ed è la prima che incontriamo (l'ultima compilata cronologicamente)
+            data_str = data_val.isoformat() if isinstance(data_val, datetime) else (str(data_val) if data_val else None)
+
             if not pat_dict.get("ultimo_pos_compilato") and ("pos" in scale_name or "pos" in scale_id_str.lower()):
                 pat_dict["ultimo_pos_compilato"] = data_str
-                
-            # Se la scala è San Martín ed è la prima che incontriamo
+
             scale_name_clean = scale_name.replace('í', 'i').replace('ì', 'i')
             if not pat_dict.get("ultimo_san_martin_compilato") and ("martin" in scale_name_clean or "martin" in scale_id_str.lower()):
                 pat_dict["ultimo_san_martin_compilato"] = data_str
 
-            # Se la scala è SIS ed è la prima che incontriamo
             if not pat_dict.get("ultimo_sis_compilato") and ("sis" in scale_name or "sis" in scale_id_str.lower()):
                 pat_dict["ultimo_sis_compilato"] = data_str
 
-            # Se la scala è OGVA ed è la prima che incontriamo
             if not pat_dict.get("ultimo_ogva_compilato") and (
-                "ogva" in scale_name or 
-                "griglia_autonomia" in scale_name or
-                "autonomie" in scale_name or 
-                "ogva" in scale_id_str.lower() or 
+                "ogva" in scale_name or "griglia_autonomia" in scale_name or
+                "autonomie" in scale_name or "ogva" in scale_id_str.lower() or
                 "griglia_autonomia" in scale_id_str.lower()
             ):
                 pat_dict["ultimo_ogva_compilato"] = data_str
 
-            # Se la scala è SABS ed è la prima che incontriamo
             if not pat_dict.get("ultimo_sabs_compilato") and ("sabs" in scale_name or "sabs" in scale_id_str.lower()):
                 pat_dict["ultimo_sabs_compilato"] = data_str
 
-            # Se la scala è OSO ed è la prima che incontriamo
             if not pat_dict.get("ultimo_oso_compilato") and (
-                "oso" in scale_name or 
-                "scheda_osservativa" in scale_name or 
-                "scheda osservativa" in scale_name or 
-                "oso" in scale_id_str.lower() or 
+                "oso" in scale_name or "scheda_osservativa" in scale_name or
+                "scheda osservativa" in scale_name or "oso" in scale_id_str.lower() or
                 "scheda_osservativa" in scale_id_str.lower()
             ):
                 pat_dict["ultimo_oso_compilato"] = data_str
-                
-            # Se abbiamo trovato tutte le scale, possiamo interrompere la ricerca per questo utente
-            if (pat_dict.get("ultimo_pos_compilato") and 
-                pat_dict.get("ultimo_san_martin_compilato") and
-                pat_dict.get("ultimo_sis_compilato") and
-                pat_dict.get("ultimo_ogva_compilato") and
-                pat_dict.get("ultimo_sabs_compilato") and
-                pat_dict.get("ultimo_oso_compilato")):
+
+            if (pat_dict.get("ultimo_pos_compilato") and
+                    pat_dict.get("ultimo_san_martin_compilato") and
+                    pat_dict.get("ultimo_sis_compilato") and
+                    pat_dict.get("ultimo_ogva_compilato") and
+                    pat_dict.get("ultimo_sabs_compilato") and
+                    pat_dict.get("ultimo_oso_compilato")):
                 break
-                
+
     return patients
 
 @admin_router.get("/scales", response_model=List[Scale], tags=["Admin - Configuration"])
@@ -1435,12 +1433,13 @@ async def get_dashboard_stats():
         total_mai_valutati_global = 0
         total_incompleti_global = 0
         
-        # Inizializza i dati per il Forecast a 8 settimane (W1 - W8)
+        # Inizializza i dati per il Forecast a 8 settimane (W1 - W8).
+        # "routine" non è calcolabile senza un modulo di pianificazione: impostato a 0.
         forecast_dati = []
         for w in range(1, 9):
             forecast_dati.append({
                 "settimana": f"W{w}",
-                "routine": 2 + (w % 3),
+                "routine": 0,
                 "criticita": 0
             })
         
@@ -1894,10 +1893,13 @@ async def _collect_collection(name: str, collection) -> list:
 @admin_router.get("/export-db", tags=["Admin - Database"])
 async def export_database():
     """Esporta l'intero database in un unico file JSON."""
+    _version_file = Path(__file__).resolve().parents[2] / "VERSION"
+    _version = _version_file.read_text(encoding="utf-8").strip() if _version_file.exists() else "unknown"
+
     db_dump = {
         "metadata": {
             "exported_at": datetime.now(timezone.utc).isoformat(),
-            "version": "2.18.8",
+            "version": _version,
         },
         "collections": {
             "patients": await _collect_collection("patients", patients_collection),
@@ -1946,6 +1948,7 @@ async def import_database(file: UploadFile = File(...)):
         "users": users_collection,
         "settings": settings_collection,
         "ai_analyses": ai_analyses_collection,
+        "audit_logs": audit_logs_collection,
     }
 
     imported_counts = {}
@@ -1982,91 +1985,78 @@ async def export_patients_csv():
         if mongo_id:
             scale_map[str(mongo_id)] = nome_lower
 
+    # Pre-carica TUTTE le valutazioni (1 query bulk, non N)
+    all_evals_csv = await evaluations_collection.find({}).sort("data_compilazione", -1).to_list(length=50000)
+    evals_by_patient_csv: dict = {}
+    for ev in all_evals_csv:
+        pid = ev.get("id_paziente")
+        if pid:
+            evals_by_patient_csv.setdefault(pid, []).append(ev)
+
     output = StringIO()
     # Aggiungi il BOM (Byte Order Mark) per far riconoscere a Excel il formato UTF-8 automaticamente
-    output.write('\ufeff')
-    writer = csv.writer(output, delimiter=';')
+    output.write("﻿")
+    writer = csv.writer(output, delimiter=";")
     writer.writerow([
-        "Nome", "Cognome", "Sesso", "Data di Nascita", 
-        "Ultimo OGVA", "Ultimo SABS", "Ultimo OSO", 
+        "Nome", "Cognome", "Sesso", "Data di Nascita",
+        "Ultimo OGVA", "Ultimo SABS", "Ultimo OSO",
         "Ultimo POS", "Ultimo San Martin", "Ultima SIS"
     ])
-    
+
     for pat in patients:
         pat_id = pat["id"]
-        
-        # Recupera tutte le valutazioni per questo utente, ordinate per data decrescente
-        evals_cursor = evaluations_collection.find({"id_paziente": pat_id}).sort("data_compilazione", -1)
-        evals = await evals_cursor.to_list(length=100)
-        
-        # Inizializziamo i campi
+        evals = evals_by_patient_csv.get(pat_id, [])
+
         ultimo_pos = None
         ultimo_sm = None
         ultima_sis = None
         ultimo_ogva = None
         ultimo_sabs = None
         ultimo_oso = None
-        
+
         for ev in evals:
             scale_id = ev.get("id_scala")
             scale_id_str = str(scale_id) if scale_id else ""
             scale_name = scale_map.get(scale_id, scale_map.get(scale_id_str, "")).lower()
-            
+
             data_val = ev.get("data_compilazione")
-            data_str = ""
-            if data_val:
-                if isinstance(data_val, datetime):
-                    data_str = data_val.isoformat()
-                else:
-                    data_str = str(data_val)
-            
-            # Se la scala è POS
+            data_str = data_val.isoformat() if isinstance(data_val, datetime) else (str(data_val) if data_val else "")
+
             if not ultimo_pos and ("pos" in scale_name or "pos" in scale_id_str.lower()):
                 ultimo_pos = data_str
-                
-            # Se la scala è San Martín
-            scale_name_clean = scale_name.replace('í', 'i').replace('ì', 'i')
+
+            scale_name_clean = scale_name.replace("í", "i").replace("ì", "i")
             if not ultimo_sm and ("martin" in scale_name_clean or "martin" in scale_id_str.lower()):
                 ultimo_sm = data_str
 
-            # Se la scala è SIS
             if not ultima_sis and ("sis" in scale_name or "sis" in scale_id_str.lower()):
                 ultima_sis = data_str
 
-            # Se la scala è OGVA
             if not ultimo_ogva and (
-                "ogva" in scale_name or 
-                "griglia_autonomia" in scale_name or
-                "autonomie" in scale_name or 
-                "ogva" in scale_id_str.lower() or 
+                "ogva" in scale_name or "griglia_autonomia" in scale_name or
+                "autonomie" in scale_name or "ogva" in scale_id_str.lower() or
                 "griglia_autonomia" in scale_id_str.lower()
             ):
                 ultimo_ogva = data_str
 
-            # Se la scala è SABS
             if not ultimo_sabs and ("sabs" in scale_name or "sabs" in scale_id_str.lower()):
                 ultimo_sabs = data_str
 
-            # Se la scala è OSO
             if not ultimo_oso and (
-                "oso" in scale_name or 
-                "scheda_osservativa" in scale_name or 
-                "scheda osservativa" in scale_name or 
-                "oso" in scale_id_str.lower() or 
+                "oso" in scale_name or "scheda_osservativa" in scale_name or
+                "scheda osservativa" in scale_name or "oso" in scale_id_str.lower() or
                 "scheda_osservativa" in scale_id_str.lower()
             ):
                 ultimo_oso = data_str
-                
-            # Se abbiamo trovato tutte le date, possiamo interrompere
+
             if ultimo_pos and ultimo_sm and ultima_sis and ultimo_ogva and ultimo_sabs and ultimo_oso:
                 break
-                
+
         nome = pat.get("nome", "")
         cognome = pat.get("cognome", "")
         sesso = pat.get("sesso", "")
         data_nascita = pat.get("data_nascita", pat.get("dataNascita", ""))
-        
-        # Se non trovate dinamicamente, prova con i valori storici nel DB
+
         if not ultimo_pos:
             ultimo_pos = pat.get("ultimo_pos_compilato", pat.get("ultimoPosCompilato", ""))
         if not ultimo_sm:
@@ -2079,13 +2069,12 @@ async def export_patients_csv():
             ultimo_sabs = pat.get("ultimo_sabs_compilato", "")
         if not ultimo_oso:
             ultimo_oso = pat.get("ultimo_oso_compilato", "")
-            
+
         writer.writerow([
-            nome, cognome, sesso, data_nascita, 
-            ultimo_ogva, ultimo_sabs, ultimo_oso, 
+            nome, cognome, sesso, data_nascita,
+            ultimo_ogva, ultimo_sabs, ultimo_oso,
             ultimo_pos, ultimo_sm, ultima_sis
         ])
-        
     csv_bytes = output.getvalue().encode('utf-8')
     filename = f"autify_utenti_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
     
@@ -2099,14 +2088,15 @@ async def export_patients_csv():
 @admin_router.delete("/evaluations/{evaluation_id}", tags=["Admin - Evaluations"])
 async def delete_evaluation(evaluation_id: str):
     """Elimina definitivamente una singola valutazione dal database."""
-    eval_doc = await evaluations_collection.find_one({"id_valutazione": evaluation_id})
+    eval_doc = await _find_evaluation_document(evaluation_id)
     if not eval_doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Valutazione non trovata")
-    
-    result = await evaluations_collection.delete_one({"id_valutazione": evaluation_id})
+
+    selector = _build_evaluation_selector(eval_doc)
+    result = await evaluations_collection.delete_one(selector)
     if result.deleted_count == 0:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Errore nell'eliminazione della valutazione")
-        
+
     return {"status": "success", "message": "Valutazione eliminata con successo"}
 
 

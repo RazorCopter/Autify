@@ -355,12 +355,6 @@ def _build_domain_analyses(
 
         fascia = _std_to_fascia(standard_score) if standard_score is not None else None
 
-        print(
-            f"DEBUG ANALYTICS - Dominio {domain_code} - "
-            f"Grezzo: {raw_score} (item: {num_domande}) -> "
-            f"Standard calcolato: {standard_score}, Percentile: {percentile}"
-        )
-
         domain_analyses.append({
             "codice": domain_code,
             "etichetta": domain["etichetta"],
@@ -468,11 +462,6 @@ def compute_psychometric_analysis(
             percentile = qdv_entry.get("perc")
             
         fascia_qv = _indice_to_fascia(indice_qv) if indice_qv is not None else None
-
-        print(
-            f"DEBUG ANALYTICS - Somma standard: {total_standard} -> "
-            f"Indice QV: {indice_qv}, Percentile: {percentile}, Fascia: {fascia_qv}"
-        )
 
     return {
         "domini": domain_analyses,

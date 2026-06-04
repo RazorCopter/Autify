@@ -1,13 +1,21 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from .routes import admin_router, client_router, public_admin_router
 from . import auth as auth_module
+
+limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title="Autify API",
     description="API per la piattaforma Multi-Frontend (Admin/Client) Autify di Valutazione Multidimensionale.",
-    version="2.19.11"
+    version="2.20.0"
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.on_event("startup")
 async def startup_event():
@@ -17,10 +25,10 @@ async def startup_event():
 # Configurazione CORS per permettere le chiamate dai frontend (Admin e Client)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Modificare in prod inserendo i domini specifici come https://tiglio.autify.it
+    allow_origins=["https://tiglio.autify.it"],
     allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # Inclusione dei router separati

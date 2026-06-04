@@ -126,7 +126,6 @@ class ApiService {
       }
       return null;
     } catch (e) {
-      print('Errore login: $e');
       return null;
     }
   }
@@ -152,7 +151,6 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      print('Errore caricamento viewer logs: $e');
       return [];
     }
   }
@@ -169,7 +167,6 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      print('Errore caricamento audit logs: $e');
       return [];
     }
   }
@@ -188,7 +185,6 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      print('Errore caricamento utenti: $e');
       return [];
     }
   }
@@ -205,7 +201,6 @@ class ApiService {
       );
       return response.statusCode == 201;
     } catch (e) {
-      print('Errore creazione utente: $e');
       return false;
     }
   }
@@ -222,7 +217,6 @@ class ApiService {
       );
       return response.statusCode == 200;
     } catch (e) {
-      print('Errore aggiornamento utente: $e');
       return false;
     }
   }
@@ -235,7 +229,6 @@ class ApiService {
       );
       return response.statusCode == 200;
     } catch (e) {
-      print('Errore eliminazione utente: $e');
       return false;
     }
   }
@@ -265,7 +258,6 @@ class ApiService {
       }
       return response.statusCode == 200;
     } catch (e) {
-      print('Errore upload: $e');
       return false;
     }
   }
@@ -282,7 +274,6 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      print('Errore caricamento scale: $e');
       return [];
     }
   }
@@ -299,7 +290,6 @@ class ApiService {
       );
       return response.statusCode == 200;
     } catch (e) {
-      print('Errore aggiornamento scala: $e');
       return false;
     }
   }
@@ -312,7 +302,6 @@ class ApiService {
       );
       return response.statusCode == 200;
     } catch (e) {
-      print('Errore eliminazione scala: $e');
       return false;
     }
   }
@@ -325,7 +314,6 @@ class ApiService {
       );
       return response.statusCode == 200;
     } catch (e) {
-      print('Errore eliminazione valutazione: $e');
       return false;
     }
   }
@@ -397,7 +385,6 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      print('Errore caricamento pazienti: $e');
       return [];
     }
   }
@@ -414,7 +401,6 @@ class ApiService {
       );
       return response.statusCode == 201;
     } catch (e) {
-      print('Errore creazione paziente: $e');
       return false;
     }
   }
@@ -431,7 +417,6 @@ class ApiService {
       );
       return response.statusCode == 200;
     } catch (e) {
-      print('Errore aggiornamento paziente: $e');
       return false;
     }
   }
@@ -444,7 +429,6 @@ class ApiService {
       );
       return response.statusCode == 200;
     } catch (e) {
-      print('Errore eliminazione paziente: $e');
       return false;
     }
   }
@@ -464,7 +448,6 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      print('Errore caricamento storico valutazioni: $e');
       return [];
     }
   }
@@ -493,7 +476,6 @@ class ApiService {
       }
       return null;
     } catch (e) {
-      print('Errore aggiornamento valutazione: $e');
       return null;
     }
   }
@@ -509,7 +491,6 @@ class ApiService {
       }
       return null;
     } catch (e) {
-      print('Errore download PDF: $e');
       return null;
     }
   }
@@ -522,17 +503,12 @@ class ApiService {
         Uri.parse('$baseUrl/evaluations/$evaluationId/analysis'),
         headers: {'Authorization': 'Bearer $kAuthToken'},
       );
-      print('DEBUG AUTANALYSIS API - analysis status: ${response.statusCode}');
       if (response.statusCode == 200) {
-        print('DEBUG AUTANALYSIS API - analysis body: ${response.body}');
         final decoded = jsonDecode(response.body) as Map<String, dynamic>;
         return PsychometricAnalysis.fromJson(decoded);
       }
-      print('DEBUG AUTANALYSIS API - analysis request failed: ${response.body}');
       return null;
-    } catch (e, stackTrace) {
-      print('Errore caricamento analisi: $e');
-      print('Stack caricamento analisi: $stackTrace');
+    } catch (e) {
       return null;
     }
   }
@@ -547,12 +523,9 @@ class ApiService {
       );
       if (response.statusCode == 200) {
         return response.bodyBytes;
-      } else {
-        print('Errore export CSV pazienti: ${response.statusCode}');
-        return null;
       }
+      return null;
     } catch (e) {
-      print('Errore export CSV: $e');
       return null;
     }
   }
@@ -568,7 +541,6 @@ class ApiService {
       }
       return null;
     } catch (e) {
-      print('Errore export database: $e');
       return null;
     }
   }
@@ -595,7 +567,6 @@ class ApiService {
       }
       return response.statusCode == 200;
     } catch (e) {
-      print('Errore import database: $e');
       return false;
     }
   }
@@ -614,7 +585,6 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      print('Errore caricamento storico analisi IA: $e');
       return [];
     }
   }
@@ -639,7 +609,6 @@ class ApiService {
       }
       return null;
     } catch (e) {
-      print('Errore salvataggio analisi IA: $e');
       return null;
     }
   }
@@ -652,7 +621,6 @@ class ApiService {
       );
       return response.statusCode == 200;
     } catch (e) {
-      print('Errore eliminazione analisi IA: $e');
       return false;
     }
   }
@@ -671,7 +639,6 @@ class ApiService {
       );
       return response.statusCode == 200;
     } catch (e) {
-      print('Errore aggiornamento label analisi IA: $e');
       return false;
     }
   }
@@ -687,7 +654,6 @@ class ApiService {
       }
       return null;
     } catch (e) {
-      print('Errore caricamento dettagli scala: $e');
       return null;
     }
   }
@@ -701,7 +667,6 @@ class ApiService {
       );
       return response.statusCode == 201;
     } catch (e) {
-      print('Errore salvataggio valutazione: $e');
       return false;
     }
   }
@@ -717,7 +682,6 @@ class ApiService {
       }
       return null;
     } catch (e) {
-      print('Errore caricamento statistiche dashboard: $e');
       return null;
     }
   }
@@ -740,7 +704,6 @@ class ApiService {
       }
       return null;
     } catch (e) {
-      print('Errore download PDF AI: $e');
       return null;
     }
   }
