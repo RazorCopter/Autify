@@ -51,7 +51,7 @@ flowchart TD
 
     UPDATE_EXPORT --> VERSION
 
-    VERSION["5️⃣ Versionamento\nIncrementa: VERSION, pubspec.yaml, kFrontendVersion, docker-compose, main.py"] --> DOCS
+    VERSION["5️⃣ Versionamento\nEdita VERSION → esegui bump_version.py\n(aggiorna main.py, pubspec.yaml, app_version.dart, docker-compose)"] --> DOCS
 
     DOCS["6️⃣ Documentazione\nAggiorna CHANGELOG.md e ARCHITECTURE_MAP.md"] --> COMMIT
 

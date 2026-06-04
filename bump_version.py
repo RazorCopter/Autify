@@ -56,7 +56,12 @@ def main():
     if os.path.exists(arch_map):
         with open(arch_map, "r", encoding="utf-8") as f:
             content = f.read()
-        content = re.sub(r'\*Single Source of Truth \(SSOT\) del Progetto — v[\d\.]+\*', f'*Single Source of Truth (SSOT) del Progetto — v{new_version}*', content)
+        # Supporta sia il formato con asterischi (*v2.x.x*) che senza
+        content = re.sub(
+            r'(Single Source of Truth \(SSOT\) del Progetto — v)[\d\.]+',
+            f'\\g<1>{new_version}',
+            content
+        )
         with open(arch_map, "w", encoding="utf-8") as f:
             f.write(content)
         print("OK: ARCHITECTURE_MAP.md aggiornato.")
