@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, HTTPException, status, UploadFile, File, Header, Depends, Request
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Header, Depends, Request, Query
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from fastapi.responses import StreamingResponse
@@ -8,7 +8,7 @@ _limiter = Limiter(key_func=get_remote_address)
 _logger = logging.getLogger("autify")
 from typing import List, Optional
 from bson import ObjectId
-from .models import Scale, Evaluation, Patient, AppSettings, Section, Question, Option, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest, AiAnalysis, AiAnalysisCreate, UserCreate, UserUpdate, UserResponse, AuditLogCreate, AuditLogResponse
+from .models import Scale, Evaluation, Patient, PaginatedPatients, AppSettings, Section, Question, Option, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest, AiAnalysis, AiAnalysisCreate, UserCreate, UserUpdate, UserResponse, AuditLogCreate, AuditLogResponse
 from .database import evaluations_collection, settings_collection, patients_collection, scales_collection, users_collection, ai_analyses_collection, audit_logs_collection
 from .pdf_generator import generate_evaluation_pdf, generate_ai_analysis_pdf
 from .analytics import compute_psychometric_analysis, compute_direct_scores, build_domain_map, calcola_punteggi_sis
@@ -239,257 +239,6 @@ async def get_viewer_logs(auth: dict = Depends(verify_auth)):
         raise HTTPException(status_code=403, detail="Solo l'admin può leggere i log di connessione")
     return auth_manager.get_viewer_logs()
 
-# ── Stats Globali (Dashboard) ────────────────────────────────────────────────
-
-@admin_router.get("/stats", tags=["Admin - Stats"], deprecated=True,
-                  summary="[DEPRECATO] Usare /dashboard-stats")
-async def get_global_stats(auth: dict = Depends(verify_auth)):
-    """
-    DEPRECATO — non è più chiamato dal frontend. Verrà rimosso nella prossima release major.
-    Usare /api/admin/dashboard-stats per le statistiche della dashboard.
-    """
-    import collections
-    
-    # 1. Totali
-    active_users = await patients_collection.count_documents({"attivo": True})
-    total_evals = await evaluations_collection.count_documents({})
-    
-    # Recupera tutti gli utenti attivi e tutte le valutazioni
-    patients = await patients_collection.find({"attivo": True}).to_list(1000)
-    evaluations = await evaluations_collection.find({}).to_list(10000)
-    
-    # Carica le scale disponibili per mappare l'ID al nome normalizzato
-    scales = await scales_collection.find({}).to_list(100)
-    scale_map = {}
-    for s in scales:
-        nome_lower = s["nome"].lower()
-        scale_map[s["id"]] = nome_lower
-        if s.get("_id"):
-            scale_map[str(s["_id"])] = nome_lower
-
-    coperti_count = 0
-    scaduti_count = 0
-    pos_mancanti = 0
-    sis_mancanti = 0
-    san_martin_mancanti = 0
-    ultimi_alert = []
-    
-    now = datetime.now(timezone.utc)
-    
-    # Calcolo Copertura, Alert e Dati Demografici
-    sesso_counts = {"M": 0, "F": 0}
-    fasce_eta = {"0-18": 0, "19-35": 0, "36-50": 0, "51+": 0}
-    
-    for p in patients:
-        # Dati socio-demografici: Genere
-        gender = (p.get("sesso") or "").upper().strip()
-        if gender in ("M", "F"):
-            sesso_counts[gender] += 1
-            
-        # Dati socio-demografici: Età
-        dob_str = p.get("data_nascita")
-        if dob_str:
-            try:
-                # Supporta sia datetime ISO sia solo date YYYY-MM-DD
-                dob = datetime.fromisoformat(dob_str.replace("Z", "+00:00"))
-                age = now.year - dob.year
-                if (now.month, now.day) < (dob.month, dob.day):
-                    age -= 1
-                
-                if age <= 18:
-                    fasce_eta["0-18"] += 1
-                elif age <= 35:
-                    fasce_eta["19-35"] += 1
-                elif age <= 50:
-                    fasce_eta["36-50"] += 1
-                else:
-                    fasce_eta["51+"] += 1
-            except Exception:
-                try:
-                    parts = dob_str.split('-')
-                    if len(parts) >= 1 and len(parts[0]) == 4:
-                        year = int(parts[0])
-                        age = now.year - year
-                        if age <= 18:
-                            fasce_eta["0-18"] += 1
-                        elif age <= 35:
-                            fasce_eta["19-35"] += 1
-                        elif age <= 50:
-                            fasce_eta["36-50"] += 1
-                        else:
-                            fasce_eta["51+"] += 1
-                except Exception:
-                    pass
-
-        # Valutazioni specifiche per questo utente
-        patient_evals = [e for e in evaluations if e.get("id_paziente") == p["id"]]
-        
-        latest_pos_date = None
-        latest_sm_date = None
-        latest_sis_date = None
-        
-        for ev in patient_evals:
-            scale_id = ev.get("id_scala")
-            scale_id_str = str(scale_id) if scale_id else ""
-            scale_name = scale_map.get(scale_id, scale_map.get(scale_id_str, "")).lower()
-            
-            dt = ev.get("data_compilazione")
-            if dt:
-                if isinstance(dt, str):
-                    try:
-                        dt = datetime.fromisoformat(dt.replace("Z", "+00:00"))
-                    except Exception:
-                        continue
-                if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
-                    
-                if "pos" in scale_name or "pos" in scale_id_str.lower():
-                    if latest_pos_date is None or dt > latest_pos_date:
-                        latest_pos_date = dt
-                elif "martin" in scale_name.replace('í', 'i').replace('ì', 'i') or "martin" in scale_id_str.lower():
-                    if latest_sm_date is None or dt > latest_sm_date:
-                        latest_sm_date = dt
-                elif "sis" in scale_name or "sis" in scale_id_str.lower():
-                    if latest_sis_date is None or dt > latest_sis_date:
-                        latest_sis_date = dt
-                        
-        # Verifica la validità (attiva se eseguita negli ultimi 365 giorni)
-        has_active_pos = latest_pos_date is not None and (now - latest_pos_date).days <= 365
-        has_active_sm = latest_sm_date is not None and (now - latest_sm_date).days <= 365
-        has_active_sis = latest_sis_date is not None and (now - latest_sis_date).days <= 365
-        
-        if has_active_pos or has_active_sm or has_active_sis:
-            coperti_count += 1
-        else:
-            scaduti_count += 1
-            
-        if not has_active_pos:
-            pos_mancanti += 1
-        if not has_active_sm:
-            san_martin_mancanti += 1
-        if not has_active_sis:
-            sis_mancanti += 1
-            
-        # Generazione dell'alert se non coperto da alcuna valutazione attiva
-        if not (has_active_pos or has_active_sm or has_active_sis):
-            valid_dates = [d for d in [latest_pos_date, latest_sm_date, latest_sis_date] if d is not None]
-            if not valid_dates:
-                ultimi_alert.append({
-                    "paziente_nome": p.get("nome", ""),
-                    "paziente_cognome": p.get("cognome", ""),
-                    "stato": "mai_valutato",
-                    "giorni_da_ultima_valutazione": 0,
-                    "scala_nome": "SIS/POS/San Martín"
-                })
-            else:
-                most_recent_date = max(valid_dates)
-                giorni = (now - most_recent_date).days
-                if most_recent_date == latest_pos_date:
-                    scala_alert = "POS"
-                elif most_recent_date == latest_sm_date:
-                    scala_alert = "San Martín"
-                else:
-                    scala_alert = "SIS"
-                    
-                ultimi_alert.append({
-                    "paziente_nome": p.get("nome", ""),
-                    "paziente_cognome": p.get("cognome", ""),
-                    "stato": "scaduto",
-                    "giorni_da_ultima_valutazione": giorni,
-                    "scala_nome": scala_alert
-                })
-                
-    # Ordina gli alert: "mai_valutato" in cima, poi in base ai giorni di ritardo decrescenti
-    ultimi_alert.sort(key=lambda x: (0 if x["stato"] == "mai_valutato" else 1, -x["giorni_da_ultima_valutazione"]))
-    ultimi_alert = ultimi_alert[:10]
-    
-    coperti_percentuale = (coperti_count / active_users * 100) if active_users > 0 else 0
-    
-    # 3. Trend Somministrazioni (ultimi 6 mesi dinamico)
-    months_names = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"]
-    trend_dict = collections.OrderedDict()
-    for i in range(5, -1, -1):
-        m = now.month - i
-        y = now.year
-        while m <= 0:
-            m += 12
-            y -= 1
-        trend_dict[(y, m)] = {"mese": months_names[m - 1], "count": 0}
-        
-    for ev in evaluations:
-        dt = ev.get("data_compilazione")
-        if dt:
-            if isinstance(dt, str):
-                try:
-                    dt = datetime.fromisoformat(dt.replace("Z", "+00:00"))
-                except Exception:
-                    continue
-            key = (dt.year, dt.month)
-            if key in trend_dict:
-                trend_dict[key]["count"] += 1
-                
-    trend_somministrazioni = list(trend_dict.values())
-    
-    # 4. Distribuzione Reale delle Scale (garantisce esattamente 6 item)
-    dist_dict = {
-        "SIS": 0,
-        "POS": 0,
-        "San Martín": 0,
-        "OGVA": 0,
-        "SABS": 0,
-        "OSO": 0
-    }
-    for ev in evaluations:
-        scale_id = ev.get("id_scala")
-        scale_id_str = str(scale_id) if scale_id else ""
-        scale_name = scale_map.get(scale_id, scale_map.get(scale_id_str, "Altro")).upper()
-        
-        target_key = None
-        if "MARTIN" in scale_name:
-            target_key = "San Martín"
-        elif "POS" in scale_name:
-            target_key = "POS"
-        elif "SIS" in scale_name:
-            target_key = "SIS"
-        elif "SABS" in scale_name:
-            target_key = "SABS"
-        elif "OSO" in scale_name:
-            target_key = "OSO"
-        elif "OGVA" in scale_name:
-            target_key = "OGVA"
-            
-        if target_key and target_key in dist_dict:
-            dist_dict[target_key] += 1
-        
-    colors = ["#3B82F6", "#10B981", "#F59E0B", "#A78BFA", "#F87171", "#38BDF8"]
-    distribuzione_scale = []
-    for idx, (name, count) in enumerate(dist_dict.items()):
-        colore = colors[idx % len(colors)]
-        distribuzione_scale.append({
-            "scala_nome": name,
-            "count": count,
-            "colore": colore
-        })
-        
-    return {
-        "totale_utenze_attive": active_users,
-        "totale_valutazioni_eseguite": total_evals,
-        "copertura_scale": {
-            "coperti_count": coperti_count,
-            "scaduti_count": scaduti_count,
-            "coperti_percentuale": round(coperti_percentuale, 1),
-            "pos_mancanti": pos_mancanti,
-            "san_martin_mancanti": san_martin_mancanti,
-            "sis_mancanti": sis_mancanti
-        },
-        "ultimi_alert": ultimi_alert,
-        "trend_somministrazioni": trend_somministrazioni,
-        "distribuzione_scale": distribuzione_scale,
-        "demographics": {
-            "sesso": sesso_counts,
-            "fasce_eta": fasce_eta
-        }
-    }
 
 # ── CRUD Utenze ─────────────────────────────────────────────────────────────
 
@@ -567,14 +316,33 @@ async def delete_user(username: str, auth: dict = Depends(verify_auth)):
     return {"message": f"Utente '{username}' eliminato con successo"}
 
 
-@admin_router.get("/patients", response_model=List[Patient], tags=["Admin - Patients"])
-async def get_patients():
+@admin_router.get("/patients", response_model=PaginatedPatients, tags=["Admin - Patients"])
+async def get_patients(
+    page: int = Query(default=1, ge=1, description="Numero di pagina (1-based)"),
+    page_size: int = Query(default=50, ge=1, le=200, description="Elementi per pagina"),
+    search: Optional[str] = Query(default=None, description="Ricerca su nome e cognome"),
+    status: Optional[str] = Query(default="active", pattern="^(active|archived|all)$", description="Filtro stato utente"),
+):
     # Migrazione automatica dei vecchi documenti sprovvisti del campo 'attivo'
     await patients_collection.update_many({"attivo": {"$exists": False}}, {"$set": {"attivo": True}})
 
-    patients = await patients_collection.find({}).to_list(length=1000)
+    # Costruzione query filtro
+    query: dict = {}
+    if status == "active":
+        query["attivo"] = True
+    elif status == "archived":
+        query["attivo"] = False
+    # status == "all" → nessun filtro
 
-    # Recupera tutte le scale per mappare l'ID al nome (1 query)
+    if search and search.strip():
+        regex = {"$regex": search.strip(), "$options": "i"}
+        query["$or"] = [{"nome": regex}, {"cognome": regex}]
+
+    total = await patients_collection.count_documents(query)
+    skip = (page - 1) * page_size
+    patients = await patients_collection.find(query).skip(skip).limit(page_size).to_list(length=page_size)
+
+    # Recupera le scale per mappare l'ID al nome (1 query)
     scales_list = await scales_collection.find({}).to_list(length=100)
     scale_map = {}
     for s in scales_list:
@@ -584,16 +352,23 @@ async def get_patients():
         if mongo_id:
             scale_map[str(mongo_id)] = nome_lower
 
-    # Pre-carica TUTTE le valutazioni ordinate per data decrescente (1 query, non N)
-    all_evals = await evaluations_collection.find({}).sort("data_compilazione", -1).to_list(length=50000)
+    # Raccoglie gli ID dei pazienti della pagina corrente per le query bulk mirate
+    pat_ids = [p["id"] for p in patients if p.get("id")]
+
+    # Carica le valutazioni solo per i pazienti della pagina corrente
+    all_evals = await evaluations_collection.find(
+        {"id_paziente": {"$in": pat_ids}}
+    ).sort("data_compilazione", -1).to_list(length=10000)
     evals_by_patient: dict = {}
     for ev in all_evals:
         pid = ev.get("id_paziente")
         if pid:
             evals_by_patient.setdefault(pid, []).append(ev)
 
-    # Pre-carica l'ultima analisi IA per ogni utente (1 query, non N)
-    all_analyses = await ai_analyses_collection.find({}).sort("timestamp", -1).to_list(length=10000)
+    # Carica le ultime analisi IA solo per i pazienti della pagina corrente
+    all_analyses = await ai_analyses_collection.find(
+        {"id_paziente": {"$in": pat_ids}}
+    ).sort("timestamp", -1).to_list(length=2000)
     latest_ia_by_patient: dict = {}
     for an in all_analyses:
         pid = an.get("id_paziente")
@@ -661,7 +436,7 @@ async def get_patients():
                     pat_dict.get("ultimo_oso_compilato")):
                 break
 
-    return patients
+    return PaginatedPatients(items=patients, total=total, page=page, page_size=page_size)
 
 @admin_router.get("/scales", response_model=List[Scale], tags=["Admin - Configuration"])
 async def get_admin_scales():
@@ -1666,25 +1441,22 @@ async def get_dashboard_stats():
                 elif is_in_scadenza:
                     total_in_scadenza_global += 1
 
-            # --- Calcolo Forecast a 8 settimane (Criticità Future) ---
-            if pat_pos_evals and latest_pos_date:
-                exp_pos = latest_pos_date + timedelta(days=180)
-                days_left = (exp_pos - now).days
-                if 0 <= days_left < 56:
-                    w_idx = days_left // 7
-                    forecast_dati[w_idx]["criticita"] += 1
-            if pat_sm_evals and latest_sm_date:
-                exp_sm = latest_sm_date + timedelta(days=180)
-                days_left = (exp_sm - now).days
-                if 0 <= days_left < 56:
-                    w_idx = days_left // 7
-                    forecast_dati[w_idx]["criticita"] += 1
-            if pat_sis_evals and latest_sis_date:
-                exp_sis = latest_sis_date + timedelta(days=365)
-                days_left = (exp_sis - now).days
-                if 0 <= days_left < 56:
-                    w_idx = days_left // 7
-                    forecast_dati[w_idx]["criticita"] += 1
+            # --- Calcolo Forecast a 8 settimane ---
+            # routine  = scala valida ma in scadenza entro 8 sett. (0 < days_left < 56)
+            # criticita = scala già scaduta (days_left <= 0) → sempre W0
+            for (pat_evals, latest_date, soglia) in [
+                (pat_pos_evals, latest_pos_date, 180),
+                (pat_sm_evals, latest_sm_date, 180),
+                (pat_sis_evals, latest_sis_date, 365),
+            ]:
+                if pat_evals and latest_date:
+                    exp = latest_date + timedelta(days=soglia)
+                    days_left = (exp - now).days
+                    if 0 < days_left < 56:
+                        w_idx = days_left // 7
+                        forecast_dati[w_idx]["routine"] += 1
+                    elif days_left <= 0:
+                        forecast_dati[0]["criticita"] += 1
 
         # Calcolo percentuale di copertura
         totale_pazienti = len(patients)

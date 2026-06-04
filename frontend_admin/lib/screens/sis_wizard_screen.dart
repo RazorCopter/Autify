@@ -124,11 +124,11 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
     try {
       final results = await Future.wait([
         _apiService.getScaleById(widget.scaleId),
-        _apiService.getPatients(),
+        _apiService.getPatients(pageSize: 200, status: 'all'),
       ]);
 
       _scale = results[0] as ScaleModel?;
-      final patients = results[1] as List<PatientModel>;
+      final patients = (results[1] as PaginatedPatientsResult).items;
       _patient = patients.firstWhere((p) => p.id == widget.patientId);
 
       // Pre-compila nome operatore di default se noto

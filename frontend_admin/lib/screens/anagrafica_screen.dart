@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:html' as html;
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -25,13 +26,16 @@ class AnagraficaScreen extends StatefulWidget {
 
 class _AnagraficaScreenState extends State<AnagraficaScreen> {
   final ApiService _apiService = ApiService();
-  late Future<List<PatientModel>> _patientsFuture;
+  late Future<PaginatedPatientsResult> _patientsFuture;
   final TextEditingController _searchController = TextEditingController();
   List<ScaleModel> _availableScales = [];
   bool _isLoading = false;
   bool _isGridView = true;
   bool _isExporting = false;
   String _statusFilter = 'active'; // 'active', 'archived', 'all'
+  int _currentPage = 1;
+  static const int _pageSize = 50;
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -42,11 +46,39 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
     _refreshPatients();
   }
 
-  void _refreshPatients() {
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
+  void _refreshPatients({bool resetPage = true}) {
+    if (resetPage) _currentPage = 1;
     setState(() {
-      _patientsFuture = _apiService.getPatients();
+      _patientsFuture = _apiService.getPatients(
+        page: _currentPage,
+        pageSize: _pageSize,
+        search: _getServerSearch(),
+        status: _statusFilter,
+      );
     });
     _loadScales();
+  }
+
+  // Invia al server solo ricerche per nome/cognome; i filtri semantici
+  // (scaduti, in scadenza, ecc.) vengono gestiti client-side sulla pagina.
+  String? _getServerSearch() {
+    final q = _searchController.text.trim();
+    const semanticFilters = {'scaduti', 'in scadenza', 'incompleti', 'mai valutati'};
+    if (q.isEmpty || semanticFilters.contains(q.toLowerCase())) return null;
+    return q;
+  }
+
+  void _onSearchChanged(String val) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+      _refreshPatients();
+    });
   }
 
   Future<void> _exportCsv() async {
@@ -483,7 +515,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
               const SizedBox(height: 16),
               // Lista
               Expanded(
-                child: FutureBuilder<List<PatientModel>>(
+                child: FutureBuilder<PaginatedPatientsResult>(
                   future: _patientsFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
@@ -501,25 +533,22 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                     if (snapshot.hasError) {
                       return Center(child: Text('Errore: ${snapshot.error}'));
                     }
-                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    if (!snapshot.hasData || snapshot.data!.items.isEmpty) {
                       return const Center(
                         child: Text('Nessun utente trovato. Aggiungine uno.',
                             style: TextStyle(fontSize: 16, color: AppTheme.textSecondary)),
                       );
                     }
 
-                    // Filtra gli utenti in base alla query e allo stato attivo/archiviato
+                    final result = snapshot.data!;
+                    // I filtri semantici (scaduti, in scadenza, ecc.) restano client-side
+                    // sulla pagina corrente; la ricerca per nome/cognome è già server-side.
                     final query = _searchController.text.toLowerCase().trim();
-                    var filteredList = List<PatientModel>.from(snapshot.data!);
+                    var filteredList = List<PatientModel>.from(result.items);
 
-                    // Filtro per stato attivo/archiviato
-                    if (_statusFilter == 'active') {
-                      filteredList = filteredList.where((p) => p.attivo).toList();
-                    } else if (_statusFilter == 'archived') {
-                      filteredList = filteredList.where((p) => !p.attivo).toList();
-                    }
-
-                    // Filtro per ricerca
+                    // Stato attivo/archiviato già filtrato server-side.
+                    // La ricerca per nome/cognome è già server-side.
+                    // Solo i filtri semantici speciali restano client-side.
                     if (query.isNotEmpty) {
                       if (query == 'scaduti') {
                         final settings = context.read<SettingsNotifier>().settings;
@@ -615,8 +644,9 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                       );
                     }
 
+                    Widget listWidget;
                     if (_isGridView && !ResponsiveHelper.isMobile(context)) {
-                      return GridView.builder(
+                      listWidget = GridView.builder(
                         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                           maxCrossAxisExtent: ResponsiveHelper.isTablet(context) ? 260 : 280,
                           mainAxisExtent: 165,
@@ -624,12 +654,20 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                           mainAxisSpacing: 12,
                         ),
                         itemCount: filteredList.length,
-                        padding: const EdgeInsets.only(bottom: 24),
+                        padding: const EdgeInsets.only(bottom: 8),
                         itemBuilder: (ctx, i) => _buildPatientCardCompact(filteredList[i], i),
                       );
                     } else {
-                      return _buildPatientListView(filteredList);
+                      listWidget = _buildPatientListView(filteredList);
                     }
+
+                    return Column(
+                      children: [
+                        Expanded(child: listWidget),
+                        if (result.totalPages > 1)
+                          _buildPaginationBar(result),
+                      ],
+                    );
                   },
                 ),
               ),
@@ -642,6 +680,41 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
             child: const Center(child: CircularProgressIndicator()),
           ),
       ],
+    );
+  }
+
+  Widget _buildPaginationBar(PaginatedPatientsResult result) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left_rounded),
+            onPressed: result.hasPrevPage
+                ? () {
+                    _currentPage--;
+                    _refreshPatients(resetPage: false);
+                  }
+                : null,
+            color: AppTheme.primaryColor,
+          ),
+          Text(
+            'Pagina $_currentPage di ${result.totalPages}  (${result.total} utenti)',
+            style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right_rounded),
+            onPressed: result.hasNextPage
+                ? () {
+                    _currentPage++;
+                    _refreshPatients(resetPage: false);
+                  }
+                : null,
+            color: AppTheme.primaryColor,
+          ),
+        ],
+      ),
     );
   }
 
@@ -1346,9 +1419,9 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
           Expanded(
             child: TextField(
               controller: _searchController,
-              onChanged: (val) => setState(() {}),
+              onChanged: _onSearchChanged,
               decoration: const InputDecoration(
-                hintText: 'Cerca utente per nome, cognome o note...',
+                hintText: 'Cerca utente per nome o cognome...',
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -1360,9 +1433,10 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
           if (_searchController.text.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.clear, size: 18),
-              onPressed: () => setState(() {
+              onPressed: () {
                 _searchController.clear();
-              }),
+                _refreshPatients();
+              },
             ),
         ],
       ),
@@ -1390,10 +1464,9 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                   DropdownMenuItem(value: 'all', child: Text('Tutti gli utenti', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary))),
                 ],
                 onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      _statusFilter = val;
-                    });
+                  if (val != null && val != _statusFilter) {
+                    _statusFilter = val;
+                    _refreshPatients();
                   }
                 },
               ),

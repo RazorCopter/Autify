@@ -35,12 +35,12 @@ class _SelectionScreenState extends State<SelectionScreen> {
     setState(() => _isLoading = true);
     
     final results = await Future.wait([
-      _apiService.getPatients(),
+      _apiService.getPatients(pageSize: 200, status: 'active'),
       _apiService.getScales(),
     ]);
 
     setState(() {
-      _patients = results[0] as List<PatientModel>;
+      _patients = (results[0] as PaginatedPatientsResult).items;
       _scales = results[1] as List<ScaleModel>;
       _isLoading = false;
     });

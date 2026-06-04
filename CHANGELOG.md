@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.21.0] - 2026-06-04
+
+### Miglioramenti
+
+- **Rimozione endpoint `/api/admin/stats`**: eliminato completamente il codice (~250 righe) dell'endpoint deprecated che duplicava la logica di `/dashboard-stats` con soglie divergenti. Il frontend usava già esclusivamente `/dashboard-stats`.
+- **Forecast routine reale**: le colonne "routine" del grafico previsionale settimanale ora mostrano il numero reale di scale valide in scadenza entro le prossime 8 settimane (invece di `0` placeholder). La semantica è: `routine` = scala ancora valida ma da rifare entro 8 settimane; `criticita` = scala già scaduta.
+- **Paginazione server-side `GET /patients`**: l'endpoint ora accetta `?page`, `?page_size` (1-200), `?search` e `?status` (active/archived/all). La ricerca per nome/cognome avviene via regex MongoDB. La risposta è wrappata in `{items, total, page, page_size}`.
+  - Nuovo modello Pydantic `PaginatedPatients` in `models.py`.
+  - Il caricamento bulk delle valutazioni e analisi IA è ora limitato ai soli pazienti della pagina corrente (invece dell'intero DB).
+- **Frontend paginazione `anagrafica_screen.dart`**: ricerca con debounce 350ms invia query al server; filtro status trigger richiesta server-side; barra di paginazione con navigazione pagina precedente/successiva e contatore totale.
+- **Modello Flutter `PaginatedPatientsResult`**: aggiunto in `patient_model.dart` con helper `totalPages`, `hasNextPage`, `hasPrevPage`.
+- **`selection_screen.dart` e `sis_wizard_screen.dart`**: aggiornati per consumare `PaginatedPatientsResult.items` dal nuovo `getPatients()`.
+
+---
+
 ## [2.20.0] - 2026-06-04
 
 ### Bug Fix

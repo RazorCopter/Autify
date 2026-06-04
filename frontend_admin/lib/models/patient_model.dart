@@ -77,3 +77,38 @@ class PatientModel {
     };
   }
 }
+
+class PaginatedPatientsResult {
+  final List<PatientModel> items;
+  final int total;
+  final int page;
+  final int pageSize;
+
+  const PaginatedPatientsResult({
+    required this.items,
+    required this.total,
+    required this.page,
+    required this.pageSize,
+  });
+
+  factory PaginatedPatientsResult.fromJson(Map<String, dynamic> json) {
+    final rawItems = json['items'] as List<dynamic>? ?? [];
+    return PaginatedPatientsResult(
+      items: rawItems.map((e) => PatientModel.fromJson(e as Map<String, dynamic>)).toList(),
+      total: json['total'] as int? ?? 0,
+      page: json['page'] as int? ?? 1,
+      pageSize: json['page_size'] as int? ?? 50,
+    );
+  }
+
+  static PaginatedPatientsResult empty() => const PaginatedPatientsResult(
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize: 50,
+      );
+
+  int get totalPages => pageSize > 0 ? (total / pageSize).ceil() : 1;
+  bool get hasNextPage => page < totalPages;
+  bool get hasPrevPage => page > 1;
+}

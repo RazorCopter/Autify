@@ -373,19 +373,30 @@ class ApiService {
 
   // --- ANAGRAFICA (PATIENTS) ---
 
-  Future<List<PatientModel>> getPatients() async {
+  Future<PaginatedPatientsResult> getPatients({
+    int page = 1,
+    int pageSize = 50,
+    String? search,
+    String status = 'active',
+  }) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/patients'),
-        headers: {'Authorization': 'Bearer $kAuthToken'},
-      );
-      if (response.statusCode == 200) {
-        final List<dynamic> body = jsonDecode(response.body);
-        return body.map((json) => PatientModel.fromJson(json)).toList();
+      final queryParams = <String, String>{
+        'page': '$page',
+        'page_size': '$pageSize',
+        'status': status,
+      };
+      if (search != null && search.trim().isNotEmpty) {
+        queryParams['search'] = search.trim();
       }
-      return [];
+      final uri = Uri.parse('$baseUrl/patients').replace(queryParameters: queryParams);
+      final response = await http.get(uri, headers: {'Authorization': 'Bearer $kAuthToken'});
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return PaginatedPatientsResult.fromJson(data);
+      }
+      return PaginatedPatientsResult.empty();
     } catch (e) {
-      return [];
+      return PaginatedPatientsResult.empty();
     }
   }
 

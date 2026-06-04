@@ -73,6 +73,13 @@ class Patient(BaseModel):
     ultimo_oso_compilato: Optional[str] = None
     ultima_analisi_ia: Optional[str] = None
 
+
+class PaginatedPatients(BaseModel):
+    items: List[Patient]
+    total: int
+    page: int
+    page_size: int
+
 # --- MODELLI SETTINGS (Config Models) ---
 
 class AppSettings(BaseModel):

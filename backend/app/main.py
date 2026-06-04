@@ -11,7 +11,7 @@ limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(
     title="Autify API",
     description="API per la piattaforma Multi-Frontend (Admin/Client) Autify di Valutazione Multidimensionale.",
-    version="2.20.0"
+    version="2.21.0"
 )
 
 app.state.limiter = limiter
