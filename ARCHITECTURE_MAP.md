@@ -83,7 +83,7 @@ flowchart TD
 ### 1.1 Scale Supportate
 
 | Scala | Scopo | Struttura | Esito / Punteggio |
-|-------|-------|-----------|-------------------|
+| --- | --- | --- | --- |
 | **POS** | Qualità della Vita | 8 domini (SP, AD, RI, IS, D, BE, BF, BM) | Somma grezza diretta |
 | **San Martín** | QoL avanzata | 8 domini standard | Conversione psicometrica → Punteggi Standard (1-20), Percentili, Fasce, Indice QdV Globale |
 | **SIS** | Intensità Supporti | 6 sottoscale (A-F) + Sezioni 2-3 | Punteggi tridimensionali (Frequenza, Durata, Tipo) → Indice SIS, Rank Priorità |
@@ -97,7 +97,7 @@ flowchart TD
 > L'architettura è interamente dockerizzata e orchestra Backend, Frontend e Database all'interno della stessa rete protetta.
 
 | Layer | Tecnologia | Dettaglio |
-|-------|-----------|-----------|
+| --- | --- | --- |
 | **Backend** | FastAPI (Python 3.10+) | Asincrono, validazione forte Pydantic, integrazione AI |
 | **Database** | MongoDB | Driver `AsyncIOMotorClient`, collezioni destrutturate |
 | **Frontend** | Flutter (Dart) | App Web & Desktop responsive, State Management via `Provider` |
@@ -113,7 +113,7 @@ Il sistema implementa un modello **Role-Based Access Control (RBAC)** con JWT st
 ### 2.1 Profili di Accesso
 
 | Ruolo | Permessi | Limitazioni |
-|-------|----------|-------------|
+| --- | --- | --- |
 | **Admin** | CRUD completo su anagrafiche, valutazioni, impostazioni, backup DB. | Non può eliminare l'account di sistema predefinito `admin`. |
 | **Viewer** | Sola lettura: dashboard, consultazione valutazioni storiche, export PDF. | Zero permessi di scrittura (REST PUT/POST/DELETE bloccati con HTTP 403). |
 
@@ -130,7 +130,7 @@ Il sistema implementa un modello **Role-Based Access Control (RBAC)** con JWT st
 
 ### 3.1 Backend (FastAPI App)
 
-```
+```text
 backend/app/
 ├── main.py              # Entrypoint FastAPI, config CORS e registrazione Router
 ├── auth.py              # Gestione JWT, hashing Bcrypt e rule engine RBAC
@@ -145,7 +145,7 @@ backend/app/
 
 ### 3.2 Frontend Admin (Flutter)
 
-```
+```text
 frontend_admin/lib/
 ├── main.dart                                # Router e viewport principale (Responsive)
 ├── services/
@@ -170,7 +170,7 @@ frontend_admin/lib/
 Il DB logico è denominato `autanalysis`. Tutte le collezioni sottostanti fanno parte dello scope di backup dell'applicazione.
 
 | Collezione | Descrizione Dati | Esportato nel JSON di Backup? |
-|------------|------------------|:-----------------------------:|
+| --- | --- | :---: |
 | `patients` | Dati demografici e biologici dell'utente | ✅ Sì |
 | `evaluations` | Valutazioni completate (storico punteggi, risposte) | ✅ Sì |
 | `scales` | Metadati e alberatura delle scale (Sezioni, Domande) | ✅ Sì |
