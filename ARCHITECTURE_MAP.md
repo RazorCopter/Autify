@@ -1,29 +1,38 @@
 # 🏗️ MAPPA TECNICO-FUNZIONALE: Autify
 
-*Single Source of Truth (SSOT) del Progetto — v2.20.0*
+Single Source of Truth (SSOT) del Progetto — v2.20.0
 
 > [!CAUTION]
 > **REGOLE DI INGAGGIO E PROTOCOLLO OPERATIVO PER L'AGENTE IA**
 > Se sei un assistente IA che sta analizzando o modificando questo progetto, **DEVI OBBEDIRE** a questa sezione prima di procedere. La violazione di questo protocollo causa gravi difformità concettuali e architetturali.
 
+## Regole di Ingaggio per l'Agente IA
+
 ### Regola 1: Contesto Educativo e Vocabolario Obbligatorio
+
 > [!IMPORTANT]
-> **NON SIAMO IN UN AMBITO CLINICO/OSPEDALIERO**. Autify è utilizzato esclusivamente all'interno di una **struttura educativa** per utenti autistici. 
+> **NON SIAMO IN UN AMBITO CLINICO/OSPEDALIERO**. Autify è utilizzato esclusivamente all'interno di una **struttura educativa** per utenti autistici.
 > Nei testi della UI, nei commenti e nella reportistica generata dall'IA **SONO CATEGORICAMENTE VIETATI** termini medici.
-> *   ✅ **USARE:** "utente", "educatore", "terapista", "struttura educativa", "valutazione", "profilo di funzionamento".
-> *   ❌ **NON USARE:** "paziente", "medico", "clinica", "ospedale", "diagnosi medica", "cartella clinica", "malattia".
+>
+> * ✅ **USARE:** "utente", "educatore", "terapista", "struttura educativa", "valutazione", "profilo di funzionamento".
+> * ❌ **NON USARE:** "paziente", "medico", "clinica", "ospedale", "diagnosi medica", "cartella clinica", "malattia".
 
 ### Regola 2: Consistenza del Database e Regole di Export
+
 > [!WARNING]
-> *   **Database Name**: Il database MongoDB si chiama `autanalysis` (legacy). **NON RINOMINARLO**.
-> *   **Export/Import DB**: Ogni volta che viene creata una **nuova collezione MongoDB**, DEVE essere aggiunta esplicitamente al mapping negli endpoint `/export-db` e `/import-db` all'interno di `backend/app/routes.py`. Questo garantisce che i backup di sistema siano sempre integri e portabili.
+>
+> * **Database Name**: Il database MongoDB si chiama `autanalysis` (legacy). **NON RINOMINARLO**.
+> * **Export/Import DB**: Ogni volta che viene creata una **nuova collezione MongoDB**, DEVE essere aggiunta esplicitamente al mapping negli endpoint `/export-db` e `/import-db` all'interno di `backend/app/routes.py`. Questo garantisce che i backup di sistema siano sempre integri e portabili.
 
 ### Regola 3: Gestione del Ruolo (RBAC)
+
 > [!NOTE]
 > Ogni nuova operazione di scrittura (POST/PUT/DELETE) implementata nel backend deve essere obbligatoriamente protetta con `Depends(verify_auth)`. Qualsiasi operazione eseguita dal ruolo `viewer` deve essere bloccata sollevando `403 Forbidden`.
 
 ### Regola 4: Workflow Operativo per lo Sviluppo
+
 Segui **sempre** questo ciclo quando sviluppi una nuova funzionalità:
+
 ```mermaid
 flowchart TD
     START([🚀 Avvio Task]) --> PULL
@@ -93,7 +102,7 @@ flowchart TD
 | **Database** | MongoDB | Driver `AsyncIOMotorClient`, collezioni destrutturate |
 | **Frontend** | Flutter (Dart) | App Web & Desktop responsive, State Management via `Provider` |
 | **Generazione Documentale** | Matplotlib + ReportLab | Creazione PDF A4 con grafici a stella/barre e report IA |
-| **IA & NLP** | Google Gemini API | Interrogazione via REST API (client-side proxy proxy) |
+| **IA & NLP** | Google Gemini API | Interrogazione via REST API (client-side proxy) |
 
 ---
 
@@ -109,6 +118,7 @@ Il sistema implementa un modello **Role-Based Access Control (RBAC)** con JWT st
 | **Viewer** | Sola lettura: dashboard, consultazione valutazioni storiche, export PDF. | Zero permessi di scrittura (REST PUT/POST/DELETE bloccati con HTTP 403). |
 
 ### 2.2 Autenticazione (JWT & Bcrypt)
+
 1. L'utente invia `username` e `password` al backend.
 2. Il backend verifica l'hash tramite `bcrypt` (rounds=12).
 3. Viene generato un JWT (HS256) valido per 8 ore, che codifica `role` e `ai_enabled`.
@@ -178,6 +188,7 @@ Il DB logico è denominato `autanalysis`. Tutte le collezioni sottostanti fanno 
 ## 5. 🔄 FLUSSI DATI ARCHITETTURALI
 
 ### Flusso 1: Compilazione Valutazione e Calcolo Psicometrico
+
 ```mermaid
 sequenceDiagram
     participant EDU as Educatore
@@ -196,6 +207,7 @@ sequenceDiagram
 ```
 
 ### Flusso 2: Generazione Relazione IA Multidimensionale
+
 ```mermaid
 sequenceDiagram
     participant EDU as Educatore
@@ -215,6 +227,7 @@ sequenceDiagram
 ```
 
 ### Flusso 3: Export & Import del Database
+
 ```mermaid
 sequenceDiagram
     participant ADM as Admin System
