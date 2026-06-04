@@ -29,7 +29,23 @@ Single Source of Truth (SSOT) del Progetto — v2.20.0
 > [!NOTE]
 > Ogni nuova operazione di scrittura (POST/PUT/DELETE) implementata nel backend deve essere obbligatoriamente protetta con `Depends(verify_auth)`. Qualsiasi operazione eseguita dal ruolo `viewer` deve essere bloccata sollevando `403 Forbidden`.
 
-### Regola 4: Workflow Operativo per lo Sviluppo
+### Regola 4: Versionamento — Fonte Unica di Verità
+
+> [!IMPORTANT]
+> Il file `VERSION` nella root del progetto è l'**unica fonte di verità** per la versione. Non modificare mai la versione direttamente nei file derivati.
+>
+> **Procedura obbligatoria per ogni release:**
+>
+> 1. Edita `VERSION` con la nuova versione (es. `2.21.0`)
+> 2. Esegui `py bump_version.py` dalla root — propaga automaticamente a:
+>    * `backend/app/main.py` → campo `version=`
+>    * `frontend_admin/pubspec.yaml` → campo `version:`
+>    * `frontend_admin/lib/app_version.dart` → `kFrontendVersion`
+>    * `docker-compose.yml` → `CACHE_BUST=`
+>    * `ARCHITECTURE_MAP.md` → versione nel sottotitolo
+> 3. Durante il Docker build, `tools/update_version.dart` rigenera `app_version.dart` da `pubspec.yaml` come garanzia aggiuntiva.
+
+### Regola 5: Workflow Operativo per lo Sviluppo
 
 Segui **sempre** questo ciclo quando sviluppi una nuova funzionalità:
 
@@ -39,23 +55,23 @@ flowchart TD
 
     PULL["1️⃣ Sincronizzazione\ngit pull origin main"] --> ANALYZE
 
-    ANALYZE["2️⃣ Analisi Requisiti\nVerifica termini educativi"] --> ARCH
+    ANALYZE["2️⃣ Analisi Requisiti\nVerifica termini educativi\nLeggi ARCHITECTURE_MAP.md"] --> ARCH
 
-    ARCH["3️⃣ Consultazione SSOT\nIndividua file in ARCHITECTURE_MAP.md"] --> DEV
+    ARCH["3️⃣ Consultazione SSOT\nIndividua i file coinvolti"] --> DEV
 
     DEV["4️⃣ Sviluppo\nImplementa codice Frontend/Backend"] --> DB_CHECK
 
     DB_CHECK{"Aggiunta nuova\ncollezione DB?"}
-    DB_CHECK -- Sì --> UPDATE_EXPORT["Aggiorna export_database()\nin routes.py"]
+    DB_CHECK -- Sì --> UPDATE_EXPORT["Aggiorna export_database()\ne import_database() in routes.py"]
     DB_CHECK -- No --> VERSION
 
     UPDATE_EXPORT --> VERSION
 
-    VERSION["5️⃣ Versionamento\nEdita VERSION → esegui bump_version.py\n(aggiorna main.py, pubspec.yaml, app_version.dart, docker-compose)"] --> DOCS
+    VERSION["5️⃣ Versionamento\n1. Edita VERSION\n2. Esegui: py bump_version.py"] --> DOCS
 
-    DOCS["6️⃣ Documentazione\nAggiorna CHANGELOG.md e ARCHITECTURE_MAP.md"] --> COMMIT
+    DOCS["6️⃣ Documentazione\nAggiorna CHANGELOG.md"] --> COMMIT
 
-    COMMIT["7️⃣ Deploy\ngit commit & push, esegui deploy.ps1 PATH: C:\Users\gianvito.bleve\OneDrive - Banca Mediolanum SPA\Documenti\Progetti\deploy.ps1"] --> DONE([✅ Fine Task])
+    COMMIT["7️⃣ Deploy\ngit add & commit & push\nesegui deploy.ps1"] --> DONE([✅ Fine Task])
 
     style START fill:#4CAF50,color:#fff
     style DONE fill:#4CAF50,color:#fff
@@ -63,6 +79,44 @@ flowchart TD
     style VERSION fill:#FF9800,color:#fff
     style DB_CHECK fill:#E91E63,color:#fff
 ```
+
+### Regola 6: Catena CI/CD — Come funziona il Deploy
+
+> [!NOTE]
+> Comprendere questa catena è fondamentale per non rompere il processo di rilascio.
+
+```text
+Sviluppatore
+    │
+    ├─ 1. Modifica codice in locale
+    ├─ 2. py bump_version.py          ← propaga VERSION a tutti i file
+    ├─ 3. git commit & push → GitHub (RazorCopter/AutAnalysis, branch: main)
+    │
+    └─ 4. deploy.ps1                  ← script locale Windows
+           │  PATH: C:\Users\gianvito.bleve\OneDrive - Banca Mediolanum SPA\Documenti\Progetti\deploy.ps1
+           │
+           ├─ Autentica su Portainer via REST API
+           ├─ Arresta lo stack Docker 140 ("autify")
+           ├─ Attende 5s per rilascio porte
+           └─ Redeploy stack da Git (Portainer fa git pull + docker build)
+                  │
+                  ├─ Backend Dockerfile
+                  │    ├─ pip install requirements.txt
+                  │    └─ uvicorn app.main:app
+                  │
+                  └─ Frontend Dockerfile
+                       ├─ flutter pub get
+                       ├─ dart run tools/update_version.dart  ← sincronizza app_version.dart da pubspec.yaml
+                       ├─ flutter build web --release
+                       └─ Nginx su porta 8090 (proxy → backend :8000)
+```
+
+**Infrastruttura di produzione:**
+
+* URL: `https://tiglio.autify.it`
+* Portainer stack ID: `140` (nome: `autify`)
+* Frontend porta: `8090` → Nginx reverse proxy verso backend `8000`
+* Database: MongoDB volume persistente `autify_data`
 
 ---
 
