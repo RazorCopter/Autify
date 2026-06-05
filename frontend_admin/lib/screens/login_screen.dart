@@ -357,6 +357,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
+            ),
           ),
           // PWA Install Banner
           if (_showInstallBanner)
