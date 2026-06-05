@@ -21,6 +21,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final ApiService _apiService = ApiService();
   bool _isLoading = true;
   Map<String, dynamic>? _stats;
+  DateTime? _lastLoaded;
 
   @override
   void initState() {
@@ -36,6 +37,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           _stats = stats;
           _isLoading = false;
+          _lastLoaded = DateTime.now();
         });
       }
     } catch (e) {
@@ -136,6 +138,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
 
+    final lastLoadedStr = _lastLoaded != null
+        ? 'Aggiornato alle ${_lastLoaded!.hour.toString().padLeft(2, '0')}:${_lastLoaded!.minute.toString().padLeft(2, '0')}'
+        : null;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -161,34 +167,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE8EEF8), width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+        Row(
+          children: [
+            if (lastLoadedStr != null) ...[
+              Row(
+                children: [
+                  const Icon(Icons.update_rounded, color: AppTheme.textSecondary, size: 13),
+                  const SizedBox(width: 4),
+                  Text(
+                    lastLoadedStr,
+                    style: TextStyle(fontSize: 11, color: AppTheme.textSecondary.withValues(alpha: 0.7)),
+                  ),
+                ],
               ),
+              const SizedBox(width: 12),
             ],
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.calendar_today_outlined, color: AppTheme.primaryColor, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                formattedDate,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
-                ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE8EEF8), width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
-          ),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_today_outlined, color: AppTheme.primaryColor, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    formattedDate,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -376,7 +399,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       icon: Icons.warning_amber_rounded,
                       themeColor: const Color(0xFFEF4444),
                       onTap: () => widget.onNavigate(2),
-                      tooltip: 'Dettaglio Scale Mancanti:\n\nPOS: $posMancanti\nSan Martín: $sanMartinMancanti\nSIS: $sisMancanti',
+                      breakdownPills: [
+                        _BreakdownPill(label: 'SIS', count: sisMancanti, color: const Color(0xFF00897B)),
+                        _BreakdownPill(label: 'POS', count: posMancanti, color: const Color(0xFF3B82F6)),
+                        _BreakdownPill(label: 'SM', count: sanMartinMancanti, color: const Color(0xFF6366F1)),
+                      ],
                     ),
                   ),
                 ],
@@ -410,7 +437,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     icon: Icons.warning_amber_rounded,
                     themeColor: const Color(0xFFEF4444),
                     onTap: () => widget.onNavigate(2),
-                    tooltip: 'Dettaglio Scale Mancanti:\n\nPOS: $posMancanti\nSan Martín: $sanMartinMancanti\nSIS: $sisMancanti',
+                    breakdownPills: [
+                      _BreakdownPill(label: 'SIS', count: sisMancanti, color: const Color(0xFF00897B)),
+                      _BreakdownPill(label: 'POS', count: posMancanti, color: const Color(0xFF3B82F6)),
+                      _BreakdownPill(label: 'SM', count: sanMartinMancanti, color: const Color(0xFF6366F1)),
+                    ],
                   ),
                 ],
               ),
@@ -926,15 +957,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: const Icon(Icons.arrow_forward_rounded, size: 16, color: AppTheme.primaryColor),
-                          tooltip: 'Gestisci utente',
+                        const SizedBox(width: 6),
+                        TextButton.icon(
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppTheme.primaryColor,
+                            backgroundColor: const Color(0xFFEFF6FF),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                          ),
+                          icon: const Icon(Icons.arrow_forward_rounded, size: 13),
+                          label: const Text('Vai'),
                           onPressed: () {
                             widget.onNavigate(2, searchFilter: item['paziente_cognome']);
                           },
-                          constraints: const BoxConstraints(),
-                          padding: const EdgeInsets.all(4),
                         ),
                       ],
                     ),
@@ -1198,9 +1234,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ? double.parse((count / totalPatients * 100).toStringAsFixed(1))
                               : 0.0;
 
-                          // Colore progress bar semantico (Rosso 0-20%, Arancio 21-70%, Verde 71-100%)
+                          // Colore progress bar semantico (Rosso <30%, Arancio 30-70%, Verde >70%)
                           Color color;
-                          if (percent <= 20.0) {
+                          if (percent < 30.0) {
                             color = const Color(0xFFEF4444);
                           } else if (percent <= 70.0) {
                             color = const Color(0xFFF59E0B);
@@ -1322,6 +1358,13 @@ class _HoverBentoCardState extends State<_HoverBentoCard> {
 }
 
 // ─── KPI BENTO CARD WITH TWEEN ANIMATION ─────────────────────────────────────
+class _BreakdownPill {
+  final String label;
+  final int count;
+  final Color color;
+  const _BreakdownPill({required this.label, required this.count, required this.color});
+}
+
 class _BentoKpiCard extends StatefulWidget {
   final String title;
   final double value;
@@ -1333,6 +1376,7 @@ class _BentoKpiCard extends StatefulWidget {
   final String? tooltip;
   final String? trendText;
   final bool isTrendPositive;
+  final List<_BreakdownPill>? breakdownPills;
 
   const _BentoKpiCard({
     required this.title,
@@ -1345,6 +1389,7 @@ class _BentoKpiCard extends StatefulWidget {
     this.tooltip,
     this.trendText,
     this.isTrendPositive = true,
+    this.breakdownPills,
   });
 
   @override
@@ -1463,6 +1508,28 @@ class _BentoKpiCardState extends State<_BentoKpiCard> {
                             color: AppTheme.textSecondary.withValues(alpha: 0.8),
                           ),
                         ),
+                        if (widget.breakdownPills != null && widget.breakdownPills!.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 6,
+                            children: widget.breakdownPills!.map((pill) => Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: pill.color.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: pill.color.withValues(alpha: 0.3)),
+                              ),
+                              child: Text(
+                                '${pill.label}: ${pill.count}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: pill.color,
+                                ),
+                              ),
+                            )).toList(),
+                          ),
+                        ],
                       ],
                     ),
                   ),

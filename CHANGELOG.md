@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.22.0] - 2026-06-05
+
+### Miglioramenti UI/UX — Dashboard
+
+- **KPI "Scale Mancanti"**: aggiunto breakdown inline con pill colorate per SIS/POS/SM direttamente nella card, eliminando il tooltip nascosto.
+- **Barre Distribuzione Documentazione**: soglia rosso portata a <30% (era 20%) per allineamento con le linee guida (rosso <30%, ambra 30-70%, verde >70%).
+- **Alert Center**: bottone freccia sostituito con `TextButton.icon` "Vai" più visibile e riconoscibile.
+- **Header**: aggiunto timestamp "Aggiornato alle HH:MM" accanto alla data, visibile dopo ogni caricamento dati.
+
+### Miglioramenti UI/UX — Analisi Utente
+
+- **Legenda SIS separata**: la legenda della scala SIS distingue visivamente "Sezione 1 — Attività (A–F)" dalle "Sezioni Supplementari (Sez. 2 & 3)" con divider e icone distinte.
+- **Trend chip**: aggiunto chip "Trend ↑/↓ Xpt" nello stato chiuso di ogni accordion card, calcolato confrontando l'ultima compilazione con la penultima dello storico.
+- **Date leggibili**: tutte le date ISO (2026-05-14) sono ora mostrate in formato umano ("14 Mag 2026") con aggiunta di "Xgg fa" se meno di 60 giorni, in MetaRow, summary chip e header utente.
+- **Toggle comparazione**: label aggiornata a "Compara POS & San Martín" con nota esplicita che SIS è esclusa.
+- **Badge fascia colorato**: la fascia interpretativa SM (Molto Basso→Molto Alto) e la classificazione SIS (Livello I→IV) ora mostrano un badge con icona trend e colore semantico (verde/ambra/rosso) invece di testo plain.
+
+---
+
 ## [2.21.0] - 2026-06-04
 
 ### Miglioramenti

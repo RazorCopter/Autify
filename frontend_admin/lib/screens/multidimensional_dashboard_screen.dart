@@ -977,9 +977,35 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       }
       chips.add(ScaleSummaryChip(
         label: 'Compilata il',
-        value: eval.dataCompilazione.split('T')[0].split('-').reversed.join('/'),
+        value: _formatDateReadable(eval.dataCompilazione.split('T')[0]),
         accentColor: accentColor,
         icon: Icons.calendar_today_outlined,
+      ));
+    }
+
+    // ── Sparkline trend (ultime ≤3 compilazioni) ──────────────────────────
+    final history = _evaluationsHistory[eval.idScala];
+    if (history != null && history.length >= 2) {
+      final sorted = List<AggregatedEvaluation>.from(history)
+        ..sort((a, b) => a.dataCompilazione.compareTo(b.dataCompilazione));
+      final recent = sorted.length > 3 ? sorted.sublist(sorted.length - 3) : sorted;
+
+      // Calcola il totale punteggio per ogni valutazione storica
+      final totals = recent.map((e) => e.domini.fold(0, (s, d) => s + d.punteggio).toDouble()).toList();
+      final maxT = totals.reduce((a, b) => a > b ? a : b).clamp(1.0, double.infinity);
+
+      // Trend: confronta l'ultima con la penultima
+      final trend = totals.length >= 2 ? totals.last - totals[totals.length - 2] : 0.0;
+      final trendIcon = trend > 0 ? '↑' : (trend < 0 ? '↓' : '→');
+      final trendColor = trend > 0
+          ? const Color(0xFF4ADE80)
+          : (trend < 0 ? const Color(0xFFF87171) : Colors.white60);
+
+      chips.add(ScaleSummaryChip(
+        label: 'Trend',
+        value: '$trendIcon ${trend.abs().toStringAsFixed(0)}pt',
+        accentColor: trendColor,
+        icon: Icons.show_chart_outlined,
       ));
     }
 
@@ -1084,7 +1110,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Modalità Comparazione',
+                    'Compara POS & San Martín',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -1094,8 +1120,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   const SizedBox(height: 2),
                   Text(
                     canCompare
-                        ? 'Confronta la scala POS e la scala San Martín in un grafico unificato.'
-                        : 'Compila entrambe le scale per sbloccare la comparazione dei domini.',
+                        ? 'Confronto domini comuni normalizzati (0–100%). SIS esclusa.'
+                        : 'Compila POS e San Martín per sbloccare la comparazione.',
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppTheme.textSecondary,
@@ -1464,7 +1490,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             if (p.sesso != null && p.sesso!.isNotEmpty)
               _headerChip(Icons.person_outline, p.sesso!),
             if (p.dataNascita != null)
-              _headerChip(Icons.calendar_today_outlined, p.dataNascita!.split('T')[0]),
+              _headerChip(Icons.calendar_today_outlined, _formatDateReadable(p.dataNascita!.split('T')[0])),
           ],
         ),
       ],
@@ -1885,12 +1911,33 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     );
   }
 
+  /// Converte una data ISO (2026-05-14) in formato leggibile (14 Mag 2026)
+  /// e aggiunge "X giorni fa" se meno di 60 giorni.
+  static String _formatDateReadable(String isoDate) {
+    try {
+      final parts = isoDate.split('T')[0].split('-');
+      if (parts.length != 3) return isoDate;
+      final year = int.parse(parts[0]);
+      final month = int.parse(parts[1]);
+      final day = int.parse(parts[2]);
+      final date = DateTime(year, month, day);
+      const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+      final formatted = '$day ${months[month - 1]} $year';
+      final diff = DateTime.now().difference(date).inDays;
+      if (diff == 0) return '$formatted (oggi)';
+      if (diff <= 60) return '$formatted (${diff}gg fa)';
+      return formatted;
+    } catch (_) {
+      return isoDate;
+    }
+  }
+
   Widget _buildMetaRow(AggregatedEvaluation eval) {
     return Wrap(
       spacing: 16,
       runSpacing: 8,
       children: [
-        _metaChip(Icons.calendar_today, 'Data', eval.dataCompilazione.split('T')[0]),
+        _metaChip(Icons.calendar_today, 'Data', _formatDateReadable(eval.dataCompilazione.split('T')[0])),
         _metaChip(Icons.person, 'Operatore', eval.nomeOperatore),
         if (eval.nomeIntervistato != null)
           _metaChip(Icons.record_voice_over, 'Intervistato', eval.nomeIntervistato!),
@@ -2048,25 +2095,32 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     );
   }
 
+  /// Restituisce colori semantici per fascia interpretativa.
+  /// Supporta: Molto Basso/Basso/Medio/Alto/Molto Alto (SM) e Livello I/II/III/IV (SIS).
+  static ({Color bg, Color text, IconData icon}) _fasciaColors(String value) {
+    final lv = value.toLowerCase();
+    // Fasce SM
+    if (lv.contains('molto alto')) return (bg: const Color(0xFF14532D).withValues(alpha: 0.35), text: const Color(0xFF86EFAC), icon: Icons.arrow_upward_rounded);
+    if (lv.contains('alto')) return (bg: const Color(0xFF166534).withValues(alpha: 0.3), text: const Color(0xFF4ADE80), icon: Icons.trending_up_rounded);
+    if (lv.contains('medio')) return (bg: const Color(0xFF854D0E).withValues(alpha: 0.3), text: const Color(0xFFFBBF24), icon: Icons.trending_flat_rounded);
+    if (lv.contains('molto basso')) return (bg: const Color(0xFF7F1D1D).withValues(alpha: 0.35), text: const Color(0xFFFCA5A5), icon: Icons.arrow_downward_rounded);
+    if (lv.contains('basso')) return (bg: const Color(0xFF991B1B).withValues(alpha: 0.3), text: const Color(0xFFF87171), icon: Icons.trending_down_rounded);
+    // Livelli SIS (I = basso bisogno, IV = alto bisogno)
+    if (lv.contains('livello iv')) return (bg: const Color(0xFF7F1D1D).withValues(alpha: 0.35), text: const Color(0xFFFCA5A5), icon: Icons.arrow_upward_rounded);
+    if (lv.contains('livello iii')) return (bg: const Color(0xFF854D0E).withValues(alpha: 0.3), text: const Color(0xFFFBBF24), icon: Icons.trending_up_rounded);
+    if (lv.contains('livello ii')) return (bg: const Color(0xFF166534).withValues(alpha: 0.3), text: const Color(0xFF4ADE80), icon: Icons.trending_flat_rounded);
+    if (lv.contains('livello i')) return (bg: const Color(0xFF14532D).withValues(alpha: 0.35), text: const Color(0xFF86EFAC), icon: Icons.trending_down_rounded);
+    // Default
+    return (bg: Colors.blue.withValues(alpha: 0.2), text: Colors.lightBlueAccent, icon: Icons.info_outline_rounded);
+  }
+
   Widget _indicatorBadge({
     required String title,
     required String value,
     required String subtitle,
     required IconData icon,
   }) {
-    Color bgColor;
-    Color textColor;
-    final lv = value.toLowerCase();
-    if (lv.contains('significativa') || lv.contains('alta') || lv.contains('buon')) {
-      bgColor = Colors.green.withValues(alpha: 0.2);
-      textColor = Colors.greenAccent;
-    } else if (lv.contains('media') || lv.contains('bassa') || lv.contains('marginale')) {
-      bgColor = Colors.orange.withValues(alpha: 0.2);
-      textColor = Colors.orangeAccent;
-    } else {
-      bgColor = Colors.blue.withValues(alpha: 0.2);
-      textColor = Colors.lightBlueAccent;
-    }
+    final colors = _fasciaColors(value);
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -2087,8 +2141,19 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8)),
-            child: Text(value, style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.bold)),
+            decoration: BoxDecoration(
+              color: colors.bg,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: colors.text.withValues(alpha: 0.25)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(colors.icon, color: colors.text, size: 14),
+                const SizedBox(width: 6),
+                Text(value, style: TextStyle(color: colors.text, fontSize: 14, fontWeight: FontWeight.bold)),
+              ],
+            ),
           ),
           const SizedBox(height: 4),
           Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 11)),
@@ -2251,10 +2316,13 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     final String sub1 = analysis != null ? 'Somma standard: ${analysis.sommaPunteggiStandard ?? 0}' : '${eval.domini.length} domini analizzati';
     
     final String mainTitle2 = analysis != null ? 'Percentile Globale' : 'Media per Dominio';
-    final String mainValue2 = analysis != null && analysis.percentile != null 
-        ? '${analysis.percentile}°' 
+    final String mainValue2 = analysis != null && analysis.percentile != null
+        ? '${analysis.percentile}°'
         : (eval.domini.isNotEmpty ? (totalGrezzo / eval.domini.length).toStringAsFixed(1) : '—');
-    final String sub2 = analysis != null && analysis.fasciaQv != null ? 'Intensità: ${analysis.fasciaQv}' : 'Valore medio calcolato';
+    final String sub2 = 'vs. campione normativo';
+
+    // Classificazione intensità SIS come badge colorato
+    final String? classificazione = analysis?.fasciaQv;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -2288,6 +2356,15 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               )),
             ],
           ),
+          if (classificazione != null) ...[
+            const SizedBox(height: 12),
+            _indicatorBadge(
+              title: 'Classificazione Intensità',
+              value: classificazione,
+              subtitle: 'Livello di intensità del supporto richiesto',
+              icon: Icons.verified,
+            ),
+          ],
           _buildSisLegend(eval),
         ],
       ),
@@ -2298,18 +2375,37 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     final domains = eval.domini;
     if (domains.isEmpty) return const SizedBox.shrink();
 
-    // Dividiamo i domini in 3 colonne
-    final int itemsPerCol = (domains.length / 3).ceil();
-    final List<List<DomainScore>> columns = [[], [], []];
-    
-    for (int i = 0; i < domains.length; i++) {
-      final colIndex = i ~/ itemsPerCol;
-      if (colIndex < 3) {
-        columns[colIndex].add(domains[i]);
-      } else {
-        columns[2].add(domains[i]);
-      }
-    }
+    // Separa Sezione 1 (A-F) dalle sezioni supplementari (SEZ2, SEZ3M, SEZ3C)
+    final sez1 = domains.where((d) {
+      final c = d.codice.toUpperCase();
+      return c.length == 1 && 'ABCDEF'.contains(c);
+    }).toList();
+    final sezSuppl = domains.where((d) {
+      final c = d.codice.toUpperCase();
+      return !('ABCDEF'.contains(c) && c.length == 1);
+    }).toList();
+
+    Widget _legendRow(DomainScore d, Color bullet) => Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('• ', style: TextStyle(color: bullet, fontSize: 13, fontWeight: FontWeight.bold)),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.2),
+                children: [
+                  TextSpan(text: '${d.codice.toUpperCase()}: ', style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                  TextSpan(text: d.etichetta),
+                  TextSpan(text: ' (${d.punteggio})', style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
 
     return Container(
       margin: const EdgeInsets.only(top: 12),
@@ -2322,70 +2418,41 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Sezione 1: Domini A-F ──────────────────────────────────────
           const Row(
             children: [
               Icon(Icons.legend_toggle_outlined, color: Colors.amberAccent, size: 14),
               SizedBox(width: 6),
-              Text(
-                'Legenda Domini e Sezioni',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
+              Text('Sezione 1 — Attività (A–F)',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
             ],
           ),
           const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: List.generate(3, (colIdx) {
-              final colItems = columns[colIdx];
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: colItems.map((d) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              '• ',
-                              style: TextStyle(color: Colors.amberAccent, fontSize: 13, fontWeight: FontWeight.bold),
-                            ),
-                            Expanded(
-                              child: RichText(
-                                text: TextSpan(
-                                  style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.2),
-                                  children: [
-                                    TextSpan(
-                                      text: '${d.codice.toUpperCase()}: ',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace'),
-                                    ),
-                                    TextSpan(text: d.etichetta),
-                                    TextSpan(
-                                      text: ' (${d.punteggio})',
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.7),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              );
-            }),
-          ),
+          if (sez1.isNotEmpty)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: sez1.sublist(0, (sez1.length / 2).ceil()).map((d) => _legendRow(d, Colors.amberAccent)).toList())),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: sez1.sublist((sez1.length / 2).ceil()).map((d) => _legendRow(d, Colors.amberAccent)).toList())),
+              ],
+            ),
+
+          // ── Sezioni supplementari ──────────────────────────────────────
+          if (sezSuppl.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(height: 1, color: Colors.white.withValues(alpha: 0.15)),
+            const SizedBox(height: 8),
+            const Row(
+              children: [
+                Icon(Icons.add_circle_outline_rounded, color: Color(0xFF80CBC4), size: 13),
+                SizedBox(width: 6),
+                Text('Sezioni Supplementari (Sez. 2 & 3)',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ...sezSuppl.map((d) => _legendRow(d, const Color(0xFF80CBC4))),
+          ],
         ],
       ),
     );
