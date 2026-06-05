@@ -6,7 +6,7 @@ RUN echo "Cache bust: $CACHE_BUST"
 COPY . .
 RUN flutter pub get
 RUN dart run tools/update_version.dart
-RUN flutter build web --release -O 2
+RUN flutter build web --release
 
 # Stage 2: Serve with Nginx
 FROM nginx:alpine
