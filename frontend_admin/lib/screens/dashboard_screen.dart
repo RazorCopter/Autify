@@ -410,7 +410,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ],
                 ),
-              ),
+              )
             else
               Column(
                 children: [
