@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.23.3] - 2026-06-05
+
+### Nuove Funzionalità — Accessibilità PWA
+
+- **Banner Installazione PWA (App)**: Aggiunto un banner/popup discreto e dal design *glassmorphism* nella pagina di login per invitare gli utenti a installare l'applicazione come Progressive Web App. Il banner intercetta l'evento nativo `beforeinstallprompt`, garantendo un'esperienza fluida e una maggiore integrazione col sistema operativo del dispositivo in uso (desktop e mobile).
+
 ## [2.23.2] - 2026-06-05
 
 ### Miglioramenti UI/UX — Dashboard

@@ -1,4 +1,5 @@
 import 'dart:html' as html;
+import 'dart:js_util' as js_util;
 import 'dart:ui' as ui_core;
 import 'dart:ui_web' as ui;
 import 'package:flutter/material.dart';
@@ -22,10 +23,25 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   bool _isShaking = false;
+  
+  html.Event? _installPromptEvent;
+  bool _showInstallBanner = false;
 
   @override
   void initState() {
     super.initState();
+
+    // Intercetta beforeinstallprompt per PWA
+    html.window.on['beforeinstallprompt'].listen((html.Event e) {
+      e.preventDefault();
+      if (mounted) {
+        setState(() {
+          _installPromptEvent = e;
+          _showInstallBanner = true;
+        });
+      }
+    });
+
     // Registra la Platform View per il video di sfondo nativo HTML
     // ignore: undefined_prefixed_name
     ui.platformViewRegistry.registerViewFactory(
@@ -122,6 +138,15 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         });
       }
+    }
+  }
+
+  void _promptInstall() {
+    if (_installPromptEvent != null) {
+      js_util.callMethod(_installPromptEvent!, 'prompt', []);
+      setState(() {
+        _showInstallBanner = false;
+      });
     }
   }
 
@@ -328,13 +353,140 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                     ),
-                    ),
                   ),
                 ),
               ),
             ),
           ),
+          // PWA Install Banner
+          if (_showInstallBanner)
+            Positioned(
+              top: isMobile ? 16 : 24,
+              right: isMobile ? 16 : 24,
+              left: isMobile ? 16 : null, // Su mobile occupiamo la larghezza
+              child: _buildInstallBanner(isMobile),
+            ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildInstallBanner(bool isMobile) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutBack,
+      builder: (context, value, child) {
+        return Transform.translate(
+          offset: Offset(0, 50 * (1 - value)),
+          child: Opacity(
+            opacity: value,
+            child: child,
+          ),
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ui_core.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            width: isMobile ? double.infinity : 340,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 24,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF60A5FA).withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.install_mobile_rounded, color: Color(0xFF60A5FA), size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Autify App',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Icon(Icons.close_rounded, size: 20, color: Colors.white.withOpacity(0.6)),
+                      onPressed: () {
+                        setState(() {
+                          _showInstallBanner = false;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Installa la nostra App per un\'esperienza migliore.',
+                  style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.8), height: 1.4),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF2563EB).withOpacity(0.4),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    onPressed: _promptInstall,
+                    child: const Text('Installa', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
