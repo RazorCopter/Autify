@@ -34,7 +34,13 @@
 
   <title>Autify</title>
   <link rel="manifest" href="manifest.json">
-</head>
+  <script>
+    window.deferredPWAInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      window.deferredPWAInstallPrompt = e;
+    });
+  </script></head>
 <body>
   <!--
     You can customize the "flutter_bootstrap.js" script.

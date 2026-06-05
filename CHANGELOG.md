@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.23.4] - 2026-06-05
+
+### Bug Fix — Accessibilità PWA Mobile
+
+- **Fix popup PWA su iOS e Android**: Risolto il problema per cui il popup di installazione non appariva sui dispositivi mobile. Su Android/Chrome l'evento `beforeinstallprompt` veniva generato e consumato dal browser prima che la UI di login finisse di renderizzarsi; ora viene catturato globalmente nel file `index.html` e ritrasmesso in sicurezza al componente UI. Aggiunto inoltre il supporto ai dispositivi iOS (iPhone/iPad) nativamente non compatibili con il prompt automatico, mostrando in modo dedicato le istruzioni esplicite per l'aggiunta alla schermata Home.
+
 ## [2.23.3] - 2026-06-05
 
 ### Nuove Funzionalità — Accessibilità PWA

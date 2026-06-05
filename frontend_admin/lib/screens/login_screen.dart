@@ -26,21 +26,12 @@ class _LoginScreenState extends State<LoginScreen> {
   
   html.Event? _installPromptEvent;
   bool _showInstallBanner = false;
+  bool _isIOS = false;
 
   @override
   void initState() {
     super.initState();
-
-    // Intercetta beforeinstallprompt per PWA
-    html.window.on['beforeinstallprompt'].listen((html.Event e) {
-      e.preventDefault();
-      if (mounted) {
-        setState(() {
-          _installPromptEvent = e;
-          _showInstallBanner = true;
-        });
-      }
-    });
+    _initPWA();
 
     // Registra la Platform View per il video di sfondo nativo HTML
     // ignore: undefined_prefixed_name
@@ -138,6 +129,45 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         });
       }
+    }
+  }
+
+  void _initPWA() {
+    final userAgent = html.window.navigator.userAgent.toLowerCase();
+    final isIOSDevice = userAgent.contains('iphone') || userAgent.contains('ipad');
+    
+    if (isIOSDevice) {
+      final isStandalone = html.window.matchMedia('(display-mode: standalone)').matches || js_util.getProperty(html.window.navigator, 'standalone') == true;
+      if (!isStandalone) {
+        if (mounted) {
+          setState(() {
+            _isIOS = true;
+            _showInstallBanner = true;
+          });
+        }
+      }
+      return;
+    }
+
+    final deferredPrompt = js_util.getProperty(html.window, 'deferredPWAInstallPrompt');
+    if (deferredPrompt != null) {
+      if (mounted) {
+        setState(() {
+          _installPromptEvent = deferredPrompt;
+          _showInstallBanner = true;
+        });
+      }
+    } else {
+      html.window.on['beforeinstallprompt'].listen((html.Event e) {
+        e.preventDefault();
+        js_util.setProperty(html.window, 'deferredPWAInstallPrompt', e);
+        if (mounted) {
+          setState(() {
+            _installPromptEvent = e;
+            _showInstallBanner = true;
+          });
+        }
+      });
     }
   }
 
@@ -448,42 +478,44 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Installa la nostra App per un\'esperienza migliore.',
+                  _isIOS ? 'Per installare l\'App su iOS: tocca l\'icona Condividi in basso e seleziona "Aggiungi alla schermata Home".' : 'Installa la nostra App per un\'esperienza migliore.',
                   style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.8), height: 1.4),
                 ),
-                const SizedBox(height: 16),
-                Container(
-                  width: double.infinity,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF2563EB).withOpacity(0.4),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+                if (!_isIOS) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                    ],
-                  ),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      foregroundColor: Colors.white,
-                      shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF2563EB).withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    onPressed: _promptInstall,
-                    child: const Text('Installa', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      onPressed: _promptInstall,
+                      child: const Text('Installa', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
