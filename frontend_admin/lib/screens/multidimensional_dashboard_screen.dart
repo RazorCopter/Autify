@@ -729,14 +729,14 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF37474F), Color(0xFF546E7A), Color(0xFF78909C)],
+          colors: [Color(0xFF1A237E), Color(0xFF3949AB), Color(0xFF5C6BC0)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF37474F).withValues(alpha: 0.25),
+            color: const Color(0xFF1A237E).withValues(alpha: 0.25),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -812,9 +812,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     final List<Color> gradientColors = isSis
         ? const [Color(0xFF00695C), Color(0xFF26A69A)]
         : isBehavior
-            ? (isSabs
-                ? const [Color(0xFF37474F), Color(0xFF546E7A)]   // grigio ardesia blu SABS
-                : const [Color(0xFF4A148C), Color(0xFF7B1FA2)])  // viola ODFLAB
+            ? const [Color(0xFFFFB300), Color(0xFFF57C00)] // Gradiente dal giallo all'arancio
             : isSM
                 ? const [Color(0xFF1A237E), Color(0xFF3949AB)]
                 : const [Color(0xFF0D47A1), Color(0xFF1565C0)];
@@ -1576,7 +1574,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
     final accentGradient = isSis
         ? const [Color(0xFF00695C), Color(0xFF26A69A)] // Teal premium per la scala SIS
-        : isBehavior ? const [Color(0xFF6A1B9A), Color(0xFFAB47BC)] : isSM
+        : isBehavior ? const [Color(0xFFFFB300), Color(0xFFF57C00)] : isSM
             ? const [Color(0xFF1A237E), Color(0xFF3949AB)]
             : const [Color(0xFF0D47A1), Color(0xFF42A5F5)];
 

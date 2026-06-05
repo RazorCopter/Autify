@@ -1,6 +1,14 @@
 # Changelog
 
+## [2.23.1] - 2026-06-05
+
+### Miglioramenti UI/UX — Analisi Utente
+
+- **Uniformità colore header tab Comp. Adattivo**: il gradiente dell'header è stato modificato in blu (`#1A237E→#5C6BC0`) per renderlo uniforme con il tab "Qualità della Vita".
+- **Nuovo gradiente giallo-arancione per schede Comp. Adattivo**: le schede delle scale di valutazione comportamentale (ODFLAB e SABS) ora usano una sfumatura dal giallo all'arancione (`#FFB300→#F57C00`) per evidenziarle e renderle esteticamente gradevoli.
+
 ## [2.23.0] - 2026-06-05
+
 
 ### Fix UI/UX — Dashboard
 
