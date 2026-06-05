@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.23.2] - 2026-06-05
+
+### Miglioramenti UI/UX — Dashboard
+
+- **Riprogettazione Grafico Demografico**: il grafico di genere è stato trasformato in una Donut Chart di dimensioni maggiori (120x120px) con il totale degli utenti mostrato al centro.
+- **Colori più accesi e contrastati**: applicati colori a contrasto elevato (Blu Reale `#2563EB` per uomini e Rosa Rose `#F43F5E` per donne).
+- **Percentuali integrate**: aggiunta l'indicazione delle percentuali sia all'interno degli spicchi del grafico sia nella legenda descrittiva.
+- **Percentuali fasce d'età**: calcolate e visualizzate le percentuali di distribuzione per fasce d'età a fianco di ciascuna barra orizzontale.
+
 ## [2.23.1] - 2026-06-05
 
 ### Miglioramenti UI/UX — Analisi Utente

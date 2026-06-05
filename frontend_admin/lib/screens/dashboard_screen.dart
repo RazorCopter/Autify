@@ -518,7 +518,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   _buildAlertListCard(alertList, height: 420),
                   const SizedBox(height: 24),
-                  _buildDemographicsCard(demographics, height: 220),
+                  _buildDemographicsCard(demographics),
                 ],
               ),
 
@@ -1054,6 +1054,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final men = (sesso['M'] ?? 0) as int;
     final women = (sesso['F'] ?? 0) as int;
     final total = men + women;
+
+    final menPercent = total > 0 ? (men / total * 100) : 0.0;
+    final womenPercent = total > 0 ? (women / total * 100) : 0.0;
     
     // Calcola il massimo per le barre proporzionali delle fasce d'età
     final ageValues = [
@@ -1085,36 +1088,77 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // ── Genere: Mini PieChart ──
+                  // ── Genere: Donut Chart Premium ──
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SizedBox(
-                        width: 80,
-                        height: 80,
-                        child: PieChart(
-                          PieChartData(
-                            sectionsSpace: 2,
-                            centerSpaceRadius: 22,
-                            startDegreeOffset: -90,
-                            sections: [
-                              PieChartSectionData(
-                                value: men.toDouble().clamp(0.01, double.infinity),
-                                color: const Color(0xFF3B82F6),
-                                radius: 14,
-                                showTitle: false,
+                        width: 120,
+                        height: 120,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            PieChart(
+                              PieChartData(
+                                sectionsSpace: 2,
+                                centerSpaceRadius: 38,
+                                startDegreeOffset: -90,
+                                sections: [
+                                  PieChartSectionData(
+                                    value: men.toDouble().clamp(0.01, double.infinity),
+                                    color: const Color(0xFF2563EB), // Blu Reale Acceso
+                                    radius: 18,
+                                    showTitle: men > 0,
+                                    title: '${menPercent.toStringAsFixed(0)}%',
+                                    titleStyle: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  PieChartSectionData(
+                                    value: women.toDouble().clamp(0.01, double.infinity),
+                                    color: const Color(0xFFF43F5E), // Rosa/Rose Acceso
+                                    radius: 18,
+                                    showTitle: women > 0,
+                                    title: '${womenPercent.toStringAsFixed(0)}%',
+                                    titleStyle: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              PieChartSectionData(
-                                value: women.toDouble().clamp(0.01, double.infinity),
-                                color: const Color(0xFFEC4899),
-                                radius: 14,
-                                showTitle: false,
-                              ),
-                            ],
-                          ),
+                            ),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '$total',
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppTheme.textPrimary,
+                                    height: 1.0,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                const Text(
+                                  'UTENTI',
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppTheme.textSecondary,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 20),
+                      const SizedBox(width: 24),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
@@ -1122,18 +1166,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Container(width: 10, height: 10, decoration: BoxDecoration(color: const Color(0xFF3B82F6), borderRadius: BorderRadius.circular(3))),
-                              const SizedBox(width: 6),
-                              Text('Uomini $men', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2563EB),
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Uomini: $men (${menPercent.toStringAsFixed(0)}%)',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
                             ],
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 10),
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Container(width: 10, height: 10, decoration: BoxDecoration(color: const Color(0xFFEC4899), borderRadius: BorderRadius.circular(3))),
-                              const SizedBox(width: 6),
-                              Text('Donne $women', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF43F5E),
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Donne: $women (${womenPercent.toStringAsFixed(0)}%)',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
                             ],
                           ),
                         ],
@@ -1142,13 +1214,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 24),
                   // ── Fasce d'Età: Barre proporzionali ──
-                  _buildAgeBar('0-18', ageValues[0], maxAge),
+                  _buildAgeBar('0-18', ageValues[0], maxAge, total),
                   const SizedBox(height: 8),
-                  _buildAgeBar('19-35', ageValues[1], maxAge),
+                  _buildAgeBar('19-35', ageValues[1], maxAge, total),
                   const SizedBox(height: 8),
-                  _buildAgeBar('36-50', ageValues[2], maxAge),
+                  _buildAgeBar('36-50', ageValues[2], maxAge, total),
                   const SizedBox(height: 8),
-                  _buildAgeBar('51+', ageValues[3], maxAge),
+                  _buildAgeBar('51+', ageValues[3], maxAge, total),
                 ],
               ),
             ),
@@ -1158,8 +1230,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildAgeBar(String label, int count, int maxCount) {
+  Widget _buildAgeBar(String label, int count, int maxCount, int total) {
     final barFraction = maxCount > 0 ? (count / maxCount).clamp(0.05, 1.0) : 0.05;
+    final percent = total > 0 ? (count / total * 100).toStringAsFixed(0) : '0';
     return Row(
       children: [
         SizedBox(
@@ -1177,14 +1250,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: 20,
-          child: Text(
-            '$count',
-            textAlign: TextAlign.right,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
-          ),
+        const SizedBox(width: 12),
+        Text(
+          '$count ($percent%)',
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
         ),
       ],
     );
