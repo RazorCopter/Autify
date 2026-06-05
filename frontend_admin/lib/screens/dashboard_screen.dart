@@ -364,10 +364,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         return Column(
           children: [
-            // Row 1: KPI Cards
+            // Row 1: KPI Cards — IntrinsicHeight garantisce altezza uniforme
             if (isDesktop || isTablet)
-              Row(
-                children: [
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   Expanded(
                     child: _BentoKpiCard(
                       title: 'UTENZE ATTIVE',
@@ -407,7 +409,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                 ],
-              )
+                ),
+              ),
             else
               Column(
                 children: [
@@ -455,31 +458,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Row 2: Charts (Doughnut e LineChart)
+            // Row 2: Copertura + Distribuzione.
+            // L'altezza della Distribuzione dipende dal numero di scale (58px/item + 104px header/padding).
+            // Le due card vengono allineate prendendo il max tra le due altezze calcolate.
             if (isDesktop)
-              SizedBox(
-                height: 340,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: _buildDocumentCoverageCard(coveredCount, expiredCount, coveragePercent, height: 340),
-                    ),
-                    const SizedBox(width: 24),
-                    Expanded(
-                      flex: 3,
-                      child: _buildDistributionCard(distributions, activePatients, height: 340),
-                    ),
-                  ],
-                ),
-              )
+              () {
+                final distHeight = (distributions.length * 58.0 + 104).clamp(420.0, 520.0);
+                final rowHeight = distHeight;
+                return SizedBox(
+                  height: rowHeight,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: _buildDocumentCoverageCard(coveredCount, expiredCount, coveragePercent, height: rowHeight),
+                      ),
+                      const SizedBox(width: 24),
+                      Expanded(
+                        flex: 3,
+                        child: _buildDistributionCard(distributions, activePatients, height: rowHeight),
+                      ),
+                    ],
+                  ),
+                );
+              }()
             else
               Column(
                 children: [
                   _buildDocumentCoverageCard(coveredCount, expiredCount, coveragePercent, height: 380),
                   const SizedBox(height: 24),
-                  _buildDistributionCard(distributions, activePatients, height: 420),
+                  _buildDistributionCard(distributions, activePatients, height: (distributions.length * 58.0 + 104).clamp(380.0, 520.0)),
                 ],
               ),
 

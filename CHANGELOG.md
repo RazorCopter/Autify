@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.23.0] - 2026-06-05
+
+### Fix UI/UX — Dashboard
+
+- **KPI card altezza uniforme**: le tre card KPI desktop/tablet ora usano `IntrinsicHeight` + `CrossAxisAlignment.stretch` per garantire altezza identica indipendentemente dal contenuto (pill breakdownPOS/SIS/SM).
+- **Distribuzione: altezza dinamica**: l'altezza della card "Distribuzione Documentazione" è ora calcolata in base al numero reale di scale (`58px × n + 104px`, clamp 340–520px) invece di un valore fisso, evitando spazio bianco o troncamenti.
+- **Row 2 desktop**: altezza minima della riga Copertura + Distribuzione portata a 420px (da 340px) per dare respiro visivo sugli schermi standard.
+
+### Fix UI/UX — Analisi Utente
+
+- **Palette scale Comp. Adattivo**: ogni tipo di scala nel tab "Comportamento Adattivo" ora ha gradienti distinti per tipo (SIS: teal, Behavior: viola scuro, SM: indaco, POS: blu) invece di un unico colore uniforme.
+- **Header tab Comp. Adattivo — colore neutro**: il gradiente dell'header del tab "Comportamento Adattivo" è passato dal viola acceso (`#4A148C→#AB47BC`) a un grigio ardesia neutro (`#455A64→#78909C`) per ridurre l'impatto cromatico e migliorare la leggibilità.
+- **Data di nascita tab IA**: la data di nascita nel tab "Analisi IA" era mostrata in formato ISO grezzo; ora usa `_formatDateReadable` per un formato umano leggibile ("14 Mag 1985").
+
+---
+
 ## [2.22.0] - 2026-06-05
 
 ### Miglioramenti UI/UX — Dashboard
