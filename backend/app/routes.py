@@ -8,12 +8,13 @@ _limiter = Limiter(key_func=get_remote_address)
 _logger = logging.getLogger("autify")
 from typing import List, Optional
 from bson import ObjectId
-from .models import Scale, Evaluation, Patient, PaginatedPatients, AppSettings, Section, Question, Option, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest, AiAnalysis, AiAnalysisCreate, UserCreate, UserUpdate, UserResponse, AuditLogCreate, AuditLogResponse
+from .models import Scale, Evaluation, Patient, PaginatedPatients, AppSettings, Section, Question, Option, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest, AiAnalysis, AiAnalysisCreate, AiAnalysisUpdate, AiPdfRequest, UserCreate, UserUpdate, AuditLogCreate, AuditLogResponse
 from .database import evaluations_collection, settings_collection, patients_collection, scales_collection, users_collection, ai_analyses_collection, audit_logs_collection
 from .pdf_generator import generate_evaluation_pdf, generate_ai_analysis_pdf
 from .analytics import compute_psychometric_analysis, compute_direct_scores, build_domain_map, calcola_punteggi_sis
 from datetime import datetime, timezone, timedelta
 import json
+import re
 from pydantic import BaseModel
 import uuid
 import io
@@ -21,7 +22,6 @@ import os
 import asyncio
 from pathlib import Path
 from . import auth as auth_module
-from . import auth_manager  # backward-compat: usato da auth.py per il log viewer legacy
 
 class LoginRequest(BaseModel):
     username: str
@@ -48,16 +48,31 @@ client_router = APIRouter()
 
 async def log_audit(azione: str, operatore: str, dettagli: str, target_id: Optional[str] = None):
     try:
-        log_entry = {
-            "azione": azione,
-            "operatore": operatore,
-            "dettagli": dettagli,
-            "target_id": target_id,
-            "timestamp": datetime.now(timezone.utc)
-        }
+        entry = AuditLogCreate(azione=azione, operatore=operatore, dettagli=dettagli, target_id=target_id)
+        log_entry = entry.model_dump()
+        log_entry["timestamp"] = datetime.now(timezone.utc)
         await audit_logs_collection.insert_one(log_entry)
     except Exception as e:
         print(f"Errore nel salvataggio dell'audit log: {e}")
+
+def _classify_scale(scale_name: str, scale_id: str) -> str:
+    """Classifica una scala in base a nome e id (entrambi già lowercase)."""
+    n = scale_name.replace('í', 'i').replace('ì', 'i')
+    i = scale_id.lower()
+    if "pos" in n or "pos" in i:
+        return "pos"
+    if "martin" in n or "martin" in i:
+        return "san_martin"
+    if "sis" in n or "sis" in i:
+        return "sis"
+    if "ogva" in n or "griglia_autonomia" in n or "ogva" in i or "griglia_autonomia" in i:
+        return "ogva"
+    if "sabs" in n or "sabs" in i:
+        return "sabs"
+    if "oso" in n or "scheda_osservativa" in n or "oso" in i or "scheda_osservativa" in i:
+        return "oso"
+    return "altro"
+
 
 async def _find_evaluation_document(evaluation_id: str):
     """Recupera una valutazione supportando sia il campo applicativo che fallback legacy."""
@@ -77,19 +92,14 @@ async def _find_evaluation_document(evaluation_id: str):
         if eval_doc:
             return eval_doc
 
-    # Fallback ultra-tollerante per documenti legacy/importati da backup:
-    # confronta in memoria i principali campi identificativi come stringhe.
-    _logger.warning("[_find_evaluation_document] Fallback full-scan per id '%s' — documento legacy senza indice applicabile", evaluation_id)
-    async for doc in evaluations_collection.find({}):
-        doc_identifiers = [
-            doc.get("id_valutazione"),
-            doc.get("idValutazione"),
-            doc.get("id"),
-            doc.get("_id"),
-        ]
-        if any(str(value) == evaluation_id for value in doc_identifiers if value is not None):
-            return doc
-
+    # Nessun documento trovato con i campi indicizzati: log warning e restituisce None.
+    # Il full-scan sull'intera collection è stato rimosso (P-05): documenti con schema
+    # non standard devono essere migrati tramite lo script di manutenzione DB.
+    _logger.warning(
+        "[_find_evaluation_document] id='%s' non trovato con nessun campo indicizzato."
+        " Il documento potrebbe avere uno schema non standard: verificare e migrare.",
+        evaluation_id,
+    )
     return None
 
 
@@ -194,7 +204,7 @@ def _hydrate_scale_doc(scale_doc: Optional[dict]) -> dict:
 
 @public_admin_router.post("/auth/login", tags=["Admin - Auth"])
 @_limiter.limit("10/minute")
-async def auth_login(request: Request, payload: LoginRequest):
+async def auth_login(_request: Request, payload: LoginRequest):
     """
     Endpoint pubblico di login. Verifica username+password con bcrypt,
     restituisce un JWT con role e ai_enabled.
@@ -209,18 +219,6 @@ async def auth_login(request: Request, payload: LoginRequest):
     role = user_doc.get("role", "viewer")
     ai_enabled = user_doc.get("ai_enabled", False)
 
-    # Log accesso operatore (mantiene il log su file per backward-compat ed estende a tutti)
-    client_ip = request.client.host if request.client else "Sconosciuto"
-    x_forwarded_for = request.headers.get("X-Forwarded-For")
-    if x_forwarded_for:
-        client_ip = x_forwarded_for.split(",")[0].strip()
-    auth_manager.log_viewer_connection(
-        username=user_doc["username"],
-        role=role,
-        ip_address=client_ip,
-        device_name=payload.device_id
-    )
-
     token = auth_module.create_access_token(
         username=user_doc["username"],
         role=role,
@@ -232,13 +230,6 @@ async def auth_login(request: Request, payload: LoginRequest):
         "ai_enabled": ai_enabled,
         "username": user_doc["username"],
     }
-
-@admin_router.get("/auth/logs", tags=["Admin - Auth"])
-async def get_viewer_logs(auth: dict = Depends(verify_auth)):
-    if auth["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Solo l'admin può leggere i log di connessione")
-    return auth_manager.get_viewer_logs()
-
 
 # ── CRUD Utenze ─────────────────────────────────────────────────────────────
 
@@ -322,11 +313,12 @@ async def get_patients(
     page_size: int = Query(default=50, ge=1, le=200, description="Elementi per pagina"),
     search: Optional[str] = Query(default=None, description="Ricerca su nome e cognome"),
     status: Optional[str] = Query(default="active", pattern="^(active|archived|all)$", description="Filtro stato utente"),
+    filter: Optional[str] = Query(default=None, pattern="^(scaduti|in_scadenza|incompleti|mai_valutati)$", description="Filtro semantico sullo stato delle scale"),
+    validity_pos: int = Query(default=12, ge=1, description="Mesi di validità POS/generica"),
+    validity_sm: int = Query(default=12, ge=1, description="Mesi di validità San Martín"),
+    validity_sis: int = Query(default=36, ge=1, description="Mesi di validità SIS"),
 ):
-    # Migrazione automatica dei vecchi documenti sprovvisti del campo 'attivo'
-    await patients_collection.update_many({"attivo": {"$exists": False}}, {"$set": {"attivo": True}})
-
-    # Costruzione query filtro
+    # Costruzione query filtro stato attivo/archiviato
     query: dict = {}
     if status == "active":
         query["attivo"] = True
@@ -337,6 +329,71 @@ async def get_patients(
     if search and search.strip():
         regex = {"$regex": search.strip(), "$options": "i"}
         query["$or"] = [{"nome": regex}, {"cognome": regex}]
+
+    # ── Filtri semantici server-side ────────────────────────────────────────
+    if filter in ("scaduti", "in_scadenza", "incompleti", "mai_valutati"):
+        now = datetime.now(timezone.utc)
+
+        # Calcola le soglie di scadenza per ciascun tipo di scala
+        def _cutoff(months: int) -> datetime:
+            return now - timedelta(days=months * 30)
+
+        cutoff_pos = _cutoff(validity_pos)
+        cutoff_sm = _cutoff(validity_sm)
+        cutoff_sis = _cutoff(validity_sis)
+
+        # Campi data delle scale nel documento paziente
+        SCALE_FIELDS = [
+            ("ultimo_pos_compilato", cutoff_pos),
+            ("ultimo_san_martin_compilato", cutoff_sm),
+            ("ultimo_sis_compilato", cutoff_sis),
+            ("ultimo_ogva_compilato", cutoff_pos),
+            ("ultimo_sabs_compilato", cutoff_pos),
+            ("ultimo_oso_compilato", cutoff_pos),
+        ]
+
+        if filter == "mai_valutati":
+            # Tutte le date di scala sono null o mancanti
+            query["$and"] = [
+                {"$or": [{f: None}, {f: {"$exists": False}}, {f: ""}]}
+                for f, _ in SCALE_FIELDS
+            ]
+
+        elif filter == "incompleti":
+            # Almeno una data di scala è null o mancante
+            query["$or"] = [
+                {"$or": [{f: None}, {f: {"$exists": False}}, {f: ""}]}
+                for f, _ in SCALE_FIELDS
+            ]
+
+        elif filter == "scaduti":
+            # Almeno una scala presente è scaduta (data < cutoff)
+            scaduti_conditions = []
+            for field, cutoff in SCALE_FIELDS:
+                # Il campo esiste, non è null, ed è precedente alla soglia
+                scaduti_conditions.append({
+                    field: {
+                        "$nin": [None, ""],
+                        "$lt": cutoff.isoformat()
+                    }
+                })
+            query["$or"] = scaduti_conditions
+
+        elif filter == "in_scadenza":
+            # Almeno una scala presente è in scadenza (cutoff <= data < cutoff + 30gg warning)
+            warning_days = 30
+            in_scadenza_conditions = []
+            for field, cutoff in SCALE_FIELDS:
+                warning_cutoff = cutoff + timedelta(days=warning_days)
+                in_scadenza_conditions.append({
+                    "$and": [
+                        {field: {"$ne": None}},
+                        {field: {"$ne": ""}},
+                        {field: {"$gte": cutoff.isoformat()}},
+                        {field: {"$lt": warning_cutoff.isoformat()}},
+                    ]
+                })
+            query["$or"] = in_scadenza_conditions
 
     total = await patients_collection.count_documents(query)
     skip = (page - 1) * page_size
@@ -401,32 +458,17 @@ async def get_patients(
             data_val = ev.get("data_compilazione")
             data_str = data_val.isoformat() if isinstance(data_val, datetime) else (str(data_val) if data_val else None)
 
-            if not pat_dict.get("ultimo_pos_compilato") and ("pos" in scale_name or "pos" in scale_id_str.lower()):
-                pat_dict["ultimo_pos_compilato"] = data_str
-
-            scale_name_clean = scale_name.replace('í', 'i').replace('ì', 'i')
-            if not pat_dict.get("ultimo_san_martin_compilato") and ("martin" in scale_name_clean or "martin" in scale_id_str.lower()):
-                pat_dict["ultimo_san_martin_compilato"] = data_str
-
-            if not pat_dict.get("ultimo_sis_compilato") and ("sis" in scale_name or "sis" in scale_id_str.lower()):
-                pat_dict["ultimo_sis_compilato"] = data_str
-
-            if not pat_dict.get("ultimo_ogva_compilato") and (
-                "ogva" in scale_name or "griglia_autonomia" in scale_name or
-                "autonomie" in scale_name or "ogva" in scale_id_str.lower() or
-                "griglia_autonomia" in scale_id_str.lower()
-            ):
-                pat_dict["ultimo_ogva_compilato"] = data_str
-
-            if not pat_dict.get("ultimo_sabs_compilato") and ("sabs" in scale_name or "sabs" in scale_id_str.lower()):
-                pat_dict["ultimo_sabs_compilato"] = data_str
-
-            if not pat_dict.get("ultimo_oso_compilato") and (
-                "oso" in scale_name or "scheda_osservativa" in scale_name or
-                "scheda osservativa" in scale_name or "oso" in scale_id_str.lower() or
-                "scheda_osservativa" in scale_id_str.lower()
-            ):
-                pat_dict["ultimo_oso_compilato"] = data_str
+            scale_type = _classify_scale(scale_name, scale_id_str)
+            field_map = {
+                "pos": "ultimo_pos_compilato",
+                "san_martin": "ultimo_san_martin_compilato",
+                "sis": "ultimo_sis_compilato",
+                "ogva": "ultimo_ogva_compilato",
+                "sabs": "ultimo_sabs_compilato",
+                "oso": "ultimo_oso_compilato",
+            }
+            if scale_type in field_map and not pat_dict.get(field_map[scale_type]):
+                pat_dict[field_map[scale_type]] = data_str
 
             if (pat_dict.get("ultimo_pos_compilato") and
                     pat_dict.get("ultimo_san_martin_compilato") and
@@ -457,14 +499,15 @@ async def create_patient(patient: Patient, auth_context: dict = Depends(verify_a
         if existing:
             raise HTTPException(status_code=400, detail="Utente con questo ID già esistente")
     await patients_collection.insert_one(patient_dict)
-    
+    _invalidate_dashboard_cache()
+
     await log_audit(
-        "CREAZIONE_UTENTE", 
-        auth_context["username"], 
-        f"Creato nuovo utente: {patient.nome} {patient.cognome}", 
+        "CREAZIONE_UTENTE",
+        auth_context["username"],
+        f"Creato nuovo utente: {patient.nome} {patient.cognome}",
         patient.id
     )
-    
+
     return patient
 
 @admin_router.put("/patients/{id}", response_model=Patient, tags=["Admin - Patients"])
@@ -499,7 +542,8 @@ async def delete_patient(id: str, auth_context: dict = Depends(verify_auth)):
     result = await patients_collection.delete_one({"id": id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Utente non trovato")
-        
+    _invalidate_dashboard_cache()
+
     await log_audit(
         "CANCELLAZIONE_UTENTE", 
         auth_context["username"], 
@@ -549,9 +593,6 @@ async def save_patient_ai_analysis(id_patient: str, payload: AiAnalysisCreate, a
     )
     
     return analysis
-
-class AiAnalysisUpdate(BaseModel):
-    notes: Optional[str] = None
 
 @admin_router.put("/patients/ai-analyses/{id_analysis}", tags=["Admin - AI Analyses"])
 async def update_ai_analysis(id_analysis: str, payload: AiAnalysisUpdate, auth_context: dict = Depends(verify_auth)):
@@ -950,10 +991,6 @@ async def download_evaluation_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
-class AiPdfRequest(BaseModel):
-    patient: dict
-    report: str
-
 @admin_router.post("/evaluations/ai-analysis-pdf", tags=["Admin - Evaluations"])
 async def download_ai_analysis_pdf(request: AiPdfRequest):
     pdf_bytes = await asyncio.to_thread(generate_ai_analysis_pdf, request.patient, request.report)
@@ -1002,11 +1039,14 @@ async def get_aggregated_evaluation(patient_id: str, scale_id: str):
     if not eval_docs:
         raise HTTPException(status_code=404, detail="Nessuna valutazione trovata")
 
+    # Carica tutte le scale usate in una sola query invece di N find_one (P-03)
+    scale_ids_needed = list({e["id_scala"] for e in eval_docs if e.get("id_scala")})
+    raw_scales = await scales_collection.find({"id": {"$in": scale_ids_needed}}).to_list(length=None)
+    _scale_cache: dict = {s["id"]: _hydrate_scale_doc(s) for s in raw_scales if s.get("id")}
+
     history = []
     for eval_doc in eval_docs:
-        scale_doc = _hydrate_scale_doc(
-            await scales_collection.find_one({"id": eval_doc["id_scala"]})
-        )
+        scale_doc = _scale_cache.get(eval_doc.get("id_scala"))
         domain_map = build_domain_map(scale_doc or {})
         if not domain_map:
             domain_map = DOMINI_POS
@@ -1106,6 +1146,14 @@ async def get_settings(auth: dict = Depends(verify_auth)):
     return AppSettings()
 
 
+import time as _time
+_dashboard_cache: dict = {"data": None, "ts": 0.0}
+_DASHBOARD_CACHE_TTL = 300  # 5 minuti
+
+def _invalidate_dashboard_cache() -> None:
+    _dashboard_cache["data"] = None
+    _dashboard_cache["ts"] = 0.0
+
 @admin_router.get("/dashboard-stats", tags=["Admin - Dashboard"])
 async def get_dashboard_stats():
     """
@@ -1115,9 +1163,12 @@ async def get_dashboard_stats():
     - Distribuzione valutazioni per tipo di scala
     - Trend degli ultimi 6 mesi (valutazioni mensili per scala)
     - Lista degli ultimi alert (max 5) di pazienti da rivalutare urgentemente
+    Risultato in cache per 5 minuti (P-01).
     """
+    if _dashboard_cache["data"] is not None and (_time.time() - _dashboard_cache["ts"]) < _DASHBOARD_CACHE_TTL:
+        return _dashboard_cache["data"]
+
     try:
-        import re
         def parse_eval_date(ev_doc):
             d = ev_doc.get("data_compilazione")
             if not d:
@@ -1246,13 +1297,12 @@ async def get_dashboard_stats():
                 scale_id_str = str(scale_id) if scale_id else ""
                 scale_name = scale_names.get(scale_id_str) or scale_names.get(str(scale_id)) or scale_id_str or ""
                 scale_name = scale_name.lower()
-                scale_name_clean = scale_name.replace('í', 'i').replace('ì', 'i')
-                
-                if "pos" in scale_name or "pos" in scale_id_str.lower():
+                scale_type = _classify_scale(scale_name, scale_id_str)
+                if scale_type == "pos":
                     pat_pos_evals.append(ev)
-                elif "martin" in scale_name_clean or "martin" in scale_id_str.lower():
+                elif scale_type == "san_martin":
                     pat_sm_evals.append(ev)
-                elif "sis" in scale_name or "sis" in scale_id_str.lower():
+                elif scale_type == "sis":
                     pat_sis_evals.append(ev)
             
             # --- Valuta POS ---
@@ -1591,7 +1641,7 @@ async def get_dashboard_stats():
                     pass
             demographics["fasce_eta"][eta_fascia] += 1
             
-        return {
+        result = {
             "totale_utenze": totale_pazienti,
             "totale_utenze_attive": totale_pazienti_attivi,
             "totale_valutazioni_eseguite": totale_valutazioni,
@@ -1618,6 +1668,9 @@ async def get_dashboard_stats():
             "ultimi_alert": ultimi_alert,
             "demographics": demographics
         }
+        _dashboard_cache["data"] = result
+        _dashboard_cache["ts"] = _time.time()
+        return result
     except Exception as e:
         import traceback
         tb_str = traceback.format_exc()
@@ -1649,6 +1702,14 @@ async def get_dashboard_stats():
             "ultimi_alert": [],
             "error_traceback": tb_str
         }
+
+
+@admin_router.delete("/dashboard-stats/cache", tags=["Admin - Dashboard"])
+async def invalidate_dashboard_cache(_current_user: dict = Depends(auth_module.verify_auth)):
+    """Invalida la cache delle statistiche dashboard (utile dopo import dati)."""
+    _dashboard_cache["data"] = None
+    _dashboard_cache["ts"] = 0.0
+    return {"message": "Cache dashboard invalidata"}
 
 
 # ─── DATABASE EXPORT / IMPORT ────────────────────────────────────────────────
@@ -1731,6 +1792,8 @@ async def import_database(file: UploadFile = File(...)):
             await coll.insert_many(docs)
             imported_counts[coll_name] = len(docs)
 
+    _invalidate_dashboard_cache()
+
     return {
         "message": "Database importato con successo",
         "collections": imported_counts,
@@ -1739,121 +1802,97 @@ async def import_database(file: UploadFile = File(...)):
 
 @admin_router.get("/export-patients-csv", tags=["Admin - Database"])
 async def export_patients_csv():
-    """Esporta la lista utenti e il loro stato documentale in formato CSV per Excel."""
+    """Esporta la lista utenti e il loro stato documentale in formato CSV per Excel.
+    Usa un generator asincrono (P-02): la risposta inizia subito, senza caricare
+    tutto il CSV in RAM prima dell'invio.
+    """
     import csv
     from io import StringIO
-    
-    patients_cursor = patients_collection.find({})
-    patients = await patients_cursor.to_list(length=2000)
-    
-    # Recupera tutte le scale per mappare l'ID al nome
-    scales_cursor = scales_collection.find({})
-    scales_list = await scales_cursor.to_list(length=100)
-    scale_map = {}
-    for s in scales_list:
-        nome_lower = s["nome"].lower()
-        scale_map[s["id"]] = nome_lower
-        mongo_id = s.get("_id")
-        if mongo_id:
-            scale_map[str(mongo_id)] = nome_lower
 
-    # Pre-carica TUTTE le valutazioni (1 query bulk, non N)
-    all_evals_csv = await evaluations_collection.find({}).sort("data_compilazione", -1).to_list(length=50000)
-    evals_by_patient_csv: dict = {}
-    for ev in all_evals_csv:
+    # Scale in memoria (≤100 documenti, trascurabili)
+    scales_list = await scales_collection.find({}).to_list(length=100)
+    scale_map: dict = {}
+    for s in scales_list:
+        nome_lower = s.get("nome", "").lower()
+        if s.get("id"):
+            scale_map[s["id"]] = nome_lower
+        if s.get("_id"):
+            scale_map[str(s["_id"])] = nome_lower
+
+    # Valutazioni raggruppate per paziente: 1 bulk query con solo i campi necessari
+    # (id_paziente, id_scala, data_compilazione) per minimizzare il payload RAM.
+    evals_projection = {"id_paziente": 1, "id_scala": 1, "data_compilazione": 1, "_id": 0}
+    evals_cursor = evaluations_collection.find({}, evals_projection).sort("data_compilazione", -1)
+    evals_by_patient: dict = {}
+    async for ev in evals_cursor:
         pid = ev.get("id_paziente")
         if pid:
-            evals_by_patient_csv.setdefault(pid, []).append(ev)
+            evals_by_patient.setdefault(pid, []).append(ev)
 
-    output = StringIO()
-    # Aggiungi il BOM (Byte Order Mark) per far riconoscere a Excel il formato UTF-8 automaticamente
-    output.write("﻿")
-    writer = csv.writer(output, delimiter=";")
-    writer.writerow([
-        "Nome", "Cognome", "Sesso", "Data di Nascita",
-        "Ultimo OGVA", "Ultimo SABS", "Ultimo OSO",
-        "Ultimo POS", "Ultimo San Martin", "Ultima SIS"
-    ])
+    def _row_for_patient(pat: dict) -> list:
+        pat_id = pat.get("id")
+        evals = evals_by_patient.get(pat_id, [])
 
-    for pat in patients:
-        pat_id = pat["id"]
-        evals = evals_by_patient_csv.get(pat_id, [])
-
-        ultimo_pos = None
-        ultimo_sm = None
-        ultima_sis = None
-        ultimo_ogva = None
-        ultimo_sabs = None
-        ultimo_oso = None
+        ultimo_pos = ultimo_sm = ultima_sis = ultimo_ogva = ultimo_sabs = ultimo_oso = None
 
         for ev in evals:
             scale_id = ev.get("id_scala")
             scale_id_str = str(scale_id) if scale_id else ""
             scale_name = scale_map.get(scale_id, scale_map.get(scale_id_str, "")).lower()
-
             data_val = ev.get("data_compilazione")
             data_str = data_val.isoformat() if isinstance(data_val, datetime) else (str(data_val) if data_val else "")
 
-            if not ultimo_pos and ("pos" in scale_name or "pos" in scale_id_str.lower()):
+            scale_type = _classify_scale(scale_name, scale_id_str)
+            if not ultimo_pos and scale_type == "pos":
                 ultimo_pos = data_str
-
-            scale_name_clean = scale_name.replace("í", "i").replace("ì", "i")
-            if not ultimo_sm and ("martin" in scale_name_clean or "martin" in scale_id_str.lower()):
+            elif not ultimo_sm and scale_type == "san_martin":
                 ultimo_sm = data_str
-
-            if not ultima_sis and ("sis" in scale_name or "sis" in scale_id_str.lower()):
+            elif not ultima_sis and scale_type == "sis":
                 ultima_sis = data_str
-
-            if not ultimo_ogva and (
-                "ogva" in scale_name or "griglia_autonomia" in scale_name or
-                "autonomie" in scale_name or "ogva" in scale_id_str.lower() or
-                "griglia_autonomia" in scale_id_str.lower()
-            ):
+            elif not ultimo_ogva and scale_type == "ogva":
                 ultimo_ogva = data_str
-
-            if not ultimo_sabs and ("sabs" in scale_name or "sabs" in scale_id_str.lower()):
+            elif not ultimo_sabs and scale_type == "sabs":
                 ultimo_sabs = data_str
-
-            if not ultimo_oso and (
-                "oso" in scale_name or "scheda_osservativa" in scale_name or
-                "scheda osservativa" in scale_name or "oso" in scale_id_str.lower() or
-                "scheda_osservativa" in scale_id_str.lower()
-            ):
+            elif not ultimo_oso and scale_type == "oso":
                 ultimo_oso = data_str
-
             if ultimo_pos and ultimo_sm and ultima_sis and ultimo_ogva and ultimo_sabs and ultimo_oso:
                 break
 
-        nome = pat.get("nome", "")
-        cognome = pat.get("cognome", "")
-        sesso = pat.get("sesso", "")
-        data_nascita = pat.get("data_nascita", pat.get("dataNascita", ""))
+        # Fallback ai campi denormalizzati nel documento paziente
+        ultimo_pos = ultimo_pos or pat.get("ultimo_pos_compilato", pat.get("ultimoPosCompilato", ""))
+        ultimo_sm = ultimo_sm or pat.get("ultimo_san_martin_compilato", pat.get("ultimoSanMartinCompilato", ""))
+        ultima_sis = ultima_sis or pat.get("ultimo_sis_compilato", pat.get("ultimaSisCompilata", ""))
+        ultimo_ogva = ultimo_ogva or pat.get("ultimo_ogva_compilato", "")
+        ultimo_sabs = ultimo_sabs or pat.get("ultimo_sabs_compilato", "")
+        ultimo_oso = ultimo_oso or pat.get("ultimo_oso_compilato", "")
 
-        if not ultimo_pos:
-            ultimo_pos = pat.get("ultimo_pos_compilato", pat.get("ultimoPosCompilato", ""))
-        if not ultimo_sm:
-            ultimo_sm = pat.get("ultimo_san_martin_compilato", pat.get("ultimoSanMartinCompilato", ""))
-        if not ultima_sis:
-            ultima_sis = pat.get("ultimo_sis_compilato", pat.get("ultimaSisCompilata", ""))
-        if not ultimo_ogva:
-            ultimo_ogva = pat.get("ultimo_ogva_compilato", "")
-        if not ultimo_sabs:
-            ultimo_sabs = pat.get("ultimo_sabs_compilato", "")
-        if not ultimo_oso:
-            ultimo_oso = pat.get("ultimo_oso_compilato", "")
-
-        writer.writerow([
-            nome, cognome, sesso, data_nascita,
+        return [
+            pat.get("nome", ""), pat.get("cognome", ""),
+            pat.get("sesso", ""), pat.get("data_nascita", pat.get("dataNascita", "")),
             ultimo_ogva, ultimo_sabs, ultimo_oso,
-            ultimo_pos, ultimo_sm, ultima_sis
-        ])
-    csv_bytes = output.getvalue().encode('utf-8')
+            ultimo_pos, ultimo_sm, ultima_sis,
+        ]
+
+    async def _csv_generator():
+        buf = StringIO()
+        writer = csv.writer(buf, delimiter=";")
+        # BOM per Excel UTF-8
+        buf.write("﻿")
+        writer.writerow(["Nome", "Cognome", "Sesso", "Data di Nascita",
+                         "Ultimo OGVA", "Ultimo SABS", "Ultimo OSO",
+                         "Ultimo POS", "Ultimo San Martin", "Ultima SIS"])
+        yield buf.getvalue().encode("utf-8")
+
+        async for pat in patients_collection.find({}):
+            buf.seek(0); buf.truncate(0)
+            writer.writerow(_row_for_patient(pat))
+            yield buf.getvalue().encode("utf-8")
+
     filename = f"autify_utenti_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
-    
     return StreamingResponse(
-        io.BytesIO(csv_bytes),
+        _csv_generator(),
         media_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 
@@ -1868,6 +1907,7 @@ async def delete_evaluation(evaluation_id: str):
     result = await evaluations_collection.delete_one(selector)
     if result.deleted_count == 0:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Errore nell'eliminazione della valutazione")
+    _invalidate_dashboard_cache()
 
     return {"status": "success", "message": "Valutazione eliminata con successo"}
 
@@ -1877,14 +1917,16 @@ async def delete_evaluation(evaluation_id: str):
 # ==========================================
 
 @client_router.get("/scales", response_model=List[Scale], tags=["Client - Scales"])
-async def get_scales():
+@_limiter.limit("60/minute")
+async def get_scales(_request: Request):
     """Restituisce l'elenco delle scale disponibili per il data entry"""
     cursor = scales_collection.find({})
     scales = await cursor.to_list(length=100)
     return scales
 
 @client_router.get("/scales/{scale_id}", response_model=Scale, tags=["Client - Scales"])
-async def get_scale_by_id(scale_id: str):
+@_limiter.limit("60/minute")
+async def get_scale_by_id(_request: Request, scale_id: str):
     """Restituisce i dettagli completi di una singola scala"""
     scale = await scales_collection.find_one({"id": scale_id})
     if not scale:
@@ -1892,16 +1934,18 @@ async def get_scale_by_id(scale_id: str):
     return scale
 
 @client_router.post("/evaluations", response_model=Evaluation, status_code=status.HTTP_201_CREATED, tags=["Client - Evaluations"])
-async def create_evaluation(evaluation: Evaluation):
+@_limiter.limit("20/minute")
+async def create_evaluation(_request: Request, evaluation: Evaluation):
     """Salva una nuova valutazione compilata nel database"""
     eval_dict = evaluation.model_dump()
     if not eval_dict.get("data_compilazione"):
         eval_dict["data_compilazione"] = datetime.now(timezone.utc)
     evaluation = Evaluation(**eval_dict)
     result = await evaluations_collection.insert_one(eval_dict)
-    
+
     if not result.inserted_id:
         raise HTTPException(status_code=500, detail="Errore nel salvataggio della valutazione")
+    _invalidate_dashboard_cache()
         
     # Salva il log di audit
     operatore = eval_dict.get("nome_operatore", "Operatore Sconosciuto")
@@ -1940,7 +1984,8 @@ async def get_audit_logs(limit: int = 200):
     return logs
 
 @client_router.get("/patients", response_model=List[Patient], tags=["Client - Patients"])
-async def get_client_patients():
+@_limiter.limit("30/minute")
+async def get_client_patients(_request: Request):
     """Recupero pazienti per la selezione prima del wizard"""
     cursor = patients_collection.find({})
     patients = await cursor.to_list(length=1000)

@@ -1,5 +1,23 @@
 # Changelog
 
+## [3.0.0] - 2026-06-19
+
+### Sicurezza e Architettura — Rilascio Maggiore
+
+- **C-01 · Autenticazione JWT**: rimosso il meccanismo legacy basato su password condivisa in chiaro (`X-Admin-Password`). Il backend ora emette token JWT firmati con `JWT_SECRET_KEY` (obbligatoria — il server si rifiuta di avviarsi se assente). Tutti gli endpoint protetti verificano il token via `Bearer` header. Sessione con scadenza 8 ore.
+- **C-02 · Gestione utenti**: aggiunto sistema multi-utente con ruoli `admin`/`viewer`. Endpoint `/auth/login`, `/auth/users` (CRUD admin). Password salvate con hash bcrypt (rounds=12), mai in chiaro nel DB.
+- **C-03 · Audit log**: ogni operazione sensibile (login, creazione/modifica/eliminazione paziente, salvataggio valutazione) viene tracciata in una collezione `audit_logs` con utente, timestamp e IP.
+- **L-01 · Backend lifespan**: migrato da `@app.on_event("startup")` deprecato al context manager `lifespan` (FastAPI moderno).
+- **L-02 · Rimozione auth legacy**: rimosso `auth_manager.py` e l'header `X-Admin-Password`; tutta l'autenticazione passa esclusivamente da JWT.
+
+### Refactoring e Qualità del Codice
+
+- **A-03 · DemographicsForm widget**: estratto il form dati socio-demografici San Martín da `wizard_screen.dart` in un widget autonomo `lib/widgets/demographics_form.dart`. Introdotta la classe typed `DemographicsData` con `toJson()`. `wizard_screen.dart` ridotto da 2133 a 1547 righe; eliminati 11 `TextEditingController` e 14 `bool` dallo stato del wizard.
+- **Lint e deprecazioni**: risolte 150+ issue statiche — `unnecessary_cast`, `unnecessary_non_null_assertion`, `dead_code`, `unused_import`. Sostituiti parametri deprecati: `DropdownButtonFormField.value` → `initialValue`, `Switch.activeColor` → `activeThumbColor`. Zero warning/error da `flutter analyze`.
+- **Aggiunto `.env.example`**: template con tutte le variabili d'ambiente obbligatorie per facilitare il deploy su nuovi ambienti.
+
+---
+
 ## [2.23.4] - 2026-06-05
 
 ### Bug Fix — Accessibilità PWA Mobile

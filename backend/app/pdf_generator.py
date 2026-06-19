@@ -5,6 +5,7 @@ Supporta sia scale con scoring psicometrico (San Martín: radar chart, QoL, perc
 sia scale semplici (POS: bar chart orizzontale).
 """
 import io
+import os
 from datetime import datetime, timezone
 from typing import List, Dict, Optional
 
@@ -62,7 +63,6 @@ def _wrap_label(text: str, max_chars: int = 16) -> str:
     mid = len(text) // 2
     return text[:mid] + '\n' + text[mid:]
 
-import os
 from pathlib import Path
 
 def _make_letterhead(styles) -> Table:
@@ -80,9 +80,12 @@ def _make_letterhead(styles) -> Table:
     else:
         left_elem = Paragraph("<b>Logo Mancante</b>", styles['Normal'])
         
-    foundation_text = """<b>FONDAZIONE IL TIGLIO ONLUS</b><br/>
-P. IVA: 02095510182<br/>
-Cod. Fisc: 96046680185"""
+    org_name  = os.getenv("ORG_NAME",    "FONDAZIONE IL TIGLIO ONLUS")
+    org_piva  = os.getenv("ORG_PIVA",    "02095510182")
+    org_cf    = os.getenv("ORG_CODFISC", "96046680185")
+    foundation_text = f"""<b>{org_name}</b><br/>
+P. IVA: {org_piva}<br/>
+Cod. Fisc: {org_cf}"""
     
     right_elem = Paragraph(
         foundation_text, 

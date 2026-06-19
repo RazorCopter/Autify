@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:html' as html;
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -33,6 +33,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
   bool _isGridView = true;
   bool _isExporting = false;
   String _statusFilter = 'active'; // 'active', 'archived', 'all'
+  String? _semanticFilter; // null | 'scaduti' | 'in_scadenza' | 'incompleti' | 'mai_valutati'
   int _currentPage = 1;
   static const int _pageSize = 50;
   Timer? _debounceTimer;
@@ -44,11 +45,13 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
       _searchController.text = widget.initialSearchQuery!;
     }
     _refreshPatients();
+    _loadScales();
   }
 
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -58,20 +61,17 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
       _patientsFuture = _apiService.getPatients(
         page: _currentPage,
         pageSize: _pageSize,
-        search: _getServerSearch(),
+        search: _searchController.text.trim().isEmpty ? null : _searchController.text.trim(),
         status: _statusFilter,
+        filter: _semanticFilter,
       );
     });
-    _loadScales();
   }
 
-  // Invia al server solo ricerche per nome/cognome; i filtri semantici
-  // (scaduti, in scadenza, ecc.) vengono gestiti client-side sulla pagina.
-  String? _getServerSearch() {
-    final q = _searchController.text.trim();
-    const semanticFilters = {'scaduti', 'in scadenza', 'incompleti', 'mai valutati'};
-    if (q.isEmpty || semanticFilters.contains(q.toLowerCase())) return null;
-    return q;
+  void _setSemanticFilter(String? value) {
+    if (_semanticFilter == value) return;
+    setState(() => _semanticFilter = value);
+    _refreshPatients();
   }
 
   void _onSearchChanged(String val) {
@@ -121,6 +121,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
 
     final _formKey = GlobalKey<FormState>();
 
+    try {
     await showDialog<void>(
       context: context,
       builder: (ctx) => Dialog(
@@ -212,7 +213,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: selectedSesso,
+                        initialValue: selectedSesso,
                         decoration: const InputDecoration(
                           labelText: 'Sesso',
                           prefixIcon: Icon(Icons.wc_outlined),
@@ -301,7 +302,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                           Expanded(
                             flex: 2,
                             child: DropdownButtonFormField<String>(
-                              value: selectedSesso,
+                              initialValue: selectedSesso,
                               decoration: const InputDecoration(
                                 labelText: 'Sesso',
                                 prefixIcon: Icon(Icons.wc_outlined),
@@ -332,7 +333,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                         title: const Text('Utente Attivo', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
                         subtitle: const Text('Disattiva per archiviare l\'utente e rimuoverlo dalla lista attiva', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
                         value: attivoVal,
-                        activeColor: AppTheme.primaryColor,
+                        activeThumbColor: AppTheme.primaryColor,
                         contentPadding: EdgeInsets.zero,
                         onChanged: (val) {
                           setStateDialog(() {
@@ -396,6 +397,13 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
         ),
       ),
     );
+    } finally {
+      nomeController.dispose();
+      cognomeController.dispose();
+      pesoController.dispose();
+      dataNascitaController.dispose();
+      noteController.dispose();
+    }
   }
 
   Future<void> _confirmDelete(PatientModel patient) async {
@@ -541,101 +549,14 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                     }
 
                     final result = snapshot.data!;
-                    // I filtri semantici (scaduti, in scadenza, ecc.) restano client-side
-                    // sulla pagina corrente; la ricerca per nome/cognome è già server-side.
-                    final query = _searchController.text.toLowerCase().trim();
-                    var filteredList = List<PatientModel>.from(result.items);
-
-                    // Stato attivo/archiviato già filtrato server-side.
-                    // La ricerca per nome/cognome è già server-side.
-                    // Solo i filtri semantici speciali restano client-side.
-                    if (query.isNotEmpty) {
-                      if (query == 'scaduti') {
-                        final settings = context.read<SettingsNotifier>().settings;
-                        filteredList = filteredList.where((p) {
-                          final dates = [
-                            (p.ultimoPosCompilato, 'POS'),
-                            (p.ultimoSanMartinCompilato, 'SanMartín'),
-                            (p.ultimoSisCompilato, 'SIS'),
-                            (p.ultimoOgvaCompilato, 'OGVA'),
-                            (p.ultimoSabsCompilato, 'SABS'),
-                            (p.ultimoOsoCompilato, 'OSO'),
-                          ];
-                          for (final item in dates) {
-                            if (item.$1 != null && item.$1!.isNotEmpty) {
-                              try {
-                                final d = DateTime.parse(item.$1!);
-                                final s = ValidityCalculator.getStatus(
-                                  completionDate: d,
-                                  scaleType: item.$2,
-                                  currentSettings: settings,
-                                );
-                                if (s == EvaluationStatus.expired) return true;
-                              } catch (_) {}
-                            }
-                          }
-                          return false;
-                        }).toList();
-                      } else if (query == 'in scadenza') {
-                        final settings = context.read<SettingsNotifier>().settings;
-                        filteredList = filteredList.where((p) {
-                          final dates = [
-                            (p.ultimoPosCompilato, 'POS'),
-                            (p.ultimoSanMartinCompilato, 'SanMartín'),
-                            (p.ultimoSisCompilato, 'SIS'),
-                            (p.ultimoOgvaCompilato, 'OGVA'),
-                            (p.ultimoSabsCompilato, 'SABS'),
-                            (p.ultimoOsoCompilato, 'OSO'),
-                          ];
-                          for (final item in dates) {
-                            if (item.$1 != null && item.$1!.isNotEmpty) {
-                              try {
-                                final d = DateTime.parse(item.$1!);
-                                final s = ValidityCalculator.getStatus(
-                                  completionDate: d,
-                                  scaleType: item.$2,
-                                  currentSettings: settings,
-                                );
-                                if (s == EvaluationStatus.expiring) return true;
-                              } catch (_) {}
-                            }
-                          }
-                          return false;
-                        }).toList();
-                      } else if (query == 'incompleti') {
-                        filteredList = filteredList.where((p) {
-                          return p.ultimoPosCompilato == null || p.ultimoPosCompilato!.isEmpty ||
-                              p.ultimoSanMartinCompilato == null || p.ultimoSanMartinCompilato!.isEmpty ||
-                              p.ultimoSisCompilato == null || p.ultimoSisCompilato!.isEmpty ||
-                              p.ultimoOgvaCompilato == null || p.ultimoOgvaCompilato!.isEmpty ||
-                              p.ultimoSabsCompilato == null || p.ultimoSabsCompilato!.isEmpty ||
-                              p.ultimoOsoCompilato == null || p.ultimoOsoCompilato!.isEmpty;
-                        }).toList();
-                      } else if (query == 'mai valutati') {
-                        filteredList = filteredList.where((p) {
-                          return (p.ultimoPosCompilato == null || p.ultimoPosCompilato!.isEmpty) &&
-                              (p.ultimoSanMartinCompilato == null || p.ultimoSanMartinCompilato!.isEmpty) &&
-                              (p.ultimoSisCompilato == null || p.ultimoSisCompilato!.isEmpty) &&
-                              (p.ultimoOgvaCompilato == null || p.ultimoOgvaCompilato!.isEmpty) &&
-                              (p.ultimoSabsCompilato == null || p.ultimoSabsCompilato!.isEmpty) &&
-                              (p.ultimoOsoCompilato == null || p.ultimoOsoCompilato!.isEmpty);
-                        }).toList();
-                      } else {
-                        filteredList = filteredList.where((p) {
-                          final matchNome = p.nome.toLowerCase().contains(query);
-                          final matchCognome = p.cognome.toLowerCase().contains(query);
-                          final matchNote = (p.note ?? '').toLowerCase().contains(query);
-                          return matchNome || matchCognome || matchNote;
-                        }).toList();
-                      }
-                    }
-
-                    // Ordina per Cognome (Primario) e Nome (Secondario)
-                    filteredList.sort((a, b) {
-                      final comp = a.cognome.toLowerCase().compareTo(b.cognome.toLowerCase());
-                      if (comp != 0) return comp;
-                      return a.nome.toLowerCase().compareTo(b.nome.toLowerCase());
-                    });
+                    // Tutti i filtri sono già applicati server-side; il server restituisce
+                    // solo i pazienti che corrispondono a status + search + filter semantico.
+                    final filteredList = List<PatientModel>.from(result.items)
+                      ..sort((a, b) {
+                        final comp = a.cognome.toLowerCase().compareTo(b.cognome.toLowerCase());
+                        if (comp != 0) return comp;
+                        return a.nome.toLowerCase().compareTo(b.nome.toLowerCase());
+                      });
 
                     if (filteredList.isEmpty) {
                       return const Center(
@@ -744,7 +665,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                   radius: 15,
                   backgroundColor: color.withValues(alpha: 0.12),
                   child: Text(
-                    '${patient.nome[0].toUpperCase()}${patient.cognome[0].toUpperCase()}',
+                    '${patient.nome.isNotEmpty ? patient.nome[0].toUpperCase() : '?'}${patient.cognome.isNotEmpty ? patient.cognome[0].toUpperCase() : '?'}',
                     style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11),
                   ),
                 ),
@@ -1503,22 +1424,68 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
       ],
     );
 
+    final semanticChips = _buildSemanticFilterChips();
+
     if (isMobile) {
       return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           searchField,
           const SizedBox(height: 12),
           filters,
+          const SizedBox(height: 10),
+          semanticChips,
         ],
       );
     }
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: searchField),
-        const SizedBox(width: 16),
-        filters,
+        Row(
+          children: [
+            Expanded(child: searchField),
+            const SizedBox(width: 16),
+            filters,
+          ],
+        ),
+        const SizedBox(height: 10),
+        semanticChips,
       ],
+    );
+  }
+
+  Widget _buildSemanticFilterChips() {
+    const chips = [
+      ('scaduti', 'Scaduti', Icons.warning_amber_rounded, Color(0xFFD32F2F)),
+      ('in_scadenza', 'In scadenza', Icons.schedule_rounded, Color(0xFFF57C00)),
+      ('incompleti', 'Incompleti', Icons.incomplete_circle_rounded, Color(0xFF1565C0)),
+      ('mai_valutati', 'Mai valutati', Icons.person_search_rounded, Color(0xFF6A1B9A)),
+    ];
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      children: chips.map((chip) {
+        final (value, label, icon, color) = chip;
+        final selected = _semanticFilter == value;
+        return FilterChip(
+          label: Text(label, style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : color,
+          )),
+          avatar: Icon(icon, size: 14, color: selected ? Colors.white : color),
+          selected: selected,
+          onSelected: (_) => _setSemanticFilter(selected ? null : value),
+          selectedColor: color,
+          backgroundColor: color.withValues(alpha: 0.08),
+          side: BorderSide(color: selected ? color : color.withValues(alpha: 0.3)),
+          checkmarkColor: Colors.white,
+          showCheckmark: false,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        );
+      }).toList(),
     );
   }
 }

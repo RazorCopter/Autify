@@ -3,7 +3,14 @@ import os
 
 MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
 
-client = AsyncIOMotorClient(MONGODB_URL)
+client = AsyncIOMotorClient(
+    MONGODB_URL,
+    maxPoolSize=20,
+    minPoolSize=2,
+    serverSelectionTimeoutMS=5000,
+    connectTimeoutMS=5000,
+    socketTimeoutMS=30000,
+)
 database = client.autanalysis
 
 # Collezioni

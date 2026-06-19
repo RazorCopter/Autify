@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -21,7 +22,7 @@ class MockHttpClient implements HttpClient {
   @override
   Duration idleTimeout = const Duration(seconds: 15);
   @override
-  MaxConnectionsPerHost? maxConnectionsPerHost;
+  int? maxConnectionsPerHost;
   @override
   String? userAgent;
 
@@ -46,6 +47,16 @@ class MockHttpClient implements HttpClient {
   }
 
   @override
+  Future<HttpClientRequest> head(String host, int port, String path) {
+    return Future.value(MockHttpClientRequest('HEAD', path));
+  }
+
+  @override
+  Future<HttpClientRequest> patch(String host, int port, String path) {
+    return Future.value(MockHttpClientRequest('PATCH', path));
+  }
+
+  @override
   Future<HttpClientRequest> getUrl(Uri url) => get(url.host, url.port, url.path);
   @override
   Future<HttpClientRequest> postUrl(Uri url) => post(url.host, url.port, url.path);
@@ -53,6 +64,10 @@ class MockHttpClient implements HttpClient {
   Future<HttpClientRequest> putUrl(Uri url) => put(url.host, url.port, url.path);
   @override
   Future<HttpClientRequest> deleteUrl(Uri url) => delete(url.host, url.port, url.path);
+  @override
+  Future<HttpClientRequest> headUrl(Uri url) => head(url.host, url.port, url.path);
+  @override
+  Future<HttpClientRequest> patchUrl(Uri url) => patch(url.host, url.port, url.path);
 
   @override
   Future<HttpClientRequest> open(String method, String host, int port, String path) =>
@@ -124,9 +139,19 @@ class MockHttpClientRequest implements HttpClientRequest {
   @override
   Future<HttpClientResponse> get done => Future.value(_response);
   @override
-  void destroy() {}
+  bool followRedirects = true;
   @override
-  set connectionKeepAliveDelay(Duration value) {}
+  int maxRedirects = 5;
+  @override
+  Uri get uri => Uri.parse('http://localhost/$path');
+  @override
+  HttpConnectionInfo? get connectionInfo => null;
+  @override
+  List<Cookie> get cookies => [];
+  @override
+  void abort([Object? exception, StackTrace? stackTrace]) {}
+  @override
+  Future<void> flush() => Future.value();
 }
 
 class MockHttpClientResponse extends Stream<List<int>> implements HttpClientResponse {
@@ -207,7 +232,7 @@ class MockHttpClientResponse extends Stream<List<int>> implements HttpClientResp
   @override
   HttpClientResponseCompressionState get compressionState => HttpClientResponseCompressionState.notCompressed;
   @override
-  List<Redirect> get redirects => [];
+  List<RedirectInfo> get redirects => [];
   @override
   bool get isRedirect => false;
   @override
@@ -220,11 +245,20 @@ class MockHttpClientResponse extends Stream<List<int>> implements HttpClientResp
   Future<Socket> detachSocket() => throw UnimplementedError();
   @override
   List<Cookie> get cookies => [];
+  @override
+  X509Certificate? get certificate => null;
+  @override
+  HttpConnectionInfo? get connectionInfo => null;
+  @override
+  Future<HttpClientResponse> redirect([String? method, Uri? url, bool? followLoops]) =>
+      throw UnimplementedError();
 }
 
 class MockHttpHeaders implements HttpHeaders {
   @override
   List<String>? operator [](String name) => [];
+  @override
+  String? value(String name) => null;
   @override
   void add(String name, Object value, {bool preserveHeaderCase = false}) {}
   @override
@@ -309,9 +343,9 @@ void main() {
       expect(find.text('Dati Valutazione'), findsOneWidget);
       expect(find.text('Compila i dati generali prima di iniziare'), findsOneWidget);
 
-      // Trova i campi di input
-      final operatoreField = find.widgetWithLabel(TextField, 'Nome Operatore');
-      final intervistatoField = find.widgetWithLabel(TextField, 'Nome Intervistata/o');
+      // Trova i campi di input (usa find.widgetWithText poiché widgetWithLabel è stato rimosso)
+      final operatoreField = find.widgetWithText(TextField, 'Nome Operatore');
+      final intervistatoField = find.widgetWithText(TextField, 'Nome Intervistata/o');
       expect(operatoreField, findsOneWidget);
       expect(intervistatoField, findsOneWidget);
 
@@ -342,7 +376,7 @@ void main() {
       // Proviamo a cliccare su "Avanti" prima di selezionare un'opzione e verifichiamo che non cambi pagina
       final nextBtn = find.widgetWithText(FilledButton, 'Avanti');
       expect(nextBtn, findsOneWidget);
-      
+
       // Il pulsante deve avere onPressed = null, quindi non abilitato. Nel Widget Test possiamo verificarlo:
       final nextBtnWidget = tester.widget<FilledButton>(nextBtn);
       expect(nextBtnWidget.enabled, isFalse);
@@ -369,7 +403,7 @@ void main() {
       // Trova il pulsante che ora dovrebbe mostrare "Salva Valutazione" al posto di "Avanti"
       final saveValBtn = find.widgetWithText(FilledButton, 'Salva Valutazione');
       expect(saveValBtn, findsOneWidget);
-      
+
       // Il pulsante deve essere inizialmente disabilitato
       final saveBtnWidget = tester.widget<FilledButton>(saveValBtn);
       expect(saveBtnWidget.enabled, isFalse);
@@ -389,9 +423,7 @@ void main() {
       await tester.tap(addNoteToggle);
       await tester.pumpAndSettle(); // Espande il campo di testo per la nota
 
-      final noteField = find.widgetWithLabel(TextField, 'Nota (opzionale)'); // Controlliamo l'hint text o input
-      // Nel codice del widget la nota usa una TextField con:
-      // label o hintText: 'Es. "Oggi era molto collaborativo, ha risposto con calma..."'
+      // Nel codice del widget la nota usa una TextField con hintText
       final textFieldNote = find.byType(TextField).last;
       await tester.enterText(textFieldNote, 'Nota clinica: esecuzione rapida.');
       await tester.pumpAndSettle();

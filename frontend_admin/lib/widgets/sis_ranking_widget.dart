@@ -89,8 +89,6 @@ class _SisRankingWidgetState extends State<SisRankingWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final isTablet = MediaQuery.of(context).size.width > 650;
-
     if (_top4Items.isEmpty) {
       return const Center(
         child: Padding(

@@ -59,7 +59,6 @@ class Sis3DItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isTablet = MediaQuery.of(context).size.width > 650;
 
     return Card(

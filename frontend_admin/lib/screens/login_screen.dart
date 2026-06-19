@@ -1,10 +1,10 @@
-import 'dart:html' as html;
+﻿import 'dart:html' as html;
+// ignore: uri_does_not_exist
 import 'dart:js_util' as js_util;
 import 'dart:ui' as ui_core;
 import 'dart:ui_web' as ui;
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import '../theme/app_theme.dart';
 import '../utils/responsive_helper.dart';
 import '../main.dart';
 
@@ -216,12 +216,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       margin: EdgeInsets.only(left: _isShaking ? 20.0 : 0.0, right: _isShaking ? 0.0 : 20.0),
                       padding: EdgeInsets.symmetric(horizontal: isMobile ? 24 : 36, vertical: isMobile ? 28 : 40),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.35), // Vetro scuro omogeneo con lo sfondo
+                        color: Colors.black.withValues(alpha: 0.35), // Vetro scuro omogeneo con lo sfondo
                         borderRadius: BorderRadius.circular(isMobile ? 24 : 32),
-                        border: Border.all(color: Colors.white.withOpacity(0.12), width: 1.5),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1.5),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.4),
+                            color: Colors.black.withValues(alpha: 0.4),
                             blurRadius: 48,
                             offset: const Offset(0, 16),
                           ),
@@ -236,7 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           decoration: BoxDecoration(
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.white.withOpacity(0.08),
+                                color: Colors.white.withValues(alpha: 0.08),
                                 blurRadius: 40,
                                 spreadRadius: 5,
                                 offset: const Offset(0, 4),
@@ -258,23 +258,23 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: const TextStyle(color: Colors.white, fontSize: 16),
                           decoration: InputDecoration(
                             labelText: 'Nome Utente',
-                            labelStyle: TextStyle(color: Colors.white.withOpacity(0.55)),
+                            labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
                             floatingLabelStyle: const TextStyle(color: Color(0xFF60A5FA), fontWeight: FontWeight.bold),
-                            prefixIcon: Icon(Icons.person_outline_rounded, size: 20, color: Colors.white.withOpacity(0.55)),
+                            prefixIcon: Icon(Icons.person_outline_rounded, size: 20, color: Colors.white.withValues(alpha: 0.55)),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.18)),
+                              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.18)),
+                              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
                               borderSide: const BorderSide(color: Color(0xFF60A5FA), width: 1.5),
                             ),
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.04),
+                            fillColor: Colors.white.withValues(alpha: 0.04),
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -286,14 +286,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: const TextStyle(color: Colors.white, fontSize: 16),
                           decoration: InputDecoration(
                             labelText: 'Chiave di Accesso',
-                            labelStyle: TextStyle(color: Colors.white.withOpacity(0.55)),
+                            labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
                             floatingLabelStyle: const TextStyle(color: Color(0xFF60A5FA), fontWeight: FontWeight.bold),
-                            prefixIcon: Icon(Icons.vpn_key_outlined, size: 20, color: Colors.white.withOpacity(0.55)),
+                            prefixIcon: Icon(Icons.vpn_key_outlined, size: 20, color: Colors.white.withValues(alpha: 0.55)),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
                                 size: 20,
-                                color: Colors.white.withOpacity(0.55),
+                                color: Colors.white.withValues(alpha: 0.55),
                               ),
                               onPressed: () {
                                 setState(() {
@@ -303,18 +303,18 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.18)),
+                              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.18)),
+                              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
                               borderSide: const BorderSide(color: Color(0xFF60A5FA), width: 1.5),
                             ),
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.04),
+                            fillColor: Colors.white.withValues(alpha: 0.04),
                           ),
                         ),
                         if (_errorMessage != null) ...[
@@ -349,7 +349,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF2563EB).withOpacity(0.35),
+                                color: const Color(0xFF2563EB).withValues(alpha: 0.35),
                                 blurRadius: 16,
                                 offset: const Offset(0, 6),
                               ),
@@ -424,12 +424,12 @@ class _LoginScreenState extends State<LoginScreen> {
             width: isMobile ? double.infinity : 340,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.5),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   blurRadius: 24,
                   offset: const Offset(0, 12),
                 ),
@@ -447,7 +447,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF60A5FA).withOpacity(0.2),
+                            color: const Color(0xFF60A5FA).withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(Icons.install_mobile_rounded, color: Color(0xFF60A5FA), size: 20),
@@ -467,7 +467,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     IconButton(
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
-                      icon: Icon(Icons.close_rounded, size: 20, color: Colors.white.withOpacity(0.6)),
+                      icon: Icon(Icons.close_rounded, size: 20, color: Colors.white.withValues(alpha: 0.6)),
                       onPressed: () {
                         setState(() {
                           _showInstallBanner = false;
@@ -479,7 +479,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 12),
                 Text(
                   _isIOS ? 'Per installare l\'App su iOS: tocca l\'icona Condividi in basso e seleziona "Aggiungi alla schermata Home".' : 'Installa la nostra App per un\'esperienza migliore.',
-                  style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.8), height: 1.4),
+                  style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.8), height: 1.4),
                 ),
                 if (!_isIOS) ...[
                   const SizedBox(height: 16),
@@ -495,7 +495,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF2563EB).withOpacity(0.4),
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.4),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),

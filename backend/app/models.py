@@ -201,6 +201,13 @@ class AiAnalysisCreate(BaseModel):
     notes: Optional[str] = None
     evaluations_used: List[str] = []
 
+class AiAnalysisUpdate(BaseModel):
+    notes: Optional[str] = None
+
+class AiPdfRequest(BaseModel):
+    patient: dict
+    report: str
+
 # --- MODELLI AUDIT LOG (Tracciabilità) ---
 
 class AuditLogCreate(BaseModel):

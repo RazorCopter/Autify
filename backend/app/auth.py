@@ -7,7 +7,12 @@ from .database import users_collection, evaluations_collection, patients_collect
 
 # ── Configurazione JWT ──────────────────────────────────────────────────────
 
-JWT_SECRET = os.getenv("JWT_SECRET_KEY", "").strip() or "change_me_in_production_please"
+JWT_SECRET = os.getenv("JWT_SECRET_KEY", "").strip()
+if not JWT_SECRET:
+    raise RuntimeError(
+        "JWT_SECRET_KEY environment variable is not set. "
+        "Set a strong random secret before starting the server."
+    )
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_HOURS = 8
 
@@ -22,15 +27,16 @@ def hash_password(plain: str) -> str:
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    """
-    Confronta una password in chiaro con il suo hash bcrypt.
-    Fornisce un fallback sicuro a confronto in chiaro per compatibilità con utenti legacy o non migrati.
-    """
+    """Confronta una password in chiaro con il suo hash bcrypt."""
     try:
         return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
-    except (ValueError, TypeError):
-        # Fallback se la password nel DB è salvata in chiaro (es. admin/admin legacy)
-        return plain == hashed
+    except (ValueError, TypeError) as e:
+        # Hash malformato nel DB: nega l'accesso e logga per indagine
+        import logging
+        logging.getLogger("autify").warning(
+            f"verify_password: hash malformato per un utente ({type(e).__name__}: {e}). Accesso negato."
+        )
+        return False
 
 
 # ── JWT ─────────────────────────────────────────────────────────────────────
@@ -76,10 +82,7 @@ async def verify_auth(request: Request) -> dict:
     """
     Dependency FastAPI: estrae il JWT dall'header Authorization e inietta
     nel contesto {username, role, ai_enabled}.
-    Supporta in backward-compat anche il vecchio header X-Admin-Password
-    per non rompere il frontend client durante la fase di migrazione.
     """
-    # 1. Prova il nuovo Bearer JWT
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         token = auth_header[len("Bearer "):]
@@ -89,20 +92,6 @@ async def verify_auth(request: Request) -> dict:
             "role": payload.get("role", "viewer"),
             "ai_enabled": payload.get("ai_enabled", False),
         }
-
-    # 2. Backward-compat: vecchio header X-Admin-Password (solo lettura config)
-    legacy_pwd = request.headers.get("X-Admin-Password")
-    if legacy_pwd:
-        from . import auth_manager  # import locale per backward-compat
-        try:
-            config = auth_manager.get_auth_config()
-            if legacy_pwd == config.get("admin_pwd"):
-                return {"username": "admin", "role": "admin", "ai_enabled": True}
-            elif legacy_pwd == config.get("viewer_pwd"):
-                if config.get("viewer_enabled", True):
-                    return {"username": "viewer_legacy", "role": "viewer", "ai_enabled": False}
-        except Exception:
-            pass
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -127,6 +116,13 @@ async def ensure_default_admin():
     await ai_analyses_collection.create_index("id_paziente")
     await ai_analyses_collection.create_index([("timestamp", -1)])
     await audit_logs_collection.create_index([("timestamp", -1)])
+
+    # Migrazione one-shot: i pazienti creati prima del campo 'attivo' vengono
+    # considerati attivi per default. Idempotente: non impatta documenti già migrati.
+    await patients_collection.update_many(
+        {"attivo": {"$exists": False}},
+        {"$set": {"attivo": True}},
+    )
 
     count = await users_collection.count_documents({})
     if count == 0:

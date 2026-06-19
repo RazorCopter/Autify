@@ -5,6 +5,7 @@ import '../models/scale_model.dart';
 import '../models/evaluation_model.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/demographics_form.dart';
 
 typedef SectionModel = Section;
 typedef QuestionModel = Question;
@@ -54,48 +55,8 @@ class _WizardScreenState extends State<WizardScreen>
   final TextEditingController _operatoreController = TextEditingController();
   final TextEditingController _intervistatoController = TextEditingController();
 
-  // --- CONTROLLER E STATO DATI SOCIO-DEMOGRAFICI ---
   bool _demographicsDone = false;
-  final _demographicsFormKey = GlobalKey<FormState>();
-
-  // Persona Esaminata
-  String? _livelloAssistenza; // 'Esteso' | 'Generalizzato'
-  String? _livelloDipendenza; // 'Grado I' | 'Grado II' | 'Grado III'
-  final TextEditingController _percentualeDisabilitaController = TextEditingController();
-  final TextEditingController _annoCertificatoController = TextEditingController();
-
-  // Altre condizioni (checkboxes)
-  bool _disFisica = false;
-  bool _limArtiSuperiori = false;
-  bool _limArtiInferiori = false;
-  bool _disSensoriale = false;
-  bool _uditoSordita = false;
-  bool _visiva = false;
-  bool _paralisiCerebrale = false;
-  bool _epilessia = false;
-  bool _saluteMentale = false;
-  bool _spettroAutistico = false;
-  bool _sindromeDown = false;
-  bool _graviProblemiSalute = false;
-  bool _disturbiCondotta = false;
-  final TextEditingController _altroCondizioniController = TextEditingController();
-
-  // Informatore 1
-  final TextEditingController _inf1NomeController = TextEditingController();
-  final TextEditingController _inf1AnniController = TextEditingController();
-  final TextEditingController _inf1MesiController = TextEditingController();
-  String? _inf1Frequenza;
-  String? _inf1Relazione;
-  final TextEditingController _inf1RelazioneAltroController = TextEditingController();
-
-  // Informatore 2
-  bool _inf2Abilitato = false;
-  final TextEditingController _inf2NomeController = TextEditingController();
-  final TextEditingController _inf2AnniController = TextEditingController();
-  final TextEditingController _inf2MesiController = TextEditingController();
-  String? _inf2Frequenza;
-  String? _inf2Relazione;
-  final TextEditingController _inf2RelazioneAltroController = TextEditingController();
+  DemographicsData? _demographicsData;
 
   @override
   void initState() {
@@ -116,19 +77,6 @@ class _WizardScreenState extends State<WizardScreen>
     _dataController.dispose();
     _operatoreController.dispose();
     _intervistatoController.dispose();
-
-    // Dispose nuovi controller
-    _percentualeDisabilitaController.dispose();
-    _annoCertificatoController.dispose();
-    _altroCondizioniController.dispose();
-    _inf1NomeController.dispose();
-    _inf1AnniController.dispose();
-    _inf1MesiController.dispose();
-    _inf1RelazioneAltroController.dispose();
-    _inf2NomeController.dispose();
-    _inf2AnniController.dispose();
-    _inf2MesiController.dispose();
-    _inf2RelazioneAltroController.dispose();
     super.dispose();
   }
 
@@ -137,6 +85,14 @@ class _WizardScreenState extends State<WizardScreen>
     final q = _questions[_currentIndex].domanda;
     return q.codice ?? q.idDomanda;
   }
+
+  bool get _isSanMartinScale =>
+      widget.scaleId.toLowerCase().contains('martin') ||
+      widget.scaleId.toLowerCase().contains('san') ||
+      widget.scaleId.toLowerCase().contains('sanmartin') ||
+      (_scaleNome ?? '').toLowerCase().contains('martin') ||
+      (_scaleNome ?? '').toLowerCase().contains('san') ||
+      (_scaleNome ?? '').toLowerCase().contains('sanmartin');
 
   void _requestKeyboardFocus() {
     if (!mounted) return;
@@ -199,14 +155,7 @@ class _WizardScreenState extends State<WizardScreen>
       return KeyEventResult.ignored;
     }
 
-    final isSanMartin = widget.scaleId.toLowerCase().contains('martin') ||
-        widget.scaleId.toLowerCase().contains('san') ||
-        widget.scaleId.toLowerCase().contains('sanmartin') ||
-        (_scaleNome ?? '').toLowerCase().contains('martin') ||
-        (_scaleNome ?? '').toLowerCase().contains('san') ||
-        (_scaleNome ?? '').toLowerCase().contains('sanmartin');
-
-    if (isSanMartin && !_demographicsDone) {
+    if (_isSanMartinScale && !_demographicsDone) {
       return KeyEventResult.ignored;
     }
 
@@ -438,56 +387,8 @@ class _WizardScreenState extends State<WizardScreen>
       );
     }).toList();
 
-    // Raccoglie i dati socio-demografici se la scala è San Martín
-    Map<String, dynamic>? demographicsData;
-    final isSanMartin = widget.scaleId.toLowerCase().contains('martin') ||
-        widget.scaleId.toLowerCase().contains('san') ||
-        widget.scaleId.toLowerCase().contains('sanmartin') ||
-        (_scaleNome ?? '').toLowerCase().contains('martin') ||
-        (_scaleNome ?? '').toLowerCase().contains('san') ||
-        (_scaleNome ?? '').toLowerCase().contains('sanmartin');
-    if (isSanMartin) {
-      demographicsData = {
-        'persona': {
-          'livello_assistenza': _livelloAssistenza,
-          'livello_dipendenza': _livelloDipendenza,
-          'percentuale_disabilita': int.tryParse(_percentualeDisabilitaController.text),
-          'anno_certificato': int.tryParse(_annoCertificatoController.text),
-          'condizioni': {
-            'disabilita_fisica': _disFisica,
-            'lim_arti_superiori': _limArtiSuperiori,
-            'lim_arti_inferiori': _limArtiInferiori,
-            'disabilita_sensoriale': _disSensoriale,
-            'udito_sordita': _uditoSordita,
-            'visiva': _visiva,
-            'paralisi_cerebrale': _paralisiCerebrale,
-            'epilessia': _epilessia,
-            'salute_mentale': _saluteMentale,
-            'spettro_autistico': _spettroAutistico,
-            'sindrome_down': _sindromeDown,
-            'gravi_problemi_salute': _graviProblemiSalute,
-            'disturbi_condotta': _disturbiCondotta,
-            'altro_specifica': _altroCondizioniController.text,
-          }
-        },
-        'informatore1': {
-          'nome_cognome': _inf1NomeController.text,
-          'contatto_anni': int.tryParse(_inf1AnniController.text),
-          'contatto_mesi': int.tryParse(_inf1MesiController.text),
-          'frequenza_contatto': _inf1Frequenza,
-          'relazione': _inf1Relazione,
-          'relazione_altro': _inf1RelazioneAltroController.text,
-        },
-        'informatore2': _inf2Abilitato ? {
-          'nome_cognome': _inf2NomeController.text,
-          'contatto_anni': int.tryParse(_inf2AnniController.text),
-          'contatto_mesi': int.tryParse(_inf2MesiController.text),
-          'frequenza_contatto': _inf2Frequenza,
-          'relazione': _inf2Relazione,
-          'relazione_altro': _inf2RelazioneAltroController.text,
-        } : null
-      };
-    }
+    final Map<String, dynamic>? demographicsData =
+        _isSanMartinScale ? _demographicsData?.toJson() : null;
 
     final evaluation = EvaluationModel(
       idPaziente: widget.patientId,
@@ -623,14 +524,7 @@ class _WizardScreenState extends State<WizardScreen>
         );
       }
 
-      final isSanMartin = widget.scaleId.toLowerCase().contains('martin') ||
-          widget.scaleId.toLowerCase().contains('san') ||
-          widget.scaleId.toLowerCase().contains('sanmartin') ||
-          (_scaleNome ?? '').toLowerCase().contains('martin') ||
-          (_scaleNome ?? '').toLowerCase().contains('san') ||
-          (_scaleNome ?? '').toLowerCase().contains('sanmartin');
-
-      if (isSanMartin && !_demographicsDone) {
+      if (_isSanMartinScale && !_demographicsDone) {
         return Scaffold(
           body: Container(
             decoration: _gradientDecoration(),
@@ -638,7 +532,15 @@ class _WizardScreenState extends State<WizardScreen>
               child: Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
-                  child: _buildDemographicsCard(),
+                  child: DemographicsForm(
+                    onCompleted: (data) {
+                      setState(() {
+                        _demographicsData = data;
+                        _demographicsDone = true;
+                      });
+                    },
+                    onFocusRequested: _requestKeyboardFocus,
+                  ),
                 ),
               ),
             ),
@@ -683,14 +585,10 @@ class _WizardScreenState extends State<WizardScreen>
                 builder: (context, constraints) {
                   final isTablet = constraints.maxWidth > 650;
                   final maxW = isTablet ? 720.0 : double.infinity;
-                  final hPad = isTablet ? 0.0 : 0.0;
-
                   return Center(
                     child: ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: maxW),
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: hPad),
-                        child: Column(
+                      child: Column(
                           children: [
                             _buildHeader(currentQ, isTablet, totalQ),
                             _buildProgressBar(totalQ),
@@ -719,8 +617,7 @@ class _WizardScreenState extends State<WizardScreen>
                           ],
                         ),
                       ),
-                    ),
-                  );
+                    );
                 },
               ),
             ),
@@ -793,20 +690,7 @@ class _WizardScreenState extends State<WizardScreen>
                 TextField(
                   controller: _dataController,
                   readOnly: true,
-                  decoration: InputDecoration(
-                    labelText: 'Data compilazione',
-                    prefixIcon: const Icon(Icons.calendar_today, color: AppTheme.primaryColor),
-                    filled: true,
-                    fillColor: const Color(0xFFF3F8FF),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: Color(0xFFE8EEF8)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: Color(0xFFE8EEF8)),
-                    ),
-                  ),
+                  decoration: AppTheme.inputDecoration('Data compilazione', Icons.calendar_today),
                   onTap: () async {
                     final picked = await showDatePicker(
                       context: context,
@@ -825,41 +709,15 @@ class _WizardScreenState extends State<WizardScreen>
                 // Nome Operatore
                 TextField(
                   controller: _operatoreController,
-                  decoration: InputDecoration(
-                    labelText: 'Nome Operatore',
-                    hintText: 'Inserisci il tuo nome',
-                    prefixIcon: const Icon(Icons.badge_outlined, color: AppTheme.primaryColor),
-                    filled: true,
-                    fillColor: const Color(0xFFF3F8FF),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: Color(0xFFE8EEF8)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: Color(0xFFE8EEF8)),
-                    ),
-                  ),
+                  decoration: AppTheme.inputDecoration('Nome Operatore', Icons.badge_outlined,
+                      hintText: 'Inserisci il tuo nome'),
                 ),
                 const SizedBox(height: 16),
                 // Nome Intervistata/o
                 TextField(
                   controller: _intervistatoController,
-                  decoration: InputDecoration(
-                    labelText: 'Nome Intervistata/o',
-                    hintText: 'Nome della persona intervistata',
-                    prefixIcon: const Icon(Icons.person_outline, color: AppTheme.primaryColor),
-                    filled: true,
-                    fillColor: const Color(0xFFF3F8FF),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: Color(0xFFE8EEF8)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: Color(0xFFE8EEF8)),
-                    ),
-                  ),
+                  decoration: AppTheme.inputDecoration('Nome Intervistata/o', Icons.person_outline,
+                      hintText: 'Nome della persona intervistata'),
                 ),
                 const SizedBox(height: 32),
                 SizedBox(
@@ -1290,7 +1148,6 @@ class _WizardScreenState extends State<WizardScreen>
 
     return Column(
       children: sottodomande.asMap().entries.map((entry) {
-        final idx = entry.key;
         final subq = entry.value;
         final testo = subq['testo'] ?? '';
         final isChecked = checkedStates.contains(testo);
@@ -1319,19 +1176,19 @@ class _WizardScreenState extends State<WizardScreen>
               ),
               decoration: BoxDecoration(
                 color: isChecked
-                    ? AppTheme.primaryColor.withOpacity(0.08)
+                    ? AppTheme.primaryColor.withValues(alpha: 0.08)
                     : Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isChecked
                       ? AppTheme.primaryColor
-                      : Colors.grey.withOpacity(0.3),
+                      : Colors.grey.withValues(alpha: 0.3),
                   width: isChecked ? 2 : 1,
                 ),
                 boxShadow: isChecked
                     ? [
                         BoxShadow(
-                          color: AppTheme.primaryColor.withOpacity(0.15),
+                          color: AppTheme.primaryColor.withValues(alpha: 0.15),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         )
@@ -1368,7 +1225,7 @@ class _WizardScreenState extends State<WizardScreen>
 
   Widget _buildOptionButton(OptionModel opt, bool isTablet) {
     final isSelected = _answers[_currentKey] == opt.punteggio;
-    final color = _colorForScore(opt.punteggio, item: _questions[_currentIndex].domanda.opzioni.length);
+    final color = _colorForScore(opt.punteggio);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -1643,7 +1500,7 @@ class _WizardScreenState extends State<WizardScreen>
     );
   }
 
-  Color _colorForScore(int score, {int item = 3}) {
+  Color _colorForScore(int score) {
     final palette = [
       const Color(0xFFE57373), // rosso
       const Color(0xFFFFB74D), // arancio
@@ -1653,449 +1510,6 @@ class _WizardScreenState extends State<WizardScreen>
     // assegna i colori scalarmente dal peggiore al migliore
     final idx = (score - 1).clamp(0, palette.length - 1);
     return palette[idx];
-  }
-
-  Widget _buildDemographicsCard() {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 650),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.74),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.9), width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.08),
-                  blurRadius: 32,
-                  offset: const Offset(0, 12),
-                ),
-              ],
-            ),
-            child: Form(
-              key: _demographicsFormKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Icon(Icons.analytics_outlined, size: 48, color: AppTheme.primaryColor),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Dati Socio-Demografici',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Informazioni richieste dal protocollo Scala San Martín',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // --- SEZIONE 1: PERSONA ESAMINATA ---
-                  _buildSectionHeader('DATI DELLA PERSONA ESAMINATA'),
-                  const SizedBox(height: 16),
-                  
-                  DropdownButtonFormField<String>(
-                    value: _livelloAssistenza,
-                    decoration: _inputDecoration('Livello di necessità di assistenza', Icons.assistant_direction_outlined),
-                    items: const [
-                      DropdownMenuItem(value: 'Esteso', child: Text('Esteso')),
-                      DropdownMenuItem(value: 'Generalizzato', child: Text('Generalizzato')),
-                    ],
-                    onChanged: (val) => setState(() => _livelloAssistenza = val),
-                    validator: (val) => val == null ? 'Campo richiesto' : null,
-                  ),
-                  const SizedBox(height: 16),
-
-                  DropdownButtonFormField<String>(
-                    value: _livelloDipendenza,
-                    decoration: _inputDecoration('Livello di dipendenza riconosciuto', Icons.accessible_forward_outlined),
-                    items: const [
-                      DropdownMenuItem(value: 'Grado I', child: Text('Grado I - Dipendenza moderata')),
-                      DropdownMenuItem(value: 'Grado II', child: Text('Grado II - Dipendenza grave')),
-                      DropdownMenuItem(value: 'Grado III', child: Text('Grado III - Dipendenza elevata')),
-                    ],
-                    onChanged: (val) => setState(() => _livelloDipendenza = val),
-                    validator: (val) => val == null ? 'Campo richiesto' : null,
-                  ),
-                  const SizedBox(height: 16),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _percentualeDisabilitaController,
-                          keyboardType: TextInputType.number,
-                          decoration: _inputDecoration('Disabilità (%)', Icons.percent),
-                          validator: (val) {
-                            if (val == null || val.isEmpty) return 'Richiesto';
-                            final n = int.tryParse(val);
-                            if (n == null || n < 0 || n > 100) return '0-100';
-                            return null;
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _annoCertificatoController,
-                          keyboardType: TextInputType.number,
-                          decoration: _inputDecoration('Anno certificato', Icons.calendar_today_outlined),
-                          validator: (val) {
-                            if (val == null || val.isEmpty) return 'Richiesto';
-                            final n = int.tryParse(val);
-                            if (n == null || n < 1900 || n > DateTime.now().year) return 'Anno non valido';
-                            return null;
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  const Text(
-                    'Altre condizioni della persona esaminata:',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-                  ),
-                  const SizedBox(height: 8),
-
-                  _buildModernCheckbox('Disabilità fisica', _disFisica, (val) {
-                    setState(() {
-                      _disFisica = val ?? false;
-                      if (!_disFisica) {
-                        _limArtiSuperiori = false;
-                        _limArtiInferiori = false;
-                      }
-                    });
-                  }),
-                  if (_disFisica) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(left: 24.0, bottom: 8),
-                      child: Column(
-                        children: [
-                          _buildModernCheckbox('Limitazioni funzionali degli arti superiori', _limArtiSuperiori, (val) {
-                            setState(() => _limArtiSuperiori = val ?? false);
-                          }),
-                          _buildModernCheckbox('Limitazioni funzionali degli arti inferiori', _limArtiInferiori, (val) {
-                            setState(() => _limArtiInferiori = val ?? false);
-                          }),
-                        ],
-                      ),
-                    ),
-                  ],
-
-                  _buildModernCheckbox('Disabilità sensoriale', _disSensoriale, (val) {
-                    setState(() {
-                      _disSensoriale = val ?? false;
-                      if (!_disSensoriale) {
-                        _uditoSordita = false;
-                        _visiva = false;
-                      }
-                    });
-                  }),
-                  if (_disSensoriale) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(left: 24.0, bottom: 8),
-                      child: Column(
-                        children: [
-                          _buildModernCheckbox('Uditiva/sordità', _uditoSordita, (val) {
-                            setState(() => _uditoSordita = val ?? false);
-                          }),
-                          _buildModernCheckbox('Visiva', _visiva, (val) {
-                            setState(() => _visiva = val ?? false);
-                          }),
-                        ],
-                      ),
-                    ),
-                  ],
-
-                  _buildModernCheckbox('Paralisi cerebrale', _paralisiCerebrale, (val) {
-                    setState(() => _paralisiCerebrale = val ?? false);
-                  }),
-                  _buildModernCheckbox('Epilessia', _epilessia, (val) {
-                    setState(() => _epilessia = val ?? false);
-                  }),
-                  _buildModernCheckbox('Problemi di salute mentale/disturbi emotivi', _saluteMentale, (val) {
-                    setState(() => _saluteMentale = val ?? false);
-                  }),
-                  _buildModernCheckbox('Disturbo dello spettro autistico', _spettroAutistico, (val) {
-                    setState(() => _spettroAutistico = val ?? false);
-                  }),
-                  _buildModernCheckbox('Sindrome di Down', _sindromeDown, (val) {
-                    setState(() => _sindromeDown = val ?? false);
-                  }),
-                  _buildModernCheckbox('Gravi problemi di salute', _graviProblemiSalute, (val) {
-                    setState(() => _graviProblemiSalute = val ?? false);
-                  }),
-                  _buildModernCheckbox('Disturbi della condotta', _disturbiCondotta, (val) {
-                    setState(() => _disturbiCondotta = val ?? false);
-                  }),
-
-                  TextFormField(
-                    controller: _altroCondizioniController,
-                    decoration: _inputDecoration('Altre condizioni specifiche / Note', Icons.more_horiz),
-                  ),
-                  const SizedBox(height: 28),
-
-                  // --- SEZIONE 2: INFORMATORE 1 ---
-                  _buildSectionHeader('DATI DELL\'INFORMATORE 1'),
-                  const SizedBox(height: 16),
-
-                  TextFormField(
-                    controller: _inf1NomeController,
-                    decoration: _inputDecoration('Nome e Cognome Informatore 1', Icons.person_outline),
-                    validator: (val) => val == null || val.isEmpty ? 'Campo richiesto' : null,
-                  ),
-                  const SizedBox(height: 16),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _inf1AnniController,
-                          keyboardType: TextInputType.number,
-                          decoration: _inputDecoration('Periodo contatto (anni)', Icons.date_range),
-                          validator: (val) => val == null || val.isEmpty ? 'Richiesto' : null,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _inf1MesiController,
-                          keyboardType: TextInputType.number,
-                          decoration: _inputDecoration('Mesi', Icons.timelapse),
-                          validator: (val) => val == null || val.isEmpty ? 'Richiesto' : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  DropdownButtonFormField<String>(
-                    value: _inf1Frequenza,
-                    decoration: _inputDecoration('Frequenza di contatto', Icons.loop),
-                    items: const [
-                      DropdownMenuItem(value: 'Varie volte alla settimana', child: Text('Varie volte alla settimana')),
-                      DropdownMenuItem(value: 'Una volta alla settimana', child: Text('Una volta alla settimana')),
-                      DropdownMenuItem(value: 'Una volta ogni due settimane', child: Text('Una volta ogni due settimane')),
-                      DropdownMenuItem(value: 'Una volta al mese', child: Text('Una volta al mese')),
-                    ],
-                    onChanged: (val) => setState(() => _inf1Frequenza = val),
-                    validator: (val) => val == null ? 'Campo richiesto' : null,
-                  ),
-                  const SizedBox(height: 16),
-
-                  DropdownButtonFormField<String>(
-                    value: _inf1Relazione,
-                    decoration: _inputDecoration('Relazione con la persona esaminata', Icons.people_outline),
-                    items: const [
-                      DropdownMenuItem(value: 'Professionale', child: Text('Professionale')),
-                      DropdownMenuItem(value: 'Madre /Padre', child: Text('Madre / Padre')),
-                      DropdownMenuItem(value: 'Fratello/Sorella', child: Text('Fratello / Sorella')),
-                      DropdownMenuItem(value: 'Tutore/tutrice legale', child: Text('Tutore / tutrice legale')),
-                      DropdownMenuItem(value: 'Altro', child: Text('Altro (specificare)')),
-                    ],
-                    onChanged: (val) => setState(() => _inf1Relazione = val),
-                    validator: (val) => val == null ? 'Campo richiesto' : null,
-                  ),
-                  if (_inf1Relazione == 'Altro') ...[
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _inf1RelazioneAltroController,
-                      decoration: _inputDecoration('Specificare relazione', Icons.edit_note),
-                      validator: (val) => val == null || val.isEmpty ? 'Specificare la relazione' : null,
-                    ),
-                  ],
-                  const SizedBox(height: 28),
-
-                  // --- SEZIONE 3: INFORMATORE 2 (OPZIONALE) ---
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildSectionHeader('DATI DELL\'INFORMATORE 2 (OPZIONALE)'),
-                      Switch(
-                        value: _inf2Abilitato,
-                        activeColor: AppTheme.primaryColor,
-                        onChanged: (val) => setState(() => _inf2Abilitato = val),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  if (_inf2Abilitato) ...[
-                    TextFormField(
-                      controller: _inf2NomeController,
-                      decoration: _inputDecoration('Nome e Cognome Informatore 2', Icons.person_outline),
-                      validator: (val) => _inf2Abilitato && (val == null || val.isEmpty) ? 'Campo richiesto' : null,
-                    ),
-                    const SizedBox(height: 16),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _inf2AnniController,
-                            keyboardType: TextInputType.number,
-                            decoration: _inputDecoration('Periodo contatto (anni)', Icons.date_range),
-                            validator: (val) => _inf2Abilitato && (val == null || val.isEmpty) ? 'Richiesto' : null,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _inf2MesiController,
-                            keyboardType: TextInputType.number,
-                            decoration: _inputDecoration('Mesi', Icons.timelapse),
-                            validator: (val) => _inf2Abilitato && (val == null || val.isEmpty) ? 'Richiesto' : null,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    DropdownButtonFormField<String>(
-                      value: _inf2Frequenza,
-                      decoration: _inputDecoration('Frequenza di contatto', Icons.loop),
-                      items: const [
-                        DropdownMenuItem(value: 'Varie volte alla settimana', child: Text('Varie volte alla settimana')),
-                        DropdownMenuItem(value: 'Una volta alla settimana', child: Text('Una volta alla settimana')),
-                        DropdownMenuItem(value: 'Una volta ogni due settimane', child: Text('Una volta ogni due settimane')),
-                        DropdownMenuItem(value: 'Una volta al mese', child: Text('Una volta al mese')),
-                      ],
-                      onChanged: (val) => setState(() => _inf2Frequenza = val),
-                      validator: (val) => _inf2Abilitato && val == null ? 'Campo richiesto' : null,
-                    ),
-                    const SizedBox(height: 16),
-
-                    DropdownButtonFormField<String>(
-                      value: _inf2Relazione,
-                      decoration: _inputDecoration('Relazione con la persona esaminata', Icons.people_outline),
-                      items: const [
-                        DropdownMenuItem(value: 'Professionale', child: Text('Professionale')),
-                        DropdownMenuItem(value: 'Madre /Padre', child: Text('Madre / Padre')),
-                        DropdownMenuItem(value: 'Fratello/Sorella', child: Text('Fratello / Sorella')),
-                        DropdownMenuItem(value: 'Tutore/tutrice legale', child: Text('Tutore / tutrice legale')),
-                        DropdownMenuItem(value: 'Altro', child: Text('Altro (specificare)')),
-                      ],
-                      onChanged: (val) => setState(() => _inf2Relazione = val),
-                      validator: (val) => _inf2Abilitato && val == null ? 'Campo richiesto' : null,
-                    ),
-                    if (_inf2Relazione == 'Altro') ...[
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _inf2RelazioneAltroController,
-                        decoration: _inputDecoration('Specificare relazione', Icons.edit_note),
-                        validator: (val) => _inf2Abilitato && (val == null || val.isEmpty) ? 'Specificare la relazione' : null,
-                      ),
-                    ],
-                  ],
-                  const SizedBox(height: 32),
-
-                  SizedBox(
-                    height: 52,
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        if (_demographicsFormKey.currentState?.validate() == true) {
-                          setState(() => _demographicsDone = true);
-                          _requestKeyboardFocus();
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Correggi gli errori nel modulo prima di procedere')),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.arrow_forward_rounded, size: 22),
-                      label: const Text(
-                        'Procedi alle Domande',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
-          color: AppTheme.primaryColor,
-          letterSpacing: 1.2,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildModernCheckbox(String title, bool value, ValueChanged<bool?> onChanged) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6.0),
-      child: InkWell(
-        onTap: () => onChanged(!value),
-        borderRadius: BorderRadius.circular(8),
-        child: Row(
-          children: [
-            Checkbox(
-              value: value,
-              onChanged: onChanged,
-              activeColor: AppTheme.primaryColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-            ),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  InputDecoration _inputDecoration(String label, IconData icon) {
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: Icon(icon, color: AppTheme.primaryColor),
-      filled: true,
-      fillColor: const Color(0xFFF3F8FF),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFFE8EEF8)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFFE8EEF8)),
-      ),
-    );
   }
 
   Widget _glassIconButton({

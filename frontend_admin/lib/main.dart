@@ -12,7 +12,6 @@ import 'screens/anagrafica_screen.dart';
 import 'screens/selection_screen.dart';
 import 'screens/audit_log_screen.dart';
 import 'screens/dashboard_screen.dart';
-import 'models/patient_model.dart';
 import 'widgets/connection_status_indicator.dart';
 import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';

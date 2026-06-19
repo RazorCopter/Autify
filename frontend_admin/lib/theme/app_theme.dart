@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class AppTheme {
   // Colori tema Bradipo & Puzzle
@@ -26,7 +26,7 @@ class AppTheme {
       scaffoldBackgroundColor: backgroundColor,
       cardTheme: CardThemeData(
         elevation: 8,
-        shadowColor: const Color(0xFF000000).withOpacity(0.04),
+        shadowColor: const Color(0xFF000000).withValues(alpha: 0.04),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: Color(0xFFE8EEF8), width: 1),
@@ -135,7 +135,7 @@ class AppTheme {
       scaffoldBackgroundColor: darkBackgroundColor,
       cardTheme: CardThemeData(
         elevation: 4,
-        shadowColor: Colors.black.withOpacity(0.3),
+        shadowColor: Colors.black.withValues(alpha: 0.3),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: darkBorderColor, width: 1),
@@ -219,6 +219,24 @@ class AppTheme {
           fontWeight: FontWeight.bold,
         ),
         bodyMedium: TextStyle(color: darkTextPrimary),
+      ),
+    );
+  }
+
+  static InputDecoration inputDecoration(String label, IconData icon, {String? hintText}) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hintText,
+      prefixIcon: Icon(icon, color: primaryColor),
+      filled: true,
+      fillColor: const Color(0xFFF3F8FF),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFFE8EEF8)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFFE8EEF8)),
       ),
     );
   }

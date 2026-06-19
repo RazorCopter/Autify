@@ -1,5 +1,4 @@
-import 'dart:ui';
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../models/scale_model.dart';
 import '../models/patient_model.dart';
 import '../models/evaluation_model.dart';
@@ -852,7 +851,7 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: _livelloAssistenza,
+                          initialValue: _livelloAssistenza,
                           decoration: InputDecoration(
                             labelText: 'Livello Assistenza Richiesto',
                             filled: true,
@@ -869,7 +868,7 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: _livelloDipendenza,
+                          initialValue: _livelloDipendenza,
                           decoration: InputDecoration(
                             labelText: 'Grado di Dipendenza',
                             filled: true,
@@ -1025,7 +1024,7 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: _inf1Frequenza,
+                          initialValue: _inf1Frequenza,
                           decoration: InputDecoration(
                             labelText: 'Frequenza del contatto',
                             filled: true,
@@ -1043,7 +1042,7 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: _inf1Relazione,
+                          initialValue: _inf1Relazione,
                           decoration: InputDecoration(
                             labelText: 'Relazione col soggetto',
                             filled: true,
@@ -1101,7 +1100,7 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
                       ),
                       Switch(
                         value: _inf2Abilitato,
-                        activeColor: AppTheme.primaryColor,
+                        activeThumbColor: AppTheme.primaryColor,
                         onChanged: (v) => setState(() => _inf2Abilitato = v),
                       ),
                     ],
@@ -1152,7 +1151,7 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value: _inf2Frequenza,
+                            initialValue: _inf2Frequenza,
                             decoration: InputDecoration(
                               labelText: 'Frequenza del contatto',
                               filled: true,
@@ -1170,7 +1169,7 @@ class _SisWizardScreenState extends State<SisWizardScreen> with TickerProviderSt
                         const SizedBox(width: 12),
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value: _inf2Relazione,
+                            initialValue: _inf2Relazione,
                             decoration: InputDecoration(
                               labelText: 'Relazione col soggetto',
                               filled: true,

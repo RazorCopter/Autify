@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shimmer/shimmer.dart';
 import '../services/api_service.dart';
@@ -21,6 +21,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final ApiService _apiService = ApiService();
   bool _isLoading = true;
   Map<String, dynamic>? _stats;
+  List<dynamic> _sortedDistributions = [];
   DateTime? _lastLoaded;
 
   @override
@@ -34,8 +35,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       final stats = await _apiService.getDashboardStats();
       if (mounted) {
+        final distributions = List<dynamic>.from(
+            (stats?['distribuzione_scale'] as List<dynamic>?) ?? []);
+        final totalPatients = (stats?['totale_utenze'] ?? 0) as int;
+        distributions.sort((a, b) {
+          final countA = (a['count'] ?? 0) as int;
+          final countB = (b['count'] ?? 0) as int;
+          final percentA = totalPatients > 0 ? countA / totalPatients : 0.0;
+          final percentB = totalPatients > 0 ? countB / totalPatients : 0.0;
+          return percentA.compareTo(percentB);
+        });
         setState(() {
           _stats = stats;
+          _sortedDistributions = distributions;
           _isLoading = false;
           _lastLoaded = DateTime.now();
         });
@@ -253,13 +265,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // ─── SHIMMER SKELETON ──────────────────────────────────────────────────────
   Widget _buildShimmerSkeleton() {
-    return Shimmer.fromColors(
-      baseColor: const Color(0xFFE2E8F0),
-      highlightColor: const Color(0xFFEDF2F7),
-      child: Column(
-        children: [
-          // Top Row KPIs
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        final isTablet = constraints.maxWidth < 1024;
+
+        Widget shimmerBlock(double height, {int flex = 1}) => Expanded(
+              flex: flex,
+              child: Container(
+                height: height,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            );
+
+        Widget kpiRow() {
+          if (isMobile) {
+            return Column(
+              children: [
+                shimmerBlock(140),
+                const SizedBox(height: 12),
+                shimmerBlock(140),
+                const SizedBox(height: 12),
+                shimmerBlock(140),
+              ],
+            );
+          }
+          if (isTablet) {
+            return Column(children: [
+              Row(children: [
+                shimmerBlock(140),
+                const SizedBox(width: 20),
+                shimmerBlock(140),
+              ]),
+              const SizedBox(height: 12),
+              shimmerBlock(140),
+            ]);
+          }
+          return Row(
             children: List.generate(3, (i) => Expanded(
               child: Container(
                 height: 140,
@@ -270,63 +315,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
             )),
-          ),
-          const SizedBox(height: 24),
-          // Middle Row Charts
-          Row(
+          );
+        }
+
+        return Shimmer.fromColors(
+          baseColor: const Color(0xFFE2E8F0),
+          highlightColor: const Color(0xFFEDF2F7),
+          child: Column(
             children: [
-              Expanded(
-                flex: 2,
-                child: Container(
-                  height: 380,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 24),
-              Expanded(
-                flex: 3,
-                child: Container(
-                  height: 380,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-              ),
+              kpiRow(),
+              const SizedBox(height: 24),
+              if (isMobile) ...[
+                shimmerBlock(280),
+                const SizedBox(height: 12),
+                shimmerBlock(280),
+              ] else
+                Row(children: [
+                  shimmerBlock(380, flex: 2),
+                  const SizedBox(width: 24),
+                  shimmerBlock(380, flex: 3),
+                ]),
+              const SizedBox(height: 24),
+              if (isMobile) ...[
+                shimmerBlock(260),
+                const SizedBox(height: 12),
+                shimmerBlock(260),
+              ] else
+                Row(children: [
+                  shimmerBlock(320, flex: 3),
+                  const SizedBox(width: 24),
+                  shimmerBlock(320, flex: 2),
+                ]),
             ],
           ),
-          const SizedBox(height: 24),
-          // Bottom Row
-          Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: Container(
-                  height: 320,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 24),
-              Expanded(
-                flex: 2,
-                child: Container(
-                  height: 320,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -334,8 +357,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildBentoGrid() {
     final activePatients = _stats?['totale_utenze_attive'] ?? 0;
     final totalPatients = _stats?['totale_utenze'] ?? activePatients;
-    final totalEvals = _stats?['totale_valutazioni_eseguite'] ?? 0;
-    
     final coverage = _stats?['copertura_scale'] ?? {};
     final coveredCount = coverage['coperti_count'] ?? 0;
     final expiredCount = coverage['scaduti_count'] ?? 0;
@@ -346,8 +367,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final alertList = (_stats?['ultimi_alert'] as List<dynamic>?) ?? [];
     final distributions = (_stats?['distribuzione_scale'] as List<dynamic>?) ?? [];
-    final trendData = (_stats?['trend_somministrazioni'] as List<dynamic>?) ?? [];
-    final forecastData = (_stats?['forecast_somministrazioni'] as List<dynamic>?) ?? [];
     final demographics = (_stats?['demographics'] as Map<String, dynamic>?) ?? {};
 
     // Calcolo dei contatori specifici per l'AlertBar dai dati globali reali del backend
@@ -477,7 +496,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(width: 24),
                       Expanded(
                         flex: 3,
-                        child: _buildDistributionCard(distributions, activePatients, height: rowHeight),
+                        child: _buildDistributionCard(_sortedDistributions, activePatients, height: rowHeight),
                       ),
                     ],
                   ),
@@ -488,7 +507,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   _buildDocumentCoverageCard(coveredCount, expiredCount, coveragePercent, height: 380),
                   const SizedBox(height: 24),
-                  _buildDistributionCard(distributions, activePatients, height: (distributions.length * 58.0 + 104).clamp(380.0, 520.0)),
+                  _buildDistributionCard(_sortedDistributions, activePatients, height: (_sortedDistributions.length * 58.0 + 104).clamp(380.0, 520.0)),
                 ],
               ),
 
@@ -701,7 +720,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // ─── DOCUMENT COVERAGE CARD (DONUT CHART) ──────────────────────────────────
   Widget _buildDocumentCoverageCard(int covered, int expired, double percent, {double? height}) {
-    final total = covered + expired;
     return _HoverBentoCard(
       height: height ?? 380,
       child: Padding(
@@ -822,9 +840,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ─── FORECAST CARD (PILLOLE SOVRAPPOSTE) ───────────────────────────────────
-
-
   // ─── ALERT CENTER (AZIONI URGENTI) ─────────────────────────────────────────
   Widget _buildAlertListCard(List<dynamic> alerts, {double? height}) {
     // Ordina per gravità decrescente
@@ -873,23 +888,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Color badgeColor;
           Color badgeBg;
           String badgeText;
-          IconData leadIcon;
 
           if (stato == 'mai_valutato') {
-            badgeColor = const Color(0xFFDC2626); // Red
+            badgeColor = const Color(0xFFDC2626);
             badgeBg = const Color(0xFFFEE2E2);
             badgeText = 'MAI COMPILATA';
-            leadIcon = Icons.dangerous_outlined;
           } else if (stato == 'in_scadenza') {
-            badgeColor = const Color(0xFFEAB308); // Amber/Arancio
+            badgeColor = const Color(0xFFEAB308);
             badgeBg = const Color(0xFFFEF9C3);
             badgeText = 'IN SCADENZA';
-            leadIcon = Icons.timer_outlined;
           } else {
-            badgeColor = const Color(0xFFDC2626); // Red
+            badgeColor = const Color(0xFFDC2626);
             badgeBg = const Color(0xFFFEE2E2);
             badgeText = 'SCADUTA';
-            leadIcon = Icons.warning_amber_rounded;
           }
 
           final daysText = stato == 'mai_valutato'
@@ -1261,16 +1272,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // ─── DISTRIBUTION CARD ─────────────────────────────────────────────────────
   Widget _buildDistributionCard(List<dynamic> distributions, int totalPatients, {double? height}) {
-    // Ordina una copia locale delle scale dalla copertura più bassa (più critica) alla più alta
-    final sortedDistributions = List<dynamic>.from(distributions);
-    sortedDistributions.sort((a, b) {
-      final countA = (a['count'] ?? 0) as int;
-      final countB = (b['count'] ?? 0) as int;
-      final percentA = totalPatients > 0 ? (countA / totalPatients) : 0.0;
-      final percentB = totalPatients > 0 ? (countB / totalPatients) : 0.0;
-      return percentA.compareTo(percentB);
-    });
-
     return _HoverBentoCard(
       height: height,
       child: Padding(
@@ -1290,7 +1291,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 24),
             Expanded(
-              child: sortedDistributions.isEmpty
+              child: distributions.isEmpty
                 ? const Center(
                     child: Text(
                       'Nessuna scala ancora compilata.',
@@ -1300,10 +1301,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 : Stack(
                     children: [
                       ListView.builder(
-                        itemCount: sortedDistributions.length,
+                        itemCount: distributions.length,
                         padding: const EdgeInsets.only(bottom: 20),
                         itemBuilder: (context, index) {
-                          final item = sortedDistributions[index];
+                          final item = distributions[index];
                           final name = item['scala_nome'] ?? '';
                           final count = (item['count'] ?? 0) as int;
                           
@@ -1388,20 +1389,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 // ─── CARD COMPONENT WITH HOVER EFFECT ────────────────────────────────────────
-class _HoverBentoCard extends StatefulWidget {
+class _HoverWrapper extends StatefulWidget {
   final Widget child;
   final double? height;
+  final Color hoverBorderColor;
+  final Color defaultBorderColor;
 
-  const _HoverBentoCard({
+  const _HoverWrapper({
     required this.child,
     this.height,
+    this.hoverBorderColor = const Color(0xFF1E3A8A),
+    this.defaultBorderColor = const Color(0xFFE8EEF8),
   });
 
   @override
-  State<_HoverBentoCard> createState() => _HoverBentoCardState();
+  State<_HoverWrapper> createState() => _HoverWrapperState();
 }
 
-class _HoverBentoCardState extends State<_HoverBentoCard> {
+class _HoverWrapperState extends State<_HoverWrapper> {
   bool _isHovered = false;
 
   @override
@@ -1418,7 +1423,7 @@ class _HoverBentoCardState extends State<_HoverBentoCard> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: _isHovered ? AppTheme.primaryColor.withValues(alpha: 0.3) : const Color(0xFFE8EEF8),
+            color: _isHovered ? widget.hoverBorderColor : widget.defaultBorderColor,
             width: 1,
           ),
           boxShadow: [
@@ -1431,6 +1436,22 @@ class _HoverBentoCardState extends State<_HoverBentoCard> {
         ),
         child: widget.child,
       ),
+    );
+  }
+}
+
+class _HoverBentoCard extends StatelessWidget {
+  final Widget child;
+  final double? height;
+
+  const _HoverBentoCard({required this.child, this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return _HoverWrapper(
+      height: height,
+      hoverBorderColor: AppTheme.primaryColor.withValues(alpha: 0.3),
+      child: child,
     );
   }
 }
@@ -1451,9 +1472,6 @@ class _BentoKpiCard extends StatefulWidget {
   final Color themeColor;
   final String suffix;
   final VoidCallback onTap;
-  final String? tooltip;
-  final String? trendText;
-  final bool isTrendPositive;
   final List<_BreakdownPill>? breakdownPills;
 
   const _BentoKpiCard({
@@ -1464,9 +1482,6 @@ class _BentoKpiCard extends StatefulWidget {
     required this.themeColor,
     this.suffix = '',
     required this.onTap,
-    this.tooltip,
-    this.trendText,
-    this.isTrendPositive = true,
     this.breakdownPills,
   });
 
@@ -1475,33 +1490,12 @@ class _BentoKpiCard extends StatefulWidget {
 }
 
 class _BentoKpiCardState extends State<_BentoKpiCard> {
-  bool _isHovered = false;
-
   @override
   Widget build(BuildContext context) {
-    Widget cardContent = MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-        transform: Matrix4.translationValues(0.0, _isHovered ? -4.0 : 0.0, 0.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: _isHovered ? widget.themeColor.withValues(alpha: 0.35) : const Color(0xFFE2E8F0),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: _isHovered ? 0.06 : 0.02),
-              blurRadius: _isHovered ? 16 : 8,
-              offset: Offset(0, _isHovered ? 8 : 4),
-            ),
-          ],
-        ),
-        child: Material(
+    Widget cardContent = _HoverWrapper(
+      hoverBorderColor: widget.themeColor.withValues(alpha: 0.35),
+      defaultBorderColor: const Color(0xFFE2E8F0),
+      child: Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: widget.onTap,
@@ -1547,35 +1541,6 @@ class _BentoKpiCardState extends State<_BentoKpiCard> {
                                 );
                               },
                             ),
-                            if (widget.trendText != null) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: widget.isTrendPositive ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      widget.isTrendPositive ? Icons.arrow_upward : Icons.arrow_downward,
-                                      size: 10,
-                                      color: widget.isTrendPositive ? const Color(0xFF059669) : const Color(0xFFDC2626),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Text(
-                                      widget.trendText!,
-                                      style: TextStyle(
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: widget.isTrendPositive ? const Color(0xFF059669) : const Color(0xFFDC2626),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                         const SizedBox(height: 8),
@@ -1627,30 +1592,8 @@ class _BentoKpiCardState extends State<_BentoKpiCard> {
               ),
             ),
           ),
-        ),
       ),
     );
-
-    if (widget.tooltip != null) {
-      return Tooltip(
-        message: widget.tooltip!,
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white24, width: 1),
-        ),
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        textStyle: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          height: 1.4,
-        ),
-        triggerMode: TooltipTriggerMode.tap,
-        child: cardContent,
-      );
-    }
 
     return cardContent;
   }

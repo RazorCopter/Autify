@@ -1,4 +1,4 @@
-// ignore: avoid_web_libraries_in_flutter
+﻿// ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'dart:convert';
 import 'dart:math' as math;
@@ -765,7 +765,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.12),
+              color: iconColor.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: iconColor, size: 24),
@@ -780,7 +780,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: textColor.withOpacity(0.8),
+                    color: textColor.withValues(alpha: 0.8),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -916,14 +916,14 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                     horizontalLines: [
                       HorizontalLine(
                         y: _showPercentilesInSisChart ? 50.0 : 10.0,
-                        color: const Color(0xFFEF4444).withOpacity(0.5),
+                        color: const Color(0xFFEF4444).withValues(alpha: 0.5),
                         strokeWidth: 2,
                         dashArray: [6, 4],
                         label: HorizontalLineLabel(
                           show: true,
                           alignment: Alignment.topRight,
                           style: TextStyle(
-                            color: const Color(0xFFEF4444).withOpacity(0.8),
+                            color: const Color(0xFFEF4444).withValues(alpha: 0.8),
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
@@ -948,7 +948,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                         BarChartRodData(
                           toY: score,
                           gradient: LinearGradient(
-                            colors: [color.withOpacity(0.7), color],
+                            colors: [color.withValues(alpha: 0.7), color],
                             begin: Alignment.bottomCenter,
                             end: Alignment.topCenter,
                           ),
@@ -988,7 +988,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
           boxShadow: active
               ? [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   )
@@ -1079,7 +1079,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF64B5F6).withOpacity(0.12),
+                          color: const Color(0xFF64B5F6).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -1869,11 +1869,11 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
               ),
             ),
             DataCell(Text(rawScore.toString(), style: const TextStyle(fontSize: 13))),
-            if (_shouldUseSanMartinUi && _analysis != null) ...[
-              DataCell(_standardScoreBadge((d as DomainAnalysis).punteggioStandard, _getFasciaColor(d.fascia))),
+            if (_shouldUseSanMartinUi && _analysis != null && d is DomainAnalysis) ...[
+              DataCell(_standardScoreBadge(d.punteggioStandard, _getFasciaColor(d.fascia))),
               DataCell(Builder(
                 builder: (context) {
-                  final val = (d as DomainAnalysis).percentileDominio;
+                  final val = d.percentileDominio;
                   final fasciaColor = _getFasciaColor(d.fascia);
                   final valText = val != null ? '$val°' : '—';
                   return Text(
@@ -1886,7 +1886,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                   );
                 },
               )),
-              DataCell(_fasciaBadge((d as DomainAnalysis).fascia, _getFasciaColor(d.fascia))),
+              DataCell(_fasciaBadge(d.fascia, _getFasciaColor(d.fascia))),
             ],
           ],
         ));
@@ -2546,7 +2546,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: ['Esteso', 'Generalizzato'].contains(persona['livello_assistenza']) ? persona['livello_assistenza'] as String? : null,
+                      initialValue: ['Esteso', 'Generalizzato'].contains(persona['livello_assistenza']) ? persona['livello_assistenza'] as String? : null,
                       decoration: const InputDecoration(labelText: 'Livello Assistenza', border: OutlineInputBorder()),
                       items: const [
                         DropdownMenuItem(value: 'Esteso', child: Text('Esteso')),
@@ -2563,7 +2563,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: ['Grado I', 'Grado II', 'Grado III'].contains(persona['livello_dipendenza']) ? persona['livello_dipendenza'] as String? : null,
+                      initialValue: ['Grado I', 'Grado II', 'Grado III'].contains(persona['livello_dipendenza']) ? persona['livello_dipendenza'] as String? : null,
                       decoration: const InputDecoration(labelText: 'Livello Dipendenza', border: OutlineInputBorder()),
                       items: const [
                         DropdownMenuItem(value: 'Grado I', child: Text('Grado I (Lieve)')),
@@ -2697,7 +2697,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: ['Genitore', 'Fratello/Sorella', 'Tutore', 'Educatore', 'Operatore', 'Altro'].contains(inf1['relazione']) ? inf1['relazione'] as String? : null,
+                      initialValue: ['Genitore', 'Fratello/Sorella', 'Tutore', 'Educatore', 'Operatore', 'Altro'].contains(inf1['relazione']) ? inf1['relazione'] as String? : null,
                       decoration: const InputDecoration(labelText: 'Relazione con Utente', border: OutlineInputBorder()),
                       items: const [
                         DropdownMenuItem(value: 'Genitore', child: Text('Genitore')),
@@ -2757,7 +2757,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: ['Quotidiano', 'Settimanale', 'Mensile', 'Occasionale'].contains(inf1['frequenza_contatto']) ? inf1['frequenza_contatto'] as String? : null,
+                      initialValue: ['Quotidiano', 'Settimanale', 'Mensile', 'Occasionale'].contains(inf1['frequenza_contatto']) ? inf1['frequenza_contatto'] as String? : null,
                       decoration: const InputDecoration(labelText: 'Frequenza Contatto', border: OutlineInputBorder()),
                       items: const [
                         DropdownMenuItem(value: 'Quotidiano', child: Text('Quotidiano')),
@@ -2811,7 +2811,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: ['Genitore', 'Fratello/Sorella', 'Tutore', 'Educatore', 'Operatore', 'Altro'].contains(inf2['relazione']) ? inf2['relazione'] as String? : null,
+                        initialValue: ['Genitore', 'Fratello/Sorella', 'Tutore', 'Educatore', 'Operatore', 'Altro'].contains(inf2['relazione']) ? inf2['relazione'] as String? : null,
                         decoration: const InputDecoration(labelText: 'Relazione con Utente 2', border: OutlineInputBorder()),
                         items: const [
                           DropdownMenuItem(value: 'Genitore', child: Text('Genitore')),
@@ -2871,7 +2871,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: ['Quotidiano', 'Settimanale', 'Mensile', 'Occasionale'].contains(inf2['frequenza_contatto']) ? inf2['frequenza_contatto'] as String? : null,
+                        initialValue: ['Quotidiano', 'Settimanale', 'Mensile', 'Occasionale'].contains(inf2['frequenza_contatto']) ? inf2['frequenza_contatto'] as String? : null,
                         decoration: const InputDecoration(labelText: 'Frequenza Contatto 2', border: OutlineInputBorder()),
                         items: const [
                           DropdownMenuItem(value: 'Quotidiano', child: Text('Quotidiano')),

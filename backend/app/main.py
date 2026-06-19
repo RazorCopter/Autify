@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -8,19 +9,20 @@ from . import auth as auth_module
 
 limiter = Limiter(key_func=get_remote_address)
 
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    await auth_module.ensure_default_admin()
+    yield
+
 app = FastAPI(
     title="Autify API",
     description="API per la piattaforma Multi-Frontend (Admin/Client) Autify di Valutazione Multidimensionale.",
-    version="2.23.4"
+    version="2.23.4",
+    lifespan=lifespan,
 )
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-@app.on_event("startup")
-async def startup_event():
-    """Inizializza il sistema al primo avvio: crea l'utente admin di default se necessario."""
-    await auth_module.ensure_default_admin()
 
 # Configurazione CORS per permettere le chiamate dai frontend (Admin e Client)
 app.add_middleware(

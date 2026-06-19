@@ -1,8 +1,9 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:html' as html;
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as raw_http;
 import 'package:file_picker/file_picker.dart';
-import '../config.dart' as cfg;
+import '../config.dart' show kApiBaseUrl, kApiClientBaseUrl;
 import '../models/scale_model.dart';
 import '../models/patient_model.dart';
 import '../models/evaluation_model.dart';
@@ -94,11 +95,7 @@ class ApiService {
     return '';
   }
 
-  // Dato che questo frontend è servito da Nginx sulla stessa origine e proxy verso backend,
-  // possiamo usare un URL relativo o parametrizzato. In dev locale su Flutter web, 
-  // potremmo aver bisogno dell'url completo se non passiamo da Nginx.
-  // Assumiamo che in produzione sia /api/admin.
-  static const String baseUrl = 'https://tiglio.autify.it/api/admin';
+  static const String baseUrl = kApiBaseUrl;
   
   // --- AUTHENTICATION ---
   
@@ -125,33 +122,9 @@ class ApiService {
         return data;
       }
       return null;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return null;
-    }
-  }
-
-  Future<Map<String, dynamic>?> getAuthConfig() async {
-    // Mantenuto per backward-compat — non più utilizzato dalla UI
-    return null;
-  }
-
-  Future<bool> updateAuthConfig(Map<String, dynamic> newConfig) async {
-    // Mantenuto per backward-compat — non più utilizzato dalla UI
-    return false;
-  }
-
-  Future<List<dynamic>> getViewerLogs() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/auth/logs'),
-        headers: {'Authorization': 'Bearer $kAuthToken'},
-      );
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      }
-      return [];
-    } catch (e) {
-      return [];
     }
   }
 
@@ -166,7 +139,8 @@ class ApiService {
         return data.map((e) => AuditLog.fromJson(e)).toList();
       }
       return [];
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return [];
     }
   }
@@ -184,7 +158,8 @@ class ApiService {
         return body.cast<Map<String, dynamic>>();
       }
       return [];
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return [];
     }
   }
@@ -200,7 +175,8 @@ class ApiService {
         body: jsonEncode(userData),
       );
       return response.statusCode == 201;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return false;
     }
   }
@@ -216,7 +192,8 @@ class ApiService {
         body: jsonEncode(updateData),
       );
       return response.statusCode == 200;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return false;
     }
   }
@@ -228,7 +205,8 @@ class ApiService {
         headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       return response.statusCode == 200;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return false;
     }
   }
@@ -257,7 +235,8 @@ class ApiService {
         http._handleUnauthorized();
       }
       return response.statusCode == 200;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return false;
     }
   }
@@ -273,7 +252,8 @@ class ApiService {
         return body.map((json) => ScaleModel.fromJson(json)).toList();
       }
       return [];
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return [];
     }
   }
@@ -289,7 +269,8 @@ class ApiService {
         body: jsonEncode(scale.toJson()),
       );
       return response.statusCode == 200;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return false;
     }
   }
@@ -301,7 +282,8 @@ class ApiService {
         headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       return response.statusCode == 200;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return false;
     }
   }
@@ -313,7 +295,8 @@ class ApiService {
         headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       return response.statusCode == 200;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return false;
     }
   }
@@ -339,7 +322,8 @@ class ApiService {
         'prompt': null,
         'viewer_ai_enabled': false,
       };
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return {
         'key': null,
         'model': 'gemini-1.5-pro',
@@ -366,7 +350,8 @@ class ApiService {
         }),
       );
       return response.statusCode == 200;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return false;
     }
   }
@@ -378,6 +363,7 @@ class ApiService {
     int pageSize = 50,
     String? search,
     String status = 'active',
+    String? filter,
   }) async {
     try {
       final queryParams = <String, String>{
@@ -388,6 +374,9 @@ class ApiService {
       if (search != null && search.trim().isNotEmpty) {
         queryParams['search'] = search.trim();
       }
+      if (filter != null && filter.isNotEmpty) {
+        queryParams['filter'] = filter;
+      }
       final uri = Uri.parse('$baseUrl/patients').replace(queryParameters: queryParams);
       final response = await http.get(uri, headers: {'Authorization': 'Bearer $kAuthToken'});
       if (response.statusCode == 200) {
@@ -395,7 +384,8 @@ class ApiService {
         return PaginatedPatientsResult.fromJson(data);
       }
       return PaginatedPatientsResult.empty();
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return PaginatedPatientsResult.empty();
     }
   }
@@ -411,7 +401,8 @@ class ApiService {
         body: jsonEncode(patient.toJson()),
       );
       return response.statusCode == 201;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return false;
     }
   }
@@ -427,7 +418,8 @@ class ApiService {
         body: jsonEncode(patient.toJson()),
       );
       return response.statusCode == 200;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return false;
     }
   }
@@ -439,7 +431,8 @@ class ApiService {
         headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       return response.statusCode == 200;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return false;
     }
   }
@@ -458,7 +451,8 @@ class ApiService {
         return body.map((json) => AggregatedEvaluation.fromJson(json)).toList();
       }
       return [];
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return [];
     }
   }
@@ -486,7 +480,8 @@ class ApiService {
         return AggregatedEvaluation.fromJson(jsonDecode(response.body));
       }
       return null;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return null;
     }
   }
@@ -501,7 +496,8 @@ class ApiService {
         return response.bodyBytes;
       }
       return null;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return null;
     }
   }
@@ -519,7 +515,8 @@ class ApiService {
         return PsychometricAnalysis.fromJson(decoded);
       }
       return null;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return null;
     }
   }
@@ -536,7 +533,8 @@ class ApiService {
         return response.bodyBytes;
       }
       return null;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return null;
     }
   }
@@ -551,7 +549,8 @@ class ApiService {
         return response.bodyBytes;
       }
       return null;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return null;
     }
   }
@@ -577,7 +576,8 @@ class ApiService {
         http._handleUnauthorized();
       }
       return response.statusCode == 200;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return false;
     }
   }
@@ -595,7 +595,8 @@ class ApiService {
         return body.map((item) => item as Map<String, dynamic>).toList();
       }
       return [];
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return [];
     }
   }
@@ -619,7 +620,8 @@ class ApiService {
         return jsonDecode(response.body) as Map<String, dynamic>;
       }
       return null;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return null;
     }
   }
@@ -631,7 +633,8 @@ class ApiService {
         headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       return response.statusCode == 200;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return false;
     }
   }
@@ -649,13 +652,14 @@ class ApiService {
         }),
       );
       return response.statusCode == 200;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return false;
     }
   }
 
   // --- CLIENT-SIDE ENDPOINTS INTEGRATED ---
-  static const String clientBaseUrl = 'https://tiglio.autify.it/api/client';
+  static const String clientBaseUrl = kApiClientBaseUrl;
 
   Future<ScaleModel?> getScaleById(String scaleId) async {
     try {
@@ -664,7 +668,8 @@ class ApiService {
         return ScaleModel.fromJson(jsonDecode(response.body));
       }
       return null;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return null;
     }
   }
@@ -677,7 +682,8 @@ class ApiService {
         body: jsonEncode(evaluation.toJson()),
       );
       return response.statusCode == 201;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return false;
     }
   }
@@ -692,7 +698,8 @@ class ApiService {
         return jsonDecode(response.body) as Map<String, dynamic>;
       }
       return null;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return null;
     }
   }
@@ -714,7 +721,8 @@ class ApiService {
         return response.bodyBytes;
       }
       return null;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[ApiService] $e | $s');
       return null;
     }
   }

@@ -3,7 +3,6 @@ import 'dart:html' as html;
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import '../models/patient_model.dart';
 import '../models/evaluation_model.dart';
 import '../models/scale_model.dart';
@@ -17,7 +16,6 @@ import 'settings_screen.dart';
 import 'document_reader_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:file_picker/file_picker.dart';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 class MultidimensionalDashboardScreen extends StatefulWidget {
@@ -657,8 +655,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   child: child,
                 ),
               ),
-              child: _isCompareMode && canCompare
-                  ? _buildComparePanel(posEval!, smEval!)
+              child: _isCompareMode && posEval != null && smEval != null
+                  ? _buildComparePanel(posEval, smEval)
                   : (!isMobile
                       ? Row(
                           key: const ValueKey('qdv_row_desktop'),
@@ -807,8 +805,6 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     final isSis = _isSisScale(scale.id, scale.nome);
     final isBehavior = _isBehaviorScale(scale.id, scale.nome);
 
-    // Colori gradiente per tipo di scala
-    final bool isSabs = scale.id.toLowerCase().contains('sabs') || scale.nome.toLowerCase().contains('sabs');
     final List<Color> gradientColors = isSis
         ? const [Color(0xFF00695C), Color(0xFF26A69A)]
         : isBehavior
@@ -993,7 +989,6 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
       // Calcola il totale punteggio per ogni valutazione storica
       final totals = recent.map((e) => e.domini.fold(0, (s, d) => s + d.punteggio).toDouble()).toList();
-      final maxT = totals.reduce((a, b) => a > b ? a : b).clamp(1.0, double.infinity);
 
       // Trend: confronta l'ultima con la penultima
       final trend = totals.length >= 2 ? totals.last - totals[totals.length - 2] : 0.0;
@@ -1134,7 +1129,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           ),
           Switch.adaptive(
             value: _isCompareMode && canCompare,
-            activeColor: AppTheme.primaryColor,
+            activeThumbColor: AppTheme.primaryColor,
             onChanged: canCompare
                 ? (value) {
                     setState(() {
@@ -1561,149 +1556,6 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         const SizedBox(width: 6),
         Text(label, style: const TextStyle(color: Colors.white70, fontSize: 14)),
       ],
-    );
-  }
-
-  // ── Scale Panel ──────────────────────────────────────────────────────────────
-  Widget _buildScalePanel(ScaleModel scale, {bool useExpanded = false}) {
-    final eval = _latestEvaluations[scale.id]!;
-    final analysis = _analyses[scale.id];
-    final isSM = _isSanMartinScale(scale.id, scale.nome);
-    final isSis = _isSisScale(scale.id, scale.nome);
-    final isBehavior = _isBehaviorScale(scale.id, scale.nome);
-
-    final accentGradient = isSis
-        ? const [Color(0xFF00695C), Color(0xFF26A69A)] // Teal premium per la scala SIS
-        : isBehavior ? const [Color(0xFFFFB300), Color(0xFFF57C00)] : isSM
-            ? const [Color(0xFF1A237E), Color(0xFF3949AB)]
-            : const [Color(0xFF0D47A1), Color(0xFF42A5F5)];
-
-    final headerWidget = Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: accentGradient),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isSis ? '📊 Supports Intensity Scale (SIS)' : (isSM ? '🧩 San Martín' : '📊 ${scale.nome}'),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isBehavior ? 'Valutazione dei comportamenti specifici e abilità adattive' : (isSis
-                      ? 'Valutazione dell\'intensità dei bisogni di sostegno'
-                      : (isSM 
-                          ? 'Valutazione osservativa della qualità di vita' 
-                          : 'Valutazione degli esiti personali e della QdV percepita')),
-                  style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.7)),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          if ((_evaluationsHistory[scale.id]?.length ?? 0) > 1) ...[
-            TextButton.icon(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white,
-                backgroundColor: Colors.amber.shade700,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              ),
-              onPressed: () => _showTimelineDialog(scale),
-              icon: const Icon(Icons.timeline, size: 16),
-              label: const Text('Storico', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-            ),
-            const SizedBox(width: 8),
-          ],
-          TextButton.icon(
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
-              backgroundColor: Colors.white.withValues(alpha: 0.15),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            ),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(
-              builder: (_) => EvaluationDetailScreen(patient: widget.patient, scale: scale),
-            )),
-            icon: const Icon(Icons.open_in_new, size: 16),
-            label: const Text('Dettaglio', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-    );
-
-    Widget indicatorsWidget;
-    if (isSis) {
-      indicatorsWidget = _buildSisIndicators(eval, analysis);
-    } else if (isSM && analysis != null) {
-      indicatorsWidget = _buildSanMartinIndicators(analysis);
-    } else if (!isSM) {
-      indicatorsWidget = _buildPosIndicators(eval);
-    } else {
-      indicatorsWidget = const SizedBox.shrink();
-    }
-
-    final bodyContent = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // ── Metadata row ──
-        _buildMetaRow(eval),
-        const SizedBox(height: 20),
-
-        // ── Indicatori multidimensionali ──
-        useExpanded ? Expanded(child: indicatorsWidget) : indicatorsWidget,
-
-        const SizedBox(height: 20),
-
-        // ── Chart ──
-        if (eval.domini.isNotEmpty)
-          SizedBox(
-            height: (isSM && analysis != null && analysis.domini.isNotEmpty) ? 250 : (eval.domini.length > 10 ? 295 : 250),
-            child: isSM && analysis != null && analysis.domini.isNotEmpty
-                ? _buildRadarChartForPanel(analysis)
-                : _buildBarChartForPanel(eval.domini, isSm: isSM, isSis: isSis, isSabs: scale.id.toLowerCase().contains("sabs") || scale.nome.toLowerCase().contains("sabs")),
-          ),
-      ],
-    );
-
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: Color(0xFFE8EEF8)),
-      ),
-      child: useExpanded
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                headerWidget,
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: bodyContent,
-                  ),
-                ),
-              ],
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                headerWidget,
-                Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: bodyContent,
-                ),
-              ],
-            ),
     );
   }
 
@@ -2465,7 +2317,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     if (domini.isEmpty) return const SizedBox();
 
     final patientValues = domini
-        .map((d) => ((d.punteggioStandard ?? d.punteggioDiretto ?? 0).clamp(0, 20)).toDouble())
+        .map((d) => ((d.punteggioStandard ?? d.punteggioDiretto).clamp(0, 20)).toDouble())
         .toList();
 
     return LayoutBuilder(

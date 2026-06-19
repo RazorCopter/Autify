@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -24,8 +25,7 @@ class MockHttpClient implements HttpClient {
   Duration idleTimeout = const Duration(seconds: 15);
 
   @override
-  MaxConnectionsPerHost? maxConnectionsPerHost;
-
+  int? maxConnectionsPerHost;
   @override
   String? userAgent;
 
@@ -50,6 +50,16 @@ class MockHttpClient implements HttpClient {
   }
 
   @override
+  Future<HttpClientRequest> head(String host, int port, String path) {
+    return Future.value(MockHttpClientRequest('HEAD', path));
+  }
+
+  @override
+  Future<HttpClientRequest> patch(String host, int port, String path) {
+    return Future.value(MockHttpClientRequest('PATCH', path));
+  }
+
+  @override
   Future<HttpClientRequest> getUrl(Uri url) => get(url.host, url.port, url.path);
 
   @override
@@ -60,6 +70,12 @@ class MockHttpClient implements HttpClient {
 
   @override
   Future<HttpClientRequest> deleteUrl(Uri url) => delete(url.host, url.port, url.path);
+
+  @override
+  Future<HttpClientRequest> headUrl(Uri url) => head(url.host, url.port, url.path);
+
+  @override
+  Future<HttpClientRequest> patchUrl(Uri url) => patch(url.host, url.port, url.path);
 
   @override
   Future<HttpClientRequest> open(String method, String host, int port, String path) =>
@@ -136,7 +152,6 @@ class MockHttpClientRequest implements HttpClientRequest {
   @override
   void writeln([Object? obj = ""]) {}
 
-  // Campi inutilizzati richiesti dall'interfaccia
   @override
   bool get bufferOutput => true;
   @override
@@ -152,9 +167,19 @@ class MockHttpClientRequest implements HttpClientRequest {
   @override
   Future<HttpClientResponse> get done => Future.value(_response);
   @override
-  void destroy() {}
+  bool followRedirects = true;
   @override
-  set connectionKeepAliveDelay(Duration value) {}
+  int maxRedirects = 5;
+  @override
+  Uri get uri => Uri.parse('http://localhost/$path');
+  @override
+  HttpConnectionInfo? get connectionInfo => null;
+  @override
+  List<Cookie> get cookies => [];
+  @override
+  void abort([Object? exception, StackTrace? stackTrace]) {}
+  @override
+  Future<void> flush() => Future.value();
 }
 
 class MockHttpClientResponse extends Stream<List<int>> implements HttpClientResponse {
@@ -213,13 +238,12 @@ class MockHttpClientResponse extends Stream<List<int>> implements HttpClientResp
     );
   }
 
-  // Campi inutilizzati richiesti dall'interfaccia
   @override
   int get contentLength => utf8.encode(_body).length;
   @override
   HttpClientResponseCompressionState get compressionState => HttpClientResponseCompressionState.notCompressed;
   @override
-  List<Redirect> get redirects => [];
+  List<RedirectInfo> get redirects => [];
   @override
   bool get isRedirect => false;
   @override
@@ -232,11 +256,20 @@ class MockHttpClientResponse extends Stream<List<int>> implements HttpClientResp
   Future<Socket> detachSocket() => throw UnimplementedError();
   @override
   List<Cookie> get cookies => [];
+  @override
+  X509Certificate? get certificate => null;
+  @override
+  HttpConnectionInfo? get connectionInfo => null;
+  @override
+  Future<HttpClientResponse> redirect([String? method, Uri? url, bool? followLoops]) =>
+      throw UnimplementedError();
 }
 
 class MockHttpHeaders implements HttpHeaders {
   @override
   List<String>? operator [](String name) => [];
+  @override
+  String? value(String name) => null;
   @override
   void add(String name, Object value, {bool preserveHeaderCase = false}) {}
   @override
@@ -346,25 +379,25 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Aggiungi Paziente'));
       await tester.pumpAndSettle();
 
-      // Compila Nome e Cognome
-      final nomeField = find.widgetWithLabel(TextFormField, 'Nome');
-      final cognomeField = find.widgetWithLabel(TextFormField, 'Cognome');
+      // Compila Nome e Cognome (find.widgetWithText su TextFormField cerca il labelText attuale)
+      final nomeField = find.widgetWithText(TextFormField, 'Nome');
+      final cognomeField = find.widgetWithText(TextFormField, 'Cognome');
 
       await tester.enterText(nomeField, 'Giuseppe');
       await tester.enterText(cognomeField, 'Verdi');
 
       // Seleziona il sesso dal dropdown
-      final sessoDropdown = find.widgetWithLabel(DropdownButtonFormField<String>, 'Sesso');
+      final sessoDropdown = find.widgetWithText(DropdownButtonFormField<String>, 'Sesso');
       await tester.tap(sessoDropdown);
       await tester.pumpAndSettle();
-      
+
       // Seleziona l'opzione 'M'
       final mOption = find.text('M').last;
       await tester.tap(mOption);
       await tester.pumpAndSettle();
 
       // Inserisce peso
-      final pesoField = find.widgetWithLabel(TextFormField, 'Peso (kg)');
+      final pesoField = find.widgetWithText(TextFormField, 'Peso (kg)');
       await tester.enterText(pesoField, '78.5');
 
       // Clicca su "Salva"

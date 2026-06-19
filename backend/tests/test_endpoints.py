@@ -250,8 +250,12 @@ def setup_mock_db(mock_patients, mock_scales, mock_evaluations):
 @pytest.fixture
 def client():
     """TestClient instance for API communication."""
+    import os
+    os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-unit-tests")
+    from app.auth import create_access_token
+    token = create_access_token(username="admin", role="admin", ai_enabled=True)
     c = TestClient(app)
-    c.headers.update({"X-Admin-Password": "tiglio2026"})
+    c.headers.update({"Authorization": f"Bearer {token}"})
     return c
 
 
