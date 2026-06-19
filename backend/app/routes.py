@@ -204,7 +204,7 @@ def _hydrate_scale_doc(scale_doc: Optional[dict]) -> dict:
 
 @public_admin_router.post("/auth/login", tags=["Admin - Auth"])
 @_limiter.limit("10/minute")
-async def auth_login(_request: Request, payload: LoginRequest):
+async def auth_login(request: Request, payload: LoginRequest):
     """
     Endpoint pubblico di login. Verifica username+password con bcrypt,
     restituisce un JWT con role e ai_enabled.
