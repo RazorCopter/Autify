@@ -65,11 +65,11 @@ def _classify_scale(scale_name: str, scale_id: str) -> str:
         return "san_martin"
     if "sis" in n or "sis" in i:
         return "sis"
-    if "ogva" in n or "griglia_autonomia" in n or "ogva" in i or "griglia_autonomia" in i:
+    if "ogva" in n or "griglia_autonomia" in n or "autonomi" in n or "ogva" in i or "griglia_autonomia" in i:
         return "ogva"
     if "sabs" in n or "sabs" in i:
         return "sabs"
-    if "oso" in n or "scheda_osservativa" in n or "oso" in i or "scheda_osservativa" in i:
+    if "oso" in n or "scheda osservativa" in n or "scheda_osservativa" in n or "oso" in i or "scheda_osservativa" in i:
         return "oso"
     return "altro"
 
@@ -1991,10 +1991,3 @@ async def get_client_patients(request: Request):
     patients = await cursor.to_list(length=1000)
     # The frontend only needs id, nome, cognome. Patient model has them.
     return patients
-
-
-@public_admin_router.get("/debug/scales-raw", tags=["Admin - Debug"])
-async def debug_scales_raw():
-    """Mostra id e nome di tutte le scale nel DB (diagnostica classificazione badge)."""
-    scales_list = await scales_collection.find({}).to_list(length=100)
-    return [{"id": s.get("id", ""), "nome": s.get("nome", "")} for s in scales_list]
