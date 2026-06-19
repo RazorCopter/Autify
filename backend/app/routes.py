@@ -1991,3 +1991,37 @@ async def get_client_patients(request: Request):
     patients = await cursor.to_list(length=1000)
     # The frontend only needs id, nome, cognome. Patient model has them.
     return patients
+
+
+@admin_router.get("/debug/patient-scales/{patient_id}", tags=["Admin - Debug"])
+async def debug_patient_scales(patient_id: str):
+    """Diagnostica badge: mostra id_scala delle valutazioni e come vengono classificate."""
+    scales_list = await scales_collection.find({}).to_list(length=100)
+    scale_map = {}
+    scale_info = []
+    for s in scales_list:
+        nome_lower = s.get("nome", "").lower()
+        sid = s.get("id", "")
+        mongo_id = str(s.get("_id", ""))
+        scale_map[sid] = nome_lower
+        if mongo_id:
+            scale_map[mongo_id] = nome_lower
+        scale_info.append({"id": sid, "_id": mongo_id, "nome": s.get("nome", "")})
+
+    evals = await evaluations_collection.find({"id_paziente": patient_id}).to_list(length=200)
+    results = []
+    for ev in evals:
+        scale_id = ev.get("id_scala")
+        scale_id_str = str(scale_id) if scale_id else ""
+        scale_name = scale_map.get(scale_id, scale_map.get(scale_id_str, ""))
+        scale_type = _classify_scale(scale_name, scale_id_str)
+        results.append({
+            "id_valutazione": ev.get("id_valutazione") or str(ev.get("_id", "")),
+            "id_scala_raw": scale_id,
+            "id_scala_str": scale_id_str,
+            "scale_name_resolved": scale_name,
+            "scale_type": scale_type,
+            "data_compilazione": str(ev.get("data_compilazione", "")),
+        })
+
+    return {"scales_in_db": scale_info, "evaluations": results}
