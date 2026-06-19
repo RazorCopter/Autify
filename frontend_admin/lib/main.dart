@@ -57,6 +57,7 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0;
   String? _patientSearchQuery;
+  String? _patientSemanticFilter;
 
   void _performLogout() {
     try {
@@ -521,17 +522,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
       child: switch (_selectedIndex) {
         0 => DashboardScreen(
             key: const ValueKey(0),
-            onNavigate: (index, {searchFilter}) {
+            onNavigate: (index, {searchFilter, semanticFilter}) {
               setState(() {
                 _patientSearchQuery = searchFilter;
+                _patientSemanticFilter = semanticFilter;
                 _selectedIndex = index;
               });
             },
           ),
         1 => const SelectionScreen(key: ValueKey(1)),
         2 => AnagraficaScreen(
-            key: ValueKey('anagrafica_${_patientSearchQuery ?? ""}_$_selectedIndex'),
+            key: ValueKey('anagrafica_${_patientSearchQuery ?? ""}_${_patientSemanticFilter ?? ""}_$_selectedIndex'),
             initialSearchQuery: _patientSearchQuery,
+            initialSemanticFilter: _patientSemanticFilter,
           ),
         3 => const ProtocolsScreen(key: ValueKey(3)),
         4 => const AuditLogScreen(key: ValueKey(4)),

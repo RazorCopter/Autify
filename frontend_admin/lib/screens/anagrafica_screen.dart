@@ -14,10 +14,12 @@ import 'multidimensional_dashboard_screen.dart';
 
 class AnagraficaScreen extends StatefulWidget {
   final String? initialSearchQuery;
+  final String? initialSemanticFilter;
 
   const AnagraficaScreen({
     super.key,
     this.initialSearchQuery,
+    this.initialSemanticFilter,
   });
 
   @override
@@ -43,6 +45,9 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
     super.initState();
     if (widget.initialSearchQuery != null) {
       _searchController.text = widget.initialSearchQuery!;
+    }
+    if (widget.initialSemanticFilter != null) {
+      _semanticFilter = widget.initialSemanticFilter;
     }
     _refreshPatients();
     _loadScales();

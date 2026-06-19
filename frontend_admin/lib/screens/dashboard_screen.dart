@@ -6,7 +6,7 @@ import '../utils/responsive_helper.dart';
 import '../theme/app_theme.dart';
 
 class DashboardScreen extends StatefulWidget {
-  final Function(int tabIndex, {String? searchFilter}) onNavigate;
+  final Function(int tabIndex, {String? searchFilter, String? semanticFilter}) onNavigate;
 
   const DashboardScreen({
     super.key,
@@ -579,7 +579,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: const Color(0xFFEF4444),
                   backgroundColor: const Color(0xFFFEE2E2),
                   icon: Icons.dangerous_outlined,
-                  onTap: () => widget.onNavigate(2, searchFilter: 'scaduti'),
+                  onTap: () => widget.onNavigate(2, semanticFilter: 'scaduti'),
                 ),
                 const SizedBox(height: 8),
                 _buildAlertBarItem(
@@ -588,7 +588,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: const Color(0xFFF59E0B),
                   backgroundColor: const Color(0xFFFEF3C7),
                   icon: Icons.warning_amber_rounded,
-                  onTap: () => widget.onNavigate(2, searchFilter: 'in scadenza'),
+                  onTap: () => widget.onNavigate(2, semanticFilter: 'in_scadenza'),
                 ),
                 const SizedBox(height: 8),
                 _buildAlertBarItem(
@@ -597,7 +597,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: const Color(0xFF3B82F6),
                   backgroundColor: const Color(0xFFEFF6FF),
                   icon: Icons.assignment_late_outlined,
-                  onTap: () => widget.onNavigate(2, searchFilter: 'incompleti'),
+                  onTap: () => widget.onNavigate(2, semanticFilter: 'incompleti'),
                 ),
                 const SizedBox(height: 8),
                 _buildAlertBarItem(
@@ -606,7 +606,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: const Color(0xFF718096),
                   backgroundColor: const Color(0xFFF1F5F9),
                   icon: Icons.help_outline_rounded,
-                  onTap: () => widget.onNavigate(2, searchFilter: 'mai valutati'),
+                  onTap: () => widget.onNavigate(2, semanticFilter: 'mai_valutati'),
                 ),
               ],
             )
@@ -620,7 +620,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: const Color(0xFFEF4444),
                     backgroundColor: const Color(0xFFFEE2E2),
                     icon: Icons.dangerous_outlined,
-                    onTap: () => widget.onNavigate(2, searchFilter: 'scaduti'),
+                    onTap: () => widget.onNavigate(2, semanticFilter: 'scaduti'),
                   ),
                 ),
                 Container(width: 1, height: 24, color: const Color(0xFFE2E8F0)),
@@ -631,7 +631,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: const Color(0xFFF59E0B),
                     backgroundColor: const Color(0xFFFEF3C7),
                     icon: Icons.warning_amber_rounded,
-                    onTap: () => widget.onNavigate(2, searchFilter: 'in scadenza'),
+                    onTap: () => widget.onNavigate(2, semanticFilter: 'in_scadenza'),
                   ),
                 ),
                 Container(width: 1, height: 24, color: const Color(0xFFE2E8F0)),
@@ -642,7 +642,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: const Color(0xFF3B82F6),
                     backgroundColor: const Color(0xFFEFF6FF),
                     icon: Icons.assignment_late_outlined,
-                    onTap: () => widget.onNavigate(2, searchFilter: 'incompleti'),
+                    onTap: () => widget.onNavigate(2, semanticFilter: 'incompleti'),
                   ),
                 ),
                 Container(width: 1, height: 24, color: const Color(0xFFE2E8F0)),
@@ -653,7 +653,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: const Color(0xFF718096),
                     backgroundColor: const Color(0xFFF1F5F9),
                     icon: Icons.help_outline_rounded,
-                    onTap: () => widget.onNavigate(2, searchFilter: 'mai valutati'),
+                    onTap: () => widget.onNavigate(2, semanticFilter: 'mai_valutati'),
                   ),
                 ),
               ],
