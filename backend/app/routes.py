@@ -1993,7 +1993,7 @@ async def get_client_patients(request: Request):
     return patients
 
 
-@admin_router.get("/debug/scales-raw", tags=["Admin - Debug"])
+@public_admin_router.get("/debug/scales-raw", tags=["Admin - Debug"])
 async def debug_scales_raw():
     """Mostra id e nome di tutte le scale nel DB (diagnostica classificazione badge)."""
     scales_list = await scales_collection.find({}).to_list(length=100)
