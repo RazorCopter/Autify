@@ -1991,3 +1991,10 @@ async def get_client_patients(request: Request):
     patients = await cursor.to_list(length=1000)
     # The frontend only needs id, nome, cognome. Patient model has them.
     return patients
+
+
+@admin_router.get("/debug/scales-raw", tags=["Admin - Debug"])
+async def debug_scales_raw():
+    """Mostra id e nome di tutte le scale nel DB (diagnostica classificazione badge)."""
+    scales_list = await scales_collection.find({}).to_list(length=100)
+    return [{"id": s.get("id", ""), "nome": s.get("nome", "")} for s in scales_list]
