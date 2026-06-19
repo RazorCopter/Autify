@@ -11,6 +11,8 @@ import '../services/validity_calculator.dart';
 import '../utils/responsive_helper.dart';
 import '../theme/app_theme.dart';
 import 'multidimensional_dashboard_screen.dart';
+import 'wizard_screen.dart';
+import 'sis_wizard_screen.dart';
 
 class AnagraficaScreen extends StatefulWidget {
   final String? initialSearchQuery;
@@ -412,70 +414,34 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
   }
 
   Future<void> _confirmDelete(PatientModel patient) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppTheme.errorColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.delete_outline, color: AppTheme.errorColor, size: 22),
-                  ),
-                  const SizedBox(width: 14),
-                  const Text('Elimina Utente',
-                    style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Sei sicuro di voler eliminare\n"${patient.nome} ${patient.cognome}"?\n\nQuesta azione è irreversibile.',
-                style: const TextStyle(fontSize: 15, color: AppTheme.textSecondary, height: 1.5),
-              ),
-              const SizedBox(height: 28),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Annulla'),
-                  ),
-                  const SizedBox(width: 12),
-                  FilledButton.icon(
-                    style: FilledButton.styleFrom(backgroundColor: AppTheme.errorColor),
-                    onPressed: () => Navigator.pop(ctx, true),
-                    icon: const Icon(Icons.delete_outline, size: 18),
-                    label: const Text('Elimina'),
-                  ),
-                ],
-              ),
-            ],
-          ),
+    bool cancelled = false;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Eliminazione di "${patient.nome} ${patient.cognome}" in corso...'),
+        backgroundColor: AppTheme.errorColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(20),
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'ANNULLA',
+          textColor: Colors.white,
+          onPressed: () { cancelled = true; },
         ),
       ),
     );
 
-    if (confirmed == true && mounted) {
-      setState(() => _isLoading = true);
-      final success = await _apiService.deletePatient(patient.id);
-      setState(() => _isLoading = false);
-      if (success) {
-        _refreshPatients();
-        _showSnack('Utente eliminato', isError: false);
-      } else {
-        _showSnack('Errore durante l\'eliminazione', isError: true);
-      }
+    await Future.delayed(const Duration(seconds: 5));
+    if (cancelled || !mounted) return;
+
+    final success = await _apiService.deletePatient(patient.id);
+    if (!mounted) return;
+    if (success) {
+      _refreshPatients();
+      _showSnack('Utente eliminato', isError: false);
+    } else {
+      _showSnack('Errore durante l\'eliminazione', isError: true);
     }
   }
 
@@ -488,6 +454,71 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => MultidimensionalDashboardScreen(patient: patient),
+      ),
+    );
+  }
+
+  void _showCompileSheet(PatientModel patient) {
+    if (_availableScales.isEmpty) {
+      _showSnack('Nessun protocollo disponibile nel sistema', isError: true);
+      return;
+    }
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Compila scala per ${patient.nome} ${patient.cognome}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
+            ),
+            const SizedBox(height: 16),
+            ..._availableScales.map((scale) => ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
+              leading: Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.assignment_outlined, color: AppTheme.primaryColor, size: 20),
+              ),
+              title: Text(scale.nome, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              trailing: const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+              onTap: () {
+                Navigator.pop(ctx);
+                final isSis = scale.id.toLowerCase().contains('sis');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => isSis
+                        ? SisWizardScreen(patientId: patient.id, scaleId: scale.id)
+                        : WizardScreen(patientId: patient.id, scaleId: scale.id),
+                  ),
+                ).then((_) => _refreshPatients());
+              },
+            )),
+          ],
+        ),
       ),
     );
   }
@@ -775,21 +806,44 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              height: 32,
-              child: ElevatedButton.icon(
-                onPressed: () => _openMultidimensionalDashboard(patient),
-                icon: const Icon(Icons.analytics_outlined, size: 16),
-                label: const Text('Analisi', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
-                  foregroundColor: AppTheme.accentColor,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 32,
+                    child: ElevatedButton.icon(
+                      onPressed: ApiService.isViewer ? null : () => _showCompileSheet(patient),
+                      icon: const Icon(Icons.edit_note_outlined, size: 16),
+                      label: const Text('Compila', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+                        foregroundColor: AppTheme.primaryColor,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: SizedBox(
+                    height: 32,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _openMultidimensionalDashboard(patient),
+                      icon: const Icon(Icons.analytics_outlined, size: 16),
+                      label: const Text('Analisi', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
+                        foregroundColor: AppTheme.accentColor,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -1159,10 +1213,24 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                       ),
                     ),
                     SizedBox(
-                      width: 200,
+                      width: 240,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
+                          ElevatedButton.icon(
+                            onPressed: ApiService.isViewer ? null : () => _showCompileSheet(p),
+                            icon: const Icon(Icons.edit_note_outlined, size: 16),
+                            label: const Text('Compila', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+                              foregroundColor: AppTheme.primaryColor,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                              minimumSize: const Size(0, 32),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
                           ElevatedButton.icon(
                             onPressed: () => _openMultidimensionalDashboard(p),
                             icon: const Icon(Icons.analytics_outlined, size: 16),
@@ -1171,7 +1239,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                               backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
                               foregroundColor: AppTheme.accentColor,
                               elevation: 0,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                               minimumSize: const Size(0, 32),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                             ),
