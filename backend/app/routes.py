@@ -1918,7 +1918,7 @@ async def delete_evaluation(evaluation_id: str):
 
 @client_router.get("/scales", response_model=List[Scale], tags=["Client - Scales"])
 @_limiter.limit("60/minute")
-async def get_scales(_request: Request):
+async def get_scales(request: Request):
     """Restituisce l'elenco delle scale disponibili per il data entry"""
     cursor = scales_collection.find({})
     scales = await cursor.to_list(length=100)
@@ -1926,7 +1926,7 @@ async def get_scales(_request: Request):
 
 @client_router.get("/scales/{scale_id}", response_model=Scale, tags=["Client - Scales"])
 @_limiter.limit("60/minute")
-async def get_scale_by_id(_request: Request, scale_id: str):
+async def get_scale_by_id(request: Request, scale_id: str):
     """Restituisce i dettagli completi di una singola scala"""
     scale = await scales_collection.find_one({"id": scale_id})
     if not scale:
@@ -1935,7 +1935,7 @@ async def get_scale_by_id(_request: Request, scale_id: str):
 
 @client_router.post("/evaluations", response_model=Evaluation, status_code=status.HTTP_201_CREATED, tags=["Client - Evaluations"])
 @_limiter.limit("20/minute")
-async def create_evaluation(_request: Request, evaluation: Evaluation):
+async def create_evaluation(request: Request, evaluation: Evaluation):
     """Salva una nuova valutazione compilata nel database"""
     eval_dict = evaluation.model_dump()
     if not eval_dict.get("data_compilazione"):
@@ -1985,7 +1985,7 @@ async def get_audit_logs(limit: int = 200):
 
 @client_router.get("/patients", response_model=List[Patient], tags=["Client - Patients"])
 @_limiter.limit("30/minute")
-async def get_client_patients(_request: Request):
+async def get_client_patients(request: Request):
     """Recupero pazienti per la selezione prima del wizard"""
     cursor = patients_collection.find({})
     patients = await cursor.to_list(length=1000)
