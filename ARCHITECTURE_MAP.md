@@ -80,56 +80,49 @@ flowchart TD
     style DB_CHECK fill:#E91E63,color:#fff
 ```
 
-### Regola 6: Catena CI/CD — Come funziona il Deploy
+### Regola 6: Build e deploy — fonti verificate e contesto esterno
 
-> [!NOTE]
-> Comprendere questa catena è fondamentale per non rompere il processo di rilascio.
+Il repository corrente è `RazorCopter/Autify`, branch `main`. Il codice verifica questa catena: Compose avvia MongoDB, backend FastAPI e frontend Nginx; il Dockerfile frontend compila Flutter Web e aggiorna app_version.dart dal pubspec. Nginx espone la UI e inoltra /api/ al backend.
 
-```text
-Sviluppatore
-    │
-    ├─ 1. Modifica codice in locale
-    ├─ 2. py bump_version.py          ← propaga VERSION a tutti i file
-    ├─ 3. git commit & push → GitHub (RazorCopter/AutAnalysis, branch: main)
-    │
-    └─ 4. deploy.ps1                  ← script locale Windows
-           │  PATH: C:\Users\gianvito.bleve\OneDrive - Banca Mediolanum SPA\Documenti\Progetti\deploy.ps1
-           │
-           ├─ Autentica su Portainer via REST API
-           ├─ Arresta lo stack Docker 140 ("autify")
-           ├─ Attende 5s per rilascio porte
-           └─ Redeploy stack da Git (Portainer fa git pull + docker build)
-                  │
-                  ├─ Backend Dockerfile
-                  │    ├─ pip install requirements.txt
-                  │    └─ uvicorn app.main:app
-                  │
-                  └─ Frontend Dockerfile
-                       ├─ flutter pub get
-                       ├─ dart run tools/update_version.dart  ← sincronizza app_version.dart da pubspec.yaml
-                       ├─ flutter build web --release
-                       └─ Nginx su porta 8090 (proxy → backend :8000)
-```
-
-**Infrastruttura di produzione:**
-
-* URL: `https://tiglio.autify.it`
-* Portainer stack ID: `140` (nome: `autify`)
-* Frontend porta: `8090` → Nginx reverse proxy verso backend `8000`
-* Database: MongoDB volume persistente `autify_data`
+Il deploy via script Windows `deploy.ps1` e Portainer stack 140 è **contesto operativo dichiarato in precedenza, non verificato dall’assessment**: lo script non è versionato qui. Non risultano workflow GitHub Actions. La produzione dichiarata è `https://tiglio.autify.it`; Compose pubblica 8090:80 e usa il volume `autify_data`. L’assessment non ha interrogato Portainer né eseguito un deploy.
 
 ---
 
-## Ricognizione verificata — Step 1
+## Mappa verificata — ricognizione e assessment
 
-Snapshot: commit `13b375e316fb2e17e69f28ebcb7aeb1b26dec2c0`, branch `main`, lettura del 12 settembre 2026.
-Inventario completo dell'albero Git (107 file, risposta non troncata); lettura mirata di codice, configurazioni e test. Questa è una mappa per il successivo assessment, non una certificazione di sicurezza o correttezza. Test, build, servizi e produzione non eseguiti/interrogati; nessuna chiamata Gemini effettuata.
+Snapshot assessment: commit `cad2ca2714796d3199152e1d5a49c143df9d8fbc` su `main`, 12 settembre 2026. Il codice applicativo coincide con quello della ricognizione iniziale (`13b375e316fb2e17e69f28ebcb7aeb1b26dec2c0`); il commit intermedio aveva modificato solo questa mappa.
 
-Le regole di progetto sopra restano valide. Le descrizioni storiche di deploy sopra non sono prove dello stato di produzione: il repository corrente è **RazorCopter/Autify**; `deploy.ps1` non è presente nello snapshot. Non risultano workflow `.github/workflows`. Il presente aggiornamento è solo documentale e non costituisce una release.
+**Valutazione:** la separazione Flutter / FastAPI / MongoDB è adeguata come base; non emerge la necessità di sostituire lo stack. Esistono però blocchi verificati su autorizzazioni, integrità del ripristino, coerenza dei calcoli e provenienza dei dati IA. La presenza di JWT e test non basta a considerare l’app pronta sotto questi aspetti.
+
+Questo file è il riferimento centrale per architettura e contratti. [REMEDIATION.md](REMEDIATION.md) contiene il registro completo degli interventi, evidenze e criteri di chiusura. **Nessun fix funzionale è stato applicato**: tutte le descrizioni del comportamento corrente qui sotto sono separate dalle decisioni proposte.
+
+Inventario completo di 107 file e 37 endpoint applicativi espliciti (incluso health; esclusi endpoint automatici OpenAPI/docs). Lettura mirata del codice, esecuzione suite Python e 16 verifiche aggiuntive ASGI/pure con dati sintetici. Ultima suite: **20 passed, 1 failed** dopo aver risolto solo localmente un’incompatibilità httpx; dettagli nella sezione 7. Nessun test contro produzione, Gemini o MongoDB reale; nessuna build Flutter/Docker e nessuna certificazione normativa delle tabelle.
+
+| Area | Stato osservato | Azione collegata |
+| --- | --- | --- |
+| Autorizzazioni | API client anonime; backup completo ai viewer | SEC-01, SEC-02 — P0 |
+| Identità e segreti | Sessioni non revocate, bootstrap prevedibile, credenziali in script | SEC-03, SEC-04, SEC-05 |
+| Dati | Restore può cancellare prima di validare; riferimenti e versioni fragili | DATA-01, DATA-02, DATA-03 |
+| Indicatori e punteggi | Date/filtro incoerenti, SIS vuota con indice, tabelle da riconciliare | FUN-01, FUN-02, SCORE-01, SCORE-02 |
+| IA | Indici recenti associati allo storico; chiave nel browser; autosalvataggio | AI-01, AI-02 |
+| Rilascio e qualità | Versioni discordanti, cache asset, suite incompleta e limiti di volume | OPS-01, QA-01, PERF-01, OBS-01, UI-01, ARCH-01 |
+
+### Relazioni fra componenti
+
+```mermaid
+flowchart TD
+    UI["Flutter Web"] --> NGINX["Nginx /api"]
+    NGINX --> API["FastAPI e policy"]
+    API --> DB["MongoDB autanalysis"]
+    API --> CALC["Calcolo e PDF"]
+    UI --> GEM["Gemini diretto"]
+```
+
+Il collegamento diretto UI → Gemini è il comportamento corrente. Il servizio IA backend è una proposta di AI-02, non un componente già implementato.
 
 ### 1. Prodotto e confini
 
-Autify supporta una struttura educativa con anagrafiche utenti, somministrazione e storico valutazioni, scale POS, San Martín, SIS, OGVA, SABS e OSO, dashboard, relazioni IA e documenti PDF. La presenza dei percorsi e dei dati non certifica la validità delle conversioni o di ogni scala: da verificare nello step 2.
+Autify supporta una struttura educativa con anagrafiche utenti, somministrazione e storico valutazioni, scale POS, San Martín, SIS, OGVA, SABS e OSO, dashboard, relazioni IA e documenti PDF. La presenza dei percorsi e dei dati non certifica la validità delle conversioni o di ogni scala: incompletezza e fonti di scoring sono trattate in SCORE-01/SCORE-02.
 
 | Livello | Implementazione osservata |
 | --- | --- |
@@ -151,7 +144,7 @@ Tutti i percorsi UI seguenti sono relativi a `frontend_admin/lib/`.
 | --- | --- | --- |
 | Avvio e navigazione | main.dart, config.dart, app_version.dart | Shell, sessione browser, selezione schermate, URL API e versione |
 | Accesso | screens/login_screen.dart, services/api_service.dart | Login JWT, localStorage, header Bearer e gestione 401 |
-| Configurazione | screens/settings_screen.dart, services/settings_notifier.dart, models/app_settings.dart | Settings globali, configurazione Gemini, utenze e backup |
+| Configurazione | screens/settings_screen.dart, services/settings_notifier.dart, models/app_settings.dart | Gemini/utenze/backup via API; durate e alert in SharedPreferences locali, non nel backup DB |
 | Anagrafiche | screens/anagrafica_screen.dart, models/patient_model.dart | CRUD, ricerca, filtri, paginazione e storico |
 | Scale | screens/protocols_screen.dart, models/scale_model.dart | Import e gestione protocolli |
 | Compilazione | screens/selection_screen.dart, screens/wizard_screen.dart, screens/sis_wizard_screen.dart | Selezione utente/scala, risposte generiche e percorso SIS |
@@ -184,7 +177,7 @@ Tutti i percorsi UI seguenti sono relativi a `frontend_admin/lib/`.
 1. **Accesso:** UI → POST login → bcrypt → JWT → localStorage → Bearer sulle chiamate admin. Il wrapper in routes.py aggiunge al controllo JWT il blocco delle scritture viewer; POST PDF IA è un'eccezione esplicita.
 2. **Compilazione:** wizard → POST /api/client/evaluations → persistenza risposte → invalidazione cache → audit. Questo endpoint non invoca il motore di calcolo e non aggiorna un campo ultima_compilazione nell'anagrafica. Le analisi vengono costruite nei percorsi di lettura/aggregazione/PDF.
 3. **Analisi e PDF:** routes.py recupera valutazioni e scale → analytics.py → risposta strutturata o pdf_generator.py.
-4. **IA:** UI raccoglie valutazioni, note, allegato opzionale e relazioni pregresse → Gemini direttamente → Markdown → anteprima → salvataggio in ai_analyses via API. Non risulta un proxy backend Gemini.
+4. **IA:** UI raccoglie valutazioni, note, allegato opzionale e relazioni pregresse → Gemini direttamente → Markdown → autosalvataggio in ai_analyses via API. Non c’è un passaggio esplicito di approvazione né uno stato approvato nel modello. Lo storico usa gli indici dell’ultima valutazione per scala e gli ID salvati non coincidono sempre con la selezione (AI-01). Non risulta un proxy backend Gemini.
 5. **Backup:** export JSON delle sette collection, inclusi utenti e settings; import limitato a 5 MiB. L'import cancella/reinserisce solo le collection con elenco non vuoto: un elenco vuoto non svuota la collection esistente.
 6. **Dashboard:** aggregazioni in routes.py, cache in processo con TTL 300 secondi e invalidazione esplicita.
 
@@ -200,7 +193,7 @@ Tutti i percorsi UI seguenti sono relativi a `frontend_admin/lib/`.
 | ai_analyses | Relazioni IA salvate | Sì |
 | audit_logs | Eventi applicativi | Sì |
 
-Bootstrap: indici su username (univoco), identificativi valutazione/utente, identificativo utente univoco, riferimenti e timestamp delle analisi, timestamp audit. L'integrità referenziale, la completezza del tracciamento e il ripristino atomico restano da valutare.
+Bootstrap: indici su username (univoco), identificativi valutazione/utente, identificativo utente univoco, riferimenti e timestamp delle analisi, timestamp audit. L'integrità referenziale, la completezza del tracciamento e il ripristino atomico non sono garantiti dai percorsi esaminati (DATA-01, DATA-02, OBS-01).
 
 ### 5. Inventario API
 
@@ -210,10 +203,10 @@ Protezione rilevata dal codice, senza richieste live. Il nome di un router non g
 | --- | --- | --- |
 | GET | `/` | Pubblico, health |
 | POST | `/api/admin/auth/login` | Pubblico nel codice |
-| GET | `/api/admin/users` | JWT + filtro viewer |
+| GET | `/api/admin/users` | JWT + ruolo admin esplicito |
 | POST | `/api/admin/users` | JWT + admin verificati nel corpo |
-| PUT | `/api/admin/users/{username}` | JWT + filtro viewer |
-| DELETE | `/api/admin/users/{username}` | JWT + filtro viewer |
+| PUT | `/api/admin/users/{username}` | JWT + ruolo admin esplicito |
+| DELETE | `/api/admin/users/{username}` | JWT + ruolo admin esplicito |
 | GET | `/api/admin/patients` | JWT + filtro viewer |
 | GET | `/api/admin/scales` | JWT + filtro viewer |
 | POST | `/api/admin/patients` | JWT + filtro viewer |
@@ -246,7 +239,7 @@ Protezione rilevata dal codice, senza richieste live. Il nome di un router non g
 | GET | `/api/admin/audit-logs` | JWT + filtro viewer |
 | GET | `/api/client/patients` | Pubblico nel codice |
 
-Le GET admin ereditano la verifica JWT ma non un divieto generale per viewer. In particolare il backup completo va esaminato nello step 2. Le quattro rotte client non hanno dependency auth; hanno rate limiting. Il rate limiting non sostituisce l'autorizzazione.
+Le GET admin ereditano la verifica JWT ma non un divieto generale per viewer. Il test locale conferma che un viewer può esportare anche hash operatori e chiave Gemini (SEC-02). Le quattro rotte client non hanno dependency auth; hanno rate limiting. Il rate limiting non sostituisce l'autorizzazione.
 
 ### 6. Build, configurazione e versioni
 
@@ -257,38 +250,47 @@ Le GET admin ereditano la verifica JWT ma non un divieto generale per viewer. In
 - config.dart usa localhost in debug e tiglio.autify.it in release. CORS backend ammette l'origine di produzione.
 - JWT_SECRET_KEY obbligatoria all'import di auth.py. Compose include anche variabili legacy e GOOGLE_API_KEY; la loro presenza non prova utilizzo runtime.
 - VERSION e backend/app/main.py: **2.23.4**; pubspec.yaml, app_version.dart e CACHE_BUST Compose: **3.0.0**. Divergenza osservata, non corretta in questa ricognizione.
-- bump_version.py e frontend_admin/tools/update_version.dart fanno parte del flusso di propagazione versione. Esistono anche script root update_version.py/update_changelog.py da distinguere nel prossimo assessment.
+- bump_version.py e frontend_admin/tools/update_version.dart fanno parte del flusso di propagazione versione. update_version.py è uno script storico con sostituzione fissa 2.18.31 → 2.18.32; update_changelog.py è uno script storico per 2.18.32 e non supera il parsing Python (riga 5). Non sono entrypoint del runtime né sostituti del flusso VERSION/bump_version.py.
 - VERSION non viene copiato nel Dockerfile backend: verificare metadata versione dell'export nel container.
 
-### 7. Test e verifiche disponibili
+### 7. Test ed evidenze
 
-| File | Scopo osservato | Limite della ricognizione |
+| Verifica | Esito dell’assessment |
+| --- | --- |
+| backend/tests/test_endpoints.py + backend/test_sis.py, senza JWT_SECRET_KEY esterna | Raccolta bloccata dall’import auth prima della fixture |
+| Stessi test con segreto sintetico e httpx 0.28.1 | 11 passed, 10 errori setup TestClient |
+| Stessi test con httpx 0.27.2 solo nell’ambiente locale | 20 passed, 1 failed: MockCollection.count_documents assente |
+| 16 verifiche ASGI/pure, sette collection in memoria | Confermano accesso anonimo, backup viewer, assenza controllo account corrente, filtri, mutazione ID, orfani, restore, compositi, SIS vuota/incoerente, intervalli San Martín e limite bcrypt |
+| Widget test anagrafica/wizard | Presenti, non eseguiti: Flutter/Dart non disponibili |
+| backend/test_audit.py | Script diagnostico non eseguito; contiene una URI con credenziali |
+| Build, MongoDB reale, provider Gemini, produzione | Non verificati |
+
+Ambiente locale Python 3.12; immagine backend Python 3.11. I dati sintetici e i mock non sostituiscono prove d’integrazione. Nessun cambiamento alle dipendenze del repository: httpx 0.27.2 è stato usato solo per superare il primo blocco e vedere l’errore successivo. Comandi ed esiti dettagliati in [REMEDIATION.md](REMEDIATION.md#evidenze-di-test-dellassessment).
+
+### 8. Contratti e decisioni da stabilizzare
+
+| Contratto | Stato attuale | Direzione proposta, ancora da implementare |
 | --- | --- | --- |
-| backend/tests/test_endpoints.py | Test endpoint con collection simulate: anagrafiche, import scale, settings e caso analytics | Non eseguiti; verificare ordine impostazione JWT_SECRET_KEY rispetto all'import app e dipendenze pytest/httpx |
-| backend/test_sis.py | Casi aritmetici e conversioni SIS | Non eseguiti; non equivalgono a validazione integrale delle tabelle |
-| backend/test_audit.py | Script diagnostico MongoDB | Non è un test isolato; contiene una stringa di connessione con credenziali, non riprodotte qui |
-| frontend_admin/test/evaluation_wizard_test.dart | Widget test wizard con HTTP simulato | Non eseguiti; verificare compatibilità dart:io dei mock con dipendenze dart:html |
-| frontend_admin/test/patient_creation_test.dart | Widget test anagrafiche con HTTP simulato | Stesso limite di piattaforma |
+| Autorizzazione | JWT admin router; quattro rotte client senza auth; viewer può esportare tutto | Policy esplicita per operazione, token in tutte le chiamate protette; SEC-01/02 |
+| Sessione | Ruolo/IA nel token fino a otto ore | Revoca/versione sessione e stato account corrente; SEC-03 |
+| Utente e storico | ID modificabili, relazioni IA orfane su cancellazione | ID immutabili, archiviazione/riferimenti verificati; DATA-02 |
+| Scala e valutazione | Ricalcolo dalla definizione corrente | Versione scala immutabile associata alla compilazione; DATA-02 |
+| Validità | Preferenze locali e soglie API/dashboard diverse | Policy server unica per scale richieste, mesi, alert e timezone; FUN-02 |
+| Completezza | Risposte flessibili, indici anche senza item SIS | Bozza/completata, validazione per scala e indici solo se ammissibili; SCORE-01 |
+| IA | Chiamata browser, analisi indicizzata per scala, autosalvataggio | Servizio backend, contesto per valutazione, bozza/approvazione; AI-01/02 |
+| Backup | JSON generico, restore parziale distruttivo, perdita tipi | Formato versionato, prevalidazione, staging/rollback e round-trip; DATA-01 |
+| Errori/audit | Copertura parziale, fallback a zeri/liste vuote | Errori strutturati e audit coerente; OBS-01 |
 
-Non risultano workflow CI versionati né un manifest dedicato alle dipendenze test Python. Non sono disponibili esiti, coverage o evidenze di produzione in questa ricognizione.
+Non sono stati scelti valori normativi o requisiti educativi al posto della struttura. Per chiudere SCORE-02 serve una fonte autorevole della scala; un cambio di livello del modello non sostituisce quella fonte. L’assessment tecnico non ha richiesto un passaggio ad Astra alto.
 
-### 8. Handoff per Astra medium
+Il precedente REMEDIATION.md è stato sostituito dal registro attuale: consultare la storia Git per il passato. Alcuni miglioramenti precedenti sono confermati (JWT obbligatorio, bcrypt senza fallback in chiaro, lifespan, pool Motor, query bulk, cache, PDF in thread). Evitare di riaprire automaticamente voci già corrette o di dichiarare risolte quelle residue sulla sola base di una vecchia spunta.
 
-Partire da questo snapshot; se main è cambiato, leggere prima il diff. Le voci sono **domande di assessment**, non conclusioni sulla distribuzione effettiva o sulla sfruttabilità.
+### 8.1 Tracciabilità e manutenzione della mappa
 
-| Ordine | Ambito | Evidenza da approfondire | File |
-| --- | --- | --- | --- |
-| 1 | Autorizzazioni | Rotte client prive di auth; export DB accessibile a JWT viewer nel codice; eccezioni POST e ruolo ai_enabled | routes.py, auth.py, api_service.dart |
-| 2 | Credenziali e sessioni | Bootstrap admin predefinito, credenziali nello script diagnostico, revoca/variazioni ruolo, localStorage | auth.py, backend/test_audit.py, main.dart |
-| 3 | Flusso IA | Chiave fornita al browser per utenti abilitati, dati e allegati inviati direttamente, limiti/errori/controllo permessi | gemini_service.dart, routes.py /settings, dashboard multidimensionale |
-| 4 | Backup e dati | Import parziale, elenchi vuoti, limite 5 MiB, tipi e riferimenti, coerenza restore | routes.py export/import, models.py, database.py |
-| 5 | Punteggi | Tabelle normative, estremi e dati incompleti, coerenza UI/API/PDF per tutte le scale | analytics.py, JSON scale, test_sis.py, wizard e dettagli |
-| 6 | Release | Versioni discordanti, cache asset, URL/CORS, riproducibilità immagini e dipendenze | VERSION, Dockerfile, Compose, nginx.conf, config.dart |
-| 7 | Test | Eseguibilità reale, casi RBAC negativi, round-trip backup, integrazione frontend/backend | file test sopra |
-| 8 | Manutenibilità e prestazioni | Controller/UI estesi, duplicazioni, query e cache, PDF sincroni | routes.py, pdf_generator.py, schermate grandi |
-| 9 | Documentazione storica | Verificare ogni voce di REMEDIATION.md rispetto al codice; non assumere completamento dai simboli | REMEDIATION.md, CHANGELOG.md, gemini.md |
-
-In gemini.md sono descritti directives/ ed execution/, assenti dall'albero attuale. REMEDIATION.md include osservazioni storiche: alcune correzioni sono presenti (segreto JWT obbligatorio, pool Motor, lifespan), altre richiedono nuova verifica.
+- Questo file descrive il comportamento corrente; REMEDIATION.md descrive cambiamenti proposti e criteri di chiusura.
+- Per ogni fix aggiornare gli ID collegati, il commit verificato e le parti della mappa che cambiano. Nessuna implementazione proposta deve apparire come già esistente.
+- Non rinominare autanalysis; aggiungere sempre nuove collection al contratto export/import.
+- gemini.md descrive anche directives/ ed execution/, assenti dallo snapshot: quel testo non è una mappa dell’app attuale.
 
 ### 9. Dimensioni dei moduli
 
