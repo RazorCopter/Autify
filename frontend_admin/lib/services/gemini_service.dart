@@ -200,7 +200,7 @@ TONO E FORMATTAZIONE:
       buffer.writeln("\nScala: ${eval.idScala} (${isSis ? 'Supports Intensity Scale' : 'Standard QV'})");
       buffer.writeln("Data Compilazione: ${eval.dataCompilazione}");
       
-      final analysis = analyses?[eval.idScala];
+      final analysis = analyses?[eval.idValutazione] ?? analyses?[eval.idScala];
       
       if (isSis) {
         // SIS Specific Serialization

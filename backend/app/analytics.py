@@ -971,18 +971,21 @@ def calcola_punteggi_sis(
         for item in items:
             grezzo_dominio += _calcola_grezzo_item_sis(item, item["id"])
 
-        std, perc = _lookup_sis_standard_percentile(grezzo_dominio, dom_code)
-
-        if std is not None:
-            somma_standard += std
-        else:
+        if len(items) == 0:
+            std, perc = None, None
             all_domains_have_std = False
+        else:
+            std, perc = _lookup_sis_standard_percentile(grezzo_dominio, dom_code)
+            if std is not None:
+                somma_standard += std
+            else:
+                all_domains_have_std = False
 
         domini_result.append({
             "codice": dom_code,
             "etichetta": _SIS_DOMAIN_LABELS.get(dom_code, dom_code),
-            "punteggio_grezzo": grezzo_dominio,
-            "punteggio_diretto": grezzo_dominio,
+            "punteggio_grezzo": grezzo_dominio if len(items) > 0 else 0,
+            "punteggio_diretto": grezzo_dominio if len(items) > 0 else 0,
             "punteggio_standard": std,
             "percentile": perc,
             "percentile_dominio": perc,
@@ -995,7 +998,7 @@ def calcola_punteggi_sis(
     percentile_globale: Optional[int] = None
     classificazione: Optional[str] = None
 
-    if all_domains_have_std:
+    if all_domains_have_std and len(risposte) > 0:
         indice_sis, percentile_globale = _lookup_indice_sis(somma_standard)
         if indice_sis is not None:
             classificazione = _classifica_intensita_sis(indice_sis)

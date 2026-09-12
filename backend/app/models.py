@@ -20,6 +20,13 @@ class UserCreate(BaseModel):
             raise ValueError("Lo username non può contenere spazi")
         return v.lower()
 
+    @field_validator("password")
+    @classmethod
+    def password_max_72_bytes(cls, v: str) -> str:
+        if len(v.encode("utf-8")) > 72:
+            raise ValueError("La password non può superare 72 byte (limite bcrypt)")
+        return v
+
     @field_validator("confirm_password")
     @classmethod
     def passwords_match(cls, v: str, info) -> str:
@@ -34,6 +41,13 @@ class UserUpdate(BaseModel):
     confirm_password: Optional[str] = None
     role: Optional[str] = Field(None, pattern="^(admin|viewer)$")
     ai_enabled: Optional[bool] = None
+
+    @field_validator("password")
+    @classmethod
+    def password_max_72_bytes(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and len(v.encode("utf-8")) > 72:
+            raise ValueError("La password non può superare 72 byte (limite bcrypt)")
+        return v
 
     @field_validator("confirm_password")
     @classmethod
@@ -50,6 +64,7 @@ class UserResponse(BaseModel):
     role: str
     ai_enabled: bool
     is_default: bool
+    token_version: int = 1
     created_at: datetime
     updated_at: datetime
 
@@ -86,8 +101,12 @@ class AppSettings(BaseModel):
     id: str = "global_settings"
     gemini_api_key: Optional[str] = None
     gemini_model: Optional[str] = "gemini-2.5-pro"
+    chatgpt_api_key: Optional[str] = None
+    chatgpt_model: Optional[str] = "gpt-4o"
+    ai_provider: str = Field(default="gemini", description="Provider AI attivo: 'gemini' o 'chatgpt'")
     gemini_prompt: Optional[str] = None
     viewer_ai_enabled: Optional[bool] = False
+    scale_validity_months: dict = Field(default_factory=lambda: {"pos": 12, "san_martin": 12, "sis": 36, "ogva": 12, "sabs": 12, "oso": 12})
 
 # --- MODELLI SCALA (Scale Models) ---
 
@@ -144,9 +163,10 @@ class Evaluation(BaseModel):
     anno: int
     id_scala: str
     data_compilazione: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    nome_operatore: str
+    nome_operatore: Optional[str] = ""
     nome_intervistato: Optional[str] = None
     demographics: Optional[dict] = None
+    snapshot_scala: Optional[dict] = None
     risposte: List[Answer]
 
 # --- MODELLI AGGREGAZIONE E PDF ---
@@ -203,6 +223,9 @@ class AiAnalysisCreate(BaseModel):
 
 class AiAnalysisUpdate(BaseModel):
     notes: Optional[str] = None
+
+class AiAnalysisRequest(BaseModel):
+    id_valutazione: str
 
 class AiPdfRequest(BaseModel):
     patient: dict

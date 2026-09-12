@@ -1,5 +1,29 @@
 # Changelog
 
+## [3.1.0] - 2026-09-12
+
+### Architettura Modulare e Sicurezza
+
+- **ARCH-01 · Refactoring Modulare Router Backend**: scomposto il monolite `routes.py` in 8 router verticali dedicati (`auth`, `patients`, `evaluations`, `settings`, `ai`, `backup`, `dashboard`, `misc`) all'interno di `backend/app/routers/`. Centralizzate 84 funzioni di supporto condivise nel modulo `_helpers.py`, riducendo oltre 1.500 righe di codice duplicato e separando lo stato di cache in `__init__.py`.
+- **SEC-01 · Protezione Completa Rotte Client**: protetti tutti gli endpoint `/api/client/` con autenticazione JWT e controllo accessi `Depends(verify_auth)`.
+- **SEC-02 · Restrizione RBAC su Esportazione Dati**: vincolata l'esportazione completa del database (`/api/admin/export-db`) al solo ruolo `admin`, impedendo l'accesso ai ruoli in sola visualizzazione.
+- **SEC-03 · Revoca Sessione via Token Version**: introdotto il tracciamento di `token_version` nel documento utente MongoDB per invalidare immediatamente le sessioni attive in caso di cambio credenziali o revoca.
+
+### Integrità Dati e Calcolo Punteggi
+
+- **DATA-02 · Snapshot Immutabile della Scala**: salvato lo snapshot integrale della definizione della scala utilizzata al momento della compilazione della valutazione, garantendo la riproducibilità storica dei calcoli anche a fronte di future modifiche alla struttura delle scale.
+- **SCORE-01 · Validazione Punteggi Domande**: introdotta validazione rigorosa sui punteggi ammessi per ciascun item in base alla scala di riferimento prima del salvataggio nel database.
+- **FUN-01 · Allineamento Date Valutazioni**: aggiornamento automatico delle date di ultima compilazione delle scale nel profilo dell'utente.
+
+### Containerizzazione, Fix e Frontend
+
+- **Puntamento API Relativo Frontend**: configurato fallback con path relativi (`/api/admin` e `/api/client`) in `frontend_admin/lib/config.dart`, consentendo il funzionamento immediato e trasparente sia in locale su Docker tramite proxy Nginx sia in produzione su host dedicato.
+- **Risoluzione Errori di Compilazione Dart**: corretta l'inizializzazione di espressioni `const` con `.isNotEmpty` in `config.dart`.
+- **Fix Dipendenze Backend e Runtime**: formattato correttamente `requirements.txt` con l'inclusione di `httpx`, corretti import e risolti `NameError` per `_time` e `_collect_collection`.
+- **Validazione Funzionale Docker**: superati tutti i 13 test di integrazione API su container Docker e validato il flusso di login e dashboard via browser.
+
+---
+
 ## [3.0.0] - 2026-06-19
 
 ### Sicurezza e Architettura — Rilascio Maggiore

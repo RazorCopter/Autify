@@ -21,8 +21,11 @@ JWT_EXPIRY_HOURS = 8
 
 def hash_password(plain: str) -> str:
     """Genera un hash bcrypt con salt automatico (rounds=12)."""
+    encoded = plain.encode("utf-8")
+    if len(encoded) > 72:
+        raise ValueError("La password non può superare 72 byte (limite bcrypt)")
     salt = bcrypt.gensalt(rounds=12)
-    hashed = bcrypt.hashpw(plain.encode("utf-8"), salt)
+    hashed = bcrypt.hashpw(encoded, salt)
     return hashed.decode("utf-8")
 
 
@@ -41,12 +44,13 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 # ── JWT ─────────────────────────────────────────────────────────────────────
 
-def create_access_token(username: str, role: str, ai_enabled: bool) -> str:
+def create_access_token(username: str, role: str, ai_enabled: bool, token_version: int = 1) -> str:
     """Genera un JWT firmato con scadenza di JWT_EXPIRY_HOURS ore (epoch integer timestamp)."""
     payload = {
         "sub": username,
         "role": role,
         "ai_enabled": ai_enabled,
+        "token_version": token_version,
         "exp": int((datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRY_HOURS)).timestamp()),
         "iat": int(datetime.now(timezone.utc).timestamp()),
     }
@@ -80,15 +84,48 @@ def decode_access_token(token: str) -> dict:
 
 async def verify_auth(request: Request) -> dict:
     """
-    Dependency FastAPI: estrae il JWT dall'header Authorization e inietta
-    nel contesto {username, role, ai_enabled}.
+    Dependency FastAPI: estrae il JWT dall'header Authorization, inietta
+    nel contesto {username, role, ai_enabled} e verifica che la versione del token
+    corrisponda a quella corrente a database per revocare sessioni invalidate.
     """
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         token = auth_header[len("Bearer "):]
         payload = decode_access_token(token)
+        username = payload.get("sub")
+        if not username:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token privo di identità utente.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # Verifica revoca sessione confrontando token_version con il DB
+        user = await users_collection.find_one({"username": username})
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Utente non trovato o disattivato.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        db_token_version = user.get("token_version", 1)
+        token_version = payload.get("token_version")
+        if token_version is not None and token_version != db_token_version:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Sessione revocata o non valida. Effettua nuovamente l'accesso.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        elif token_version is None and db_token_version != 1:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Sessione revocata o non valida. Effettua nuovamente l'accesso.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
         return {
-            "username": payload.get("sub"),
+            "username": username,
             "role": payload.get("role", "viewer"),
             "ai_enabled": payload.get("ai_enabled", False),
         }
@@ -96,6 +133,7 @@ async def verify_auth(request: Request) -> dict:
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Autenticazione richiesta. Effettua il login.",
+        headers={"WWW-Authenticate": "Bearer"},
     )
 
 
@@ -124,19 +162,28 @@ async def ensure_default_admin():
         {"$set": {"attivo": True}},
     )
 
+    # Migrazione one-shot: assegna token_version=1 a utenti pre-esistenti
+    await users_collection.update_many(
+        {"token_version": {"$exists": False}},
+        {"$set": {"token_version": 1}},
+    )
+
     count = await users_collection.count_documents({})
     if count == 0:
+        bootstrap_pwd = os.getenv("INITIAL_ADMIN_PASSWORD", "admin")
         now = datetime.now(timezone.utc)
         await users_collection.insert_one({
             "username": "admin",
-            "hashed_password": hash_password("admin"),
+            "hashed_password": hash_password(bootstrap_pwd),
             "role": "admin",
             "ai_enabled": True,
             "is_default": True,
+            "must_change_password": True,
+            "token_version": 1,
             "created_at": now,
             "updated_at": now,
         })
-        print("[Autify] Bootstrap: utente admin/admin creato (cambia la password al primo accesso).")
+        print("[Autify] Bootstrap: utente admin creato con successo.")
     else:
         # Migrazione: assicura che il documento admin abbia is_default=True
         await users_collection.update_one(

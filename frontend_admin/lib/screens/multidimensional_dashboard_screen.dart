@@ -118,11 +118,13 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         history.sort((a, b) => b.dataCompilazione.compareTo(a.dataCompilazione));
         _latestEvaluations[scale.id] = history.first;
         _evaluationsHistory[scale.id] = history;
-        // Carica analisi psicometrica
+        // Carica analisi psicometrica (indicizzata per idValutazione per AI-01)
         try {
           final analysis = await _apiService.getEvaluationAnalysis(history.first.idValutazione);
+          _analyses[history.first.idValutazione] = analysis;
           _analyses[scale.id] = analysis;
         } catch (_) {
+          _analyses[history.first.idValutazione] = null;
           _analyses[scale.id] = null;
         }
       }
@@ -268,8 +270,9 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         _aiReport = report;
       });
 
-      // Auto-salvataggio in background
-      await _autoSaveAnalysis();
+      // Auto-salvataggio in background con gli ID delle valutazioni effettivamente utilizzate
+      final usedEvaluationIds = evaluationsToInclude.map((e) => e.idValutazione).toList();
+      await _autoSaveAnalysis(usedEvaluationIds: usedEvaluationIds);
 
     } catch (e) {
       String cleanError = e.toString();
@@ -292,7 +295,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     }
   }
 
-  Future<void> _autoSaveAnalysis() async {
+  Future<void> _autoSaveAnalysis({List<String>? usedEvaluationIds}) async {
     if (_aiReport == null || _isSavingAnalysis) return;
     setState(() => _isSavingAnalysis = true);
     try {
@@ -302,7 +305,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         widget.patient.id,
         _aiReport!,
         notes: notes,
-        evaluationsUsed: _latestEvaluations.values.map((e) => e.idValutazione).toList(),
+        evaluationsUsed: usedEvaluationIds ?? _latestEvaluations.values.map((e) => e.idValutazione).toList(),
       );
       if (result != null) {
         // Puliamo i campi temporanei
@@ -800,7 +803,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   /// Costruisce una ExpandableScaleCard per qualsiasi scala
   Widget _buildExpandableScaleCard(ScaleModel scale, {bool initiallyExpanded = false}) {
     final eval = _latestEvaluations[scale.id]!;
-    final analysis = _analyses[scale.id];
+    final analysis = _analyses[eval.idValutazione] ?? _analyses[scale.id];
     final isSM = _isSanMartinScale(scale.id, scale.nome);
     final isSis = _isSisScale(scale.id, scale.nome);
     final isBehavior = _isBehaviorScale(scale.id, scale.nome);

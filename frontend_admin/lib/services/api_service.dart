@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:html' as html;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as raw_http;
@@ -663,7 +663,10 @@ class ApiService {
 
   Future<ScaleModel?> getScaleById(String scaleId) async {
     try {
-      final response = await http.get(Uri.parse('$clientBaseUrl/scales/$scaleId'));
+      final response = await http.get(
+        Uri.parse('$clientBaseUrl/scales/$scaleId'),
+        headers: {'Authorization': 'Bearer $kAuthToken'},
+      );
       if (response.statusCode == 200) {
         return ScaleModel.fromJson(jsonDecode(response.body));
       }
@@ -678,7 +681,10 @@ class ApiService {
     try {
       final response = await http.post(
         Uri.parse('$clientBaseUrl/evaluations'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $kAuthToken',
+        },
         body: jsonEncode(evaluation.toJson()),
       );
       return response.statusCode == 201;

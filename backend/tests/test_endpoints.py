@@ -1,3 +1,6 @@
+import os
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-unit-tests")
+
 import pytest
 import json
 import io
@@ -30,6 +33,15 @@ class MockCursor:
             self.data = sorted(self.data, key=get_date, reverse=(direction == -1))
         return self
 
+    def skip(self, count):
+        self.data = self.data[count:]
+        return self
+
+    def limit(self, count):
+        if count is not None:
+            self.data = self.data[:count]
+        return self
+
     async def to_list(self, length=None):
         if length is not None:
             return self.data[:length]
@@ -50,7 +62,11 @@ class MockCollection:
         for doc in self.documents:
             match = True
             for k, v in filter_query.items():
-                if doc.get(k) != v:
+                if isinstance(v, dict) and "$in" in v:
+                    if doc.get(k) not in v["$in"]:
+                        match = False
+                        break
+                elif doc.get(k) != v:
                     match = False
                     break
             if match:
@@ -62,7 +78,11 @@ class MockCollection:
         for doc in self.documents:
             match = True
             for k, v in filter_query.items():
-                if doc.get(k) != v:
+                if isinstance(v, dict) and "$in" in v:
+                    if doc.get(k) not in v["$in"]:
+                        match = False
+                        break
+                elif doc.get(k) != v:
                     match = False
                     break
             if match:
@@ -113,6 +133,58 @@ class MockCollection:
             deleted_count = initial_len - len(self.documents)
         return DeleteResult()
 
+    async def count_documents(self, filter_query=None):
+        if filter_query is None or filter_query == {}:
+            return len(self.documents)
+        count = 0
+        for doc in self.documents:
+            match = True
+            for k, v in filter_query.items():
+                if doc.get(k) != v:
+                    match = False
+                    break
+            if match:
+                count += 1
+        return count
+
+    async def update_one(self, filter_query, update_query):
+        set_fields = update_query.get("$set", {})
+        inc_fields = update_query.get("$inc", {})
+        matched = False
+        for doc in self.documents:
+            match = True
+            for k, v in filter_query.items():
+                if doc.get(k) != v:
+                    match = False
+                    break
+            if match:
+                for field, val in set_fields.items():
+                    doc[field] = val
+                for field, val in inc_fields.items():
+                    doc[field] = doc.get(field, 0) + val
+                matched = True
+                break
+        class UpdateOneResult:
+            matched_count = 1 if matched else 0
+            modified_count = 1 if matched else 0
+        return UpdateOneResult()
+
+    async def delete_one(self, filter_query):
+        matched = False
+        for idx, doc in enumerate(self.documents):
+            match = True
+            for k, v in filter_query.items():
+                if doc.get(k) != v:
+                    match = False
+                    break
+            if match:
+                del self.documents[idx]
+                matched = True
+                break
+        class DeleteOneResult:
+            deleted_count = 1 if matched else 0
+        return DeleteOneResult()
+
     async def update_many(self, filter_query, update_query):
         matched_count = 0
         modified_count = 0
@@ -160,7 +232,8 @@ def mock_patients():
             "peso": 70.0,
             "sesso": "M",
             "data_nascita": "1990-01-01",
-            "note": "Paziente storico"
+            "note": "Paziente storico",
+            "attivo": True
         },
         {
             "id": "pat_2",
@@ -170,7 +243,8 @@ def mock_patients():
             "peso": 55.0,
             "sesso": "F",
             "data_nascita": "1995-05-15",
-            "note": "Paziente senza valutazioni"
+            "note": "Paziente senza valutazioni",
+            "attivo": True
         }
     ]
 
@@ -215,9 +289,28 @@ def mock_evaluations():
     ]
 
 @pytest.fixture
-def setup_mock_db(mock_patients, mock_scales, mock_evaluations):
+def mock_users():
+    return [
+        {
+            "username": "admin",
+            "role": "admin",
+            "ai_enabled": True,
+            "is_default": True,
+            "token_version": 1,
+        },
+        {
+            "username": "viewer_user",
+            "role": "viewer",
+            "ai_enabled": False,
+            "is_default": False,
+            "token_version": 1,
+        }
+    ]
+
+@pytest.fixture
+def setup_mock_db(mock_patients, mock_scales, mock_evaluations, mock_users):
     """
-    Fixture that patches the database collections in app.routes.
+    Fixture that patches the database collections across all app.routers modules.
     This replaces evaluations_collection, patients_collection, and scales_collection
     with mock implementations pre-populated with test data.
     """
@@ -225,13 +318,39 @@ def setup_mock_db(mock_patients, mock_scales, mock_evaluations):
     mock_scales_coll = MockCollection("scales", mock_scales)
     mock_evals_coll = MockCollection("evaluations", mock_evaluations)
     mock_ai_analyses_coll = MockCollection("ai_analyses", [])
+    mock_users_coll = MockCollection("users", mock_users)
 
-    patches = [
-        patch("app.routes.patients_collection", mock_patients_coll),
-        patch("app.routes.scales_collection", mock_scales_coll),
-        patch("app.routes.evaluations_collection", mock_evals_coll),
-        patch("app.routes.ai_analyses_collection", mock_ai_analyses_coll),
+    # Router modules that import database collections (ARCH-01 refactoring)
+    ROUTER_MODULES = [
+        "app.routers.auth",
+        "app.routers.patients",
+        "app.routers.evaluations",
+        "app.routers.settings",
+        "app.routers.ai",
+        "app.routers.backup",
+        "app.routers.dashboard",
+        "app.routers.misc",
+        "app.routers._helpers",
     ]
+
+    mock_settings_coll = MockCollection("settings", [])
+    mock_audit_logs_coll = MockCollection("audit_logs", [])
+
+    patches = []
+    collection_map = {
+        "patients_collection": mock_patients_coll,
+        "scales_collection": mock_scales_coll,
+        "evaluations_collection": mock_evals_coll,
+        "ai_analyses_collection": mock_ai_analyses_coll,
+        "users_collection": mock_users_coll,
+        "settings_collection": mock_settings_coll,
+        "audit_logs_collection": mock_audit_logs_coll,
+    }
+    for mod in ROUTER_MODULES:
+        for coll_name, mock_coll in collection_map.items():
+            patches.append(patch(f"{mod}.{coll_name}", mock_coll))
+    # Also patch the auth module's own users_collection
+    patches.append(patch("app.auth.users_collection", mock_users_coll))
 
     for p in patches:
         p.start()
@@ -240,7 +359,8 @@ def setup_mock_db(mock_patients, mock_scales, mock_evaluations):
         "patients": mock_patients_coll,
         "scales": mock_scales_coll,
         "evaluations": mock_evals_coll,
-        "ai_analyses": mock_ai_analyses_coll
+        "ai_analyses": mock_ai_analyses_coll,
+        "users": mock_users_coll,
     }
 
     for p in patches:
@@ -271,7 +391,9 @@ def test_get_patients_success(client, setup_mock_db):
     response = client.get("/api/admin/patients")
     
     assert response.status_code == 200
-    patients_data = response.json()
+    res_data = response.json()
+    assert res_data["total"] == 2
+    patients_data = res_data["items"]
     assert len(patients_data) == 2
 
     # Check Mario Rossi (pat_1) who has both POS and San Martin evaluations
@@ -507,7 +629,7 @@ def test_update_settings_masking(client, setup_mock_db):
         "valutazioni_per_pagina": 15
     }
     
-    with patch("app.routes.settings_collection", MockCollection("settings", [])) as mock_settings:
+    with patch("app.routers.settings.settings_collection", MockCollection("settings", [])) as mock_settings:
         response = client.post("/api/admin/settings", json=settings_payload)
         assert response.status_code == 200
         # Check that saved doc in DB has gemini_api_key as None
@@ -540,4 +662,234 @@ def test_analytics_zero_questions():
     assert sp_analysis["percentile_dominio"] is None
     assert sp_analysis["fascia"] is None
     assert total_std is None
+
+
+# ==============================================================================
+# TESTS FOR SEC-01 & SEC-02 (P0 Remediation)
+# ==============================================================================
+
+def test_sec_01_client_endpoints_require_auth(setup_mock_db):
+    """
+    SEC-01: Verify that client endpoints reject anonymous requests with 401
+    and reject viewer role on POST with 403.
+    """
+    anon_client = TestClient(app)
+    
+    # 1. Anonymous GET /api/client/patients -> 401
+    res_pat = anon_client.get("/api/client/patients")
+    assert res_pat.status_code == 401
+
+    # 2. Anonymous GET /api/client/scales -> 401
+    res_scales = anon_client.get("/api/client/scales")
+    assert res_scales.status_code == 401
+
+    # 3. Anonymous POST /api/client/evaluations -> 401
+    eval_payload = {
+        "id_paziente": "pat_1",
+        "id_scala": "scale_pos",
+        "anno": 2026,
+        "risposte": []
+    }
+    res_post_anon = anon_client.post("/api/client/evaluations", json=eval_payload)
+    assert res_post_anon.status_code == 401
+
+    # 4. Viewer POST /api/client/evaluations -> 403
+    from app.auth import create_access_token
+    viewer_token = create_access_token(username="viewer_user", role="viewer", ai_enabled=False)
+    viewer_client = TestClient(app)
+    viewer_client.headers.update({"Authorization": f"Bearer {viewer_token}"})
+    
+    res_post_viewer = viewer_client.post("/api/client/evaluations", json=eval_payload)
+    assert res_post_viewer.status_code == 403
+
+
+def test_sec_02_export_import_admin_only(setup_mock_db):
+    """
+    SEC-02: Verify that export-db and import-db reject anonymous (401) and viewer (403),
+    allowing only admin.
+    """
+    from app.auth import create_access_token
+    anon_client = TestClient(app)
+    viewer_token = create_access_token(username="viewer_user", role="viewer", ai_enabled=False)
+    viewer_client = TestClient(app)
+    viewer_client.headers.update({"Authorization": f"Bearer {viewer_token}"})
+
+    # Anonymous -> 401
+    assert anon_client.get("/api/admin/export-db").status_code == 401
+    assert anon_client.post("/api/admin/import-db").status_code == 401
+
+    # Viewer -> 403
+    assert viewer_client.get("/api/admin/export-db").status_code == 403
+    assert viewer_client.post("/api/admin/import-db").status_code == 403
+
+
+def test_sec_03_token_version_revocation(setup_mock_db):
+    """
+    SEC-03: Verify that incrementing token_version in DB revokes older tokens (401).
+    """
+    from app.auth import create_access_token
+    # Token issued with token_version=1
+    token_v1 = create_access_token(username="admin", role="admin", ai_enabled=True, token_version=1)
+    admin_client = TestClient(app)
+    admin_client.headers.update({"Authorization": f"Bearer {token_v1}"})
+
+    # Should succeed with token_version=1
+    res = admin_client.get("/api/admin/patients")
+    assert res.status_code == 200
+
+    # Simulate token_version increment in database (e.g. password changed or user updated)
+    mock_users_coll = setup_mock_db["users"]
+    for u in mock_users_coll.documents:
+        if u["username"] == "admin":
+            u["token_version"] = 2
+
+    # Now request with token_v1 must fail with 401 Unauthorized
+    res_revoked = admin_client.get("/api/admin/patients")
+    assert res_revoked.status_code == 401
+    assert "Sessione revocata" in res_revoked.json()["detail"]
+
+    # Token issued with token_version=2 works
+    token_v2 = create_access_token(username="admin", role="admin", ai_enabled=True, token_version=2)
+    admin_client.headers.update({"Authorization": f"Bearer {token_v2}"})
+    assert admin_client.get("/api/admin/patients").status_code == 200
+
+
+def test_data_02_cascade_delete_ai_analyses(client, setup_mock_db):
+    """
+    DATA-02: Verify that deleting a patient cascades to both evaluations and AI analyses.
+    """
+    # Pre-populate an AI analysis for pat_1
+    ai_coll = setup_mock_db["ai_analyses"]
+    ai_coll.documents.append({
+        "id": "an_test_1",
+        "id_paziente": "pat_1",
+        "report": "Test report",
+        "timestamp": datetime.now(timezone.utc),
+    })
+
+    # Delete pat_1
+    res = client.delete("/api/admin/patients/pat_1")
+    assert res.status_code == 200
+
+    # Verify patient is gone
+    assert not any(p["id"] == "pat_1" for p in setup_mock_db["patients"].documents)
+    # Verify evaluations for pat_1 are gone
+    assert not any(e.get("id_paziente") == "pat_1" for e in setup_mock_db["evaluations"].documents)
+    # Verify AI analyses for pat_1 are gone
+    assert not any(a.get("id_paziente") == "pat_1" for a in setup_mock_db["ai_analyses"].documents)
+
+
+def test_data_01_import_database_prevalidation(client, setup_mock_db):
+    """
+    DATA-01: Verify pre-validation before delete_many: malformed backup rejected with 422.
+    """
+    import io
+
+    # 1. Collections not a dict -> 422
+    bad_file = io.BytesIO(b'{"collections": "not_a_dict"}')
+    res = client.post(
+        "/api/admin/import-db",
+        files={"file": ("backup.json", bad_file, "application/json")}
+    )
+    assert res.status_code == 422
+
+    # 2. Collections has non-list -> 422
+    bad_file2 = io.BytesIO(b'{"collections": {"patients": "not_a_list"}}')
+    res2 = client.post(
+        "/api/admin/import-db",
+        files={"file": ("backup.json", bad_file2, "application/json")}
+    )
+    assert res2.status_code == 422
+
+    # 3. Users list without any admin -> 422
+    bad_file3 = io.BytesIO(b'{"collections": {"users": [{"username": "v1", "role": "viewer"}]}}')
+    res3 = client.post(
+        "/api/admin/import-db",
+        files={"file": ("backup.json", bad_file3, "application/json")}
+    )
+    assert res3.status_code == 422
+
+
+def test_score_01_and_fun_01_create_evaluation(client, setup_mock_db):
+    """
+    SCORE-01: Verify server-side validation on patient, scale, and questions.
+    FUN-01: Verify sync of ultimo_*_compilato on patient after create_evaluation.
+    """
+    # 1. Non-existent patient -> 404
+    res_bad_pat = client.post("/api/client/evaluations", json={
+        "id_paziente": "pat_non_existent",
+        "id_scala": "pos_2024",
+        "anno": 2026,
+        "risposte": []
+    })
+    assert res_bad_pat.status_code == 404
+    assert "Utente con ID" in res_bad_pat.json()["detail"]
+
+    # 2. Non-existent scale -> 404
+    res_bad_scale = client.post("/api/client/evaluations", json={
+        "id_paziente": "pat_2",
+        "id_scala": "scale_inventata",
+        "anno": 2026,
+        "risposte": []
+    })
+    assert res_bad_scale.status_code == 404
+    assert "Scala con ID" in res_bad_scale.json()["detail"]
+
+    # 3. Valid scale with questions defined: setup a mock scale with a question and allowed scores [1, 2, 3]
+    scales_coll = setup_mock_db["scales"]
+    scales_coll.documents.append({
+        "id": "scale_pos_test",
+        "nome": "Scala POS Test",
+        "descrizione": "Test",
+        "sezioni": [{
+            "codice_sezione": "SP",
+            "titolo_sezione": "Sezione 1",
+            "domande": [{
+                "id_domanda": "q_pos_1",
+                "codice": "SP_1",
+                "testo_domanda": "Domanda 1",
+                "opzioni": [
+                    {"testo_risposta": "A", "punteggio": 1},
+                    {"testo_risposta": "B", "punteggio": 2},
+                    {"testo_risposta": "C", "punteggio": 3},
+                ]
+            }]
+        }]
+    })
+
+    # 3a. Invalid question code -> 422
+    res_bad_q = client.post("/api/client/evaluations", json={
+        "id_paziente": "pat_2",
+        "id_scala": "scale_pos_test",
+        "anno": 2026,
+        "risposte": [{"codice_domanda": "domanda_sconosciuta", "punteggio": 1}]
+    })
+    assert res_bad_q.status_code == 422
+    assert "non appartiene alla scala" in res_bad_q.json()["detail"]
+
+    # 3b. Invalid score (e.g. score 99 outside [1, 2, 3]) -> 422
+    res_bad_score = client.post("/api/client/evaluations", json={
+        "id_paziente": "pat_2",
+        "id_scala": "scale_pos_test",
+        "anno": 2026,
+        "risposte": [{"codice_domanda": "SP_1", "punteggio": 99}]
+    })
+    assert res_bad_score.status_code == 422
+    assert "Punteggio 99 non valido" in res_bad_score.json()["detail"]
+
+    # 4. Valid evaluation -> 201 and auto-updates patient's ultimo_pos_compilato
+    res_ok = client.post("/api/client/evaluations", json={
+        "id_paziente": "pat_2",
+        "id_scala": "scale_pos_test",
+        "anno": 2026,
+        "data_compilazione": "2026-03-01T10:00:00+00:00",
+        "risposte": [{"codice_domanda": "SP_1", "punteggio": 2}]
+    })
+    assert res_ok.status_code == 201
+
+    # Verify patient pat_2 in DB has ultimo_pos_compilato updated
+    pat_2_doc = next(p for p in setup_mock_db["patients"].documents if p["id"] == "pat_2")
+    assert pat_2_doc.get("ultimo_pos_compilato") == "2026-03-01T10:00:00+00:00"
+
+
 

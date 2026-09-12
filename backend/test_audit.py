@@ -1,10 +1,12 @@
 import asyncio
-import motor.motor_asyncio
+import os
 import sys
+import motor.motor_asyncio
 
 async def main():
-    client = motor.motor_asyncio.AsyncIOMotorClient("mongodb://admin:S@f3Passw0rd!@localhost:27017/")
-    db = client["autify"]
+    mongo_url = os.environ.get("MONGODB_URL", "mongodb://localhost:27017")
+    client = motor.motor_asyncio.AsyncIOMotorClient(mongo_url)
+    db = client["autanalysis"]
     try:
         async for doc in db.audit_logs.find({}):
             print(doc)
