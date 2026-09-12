@@ -120,179 +120,333 @@ Sviluppatore
 
 ---
 
-## 📑 Indice dell'Architettura
+## Ricognizione verificata — Step 1
 
-1. [🔭 Overview del Progetto](#1--overview-del-progetto-e-stack-tecnologico)
-2. [🔐 Sicurezza & RBAC](#2--sicurezza-e-rbac)
-3. [🗂️ Mappa dei Moduli (File-by-File)](#3-️-mappa-dei-moduli-file-by-file)
-4. [🗄️ Database e Collezioni](#4-️-database-e-collezioni-mongodb)
-5. [🔄 Flussi Dati Architetturali](#5--flussi-dati-architetturali)
+Snapshot: commit `13b375e316fb2e17e69f28ebcb7aeb1b26dec2c0`, branch `main`, lettura del 12 settembre 2026.
+Inventario completo dell'albero Git (107 file, risposta non troncata); lettura mirata di codice, configurazioni e test. Questa è una mappa per il successivo assessment, non una certificazione di sicurezza o correttezza. Test, build, servizi e produzione non eseguiti/interrogati; nessuna chiamata Gemini effettuata.
 
----
+Le regole di progetto sopra restano valide. Le descrizioni storiche di deploy sopra non sono prove dello stato di produzione: il repository corrente è **RazorCopter/Autify**; `deploy.ps1` non è presente nello snapshot. Non risultano workflow `.github/workflows`. Il presente aggiornamento è solo documentale e non costituisce una release.
 
-## 1. 🔭 OVERVIEW DEL PROGETTO E STACK TECNOLOGICO
+### 1. Prodotto e confini
 
-**Autify** è una piattaforma digitale progettata per la **Fondazione Il Tiglio Onlus**. Digitalizza, somministra, calcola e analizza test e scale multidimensionali per la valutazione della qualità della vita (QoL) e dello sviluppo degli utenti.
+Autify supporta una struttura educativa con anagrafiche utenti, somministrazione e storico valutazioni, scale POS, San Martín, SIS, OGVA, SABS e OSO, dashboard, relazioni IA e documenti PDF. La presenza dei percorsi e dei dati non certifica la validità delle conversioni o di ogni scala: da verificare nello step 2.
 
-### 1.1 Scale Supportate
+| Livello | Implementazione osservata |
+| --- | --- |
+| UI | Flutter Web, Provider per settings, HTTP, fl_chart, flutter_markdown, file_picker |
+| API | FastAPI; router admin protetto, router pubblico admin e router client separati |
+| Dati | Motor / MongoDB; database legacy `autanalysis`; sette collezioni |
+| Calcolo | `analytics.py`: punteggi diretti, conversioni San Martín, motore SIS |
+| Documenti | `pdf_generator.py`: ReportLab + Matplotlib, PDF valutazioni e relazioni IA |
+| IA | `gemini_service.dart` chiama direttamente Google Gemini via HTTP dal frontend |
+| Runtime | Docker Compose: autify-admin → autify-api → autify-db |
 
-| Scala | Scopo | Struttura | Esito / Punteggio |
+Il target verificato è Web: `main.dart` e `api_service.dart` importano `dart:html`; il supporto Desktop non è dimostrato.
+
+### 2. Mappa funzionale dei moduli
+
+Tutti i percorsi UI seguenti sono relativi a `frontend_admin/lib/`.
+
+| Area | File principali | Responsabilità / collegamenti |
+| --- | --- | --- |
+| Avvio e navigazione | main.dart, config.dart, app_version.dart | Shell, sessione browser, selezione schermate, URL API e versione |
+| Accesso | screens/login_screen.dart, services/api_service.dart | Login JWT, localStorage, header Bearer e gestione 401 |
+| Configurazione | screens/settings_screen.dart, services/settings_notifier.dart, models/app_settings.dart | Settings globali, configurazione Gemini, utenze e backup |
+| Anagrafiche | screens/anagrafica_screen.dart, models/patient_model.dart | CRUD, ricerca, filtri, paginazione e storico |
+| Scale | screens/protocols_screen.dart, models/scale_model.dart | Import e gestione protocolli |
+| Compilazione | screens/selection_screen.dart, screens/wizard_screen.dart, screens/sis_wizard_screen.dart | Selezione utente/scala, risposte generiche e percorso SIS |
+| Demografia | widgets/demographics_form.dart | Form condiviso |
+| SIS | widgets/sis_3d_item_card.dart, widgets/sis_medical_list.dart, widgets/sis_ranking_widget.dart | Componenti delle tre sezioni; nomi file legacy conservati |
+| Dashboard | screens/dashboard_screen.dart, services/validity_calculator.dart | Indicatori, scadenze e validità |
+| Dettagli | screens/evaluation_detail_screen.dart, models/evaluation_model.dart | Storico, risposte, analisi, modifica e PDF |
+| Multidimensionale | screens/multidimensional_dashboard_screen.dart, services/gemini_service.dart | Confronto scale, contesto IA, note/allegati/storico |
+| Relazioni | screens/document_reader_screen.dart | Lettura e presentazione documento |
+| Audit | screens/audit_log_screen.dart, models/audit_log.dart | Consultazione eventi |
+| UI condivisa | theme/app_theme.dart, utils/responsive_helper.dart, widgets/expandable_scale_card.dart, widgets/connection_status_indicator.dart | Tema, layout, card e stato connessione |
+| Informazioni | screens/about_terms_dialog.dart | Informazioni e condizioni |
+
+| Backend | Responsabilità |
+| --- | --- |
+| backend/app/main.py | Entrypoint, lifespan, bootstrap, CORS, limiter, montaggio router e health |
+| backend/app/auth.py | JWT HS256 (8 ore), bcrypt (12 round), bootstrap, indici e migrazione campo attivo |
+| backend/app/database.py | Connessione Motor con pool/timeout e sette collection |
+| backend/app/models.py | Contratti Pydantic: utenze, anagrafiche, scale, risposte, analisi, PDF, audit |
+| backend/app/routes.py | Endpoint, RBAC per metodo, audit, import/export, aggregazioni e cache dashboard |
+| backend/app/analytics.py | Calcoli diretti, conversioni San Martín e SIS |
+| backend/app/pdf_generator.py | Grafici e composizione PDF in memoria |
+| backend/app/seed_db.py | Import iniziale POS da CSV esterno, non presente nello snapshot |
+| backend/app/__init__.py | Inizializzazione package |
+
+`auth_manager.py` non esiste nello snapshot: le indicazioni storiche che lo citano sono obsolete.
+
+### 3. Flussi effettivi
+
+1. **Accesso:** UI → POST login → bcrypt → JWT → localStorage → Bearer sulle chiamate admin. Il wrapper in routes.py aggiunge al controllo JWT il blocco delle scritture viewer; POST PDF IA è un'eccezione esplicita.
+2. **Compilazione:** wizard → POST /api/client/evaluations → persistenza risposte → invalidazione cache → audit. Questo endpoint non invoca il motore di calcolo e non aggiorna un campo ultima_compilazione nell'anagrafica. Le analisi vengono costruite nei percorsi di lettura/aggregazione/PDF.
+3. **Analisi e PDF:** routes.py recupera valutazioni e scale → analytics.py → risposta strutturata o pdf_generator.py.
+4. **IA:** UI raccoglie valutazioni, note, allegato opzionale e relazioni pregresse → Gemini direttamente → Markdown → anteprima → salvataggio in ai_analyses via API. Non risulta un proxy backend Gemini.
+5. **Backup:** export JSON delle sette collection, inclusi utenti e settings; import limitato a 5 MiB. L'import cancella/reinserisce solo le collection con elenco non vuoto: un elenco vuoto non svuota la collection esistente.
+6. **Dashboard:** aggregazioni in routes.py, cache in processo con TTL 300 secondi e invalidazione esplicita.
+
+### 4. Database
+
+| Collection | Contenuto | Export/import |
+| --- | --- | --- |
+| patients | Anagrafiche utenti | Sì |
+| evaluations | Risposte e storico valutazioni | Sì |
+| scales | Struttura delle scale | Sì |
+| users | Operatori, hash password, ruoli | Sì |
+| settings | Impostazioni e configurazione Gemini | Sì |
+| ai_analyses | Relazioni IA salvate | Sì |
+| audit_logs | Eventi applicativi | Sì |
+
+Bootstrap: indici su username (univoco), identificativi valutazione/utente, identificativo utente univoco, riferimenti e timestamp delle analisi, timestamp audit. L'integrità referenziale, la completezza del tracciamento e il ripristino atomico restano da valutare.
+
+### 5. Inventario API
+
+Protezione rilevata dal codice, senza richieste live. Il nome di un router non garantisce da solo autorizzazione. POST /api/admin/users è registrato sul router pubblico ma verifica JWT e ruolo admin nel corpo.
+
+| Metodo | Percorso | Protezione dichiarata nel codice |
+| --- | --- | --- |
+| GET | `/` | Pubblico, health |
+| POST | `/api/admin/auth/login` | Pubblico nel codice |
+| GET | `/api/admin/users` | JWT + filtro viewer |
+| POST | `/api/admin/users` | JWT + admin verificati nel corpo |
+| PUT | `/api/admin/users/{username}` | JWT + filtro viewer |
+| DELETE | `/api/admin/users/{username}` | JWT + filtro viewer |
+| GET | `/api/admin/patients` | JWT + filtro viewer |
+| GET | `/api/admin/scales` | JWT + filtro viewer |
+| POST | `/api/admin/patients` | JWT + filtro viewer |
+| PUT | `/api/admin/patients/{id}` | JWT + filtro viewer |
+| DELETE | `/api/admin/patients/{id}` | JWT + filtro viewer |
+| GET | `/api/admin/patients/{id_patient}/ai-analyses` | JWT + filtro viewer |
+| POST | `/api/admin/patients/{id_patient}/ai-analyses` | JWT + filtro viewer |
+| PUT | `/api/admin/patients/ai-analyses/{id_analysis}` | JWT + filtro viewer |
+| DELETE | `/api/admin/patients/ai-analyses/{id_analysis}` | JWT + filtro viewer |
+| GET | `/api/admin/evaluations/{id_patient}` | JWT + filtro viewer |
+| POST | `/api/admin/import-scale` | JWT + filtro viewer |
+| PUT | `/api/admin/scales/{id}` | JWT + filtro viewer |
+| DELETE | `/api/admin/scales/{id}` | JWT + filtro viewer |
+| GET | `/api/admin/evaluations/{evaluation_id}/pdf` | JWT + filtro viewer |
+| POST | `/api/admin/evaluations/ai-analysis-pdf` | JWT + filtro viewer |
+| GET | `/api/admin/evaluations/{evaluation_id}/analysis` | JWT + filtro viewer |
+| GET | `/api/admin/evaluations/{patient_id}/{scale_id}` | JWT + filtro viewer |
+| PUT | `/api/admin/evaluations/{evaluation_id}` | JWT + filtro viewer |
+| POST | `/api/admin/settings` | JWT + filtro viewer |
+| GET | `/api/admin/settings` | JWT + filtro viewer |
+| GET | `/api/admin/dashboard-stats` | JWT + filtro viewer |
+| DELETE | `/api/admin/dashboard-stats/cache` | JWT + filtro viewer |
+| GET | `/api/admin/export-db` | JWT + filtro viewer |
+| POST | `/api/admin/import-db` | JWT + filtro viewer |
+| GET | `/api/admin/export-patients-csv` | JWT + filtro viewer |
+| DELETE | `/api/admin/evaluations/{evaluation_id}` | JWT + filtro viewer |
+| GET | `/api/client/scales` | Pubblico nel codice |
+| GET | `/api/client/scales/{scale_id}` | Pubblico nel codice |
+| POST | `/api/client/evaluations` | Pubblico nel codice |
+| GET | `/api/admin/audit-logs` | JWT + filtro viewer |
+| GET | `/api/client/patients` | Pubblico nel codice |
+
+Le GET admin ereditano la verifica JWT ma non un divieto generale per viewer. In particolare il backup completo va esaminato nello step 2. Le quattro rotte client non hanno dependency auth; hanno rate limiting. Il rate limiting non sostituisce l'autorizzazione.
+
+### 6. Build, configurazione e versioni
+
+- Backend: Python 3.11-slim; FastAPI 0.109.2, Pydantic 2.6.1, Uvicorn 0.27.1; altre dipendenze con vincoli minimi in requirements.txt.
+- Frontend: SDK Dart >=3.2.0 <4.0.0; immagine Flutter stable, build web release, Nginx alpine; pubspec.lock presente.
+- MongoDB: immagine 8.0.4; volume autify_data. Compose pubblica solo 8090:80 del frontend.
+- Nginx inoltra /api/ al backend; configura cache annuale immutable per JS e altri asset e no-store per index.html.
+- config.dart usa localhost in debug e tiglio.autify.it in release. CORS backend ammette l'origine di produzione.
+- JWT_SECRET_KEY obbligatoria all'import di auth.py. Compose include anche variabili legacy e GOOGLE_API_KEY; la loro presenza non prova utilizzo runtime.
+- VERSION e backend/app/main.py: **2.23.4**; pubspec.yaml, app_version.dart e CACHE_BUST Compose: **3.0.0**. Divergenza osservata, non corretta in questa ricognizione.
+- bump_version.py e frontend_admin/tools/update_version.dart fanno parte del flusso di propagazione versione. Esistono anche script root update_version.py/update_changelog.py da distinguere nel prossimo assessment.
+- VERSION non viene copiato nel Dockerfile backend: verificare metadata versione dell'export nel container.
+
+### 7. Test e verifiche disponibili
+
+| File | Scopo osservato | Limite della ricognizione |
+| --- | --- | --- |
+| backend/tests/test_endpoints.py | Test endpoint con collection simulate: anagrafiche, import scale, settings e caso analytics | Non eseguiti; verificare ordine impostazione JWT_SECRET_KEY rispetto all'import app e dipendenze pytest/httpx |
+| backend/test_sis.py | Casi aritmetici e conversioni SIS | Non eseguiti; non equivalgono a validazione integrale delle tabelle |
+| backend/test_audit.py | Script diagnostico MongoDB | Non è un test isolato; contiene una stringa di connessione con credenziali, non riprodotte qui |
+| frontend_admin/test/evaluation_wizard_test.dart | Widget test wizard con HTTP simulato | Non eseguiti; verificare compatibilità dart:io dei mock con dipendenze dart:html |
+| frontend_admin/test/patient_creation_test.dart | Widget test anagrafiche con HTTP simulato | Stesso limite di piattaforma |
+
+Non risultano workflow CI versionati né un manifest dedicato alle dipendenze test Python. Non sono disponibili esiti, coverage o evidenze di produzione in questa ricognizione.
+
+### 8. Handoff per Astra medium
+
+Partire da questo snapshot; se main è cambiato, leggere prima il diff. Le voci sono **domande di assessment**, non conclusioni sulla distribuzione effettiva o sulla sfruttabilità.
+
+| Ordine | Ambito | Evidenza da approfondire | File |
 | --- | --- | --- | --- |
-| **POS** | Qualità della Vita | 8 domini (SP, AD, RI, IS, D, BE, BF, BM) | Somma grezza diretta |
-| **San Martín** | QoL avanzata | 8 domini standard | Conversione psicometrica → Punteggi Standard (1-20), Percentili, Fasce, Indice QdV Globale |
-| **SIS** | Intensità Supporti | 6 sottoscale (A-F) + Sezioni 2-3 | Punteggi tridimensionali (Frequenza, Durata, Tipo) → Indice SIS, Rank Priorità |
-| **OGVA** | Griglia Autonomie | Sezioni per aree di autonomia | Punteggio diretto per area |
-| **SABS** | Comportamento Adattivo | Domini comportamento adattivo | Punteggio diretto per dominio (fondoscala 49) |
-| **OSO** | Scheda Osservativa | Checklist comportamenti specifici | Punteggio composito per sottodomande |
+| 1 | Autorizzazioni | Rotte client prive di auth; export DB accessibile a JWT viewer nel codice; eccezioni POST e ruolo ai_enabled | routes.py, auth.py, api_service.dart |
+| 2 | Credenziali e sessioni | Bootstrap admin predefinito, credenziali nello script diagnostico, revoca/variazioni ruolo, localStorage | auth.py, backend/test_audit.py, main.dart |
+| 3 | Flusso IA | Chiave fornita al browser per utenti abilitati, dati e allegati inviati direttamente, limiti/errori/controllo permessi | gemini_service.dart, routes.py /settings, dashboard multidimensionale |
+| 4 | Backup e dati | Import parziale, elenchi vuoti, limite 5 MiB, tipi e riferimenti, coerenza restore | routes.py export/import, models.py, database.py |
+| 5 | Punteggi | Tabelle normative, estremi e dati incompleti, coerenza UI/API/PDF per tutte le scale | analytics.py, JSON scale, test_sis.py, wizard e dettagli |
+| 6 | Release | Versioni discordanti, cache asset, URL/CORS, riproducibilità immagini e dipendenze | VERSION, Dockerfile, Compose, nginx.conf, config.dart |
+| 7 | Test | Eseguibilità reale, casi RBAC negativi, round-trip backup, integrazione frontend/backend | file test sopra |
+| 8 | Manutenibilità e prestazioni | Controller/UI estesi, duplicazioni, query e cache, PDF sincroni | routes.py, pdf_generator.py, schermate grandi |
+| 9 | Documentazione storica | Verificare ogni voce di REMEDIATION.md rispetto al codice; non assumere completamento dai simboli | REMEDIATION.md, CHANGELOG.md, gemini.md |
 
-### 1.2 Stack Tecnologico
+In gemini.md sono descritti directives/ ed execution/, assenti dall'albero attuale. REMEDIATION.md include osservazioni storiche: alcune correzioni sono presenti (segreto JWT obbligatorio, pool Motor, lifespan), altre richiedono nuova verifica.
 
-> [!TIP]
-> L'architettura è interamente dockerizzata e orchestra Backend, Frontend e Database all'interno della stessa rete protetta.
+### 9. Dimensioni dei moduli
 
-| Layer | Tecnologia | Dettaglio |
-| --- | --- | --- |
-| **Backend** | FastAPI (Python 3.10+) | Asincrono, validazione forte Pydantic, integrazione AI |
-| **Database** | MongoDB | Driver `AsyncIOMotorClient`, collezioni destrutturate |
-| **Frontend** | Flutter (Dart) | App Web & Desktop responsive, State Management via `Provider` |
-| **Generazione Documentale** | Matplotlib + ReportLab | Creazione PDF A4 con grafici a stella/barre e report IA |
-| **IA & NLP** | Google Gemini API | Interrogazione via REST API (client-side proxy) |
+Conteggio righe testuali (inclusa eventuale riga finale vuota), utile a scegliere letture mirate; non è una misura di qualità.
 
----
+| File | Righe |
+| --- | ---: |
+| `backend/app/__init__.py` | 2 |
+| `backend/app/analytics.py` | 1040 |
+| `backend/app/auth.py` | 146 |
+| `backend/app/database.py` | 24 |
+| `backend/app/main.py` | 44 |
+| `backend/app/models.py` | 257 |
+| `backend/app/pdf_generator.py` | 1720 |
+| `backend/app/routes.py` | 1994 |
+| `backend/app/seed_db.py` | 105 |
+| `frontend_admin/lib/app_version.dart` | 2 |
+| `frontend_admin/lib/config.dart` | 16 |
+| `frontend_admin/lib/main.dart` | 597 |
+| `frontend_admin/lib/models/app_settings.dart` | 42 |
+| `frontend_admin/lib/models/audit_log.dart` | 29 |
+| `frontend_admin/lib/models/evaluation_model.dart` | 228 |
+| `frontend_admin/lib/models/patient_model.dart` | 115 |
+| `frontend_admin/lib/models/scale_model.dart` | 128 |
+| `frontend_admin/lib/screens/about_terms_dialog.dart` | 130 |
+| `frontend_admin/lib/screens/anagrafica_screen.dart` | 1565 |
+| `frontend_admin/lib/screens/audit_log_screen.dart` | 188 |
+| `frontend_admin/lib/screens/dashboard_screen.dart` | 1601 |
+| `frontend_admin/lib/screens/document_reader_screen.dart` | 522 |
+| `frontend_admin/lib/screens/evaluation_detail_screen.dart` | 3556 |
+| `frontend_admin/lib/screens/login_screen.dart` | 527 |
+| `frontend_admin/lib/screens/multidimensional_dashboard_screen.dart` | 3599 |
+| `frontend_admin/lib/screens/protocols_screen.dart` | 636 |
+| `frontend_admin/lib/screens/selection_screen.dart` | 392 |
+| `frontend_admin/lib/screens/settings_screen.dart` | 1120 |
+| `frontend_admin/lib/screens/sis_wizard_screen.dart` | 1723 |
+| `frontend_admin/lib/screens/wizard_screen.dart` | 1548 |
+| `frontend_admin/lib/services/api_service.dart` | 730 |
+| `frontend_admin/lib/services/gemini_service.dart` | 261 |
+| `frontend_admin/lib/services/settings_notifier.dart` | 43 |
+| `frontend_admin/lib/services/validity_calculator.dart` | 69 |
+| `frontend_admin/lib/theme/app_theme.dart` | 254 |
+| `frontend_admin/lib/utils/responsive_helper.dart` | 43 |
+| `frontend_admin/lib/widgets/connection_status_indicator.dart` | 93 |
+| `frontend_admin/lib/widgets/demographics_form.dart` | 645 |
+| `frontend_admin/lib/widgets/expandable_scale_card.dart` | 293 |
+| `frontend_admin/lib/widgets/sis_3d_item_card.dart` | 360 |
+| `frontend_admin/lib/widgets/sis_medical_list.dart` | 273 |
+| `frontend_admin/lib/widgets/sis_ranking_widget.dart` | 244 |
 
-## 2. 🔐 SICUREZZA E RBAC
+### 10. Inventario completo dei file versionati
 
-Il sistema implementa un modello **Role-Based Access Control (RBAC)** con JWT standard crittografici moderni.
+Snapshot Git; inclusi asset, dati scale, script ausiliari e file di lavoro. Le cartelle scale/ e backend/app/ contengono copie/formati da riconciliare durante la verifica dei punteggi. Gli script root e scratch non vanno considerati entrypoint dell'app senza verificarne l'uso.
 
-### 2.1 Profili di Accesso
-
-| Ruolo | Permessi | Limitazioni |
-| --- | --- | --- |
-| **Admin** | CRUD completo su anagrafiche, valutazioni, impostazioni, backup DB. | Non può eliminare l'account di sistema predefinito `admin`. |
-| **Viewer** | Sola lettura: dashboard, consultazione valutazioni storiche, export PDF. | Zero permessi di scrittura (REST PUT/POST/DELETE bloccati con HTTP 403). |
-
-### 2.2 Autenticazione (JWT & Bcrypt)
-
-1. L'utente invia `username` e `password` al backend.
-2. Il backend verifica l'hash tramite `bcrypt` (rounds=12).
-3. Viene generato un JWT (HS256) valido per 8 ore, che codifica `role` e `ai_enabled`.
-4. Il frontend archivia il JWT nel `localStorage` e lo inietta in tutte le richieste sotto l'header `Authorization: Bearer <token>`.
-
----
-
-## 3. 🗂️ MAPPA DEI MODULI (FILE-BY-FILE)
-
-### 3.1 Backend (FastAPI App)
-
-```text
-backend/app/
-├── main.py              # Entrypoint FastAPI, config CORS e registrazione Router
-├── auth.py              # Gestione JWT, hashing Bcrypt e rule engine RBAC
-├── auth_manager.py      # Gestione log storico accessi
-├── database.py          # Connessione Motor asyncio a MongoDB
-├── models.py            # Modelli Pydantic (Patient, Evaluation, Scale, AiAnalysis)
-├── routes.py            # Core Controller: Espone tutte le rotte API Admin e Client
-├── analytics.py         # Motore Psicometrico: Calcola punteggi POS, San Martín, SIS
-├── pdf_generator.py     # Assemblaggio in-memory di PDF A4 usando ReportLab e Matplotlib
-└── seed_db.py           # Script di semina base del DB (importazione POS da CSV)
-```
-
-### 3.2 Frontend Admin (Flutter)
-
-```text
-frontend_admin/lib/
-├── main.dart                                # Router e viewport principale (Responsive)
-├── services/
-│   ├── api_service.dart                     # Wrapper HTTP per le chiamate REST
-│   ├── gemini_service.dart                  # Integrazione client-side Gemini LLM
-│   └── settings_notifier.dart               # ChangeNotifier per lo state globale
-├── screens/
-│   ├── multidimensional_dashboard_screen.dart # Cruscotto IA, radar comparativi e storico
-│   ├── sis_wizard_screen.dart               # Wizard compilazione avanzata SIS (drag&drop)
-│   ├── evaluation_detail_screen.dart        # Vista di dettaglio della singola valutazione
-│   ├── settings_screen.dart                 # Configurazione sistema, API Key, export DB
-│   ├── anagrafica_screen.dart               # Gestione CRUD profili utenti/struttura
-│   └── document_reader_screen.dart          # Visualizzatore A4 per relazioni generate dall'IA
-└── utils/
-    └── responsive_helper.dart               # Breakpoints per Desktop vs Tablet vs Mobile
-```
-
----
-
-## 4. 🗄️ DATABASE E COLLEZIONI (MongoDB)
-
-Il DB logico è denominato `autanalysis`. Tutte le collezioni sottostanti fanno parte dello scope di backup dell'applicazione.
-
-| Collezione | Descrizione Dati | Esportato nel JSON di Backup? |
-| --- | --- | :---: |
-| `patients` | Dati demografici e biologici dell'utente | ✅ Sì |
-| `evaluations` | Valutazioni completate (storico punteggi, risposte) | ✅ Sì |
-| `scales` | Metadati e alberatura delle scale (Sezioni, Domande) | ✅ Sì |
-| `users` | Operatori di sistema (credenziali bcrypt, ruoli) | ✅ Sì |
-| `settings` | Chiavi API Gemini, Modello IA in uso, Prompt di sistema | ✅ Sì |
-| `ai_analyses` | Storico testuale delle Relazioni IA generate e approvate | ✅ Sì |
-| `audit_logs` | Tracciabilità delle operazioni utente (login, creazione, modifica, export) | ✅ Sì |
-
-> [!CAUTION]
-> **Aggiunta di nuove collezioni**
-> Se nel corso dello sviluppo viene creata una nuova collezione, occorre modificare immediatamente il file `backend/app/routes.py`, in corrispondenza di `export_database()` e `import_database()`, per garantire che la nuova entità venga inserita nel mapping JSON di backup.
-
----
-
-## 5. 🔄 FLUSSI DATI ARCHITETTURALI
-
-### Flusso 1: Compilazione Valutazione e Calcolo Psicometrico
-
-```mermaid
-sequenceDiagram
-    participant EDU as Educatore
-    participant UI as Flutter Frontend
-    participant API as Backend (routes.py)
-    participant AN as analytics.py
-    participant DB as MongoDB
-
-    EDU->>UI: Compila Scala nel Wizard
-    UI->>API: POST /api/client/evaluations
-    API->>AN: Calcola Punteggi Grezzi/Standard
-    AN-->>API: Restituisce Punteggi Aggregati
-    API->>DB: Inserisce in `evaluations`
-    API->>DB: Aggiorna ultima_compilazione in `patients`
-    API-->>UI: 201 Created (Success)
-```
-
-### Flusso 2: Generazione Relazione IA Multidimensionale
-
-```mermaid
-sequenceDiagram
-    participant EDU as Educatore
-    participant UI as Flutter (Multidimensional Dash)
-    participant GEM as Google Gemini API
-    participant API as Backend (routes.py)
-    participant DB as MongoDB
-
-    EDU->>UI: Avvia "Analisi IA Multidimensionale"
-    UI->>UI: Raccoglie storico valutazioni + Prompt Sistema
-    UI->>GEM: HTTP POST GenerateContent()
-    GEM-->>UI: Risposta IA formattata in Markdown
-    UI->>EDU: Mostra anteprima in Lettore A4
-    EDU->>UI: Approva e Salva
-    UI->>API: POST /api/admin/patients/{id}/ai-analyses
-    API->>DB: Salva documento in `ai_analyses`
-```
-
-### Flusso 3: Export & Import del Database
-
-```mermaid
-sequenceDiagram
-    participant ADM as Admin System
-    participant UI as Flutter (SettingsScreen)
-    participant API as Backend (routes.py)
-    participant DB as MongoDB
-
-    ADM->>UI: Clicca "Esporta Backup DB"
-    UI->>API: GET /api/admin/export-db
-    API->>DB: fetch di TUTTE le 7 collezioni
-    DB-->>API: Stream Documenti JSON
-    API-->>UI: Risponde con file .json
-    UI-->>ADM: Avvia download nel browser
-```
+- `.agents/rules/regole-ingagio.md`
+- `.env.example`
+- `.gitignore`
+- `ARCHITECTURE_MAP.md`
+- `CHANGELOG.md`
+- `REMEDIATION.md`
+- `VERSION`
+- `backend/Dockerfile`
+- `backend/app/ScalaSIS.json`
+- `backend/app/ScalaSanMartin.json`
+- `backend/app/ScalaSanMartin.pdf`
+- `backend/app/Scala_POS.json`
+- `backend/app/__init__.py`
+- `backend/app/analytics.py`
+- `backend/app/assets/logo.png`
+- `backend/app/auth.py`
+- `backend/app/database.py`
+- `backend/app/main.py`
+- `backend/app/models.py`
+- `backend/app/pdf_generator.py`
+- `backend/app/routes.py`
+- `backend/app/seed_db.py`
+- `backend/requirements.txt`
+- `backend/test_audit.py`
+- `backend/test_sis.py`
+- `backend/tests/__init__.py`
+- `backend/tests/test_endpoints.py`
+- `bump_version.py`
+- `check.py`
+- `dev_tools.bat`
+- `docker-compose.yml`
+- `fix_dashboard.py`
+- `frontend_admin/.flutter-plugins-dependencies`
+- `frontend_admin/Dockerfile`
+- `frontend_admin/assets/images/Logo_Autify_dark.png`
+- `frontend_admin/assets/images/autify_logo.png`
+- `frontend_admin/assets/images/avatar_bradipo_hd..png`
+- `frontend_admin/assets/images/bradipo_hd_BG.png`
+- `frontend_admin/assets/images/light_neural_bg.jpg`
+- `frontend_admin/assets/images/logoAutify.png`
+- `frontend_admin/assets/images/logoAutifyDark.png`
+- `frontend_admin/assets/images/logo_autify_int.png`
+- `frontend_admin/assets/images/logo_bradipo.png`
+- `frontend_admin/assets/images/sloth_cool_bg.png`
+- `frontend_admin/assets/videos/background.mp4`
+- `frontend_admin/lib/app_version.dart`
+- `frontend_admin/lib/config.dart`
+- `frontend_admin/lib/main.dart`
+- `frontend_admin/lib/models/app_settings.dart`
+- `frontend_admin/lib/models/audit_log.dart`
+- `frontend_admin/lib/models/evaluation_model.dart`
+- `frontend_admin/lib/models/patient_model.dart`
+- `frontend_admin/lib/models/scale_model.dart`
+- `frontend_admin/lib/screens/about_terms_dialog.dart`
+- `frontend_admin/lib/screens/anagrafica_screen.dart`
+- `frontend_admin/lib/screens/audit_log_screen.dart`
+- `frontend_admin/lib/screens/dashboard_screen.dart`
+- `frontend_admin/lib/screens/document_reader_screen.dart`
+- `frontend_admin/lib/screens/evaluation_detail_screen.dart`
+- `frontend_admin/lib/screens/login_screen.dart`
+- `frontend_admin/lib/screens/multidimensional_dashboard_screen.dart`
+- `frontend_admin/lib/screens/protocols_screen.dart`
+- `frontend_admin/lib/screens/selection_screen.dart`
+- `frontend_admin/lib/screens/settings_screen.dart`
+- `frontend_admin/lib/screens/sis_wizard_screen.dart`
+- `frontend_admin/lib/screens/wizard_screen.dart`
+- `frontend_admin/lib/services/api_service.dart`
+- `frontend_admin/lib/services/gemini_service.dart`
+- `frontend_admin/lib/services/settings_notifier.dart`
+- `frontend_admin/lib/services/validity_calculator.dart`
+- `frontend_admin/lib/theme/app_theme.dart`
+- `frontend_admin/lib/utils/responsive_helper.dart`
+- `frontend_admin/lib/widgets/connection_status_indicator.dart`
+- `frontend_admin/lib/widgets/demographics_form.dart`
+- `frontend_admin/lib/widgets/expandable_scale_card.dart`
+- `frontend_admin/lib/widgets/sis_3d_item_card.dart`
+- `frontend_admin/lib/widgets/sis_medical_list.dart`
+- `frontend_admin/lib/widgets/sis_ranking_widget.dart`
+- `frontend_admin/nginx.conf`
+- `frontend_admin/pubspec.lock`
+- `frontend_admin/pubspec.yaml`
+- `frontend_admin/test/evaluation_wizard_test.dart`
+- `frontend_admin/test/patient_creation_test.dart`
+- `frontend_admin/tools/update_version.dart`
+- `frontend_admin/web/assets/videos/background.mp4`
+- `frontend_admin/web/favicon.png`
+- `frontend_admin/web/icons/Icon-192.png`
+- `frontend_admin/web/icons/Icon-512.png`
+- `frontend_admin/web/icons/Icon-maskable-192.png`
+- `frontend_admin/web/icons/Icon-maskable-512.png`
+- `frontend_admin/web/index.html`
+- `frontend_admin/web/manifest.json`
+- `gemini.md`
+- `hello_world.py`
+- `modify_wizard.py`
+- `scale/ODFLAB – Scheda Osservativa per la Valutazione delle Funzioni di Base.json`
+- `scale/Scala San Martin.json`
+- `scale/Scala_ODFLAB_Griglia Autonomia.json`
+- `scale/Scala_SABS.json`
+- `scale/Scala_SIS.json`
+- `scratch.ps1`
+- `scratch/convert_sabs.py`
+- `scratch/sabs_input.json`
+- `scratch/sabs_output.json`
+- `scratch_wizard.dart`
+- `update_changelog.py`
+- `update_version.py`
