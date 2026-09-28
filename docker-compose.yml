@@ -28,7 +28,7 @@ services:
     build:
       context: ./frontend_admin
       args:
-        - CACHE_BUST=3.2.0
+        - CACHE_BUST=3.2.1
     pull_policy: build
     ports:
       - "8090:80"
