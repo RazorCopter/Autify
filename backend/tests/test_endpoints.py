@@ -6,11 +6,12 @@ import json
 import io
 from datetime import datetime, timezone
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 # Import the FastAPI app
 from app.main import app
 from app.license_service import require_valid_license
+from app.routers import license as license_router
 
 
 @pytest.fixture(autouse=True)
@@ -764,6 +765,41 @@ def test_sec_03_token_version_revocation(setup_mock_db):
     token_v2 = create_access_token(username="admin", role="admin", ai_enabled=True, token_version=2)
     admin_client.headers.update({"Authorization": f"Bearer {token_v2}"})
     assert admin_client.get("/api/admin/patients").status_code == 200
+
+
+def test_license_server_info_endpoint_requires_auth_and_returns_service_info(setup_mock_db):
+    """L'endpoint espone lo stato del server licenze solo agli utenti autenticati."""
+    expected = {
+        "url": "https://licenze.example.test",
+        "reachable": True,
+        "status": "ok",
+    }
+
+    anon_client = TestClient(app)
+    assert anon_client.get("/api/admin/license/server-info").status_code == 401
+
+    from app.auth import create_access_token
+
+    token = create_access_token(
+        username="admin",
+        role="admin",
+        ai_enabled=True,
+        token_version=1,
+    )
+    with patch.object(
+        license_router,
+        "get_license_server_info",
+        new_callable=AsyncMock,
+        return_value=expected,
+    ):
+        admin_client = TestClient(
+            app,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        response = admin_client.get("/api/admin/license/server-info")
+
+    assert response.status_code == 200
+    assert response.json() == expected
 
 
 def test_data_02_cascade_delete_ai_analyses(client, setup_mock_db):

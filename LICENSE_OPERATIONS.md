@@ -1,4 +1,30 @@
-# Operazioni del sistema licenze
+# Operazioni licenze Autify
+
+## Architettura distribuita v3.2.0
+
+Le installazioni sono divise in due repository e due stack indipendenti:
+
+```text
+Sede cliente, es. tiglio.autify.it             Pavia, licenze.ghome.it
+┌──────────────────────────────────┐            ┌─────────────────────────┐
+│ autify-admin                     │            │ autify-license-server   │
+│ autify-api  ───── HTTPS/AES-GCM ─┼───────────>│ SQLite persistente      │
+│ autify-db                        │            └─────────────────────────┘
+└──────────────────────────────────┘
+Repo: RazorCopter/Autify                        Repo: RazorCopter/Autify-LICENSE
+```
+
+Il repository `Autify` contiene soltanto i tre container installati presso il cliente. Il server centrale è distribuito dal repository separato `https://github.com/RazorCopter/Autify-LICENSE`.
+
+### Variabili stack cliente
+
+- `LICENSE_SERVER_URL=https://licenze.ghome.it`
+- `LICENSE_SHARED_SECRET`: deve coincidere con quello del server centrale.
+- `LICENSE_SERVER_TIMEOUT_SECONDS=8`
+- `LICENSE_CACHE_HOURS=24`
+- `LICENSE_OFFLINE_GRACE_HOURS=72`
+
+Non installare né esporre `LICENSE_ADMIN_KEY` sulle sedi cliente. Le sezioni storiche sottostanti relative al server licenze vanno eseguite dal repository `Autify-LICENSE`, non da questo stack.
 
 ## Segreti e responsabilità
 

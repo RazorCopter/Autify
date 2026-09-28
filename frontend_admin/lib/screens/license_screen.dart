@@ -25,6 +25,7 @@ class LicenseScreen extends StatefulWidget {
 class _LicenseScreenState extends State<LicenseScreen> {
   final _code = TextEditingController();
   LicenseStatus? _status;
+  LicenseServerInfo? _serverInfo;
   bool _loading = true;
   bool _activating = false;
   bool _connectionError = false;
@@ -50,8 +51,16 @@ class _LicenseScreenState extends State<LicenseScreen> {
       _connectionError = false;
     });
     try {
-      final value = await widget.api.getLicenseStatus(forceRemote: force);
-      if (mounted) setState(() => _status = value);
+      final results = await Future.wait([
+        widget.api.getLicenseStatus(forceRemote: force),
+        widget.api.getLicenseServerInfo(),
+      ]);
+      if (mounted) {
+        setState(() {
+          _status = results[0] as LicenseStatus;
+          _serverInfo = results[1] as LicenseServerInfo;
+        });
+      }
     } on LicenseApiException catch (e) {
       if (mounted) {
         setState(() {
@@ -155,6 +164,8 @@ class _LicenseScreenState extends State<LicenseScreen> {
                                               .headlineSmall
                                               ?.copyWith(
                                                   fontWeight: FontWeight.w800)),
+                                      const SizedBox(height: 18),
+                                      _serverInfoCard(),
                                       if (value != null) ...[
                                         const SizedBox(height: 18),
                                         _InfoRow(
@@ -188,7 +199,7 @@ class _LicenseScreenState extends State<LicenseScreen> {
                                       if (widget.isViewer) ...[
                                         const SizedBox(height: 24),
                                         const Text(
-                                          'Il profilo Viewer è in sola lettura. Contatta un amministratore per attivare o sostituire la licenza.',
+                                          'Il profilo Viewer ├¿ in sola lettura. Contatta un amministratore per attivare o sostituire la licenza.',
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
                                               fontWeight: FontWeight.w600),
@@ -233,6 +244,57 @@ class _LicenseScreenState extends State<LicenseScreen> {
                                           label: const Text(
                                               'Verifica nuovamente')),
                                     ])))))),
+    );
+  }
+
+  Widget _serverInfoCard() {
+    final info = _serverInfo;
+    final reachable = info?.reachable == true;
+    final configured = info?.configured == true;
+    return Container(
+      key: const Key('license-server-info'),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F9FC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE4EAF4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            reachable ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+            color: reachable ? Colors.green : Colors.orange.shade800,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Server licenza',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                SelectableText(
+                  configured ? info!.url : 'Non configurato',
+                  key: const Key('license-server-url'),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  reachable ? 'Raggiungibile' : 'Non raggiungibile',
+                  style: TextStyle(
+                    color: reachable
+                        ? Colors.green.shade700
+                        : Colors.orange.shade900,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

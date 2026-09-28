@@ -31,6 +31,25 @@ class LicenseStatus {
       );
 }
 
+class LicenseServerInfo {
+  final String url;
+  final bool configured;
+  final bool reachable;
+
+  const LicenseServerInfo({
+    required this.url,
+    required this.configured,
+    required this.reachable,
+  });
+
+  factory LicenseServerInfo.fromJson(Map<String, dynamic> json) =>
+      LicenseServerInfo(
+        url: json['license_server_url']?.toString() ?? '',
+        configured: json['configured'] == true,
+        reachable: json['reachable'] == true,
+      );
+}
+
 class LicenseApiException implements Exception {
   final String message;
   final bool networkError;
@@ -42,6 +61,8 @@ class LicenseApiException implements Exception {
 
 abstract interface class LicenseApi {
   Future<LicenseStatus> getLicenseStatus({bool forceRemote = false});
+
+  Future<LicenseServerInfo> getLicenseServerInfo();
 
   Future<LicenseStatus> activateLicense(String code);
 }

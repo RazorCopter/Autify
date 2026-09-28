@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.2.0] - 2026-09-28
+
+### Changed
+- Separato il server licenze nello stack/repository dedicato `Autify-LICENSE`.
+- Lo stack Autify on-premise contiene ora soltanto admin, API e MongoDB.
+- La destinazione del server licenze è configurabile via `LICENSE_SERVER_URL`.
+- Il pannello licenza mostra URL e raggiungibilità del server centrale.
+
+### Added
+- Endpoint autenticato `GET /api/admin/license/server-info`.
+- Documentazione di deploy separata per sede cliente e server centrale.
+
 ## [3.1.0] - 2026-09-12
 
 ### Architettura Modulare e Sicurezza

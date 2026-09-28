@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from ._helpers import log_audit, verify_auth
-from ..license_service import activate_license, get_license_status
+from ..license_service import activate_license, get_license_server_info, get_license_status
 
 public_admin_router = APIRouter()
 admin_router = APIRouter(dependencies=[Depends(verify_auth)])
@@ -20,6 +20,11 @@ class LicenseActivationRequest(BaseModel):
 @admin_router.get("/license/status", tags=["Admin - License"])
 async def license_status(force_remote: bool = False, auth: dict = Depends(verify_auth)):
     return await get_license_status(force_remote=force_remote)
+
+
+@admin_router.get("/license/server-info", tags=["Admin - License"])
+async def license_server_info(auth: dict = Depends(verify_auth)):
+    return await get_license_server_info()
 
 
 @admin_router.post("/license/activate", tags=["Admin - License"])

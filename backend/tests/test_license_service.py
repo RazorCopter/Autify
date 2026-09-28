@@ -3,10 +3,59 @@ from datetime import timedelta
 from unittest.mock import AsyncMock
 
 import pytest
+import httpx
 
 os.environ.setdefault("LICENSE_SHARED_SECRET", "test-shared-secret-with-more-than-32-characters")
 
 from app import license_service
+
+
+class _HealthResponse:
+    status_code = 200
+
+
+class _HealthClient:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+    async def get(self, url):
+        assert url == "https://licenze.example.test/health"
+        return _HealthResponse()
+
+
+@pytest.mark.anyio
+async def test_license_server_info_reports_reachable(monkeypatch):
+    monkeypatch.setenv("LICENSE_SERVER_URL", "https://licenze.example.test/")
+    monkeypatch.setattr(license_service.httpx, "AsyncClient", _HealthClient)
+
+    result = await license_service.get_license_server_info()
+
+    assert result == {
+        "license_server_url": "https://licenze.example.test",
+        "configured": True,
+        "reachable": True,
+    }
+
+
+@pytest.mark.anyio
+async def test_license_server_info_handles_unreachable_server(monkeypatch):
+    class UnreachableClient(_HealthClient):
+        async def get(self, url):
+            raise httpx.ConnectError("offline")
+
+    monkeypatch.setenv("LICENSE_SERVER_URL", "https://licenze.example.test")
+    monkeypatch.setattr(license_service.httpx, "AsyncClient", UnreachableClient)
+
+    result = await license_service.get_license_server_info()
+
+    assert result["configured"] is True
+    assert result["reachable"] is False
 
 
 @pytest.fixture

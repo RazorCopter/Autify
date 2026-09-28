@@ -133,6 +133,32 @@ class ApiService implements LicenseApi {
         jsonDecode(response.body) as Map<String, dynamic>);
   }
 
+  @override
+  Future<LicenseServerInfo> getLicenseServerInfo() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/license/server-info'),
+        headers: {'Authorization': 'Bearer $kAuthToken'},
+      );
+      final body = jsonDecode(response.body);
+      if (response.statusCode == 200 && body is Map<String, dynamic>) {
+        return LicenseServerInfo.fromJson(body);
+      }
+      throw LicenseApiException(
+        body is Map
+            ? body['detail']?.toString() ?? 'Errore server licenze'
+            : 'Errore server licenze',
+      );
+    } on LicenseApiException {
+      rethrow;
+    } catch (_) {
+      throw const LicenseApiException(
+        'Impossibile leggere la configurazione del server licenze',
+        networkError: true,
+      );
+    }
+  }
+
   Future<LicenseStatus> activateLicense(String code) async {
     late raw_http.Response response;
     try {

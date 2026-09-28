@@ -131,6 +131,31 @@ async def _license_server_call(path: str, payload: dict[str, Any]) -> dict[str, 
         return _decrypt(response.json())
 
 
+async def get_license_server_info() -> dict[str, Any]:
+    """Restituisce la configurazione pubblica e verifica la raggiungibilità del server."""
+    url = os.getenv("LICENSE_SERVER_URL", "").rstrip("/")
+    if not url:
+        return {
+            "license_server_url": "",
+            "configured": False,
+            "reachable": False,
+        }
+
+    timeout = float(os.getenv("LICENSE_SERVER_TIMEOUT_SECONDS", "8"))
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(f"{url}/health")
+            reachable = response.status_code == status.HTTP_200_OK
+    except httpx.HTTPError:
+        reachable = False
+
+    return {
+        "license_server_url": url,
+        "configured": True,
+        "reachable": reachable,
+    }
+
+
 async def activate_license(code: str) -> dict:
     document = await ensure_trial_license()
     result = await _license_server_call(

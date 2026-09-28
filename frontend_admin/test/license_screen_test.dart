@@ -15,6 +15,14 @@ class _FakeApiService implements LicenseApi {
   bool? forceRemote;
 
   @override
+  Future<LicenseServerInfo> getLicenseServerInfo() async =>
+      const LicenseServerInfo(
+        url: 'https://licenze.ghome.it',
+        configured: true,
+        reachable: true,
+      );
+
+  @override
   Future<LicenseStatus> getLicenseStatus({bool forceRemote = false}) async {
     this.forceRemote = forceRemote;
     return status;
@@ -59,6 +67,9 @@ void main() {
     expect(find.text('Trial 15 giorni'), findsOneWidget);
     expect(find.text('12'), findsOneWidget);
     expect(find.text('Attiva licenza'), findsOneWidget);
+    expect(find.text('Server licenza'), findsOneWidget);
+    expect(find.text('https://licenze.ghome.it'), findsOneWidget);
+    expect(find.text('Raggiungibile'), findsOneWidget);
     expect(api.forceRemote, isFalse);
   });
 
