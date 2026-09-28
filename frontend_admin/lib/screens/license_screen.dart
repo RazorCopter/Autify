@@ -119,7 +119,7 @@ class _LicenseScreenState extends State<LicenseScreen> {
           ? AppBar(
               title: const Text('Licenza Autify'),
               automaticallyImplyLeading: false)
-          : null,
+          : AppBar(title: const Text('Licenza Autify')),
       body: Center(
           child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),

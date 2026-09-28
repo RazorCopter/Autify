@@ -56,7 +56,56 @@ const _activeStatus = LicenseStatus(
 
 Widget _app(Widget child) => MaterialApp(home: child);
 
+Widget _appWithLicenseRoute({
+  required LicenseApi api,
+  required bool blocking,
+}) =>
+    MaterialApp(
+      home: Builder(
+        builder: (context) => Scaffold(
+          body: FilledButton(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => LicenseScreen(
+                  api: api,
+                  blocking: blocking,
+                ),
+              ),
+            ),
+            child: const Text('Apri licenza'),
+          ),
+        ),
+      ),
+    );
+
 void main() {
+  testWidgets('permette di tornare indietro quando non e bloccante',
+      (tester) async {
+    final api = _FakeApiService(status: _activeStatus);
+    await tester.pumpWidget(_appWithLicenseRoute(api: api, blocking: false));
+
+    await tester.tap(find.text('Apri licenza'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BackButton), findsOneWidget);
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.text('Apri licenza'), findsOneWidget);
+  });
+
+  testWidgets('non permette di aggirare la schermata licenza bloccante',
+      (tester) async {
+    final api = _FakeApiService(status: _activeStatus);
+    await tester.pumpWidget(_appWithLicenseRoute(api: api, blocking: true));
+
+    await tester.tap(find.text('Apri licenza'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BackButton), findsNothing);
+    expect(find.text('Licenza Autify'), findsOneWidget);
+  });
+
   testWidgets('mostra lo stato della licenza trial', (tester) async {
     final api = _FakeApiService(status: _trialStatus);
 
