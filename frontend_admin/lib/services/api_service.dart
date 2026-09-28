@@ -8,15 +8,19 @@ import '../models/scale_model.dart';
 import '../models/patient_model.dart';
 import '../models/evaluation_model.dart';
 import '../models/audit_log.dart';
+import 'license_api.dart';
+
+export 'license_api.dart';
 
 class _Http {
   const _Http();
-  
+
   void _handleUnauthorized() {
     try {
       html.window.localStorage.clear();
       html.window.sessionStorage.clear();
-      final reloadUrl = (html.window.location.pathname ?? '/') + "?v=${DateTime.now().millisecondsSinceEpoch}";
+      final reloadUrl = (html.window.location.pathname ?? '/') +
+          "?v=${DateTime.now().millisecondsSinceEpoch}";
       html.window.location.href = reloadUrl;
     } catch (_) {}
   }
@@ -29,24 +33,30 @@ class _Http {
     return response;
   }
 
-  Future<raw_http.Response> post(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
-    final response = await raw_http.post(url, headers: headers, body: body, encoding: encoding);
+  Future<raw_http.Response> post(Uri url,
+      {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
+    final response = await raw_http.post(url,
+        headers: headers, body: body, encoding: encoding);
     if (response.statusCode == 401 && !url.path.contains('/auth/login')) {
       _handleUnauthorized();
     }
     return response;
   }
 
-  Future<raw_http.Response> put(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
-    final response = await raw_http.put(url, headers: headers, body: body, encoding: encoding);
+  Future<raw_http.Response> put(Uri url,
+      {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
+    final response = await raw_http.put(url,
+        headers: headers, body: body, encoding: encoding);
     if (response.statusCode == 401) {
       _handleUnauthorized();
     }
     return response;
   }
 
-  Future<raw_http.Response> delete(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
-    final response = await raw_http.delete(url, headers: headers, body: body, encoding: encoding);
+  Future<raw_http.Response> delete(Uri url,
+      {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
+    final response = await raw_http.delete(url,
+        headers: headers, body: body, encoding: encoding);
     if (response.statusCode == 401) {
       _handleUnauthorized();
     }
@@ -56,7 +66,9 @@ class _Http {
 
 const _Http http = _Http();
 
-class ApiService {
+class ApiService implements LicenseApi {
+  const ApiService();
+
   static String get kAuthToken {
     try {
       final stored = html.window.localStorage['jwt_token'];
@@ -96,10 +108,70 @@ class ApiService {
   }
 
   static const String baseUrl = kApiBaseUrl;
-  
+
+  Future<LicenseStatus> getLicenseStatus({bool forceRemote = false}) async {
+    final uri = Uri.parse('$baseUrl/license/status').replace(
+      queryParameters: forceRemote ? const {'force_remote': 'true'} : null,
+    );
+    late raw_http.Response response;
+    try {
+      response = await http.get(
+        uri,
+        headers: {'Authorization': 'Bearer $kAuthToken'},
+      );
+    } catch (_) {
+      throw const LicenseApiException(
+        'Impossibile contattare il backend. Verifica la connessione e riprova.',
+        networkError: true,
+      );
+    }
+    if (response.statusCode != 200) {
+      throw LicenseApiException(
+          _licenseError(response, 'Impossibile verificare la licenza'));
+    }
+    return LicenseStatus.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  Future<LicenseStatus> activateLicense(String code) async {
+    late raw_http.Response response;
+    try {
+      response = await http.post(
+        Uri.parse('$baseUrl/license/activate'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $kAuthToken',
+        },
+        body: jsonEncode({'code': code.trim()}),
+      );
+    } catch (_) {
+      throw const LicenseApiException(
+        'Server non raggiungibile. L’attivazione non è stata completata.',
+        networkError: true,
+      );
+    }
+    if (response.statusCode != 200) {
+      throw LicenseApiException(
+          _licenseError(response, 'Attivazione non riuscita'));
+    }
+    return LicenseStatus.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  String _licenseError(raw_http.Response response, String fallback) {
+    try {
+      return (jsonDecode(response.body) as Map<String, dynamic>)['detail']
+              ?.toString() ??
+          fallback;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
   // --- AUTHENTICATION ---
-  
-  Future<Map<String, dynamic>?> login(String username, String password, String deviceId) async {
+
+  Future<Map<String, dynamic>?> login(
+      String username, String password, String deviceId) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/login'),
@@ -116,7 +188,8 @@ class ApiService {
         try {
           html.window.localStorage['jwt_token'] = data['token'] ?? '';
           html.window.localStorage['auth_role'] = data['role'] ?? '';
-          html.window.localStorage['ai_enabled'] = (data['ai_enabled'] ?? false).toString();
+          html.window.localStorage['ai_enabled'] =
+              (data['ai_enabled'] ?? false).toString();
           html.window.localStorage['auth_username'] = data['username'] ?? '';
         } catch (_) {}
         return data;
@@ -181,7 +254,8 @@ class ApiService {
     }
   }
 
-  Future<bool> updateUser(String username, Map<String, dynamic> updateData) async {
+  Future<bool> updateUser(
+      String username, Map<String, dynamic> updateData) async {
     try {
       final response = await http.put(
         Uri.parse('$baseUrl/users/$username'),
@@ -218,7 +292,7 @@ class ApiService {
         Uri.parse('$baseUrl/import-scale'),
       );
       request.headers['Authorization'] = 'Bearer $kAuthToken';
-      
+
       // In Flutter Web, il file ha i bytes esposti direttamente se letto con withData: true
       if (file.bytes != null) {
         request.files.add(raw_http.MultipartFile.fromBytes(
@@ -333,7 +407,8 @@ class ApiService {
     }
   }
 
-  Future<bool> saveGeminiSettings(String key, String model, {String? prompt, bool? viewerAiEnabled}) async {
+  Future<bool> saveGeminiSettings(String key, String model,
+      {String? prompt, bool? viewerAiEnabled}) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/settings'),
@@ -377,8 +452,10 @@ class ApiService {
       if (filter != null && filter.isNotEmpty) {
         queryParams['filter'] = filter;
       }
-      final uri = Uri.parse('$baseUrl/patients').replace(queryParameters: queryParams);
-      final response = await http.get(uri, headers: {'Authorization': 'Bearer $kAuthToken'});
+      final uri =
+          Uri.parse('$baseUrl/patients').replace(queryParameters: queryParams);
+      final response =
+          await http.get(uri, headers: {'Authorization': 'Bearer $kAuthToken'});
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         return PaginatedPatientsResult.fromJson(data);
@@ -459,13 +536,16 @@ class ApiService {
 
   Future<AggregatedEvaluation?> updateEvaluationAnswers(
       String evaluationId, List<AnswerModel> risposte,
-      {String? nomeOperatore, String? nomeIntervistato, Map<String, dynamic>? demographics}) async {
+      {String? nomeOperatore,
+      String? nomeIntervistato,
+      Map<String, dynamic>? demographics}) async {
     try {
       final Map<String, dynamic> body = {
         'risposte': risposte.map((r) => r.toJson()).toList(),
       };
       if (nomeOperatore != null) body['nome_operatore'] = nomeOperatore;
-      if (nomeIntervistato != null) body['nome_intervistato'] = nomeIntervistato;
+      if (nomeIntervistato != null)
+        body['nome_intervistato'] = nomeIntervistato;
       if (demographics != null) body['demographics'] = demographics;
 
       final response = await http.put(
@@ -504,7 +584,8 @@ class ApiService {
 
   // --- ANALISI PSICOMETRICA ---
 
-  Future<PsychometricAnalysis?> getEvaluationAnalysis(String evaluationId) async {
+  Future<PsychometricAnalysis?> getEvaluationAnalysis(
+      String evaluationId) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/evaluations/$evaluationId/analysis'),
@@ -584,7 +665,8 @@ class ApiService {
 
   // --- AI HISTORICAL ANALYSES ---
 
-  Future<List<Map<String, dynamic>>> getPatientAiAnalyses(String patientId) async {
+  Future<List<Map<String, dynamic>>> getPatientAiAnalyses(
+      String patientId) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/patients/$patientId/ai-analyses'),
@@ -602,7 +684,8 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>?> savePatientAiAnalysis(
-      String patientId, String report, {String? notes, List<String>? evaluationsUsed}) async {
+      String patientId, String report,
+      {String? notes, List<String>? evaluationsUsed}) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/patients/$patientId/ai-analyses'),
@@ -710,7 +793,8 @@ class ApiService {
     }
   }
 
-  Future<List<int>?> downloadAiAnalysisPdf(PatientModel patient, String report) async {
+  Future<List<int>?> downloadAiAnalysisPdf(
+      PatientModel patient, String report) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/evaluations/ai-analysis-pdf'),

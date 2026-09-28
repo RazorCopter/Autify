@@ -10,7 +10,7 @@ from typing import List, Optional
 from bson import ObjectId
 import httpx
 from ..models import Scale, Evaluation, Patient, PaginatedPatients, AppSettings, Section, Question, Option, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest, AiAnalysis, AiAnalysisCreate, AiAnalysisUpdate, AiAnalysisRequest, AiPdfRequest, UserCreate, UserUpdate, AuditLogCreate, AuditLogResponse
-from ..database import evaluations_collection, settings_collection, patients_collection, scales_collection, users_collection, ai_analyses_collection, audit_logs_collection
+from ..database import evaluations_collection, settings_collection, patients_collection, scales_collection, users_collection, ai_analyses_collection, audit_logs_collection, licenses_collection
 from ..pdf_generator import generate_evaluation_pdf, generate_ai_analysis_pdf
 from ..analytics import compute_psychometric_analysis, compute_direct_scores, build_domain_map, calcola_punteggi_sis
 from datetime import datetime, timezone, timedelta
@@ -70,6 +70,7 @@ async def export_database(auth: dict = Depends(verify_auth)):
             "settings": await _collect_collection("settings", settings_collection),
             "ai_analyses": await _collect_collection("ai_analyses", ai_analyses_collection),
             "audit_logs": await _collect_collection("audit_logs", audit_logs_collection),
+            "licenses": await _collect_collection("licenses", licenses_collection),
         }
     }
     json_bytes = json.dumps(db_dump, ensure_ascii=False, indent=2, default=str).encode('utf-8')
@@ -122,6 +123,7 @@ async def import_database(file: UploadFile = File(...), auth: dict = Depends(ver
         "settings": settings_collection,
         "ai_analyses": ai_analyses_collection,
         "audit_logs": audit_logs_collection,
+        "licenses": licenses_collection,
     }
 
     # Pre-validazione completa PRIMA di eseguire qualsiasi cancellazione distruttiva (DATA-01)

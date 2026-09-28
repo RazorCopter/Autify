@@ -14,6 +14,8 @@ import 'screens/audit_log_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'widgets/connection_status_indicator.dart';
 import 'screens/login_screen.dart';
+import 'screens/license_screen.dart';
+import 'services/api_service.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -58,6 +60,36 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0;
   String? _patientSearchQuery;
   String? _patientSemanticFilter;
+  bool _checkingLicense = true;
+  bool _licenseValid = false;
+  bool _licenseCheckUnavailable = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLicense();
+  }
+
+  Future<void> _checkLicense() async {
+    try {
+      final license = await ApiService().getLicenseStatus();
+      if (mounted) {
+        setState(() {
+          _licenseValid = license.valid;
+          _licenseCheckUnavailable = false;
+          _checkingLicense = false;
+        });
+      }
+    } on LicenseApiException catch (error) {
+      if (mounted) {
+        setState(() {
+          _licenseValid = false;
+          _licenseCheckUnavailable = error.networkError;
+          _checkingLicense = false;
+        });
+      }
+    }
+  }
 
   void _performLogout() {
     try {
@@ -91,7 +123,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ]);
     } catch (_) {
       try {
-        html.window.location.href = '/?v=\${DateTime.now().millisecondsSinceEpoch}';
+        html.window.location.href =
+            '/?v=\${DateTime.now().millisecondsSinceEpoch}';
       } catch (_) {
         Navigator.pushAndRemoveUntil(
           context,
@@ -103,16 +136,39 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   static const _navItems = [
-    (icon: Icons.dashboard_outlined, active: Icons.dashboard, label: 'Dashboard'),
+    (
+      icon: Icons.dashboard_outlined,
+      active: Icons.dashboard,
+      label: 'Dashboard'
+    ),
     (icon: Icons.edit_note_outlined, active: Icons.edit_note, label: 'Compila'),
     (icon: Icons.people_outline, active: Icons.people, label: 'Utenza'),
-    (icon: Icons.library_books_outlined, active: Icons.library_books, label: 'Protocolli'),
+    (
+      icon: Icons.library_books_outlined,
+      active: Icons.library_books,
+      label: 'Protocolli'
+    ),
     (icon: Icons.history_outlined, active: Icons.history, label: 'Registro'),
-    (icon: Icons.settings_outlined, active: Icons.settings, label: 'Impostazioni'),
+    (
+      icon: Icons.settings_outlined,
+      active: Icons.settings,
+      label: 'Impostazioni'
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
+    if (_checkingLicense) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (!_licenseValid) {
+      return LicenseScreen(
+        blocking: true,
+        isViewer: ApiService.isViewer,
+        initialConnectionError: _licenseCheckUnavailable,
+        onActivated: _checkLicense,
+      );
+    }
     final isMobile = ResponsiveHelper.isMobile(context);
 
     return Scaffold(
@@ -133,7 +189,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
               leading: Builder(
                 builder: (context) => IconButton(
-                  icon: const Icon(Icons.menu_rounded, color: AppTheme.textPrimary),
+                  icon: const Icon(Icons.menu_rounded,
+                      color: AppTheme.textPrimary),
                   onPressed: () => Scaffold.of(context).openDrawer(),
                 ),
               ),
@@ -171,7 +228,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
               Positioned.fill(
                 child: IgnorePointer(
                   child: Opacity(
-                    opacity: 0.015, // Trasparenza soft ottimizzata all'1.5% per garantire contrasto ottimale
+                    opacity:
+                        0.015, // Trasparenza soft ottimizzata all'1.5% per garantire contrasto ottimale
                     child: Image.asset(
                       'assets/images/bradipo_hd_BG.png',
                       fit: BoxFit.cover,
@@ -197,7 +255,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
         Positioned.fill(
           child: IgnorePointer(
             child: Opacity(
-              opacity: 0.015, // Trasparenza soft ottimizzata all'1.5% per garantire contrasto ottimale
+              opacity:
+                  0.015, // Trasparenza soft ottimizzata all'1.5% per garantire contrasto ottimale
               child: Image.asset(
                 'assets/images/bradipo_hd_BG.png',
                 fit: BoxFit.cover,
@@ -258,7 +317,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 itemBuilder: (context, index) {
                   final item = _navItems[index];
                   final isSelected = _selectedIndex == index;
-                  final color = isSelected ? AppTheme.puzzleColorAt(index) : AppTheme.textSecondary;
+                  final color = isSelected
+                      ? AppTheme.puzzleColorAt(index)
+                      : AppTheme.textSecondary;
                   return ListTile(
                     leading: Icon(
                       isSelected ? item.active : item.icon,
@@ -268,14 +329,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     title: Text(
                       item.label,
                       style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
                         color: color,
                         fontSize: 15,
                       ),
                     ),
                     selected: isSelected,
                     selectedTileColor: color.withValues(alpha: 0.08),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     onTap: () {
                       setState(() => _selectedIndex = index);
                       Navigator.pop(context);
@@ -296,7 +359,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   const SizedBox(height: 8),
                   Text(
                     'v$kFrontendVersion',
-                    style: TextStyle(fontSize: 11, color: AppTheme.textSecondary.withValues(alpha: 0.5)),
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: AppTheme.textSecondary.withValues(alpha: 0.5)),
                   ),
                   const SizedBox(height: 8),
                   InkWell(
@@ -309,7 +374,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     },
                     borderRadius: BorderRadius.circular(4),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       child: Text(
                         'About & Termini',
                         style: TextStyle(
@@ -326,11 +392,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: _performLogout,
-                      icon: const Icon(Icons.logout_rounded, size: 18, color: AppTheme.errorColor),
-                      label: const Text('Esci', style: TextStyle(color: AppTheme.errorColor, fontWeight: FontWeight.bold)),
+                      icon: const Icon(Icons.logout_rounded,
+                          size: 18, color: AppTheme.errorColor),
+                      label: const Text('Esci',
+                          style: TextStyle(
+                              color: AppTheme.errorColor,
+                              fontWeight: FontWeight.bold)),
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: AppTheme.errorColor.withValues(alpha: 0.3)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        side: BorderSide(
+                            color: AppTheme.errorColor.withValues(alpha: 0.3)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
@@ -368,7 +440,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
           // Pulsante Logout
           IconButton(
-            icon: const Icon(Icons.logout_rounded, size: 20, color: AppTheme.errorColor),
+            icon: const Icon(Icons.logout_rounded,
+                size: 20, color: AppTheme.errorColor),
             tooltip: 'Esci',
             onPressed: _performLogout,
           ),
@@ -384,7 +457,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 const SizedBox(height: 8),
                 Text(
                   'v$kFrontendVersion',
-                  style: TextStyle(fontSize: 10, color: AppTheme.textSecondary.withValues(alpha: 0.5)),
+                  style: TextStyle(
+                      fontSize: 10,
+                      color: AppTheme.textSecondary.withValues(alpha: 0.5)),
                 ),
                 const SizedBox(height: 8),
                 InkWell(
@@ -396,7 +471,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   },
                   borderRadius: BorderRadius.circular(4),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Text(
                       'About',
                       style: TextStyle(
@@ -426,8 +502,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isAdmin 
-            ? AppTheme.accentColor.withValues(alpha: 0.15) 
+        color: isAdmin
+            ? AppTheme.accentColor.withValues(alpha: 0.15)
             : AppTheme.primaryColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -435,7 +511,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isAdmin ? Icons.admin_panel_settings_rounded : Icons.visibility_rounded,
+            isAdmin
+                ? Icons.admin_panel_settings_rounded
+                : Icons.visibility_rounded,
             size: 10,
             color: isAdmin ? const Color(0xFF388E3C) : AppTheme.primaryColor,
           ),
@@ -460,7 +538,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
         'assets/images/logo_autify_int.png',
         height: 72,
         fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => const Icon(Icons.psychology, color: AppTheme.primaryColor, size: 32),
+        errorBuilder: (_, __, ___) => const Icon(Icons.psychology,
+            color: AppTheme.primaryColor, size: 32),
       ),
     );
   }
@@ -468,7 +547,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget _buildNavItem(int index) {
     final item = _navItems[index];
     final isSelected = _selectedIndex == index;
-    final color = isSelected ? AppTheme.puzzleColorAt(index) : AppTheme.textSecondary;
+    final color =
+        isSelected ? AppTheme.puzzleColorAt(index) : AppTheme.textSecondary;
 
     return Tooltip(
       message: item.label,
@@ -488,9 +568,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 // Capsula attiva Material 3 per l'icona
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   decoration: BoxDecoration(
-                    color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
+                    color: isSelected
+                        ? color.withValues(alpha: 0.15)
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(
@@ -505,7 +588,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   style: TextStyle(
                     fontSize: 10.5,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
+                    color: isSelected
+                        ? AppTheme.textPrimary
+                        : AppTheme.textSecondary,
                   ),
                 ),
               ],
@@ -532,7 +617,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
         1 => const SelectionScreen(key: ValueKey(1)),
         2 => AnagraficaScreen(
-            key: ValueKey('anagrafica_${_patientSearchQuery ?? ""}_${_patientSemanticFilter ?? ""}_$_selectedIndex'),
+            key: ValueKey(
+                'anagrafica_${_patientSearchQuery ?? ""}_${_patientSemanticFilter ?? ""}_$_selectedIndex'),
             initialSearchQuery: _patientSearchQuery,
             initialSemanticFilter: _patientSemanticFilter,
           ),
@@ -554,13 +640,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: AppTheme.puzzleColorAt(_selectedIndex).withValues(alpha: 0.1),
+              color:
+                  AppTheme.puzzleColorAt(_selectedIndex).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              isHome ? Icons.analytics_outlined : Icons.manage_accounts_outlined,
+              isHome
+                  ? Icons.analytics_outlined
+                  : Icons.manage_accounts_outlined,
               size: 64,
-              color: AppTheme.puzzleColorAt(_selectedIndex).withValues(alpha: 0.5),
+              color:
+                  AppTheme.puzzleColorAt(_selectedIndex).withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(height: 24),
@@ -580,14 +670,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
           const SizedBox(height: 32),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(4, (i) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Icon(
-                Icons.extension,
-                size: 22,
-                color: AppTheme.puzzleColorAt(i).withValues(alpha: 0.35),
-              ),
-            )),
+            children: List.generate(
+                4,
+                (i) => Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Icon(
+                        Icons.extension,
+                        size: 22,
+                        color:
+                            AppTheme.puzzleColorAt(i).withValues(alpha: 0.35),
+                      ),
+                    )),
           ),
         ],
       ),

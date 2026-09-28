@@ -1,17 +1,19 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from .routers import auth, patients, evaluations, settings, ai, backup, dashboard, misc
+from .routers import auth, patients, evaluations, settings, ai, backup, dashboard, misc, license
 from . import auth as auth_module
+from .license_service import ensure_trial_license, require_valid_license
 
 limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     await auth_module.ensure_default_admin()
+    await ensure_trial_license()
     yield
 
 app = FastAPI(
@@ -39,10 +41,11 @@ app.add_middleware(
 )
 
 # Inclusione dei router separati (ARCH-01)
-for module in [auth, patients, evaluations, settings, ai, backup, dashboard, misc]:
-    app.include_router(module.public_admin_router, prefix="/api/admin")
-    app.include_router(module.admin_router, prefix="/api/admin")
-    app.include_router(module.client_router, prefix="/api/client")
+for module in [auth, patients, evaluations, settings, ai, backup, dashboard, misc, license]:
+    dependencies = [] if module in (auth, license) else [Depends(require_valid_license)]
+    app.include_router(module.public_admin_router, prefix="/api/admin", dependencies=dependencies)
+    app.include_router(module.admin_router, prefix="/api/admin", dependencies=dependencies)
+    app.include_router(module.client_router, prefix="/api/client", dependencies=dependencies)
 
 @app.get("/", tags=["Health"])
 async def health_check():

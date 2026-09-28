@@ -1,4 +1,4 @@
-﻿// ignore: avoid_web_libraries_in_flutter
+// ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../services/settings_notifier.dart';
 import '../services/api_service.dart';
 import '../utils/responsive_helper.dart';
+import 'license_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -46,10 +47,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _apiKeyController.text = key;
     }
     final String loadedPrompt = (settings['prompt'] as String?) ?? '';
-    _promptController.text = loadedPrompt.isNotEmpty ? loadedPrompt : _defaultSystemPrompt;
+    _promptController.text =
+        loadedPrompt.isNotEmpty ? loadedPrompt : _defaultSystemPrompt;
     final String rawModel = (settings['model'] as String?) ?? 'gemini-1.5-pro';
     setState(() {
-      if (rawModel == 'gemini-1.5-pro' || rawModel == 'gemini-1.5-flash' || rawModel == 'gemini-1.5-pro-latest') {
+      if (rawModel == 'gemini-1.5-pro' ||
+          rawModel == 'gemini-1.5-flash' ||
+          rawModel == 'gemini-1.5-pro-latest') {
         _selectedModel = rawModel;
       } else if (rawModel.contains('flash')) {
         _selectedModel = 'gemini-1.5-flash';
@@ -90,7 +94,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (success) {
           _uploadStatus = 'Protocollo caricato con successo!';
         } else {
-          _uploadStatus = 'Errore durante il caricamento o formato non ancora supportato.';
+          _uploadStatus =
+              'Errore durante il caricamento o formato non ancora supportato.';
         }
       });
     }
@@ -106,7 +111,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (bytes != null) {
       final b64 = base64Encode(bytes);
       final dataUrl = 'data:application/json;base64,$b64';
-      final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:.]'), '-').substring(0, 19);
+      final timestamp = DateTime.now()
+          .toIso8601String()
+          .replaceAll(RegExp(r'[:.]'), '-')
+          .substring(0, 19);
       html.AnchorElement(href: dataUrl)
         ..setAttribute('download', 'autify_backup_$timestamp.json')
         ..click();
@@ -136,7 +144,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (success) {
           _dbStatus = 'Database importato con successo!';
         } else {
-          _dbStatus = 'Errore durante l\'importazione. Verifica il formato del file.';
+          _dbStatus =
+              'Errore durante l\'importazione. Verifica il formato del file.';
         }
       });
     }
@@ -147,13 +156,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final success = await _apiService.saveGeminiSettings(
       _apiKeyController.text,
       _selectedModel,
-      prompt: _promptController.text.trim().isEmpty ? null : _promptController.text.trim(),
+      prompt: _promptController.text.trim().isEmpty
+          ? null
+          : _promptController.text.trim(),
     );
     setState(() => _isLoading = false);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(success ? 'Configurazione AI salvata!' : 'Errore nel salvataggio')),
+        SnackBar(
+            content: Text(success
+                ? 'Configurazione AI salvata!'
+                : 'Errore nel salvataggio')),
       );
     }
   }
@@ -180,18 +194,20 @@ TONO E FORMATTAZIONE:
     });
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Prompt ripristinato al default! (Salva per rendere effettiva la modifica)')),
+        const SnackBar(
+            content: Text(
+                'Prompt ripristinato al default! (Salva per rendere effettiva la modifica)')),
       );
     }
   }
-
 
   // --- GESTIONE UTENTI ---
 
   void _showUserDialog({Map<String, dynamic>? user}) {
     final isEditing = user != null;
     final isDefault = isEditing && (user['is_default'] == true);
-    final usernameCtrl = TextEditingController(text: isEditing ? user['username'] : '');
+    final usernameCtrl =
+        TextEditingController(text: isEditing ? user['username'] : '');
     final pwdCtrl = TextEditingController();
     final confirmPwdCtrl = TextEditingController();
     String selectedRole = isEditing ? (user['role'] ?? 'viewer') : 'viewer';
@@ -226,9 +242,13 @@ TONO E FORMATTAZIONE:
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.error_outline, color: Colors.red, size: 16),
+                          const Icon(Icons.error_outline,
+                              color: Colors.red, size: 16),
                           const SizedBox(width: 8),
-                          Expanded(child: Text(dialogError!, style: const TextStyle(color: Colors.red, fontSize: 13))),
+                          Expanded(
+                              child: Text(dialogError!,
+                                  style: const TextStyle(
+                                      color: Colors.red, fontSize: 13))),
                         ],
                       ),
                     ),
@@ -237,10 +257,13 @@ TONO E FORMATTAZIONE:
                     controller: usernameCtrl,
                     enabled: !isDefault,
                     decoration: InputDecoration(
-                      labelText: 'Nome Utente${isDefault ? ' (bloccato)' : ' *'}',
+                      labelText:
+                          'Nome Utente${isDefault ? ' (bloccato)' : ' *'}',
                       border: const OutlineInputBorder(),
                       prefixIcon: const Icon(Icons.person_outline_rounded),
-                      helperText: isDefault ? 'L\'username admin non è modificabile' : 'Min 3 caratteri, nessuno spazio',
+                      helperText: isDefault
+                          ? 'L\'username admin non è modificabile'
+                          : 'Min 3 caratteri, nessuno spazio',
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -250,13 +273,18 @@ TONO E FORMATTAZIONE:
                       controller: pwdCtrl,
                       obscureText: obscurePwd,
                       decoration: InputDecoration(
-                        labelText: isEditing ? 'Nuova Password (opzionale)' : 'Password *',
+                        labelText: isEditing
+                            ? 'Nuova Password (opzionale)'
+                            : 'Password *',
                         border: const OutlineInputBorder(),
                         prefixIcon: const Icon(Icons.lock_outline_rounded),
                         helperText: 'Min 4 caratteri',
                         suffixIcon: IconButton(
-                          icon: Icon(obscurePwd ? Icons.visibility : Icons.visibility_off),
-                          onPressed: () => setDialogState(() => obscurePwd = !obscurePwd),
+                          icon: Icon(obscurePwd
+                              ? Icons.visibility
+                              : Icons.visibility_off),
+                          onPressed: () =>
+                              setDialogState(() => obscurePwd = !obscurePwd),
                         ),
                       ),
                     ),
@@ -267,18 +295,25 @@ TONO E FORMATTAZIONE:
                     controller: confirmPwdCtrl,
                     obscureText: obscureConfirm,
                     decoration: InputDecoration(
-                      labelText: isEditing ? 'Conferma Nuova Password' : 'Conferma Password *',
+                      labelText: isEditing
+                          ? 'Conferma Nuova Password'
+                          : 'Conferma Password *',
                       border: const OutlineInputBorder(),
                       prefixIcon: const Icon(Icons.lock_outline_rounded),
                       suffixIcon: IconButton(
-                        icon: Icon(obscureConfirm ? Icons.visibility : Icons.visibility_off),
-                        onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
+                        icon: Icon(obscureConfirm
+                            ? Icons.visibility
+                            : Icons.visibility_off),
+                        onPressed: () => setDialogState(
+                            () => obscureConfirm = !obscureConfirm),
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
                   // Ruolo
-                  const Text('Profilo (Ruolo)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const Text('Profilo (Ruolo)',
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -286,14 +321,17 @@ TONO E FORMATTAZIONE:
                         child: RadioListTile<String>(
                           title: const Row(
                             children: [
-                              Icon(Icons.admin_panel_settings_rounded, size: 18, color: Colors.indigo),
+                              Icon(Icons.admin_panel_settings_rounded,
+                                  size: 18, color: Colors.indigo),
                               SizedBox(width: 6),
                               Text('Admin'),
                             ],
                           ),
                           value: 'admin',
                           groupValue: selectedRole,
-                          onChanged: isDefault ? null : (v) => setDialogState(() => selectedRole = v!),
+                          onChanged: isDefault
+                              ? null
+                              : (v) => setDialogState(() => selectedRole = v!),
                           contentPadding: EdgeInsets.zero,
                           dense: true,
                         ),
@@ -302,14 +340,17 @@ TONO E FORMATTAZIONE:
                         child: RadioListTile<String>(
                           title: const Row(
                             children: [
-                              Icon(Icons.visibility_outlined, size: 18, color: Colors.teal),
+                              Icon(Icons.visibility_outlined,
+                                  size: 18, color: Colors.teal),
                               SizedBox(width: 6),
                               Text('Viewer'),
                             ],
                           ),
                           value: 'viewer',
                           groupValue: selectedRole,
-                          onChanged: isDefault ? null : (v) => setDialogState(() => selectedRole = v!),
+                          onChanged: isDefault
+                              ? null
+                              : (v) => setDialogState(() => selectedRole = v!),
                           contentPadding: EdgeInsets.zero,
                           dense: true,
                         ),
@@ -322,9 +363,11 @@ TONO E FORMATTAZIONE:
                     contentPadding: EdgeInsets.zero,
                     title: const Row(
                       children: [
-                        Icon(Icons.psychology_rounded, size: 18, color: Colors.purple),
+                        Icon(Icons.psychology_rounded,
+                            size: 18, color: Colors.purple),
                         SizedBox(width: 8),
-                        Text('Abilitazione AI', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text('Abilitazione AI',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
                       ],
                     ),
                     subtitle: const Text('Consenti interrogazioni Gemini AI'),
@@ -346,19 +389,24 @@ TONO E FORMATTAZIONE:
                 // Validazione
                 final uname = usernameCtrl.text.trim();
                 if (!isDefault && uname.length < 3) {
-                  setDialogState(() => dialogError = 'Username troppo corto (min 3 caratteri)');
+                  setDialogState(() =>
+                      dialogError = 'Username troppo corto (min 3 caratteri)');
                   return;
                 }
                 if (!isDefault && uname.contains(' ')) {
-                  setDialogState(() => dialogError = 'Lo username non può contenere spazi');
+                  setDialogState(() =>
+                      dialogError = 'Lo username non può contenere spazi');
                   return;
                 }
                 if (!isEditing && pwdCtrl.text.length < 4) {
-                  setDialogState(() => dialogError = 'Password troppo corta (min 4 caratteri)');
+                  setDialogState(() =>
+                      dialogError = 'Password troppo corta (min 4 caratteri)');
                   return;
                 }
-                if (pwdCtrl.text.isNotEmpty && pwdCtrl.text != confirmPwdCtrl.text) {
-                  setDialogState(() => dialogError = 'Le password non coincidono');
+                if (pwdCtrl.text.isNotEmpty &&
+                    pwdCtrl.text != confirmPwdCtrl.text) {
+                  setDialogState(
+                      () => dialogError = 'Le password non coincidono');
                   return;
                 }
 
@@ -388,14 +436,19 @@ TONO E FORMATTAZIONE:
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text(success
-                        ? (isEditing ? 'Operatore aggiornato!' : 'Operatore creato!')
+                        ? (isEditing
+                            ? 'Operatore aggiornato!'
+                            : 'Operatore creato!')
                         : 'Errore durante l\'operazione.'),
-                    backgroundColor: success ? Colors.green.shade700 : Colors.red.shade700,
+                    backgroundColor:
+                        success ? Colors.green.shade700 : Colors.red.shade700,
                   ));
                   if (success) _loadUsers();
                 }
               },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade700, foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade700,
+                  foregroundColor: Colors.white),
               child: Text(isEditing ? 'Salva Modifiche' : 'Crea Operatore'),
             ),
           ],
@@ -408,22 +461,29 @@ TONO E FORMATTAZIONE:
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Conferma Eliminazione', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Conferma Eliminazione',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         content: RichText(
           text: TextSpan(
             style: const TextStyle(color: Colors.black87, fontSize: 14),
             children: [
               const TextSpan(text: 'Stai per eliminare l\'operatore '),
-              TextSpan(text: username, style: const TextStyle(fontWeight: FontWeight.bold)),
+              TextSpan(
+                  text: username,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               const TextSpan(text: '. Questa azione è irreversibile.'),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annulla')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Annulla')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade700,
+                foregroundColor: Colors.white),
             child: const Text('Elimina'),
           ),
         ],
@@ -434,8 +494,11 @@ TONO E FORMATTAZIONE:
       final success = await _apiService.deleteUser(username);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(success ? 'Operatore eliminato.' : 'Errore durante l\'eliminazione.'),
-          backgroundColor: success ? Colors.green.shade700 : Colors.red.shade700,
+          content: Text(success
+              ? 'Operatore eliminato.'
+              : 'Errore durante l\'eliminazione.'),
+          backgroundColor:
+              success ? Colors.green.shade700 : Colors.red.shade700,
         ));
         if (success) _loadUsers();
       }
@@ -455,7 +518,8 @@ TONO E FORMATTAZIONE:
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Operatori del Sistema', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('Operatori del Sistema',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             Row(
               children: [
                 ElevatedButton.icon(
@@ -482,7 +546,9 @@ TONO E FORMATTAZIONE:
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFFE8EEF8)),
             ),
-            child: const Center(child: Text('Nessun operatore trovato.', style: TextStyle(color: Color(0xFF64748B)))),
+            child: const Center(
+                child: Text('Nessun operatore trovato.',
+                    style: TextStyle(color: Color(0xFF64748B)))),
           )
         else
           Container(
@@ -517,42 +583,59 @@ TONO E FORMATTAZIONE:
                     final aiEn = u['ai_enabled'] as bool? ?? false;
                     final isDefault = u['is_default'] as bool? ?? false;
                     final createdAt = u['created_at'] as String?;
-                    final dt = createdAt != null ? DateTime.tryParse(createdAt) : null;
-                    final dateStr = dt != null ? '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}' : '-';
+                    final dt =
+                        createdAt != null ? DateTime.tryParse(createdAt) : null;
+                    final dateStr = dt != null
+                        ? '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}'
+                        : '-';
 
                     return TableRow(
                       decoration: BoxDecoration(
-                        color: _users.indexOf(u) % 2 == 0 ? Colors.white : const Color(0xFFF8FAFC),
+                        color: _users.indexOf(u) % 2 == 0
+                            ? Colors.white
+                            : const Color(0xFFF8FAFC),
                       ),
                       children: [
                         _tableCell(Row(
                           children: [
-                            Text(username, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            Text(username,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600)),
                             if (isDefault) ...[
                               const SizedBox(width: 6),
                               Tooltip(
                                 message: 'Utente di sistema (non eliminabile)',
-                                child: Icon(Icons.lock_rounded, size: 14, color: Colors.grey.shade500),
+                                child: Icon(Icons.lock_rounded,
+                                    size: 14, color: Colors.grey.shade500),
                               ),
                             ],
                           ],
                         )),
                         _tableCell(Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: role == 'admin' ? Colors.indigo.shade50 : Colors.teal.shade50,
+                            color: role == 'admin'
+                                ? Colors.indigo.shade50
+                                : Colors.teal.shade50,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: role == 'admin' ? Colors.indigo.shade200 : Colors.teal.shade200,
+                              color: role == 'admin'
+                                  ? Colors.indigo.shade200
+                                  : Colors.teal.shade200,
                             ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                role == 'admin' ? Icons.admin_panel_settings_rounded : Icons.visibility_outlined,
+                                role == 'admin'
+                                    ? Icons.admin_panel_settings_rounded
+                                    : Icons.visibility_outlined,
                                 size: 13,
-                                color: role == 'admin' ? Colors.indigo.shade700 : Colors.teal.shade700,
+                                color: role == 'admin'
+                                    ? Colors.indigo.shade700
+                                    : Colors.teal.shade700,
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -560,34 +643,47 @@ TONO E FORMATTAZIONE:
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: role == 'admin' ? Colors.indigo.shade700 : Colors.teal.shade700,
+                                  color: role == 'admin'
+                                      ? Colors.indigo.shade700
+                                      : Colors.teal.shade700,
                                 ),
                               ),
                             ],
                           ),
                         )),
                         _tableCell(Icon(
-                          aiEn ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                          color: aiEn ? Colors.green.shade600 : Colors.grey.shade400,
+                          aiEn
+                              ? Icons.check_circle_rounded
+                              : Icons.cancel_rounded,
+                          color: aiEn
+                              ? Colors.green.shade600
+                              : Colors.grey.shade400,
                           size: 20,
                         )),
-                        _tableCell(Text(dateStr, style: const TextStyle(fontSize: 13))),
+                        _tableCell(Text(dateStr,
+                            style: const TextStyle(fontSize: 13))),
                         _tableCell(Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
                               tooltip: 'Modifica',
-                              icon: Icon(Icons.edit_rounded, size: 18, color: Colors.blue.shade700),
+                              icon: Icon(Icons.edit_rounded,
+                                  size: 18, color: Colors.blue.shade700),
                               onPressed: () => _showUserDialog(user: u),
                             ),
                             IconButton(
-                              tooltip: isDefault ? 'Non eliminabile' : 'Elimina',
+                              tooltip:
+                                  isDefault ? 'Non eliminabile' : 'Elimina',
                               icon: Icon(
                                 Icons.delete_outline_rounded,
                                 size: 18,
-                                color: isDefault ? Colors.grey.shade300 : Colors.red.shade400,
+                                color: isDefault
+                                    ? Colors.grey.shade300
+                                    : Colors.red.shade400,
                               ),
-                              onPressed: isDefault ? null : () => _deleteUserConfirm(username),
+                              onPressed: isDefault
+                                  ? null
+                                  : () => _deleteUserConfirm(username),
                             ),
                           ],
                         )),
@@ -601,7 +697,10 @@ TONO E FORMATTAZIONE:
         const SizedBox(height: 12),
         Text(
           '🔒 L\'utente "admin" non può essere eliminato né rinominato — è l\'account di sistema.',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+          style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+              fontStyle: FontStyle.italic),
         ),
       ],
     );
@@ -610,7 +709,11 @@ TONO E FORMATTAZIONE:
   Widget _tableHeader(String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF334155))),
+      child: Text(text,
+          style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: Color(0xFF334155))),
     );
   }
 
@@ -628,12 +731,34 @@ TONO E FORMATTAZIONE:
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Impostazioni di Sistema', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+          const Text('Impostazioni di Sistema',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
           const SizedBox(height: 32),
 
           if (ApiService.isAdmin) _buildUserManagementSection(),
           if (ApiService.isAdmin) const SizedBox(height: 32),
 
+          _buildPremiumExpansionTile(
+            context: context,
+            title: 'Licenza Autify',
+            subtitle: 'Stato, validazione e attivazione del prodotto',
+            icon: Icons.vpn_key_outlined,
+            iconColor: Colors.green.shade700,
+            children: [
+              const Text(
+                  'Controlla la scadenza del trial o gestisci la licenza commerciale associata a questa installazione.'),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.manage_accounts_outlined),
+                label: const Text('Gestisci licenza'),
+                onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            LicenseScreen(isViewer: ApiService.isViewer))),
+              ),
+            ],
+          ),
 
           // 2. Protocolli di Supporto
           _buildPremiumExpansionTile(
@@ -643,12 +768,15 @@ TONO E FORMATTAZIONE:
             icon: Icons.description_rounded,
             iconColor: Colors.teal.shade600,
             children: [
-              const Text('Importa nuovi protocolli clinici o scale di valutazione personalizzate nel sistema.'),
+              const Text(
+                  'Importa nuovi protocolli clinici o scale di valutazione personalizzate nel sistema.'),
               const SizedBox(height: 16),
               SizedBox(
                 height: 56,
                 child: ElevatedButton.icon(
-                  onPressed: _isLoading || ApiService.isViewer ? null : _pickAndUploadJSON,
+                  onPressed: _isLoading || ApiService.isViewer
+                      ? null
+                      : _pickAndUploadJSON,
                   icon: const Icon(Icons.upload_file),
                   label: const Text('Carica Protocollo JSON'),
                 ),
@@ -663,7 +791,9 @@ TONO E FORMATTAZIONE:
                       child: Text(
                         _uploadStatus!,
                         style: TextStyle(
-                          color: _uploadStatus!.contains('Errore') ? Colors.red : Colors.green,
+                          color: _uploadStatus!.contains('Errore')
+                              ? Colors.red
+                              : Colors.green,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -678,12 +808,14 @@ TONO E FORMATTAZIONE:
           _buildPremiumExpansionTile(
             context: context,
             title: 'Configurazione AI (Gemini)',
-            subtitle: 'API Key, modelli e prompt personalizzato del consulente IA',
+            subtitle:
+                'API Key, modelli e prompt personalizzato del consulente IA',
             icon: Icons.psychology_rounded,
             iconColor: Colors.purple.shade700,
             initiallyExpanded: false,
             children: [
-              const Text('Configura i parametri di connessione e il comportamento dell\'Intelligenza Artificiale per l\'analisi clinica.'),
+              const Text(
+                  'Configura i parametri di connessione e il comportamento dell\'Intelligenza Artificiale per l\'analisi clinica.'),
               const SizedBox(height: 20),
               Row(
                 children: [
@@ -711,26 +843,40 @@ TONO E FORMATTAZIONE:
                         prefixIcon: Icon(Icons.psychology),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'gemini-1.5-pro', child: Text('Gemini 1.5 Pro')),
-                        DropdownMenuItem(value: 'gemini-1.5-flash', child: Text('Gemini 1.5 Flash')),
-                        DropdownMenuItem(value: 'gemini-1.5-pro-latest', child: Text('Gemini 1.5 Pro Latest')),
-                        DropdownMenuItem(value: 'gemini-2.5-pro', child: Text('Gemini 2.5 Pro (Consigliato)')),
-                        DropdownMenuItem(value: 'gemini-2.5-flash', child: Text('Gemini 2.5 Flash')),
-                        DropdownMenuItem(value: 'gemini-3.5-flash', child: Text('Gemini 3.5 Flash')),
+                        DropdownMenuItem(
+                            value: 'gemini-1.5-pro',
+                            child: Text('Gemini 1.5 Pro')),
+                        DropdownMenuItem(
+                            value: 'gemini-1.5-flash',
+                            child: Text('Gemini 1.5 Flash')),
+                        DropdownMenuItem(
+                            value: 'gemini-1.5-pro-latest',
+                            child: Text('Gemini 1.5 Pro Latest')),
+                        DropdownMenuItem(
+                            value: 'gemini-2.5-pro',
+                            child: Text('Gemini 2.5 Pro (Consigliato)')),
+                        DropdownMenuItem(
+                            value: 'gemini-2.5-flash',
+                            child: Text('Gemini 2.5 Flash')),
+                        DropdownMenuItem(
+                            value: 'gemini-3.5-flash',
+                            child: Text('Gemini 3.5 Flash')),
                       ],
-                      onChanged: ApiService.isViewer ? null : (value) {
-                        if (value != null) {
-                          setState(() {
-                            _selectedModel = value;
-                          });
-                        }
-                      },
+                      onChanged: ApiService.isViewer
+                          ? null
+                          : (value) {
+                              if (value != null) {
+                                setState(() {
+                                  _selectedModel = value;
+                                });
+                              }
+                            },
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
-              
+
               // Switch permessi IA ai viewer (ora per-utente)
               const SizedBox(height: 8),
               Container(
@@ -742,12 +888,14 @@ TONO E FORMATTAZIONE:
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline_rounded, size: 16, color: Colors.purple.shade700),
+                    Icon(Icons.info_outline_rounded,
+                        size: 16, color: Colors.purple.shade700),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'L\'abilitazione AI è ora gestita per singolo operatore nella sezione "Gestione Utenze".',
-                        style: TextStyle(fontSize: 13, color: Colors.purple.shade700),
+                        style: TextStyle(
+                            fontSize: 13, color: Colors.purple.shade700),
                       ),
                     ),
                   ],
@@ -764,11 +912,14 @@ TONO E FORMATTAZIONE:
                     children: [
                       const Text(
                         'System Prompt di Analisi (Consulente IA)',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 15),
                       ),
                       TextButton.icon(
-                        onPressed: ApiService.isViewer ? null : _resetDefaultPrompt,
-                        icon: const Icon(Icons.settings_backup_restore, size: 18),
+                        onPressed:
+                            ApiService.isViewer ? null : _resetDefaultPrompt,
+                        icon:
+                            const Icon(Icons.settings_backup_restore, size: 18),
                         label: const Text('Ripristina Default'),
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.purple.shade700,
@@ -783,7 +934,8 @@ TONO E FORMATTAZIONE:
                     minLines: 5,
                     enabled: !ApiService.isViewer,
                     decoration: InputDecoration(
-                      hintText: 'Inserisci il prompt di sistema per personalizzare l\'analisi...',
+                      hintText:
+                          'Inserisci il prompt di sistema per personalizzare l\'analisi...',
                       hintStyle: TextStyle(color: Colors.grey.shade400),
                       border: const OutlineInputBorder(),
                       fillColor: const Color(0xFFF8FAFC),
@@ -808,9 +960,12 @@ TONO E FORMATTAZIONE:
                       foregroundColor: Colors.white,
                       minimumSize: const Size(140, 56),
                     ),
-                    onPressed: _isLoading || ApiService.isViewer ? null : _saveAIConfig,
+                    onPressed: _isLoading || ApiService.isViewer
+                        ? null
+                        : _saveAIConfig,
                     icon: const Icon(Icons.save),
-                    label: const Text('Salva Configurazione AI', style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: const Text('Salva Configurazione AI',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -824,7 +979,8 @@ TONO E FORMATTAZIONE:
               return _buildPremiumExpansionTile(
                 context: context,
                 title: 'Parametri di Validità Scale',
-                subtitle: 'Configura la validità temporale delle valutazioni e la soglia di preavviso',
+                subtitle:
+                    'Configura la validità temporale delle valutazioni e la soglia di preavviso',
                 icon: Icons.calendar_month_rounded,
                 iconColor: Colors.orange.shade700,
                 children: [
@@ -848,7 +1004,8 @@ TONO E FORMATTAZIONE:
                     unit: 'mesi',
                     icon: Icons.edit_calendar,
                     onChanged: (val) {
-                      notifier.updateSettings(validityMonthsSanMartin: val.toInt());
+                      notifier.updateSettings(
+                          validityMonthsSanMartin: val.toInt());
                     },
                   ),
                   const Divider(height: 32, color: Color(0xFFE8EEF8)),
@@ -884,33 +1041,51 @@ TONO E FORMATTAZIONE:
           _buildPremiumExpansionTile(
             context: context,
             title: 'Database',
-            subtitle: 'Backup, esportazione e ripristino dell\'archivio clinico',
+            subtitle:
+                'Backup, esportazione e ripristino dell\'archivio clinico',
             icon: Icons.storage_rounded,
             iconColor: Colors.indigo.shade700,
             children: [
-              const Text('Esporta l\'intero database in formato JSON per conservare un backup offline o ripristinare i dati precedenti.'),
+              const Text(
+                  'Esporta l\'intero database in formato JSON per conservare un backup offline o ripristinare i dati precedenti.'),
               const SizedBox(height: 20),
               Row(
                 children: [
                   SizedBox(
                     height: 56,
                     child: ElevatedButton.icon(
-                      onPressed: _isExporting || _isImporting || ApiService.isViewer ? null : _exportDatabase,
+                      onPressed:
+                          _isExporting || _isImporting || ApiService.isViewer
+                              ? null
+                              : _exportDatabase,
                       icon: _isExporting
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2))
                           : const Icon(Icons.download_rounded),
-                      label: Text(_isExporting ? 'Esportazione...' : 'Esporta Database'),
+                      label: Text(_isExporting
+                          ? 'Esportazione...'
+                          : 'Esporta Database'),
                     ),
                   ),
                   const SizedBox(width: 16),
                   SizedBox(
                     height: 56,
                     child: ElevatedButton.icon(
-                      onPressed: _isExporting || _isImporting || ApiService.isViewer ? null : _importDatabase,
+                      onPressed:
+                          _isExporting || _isImporting || ApiService.isViewer
+                              ? null
+                              : _importDatabase,
                       icon: _isImporting
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2))
                           : const Icon(Icons.upload_file),
-                      label: Text(_isImporting ? 'Importazione...' : 'Importa Database'),
+                      label: Text(_isImporting
+                          ? 'Importazione...'
+                          : 'Importa Database'),
                     ),
                   ),
                 ],
@@ -919,13 +1094,16 @@ TONO E FORMATTAZIONE:
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    if (_isImporting || _isExporting) const CircularProgressIndicator(),
+                    if (_isImporting || _isExporting)
+                      const CircularProgressIndicator(),
                     if (_isImporting || _isExporting) const SizedBox(width: 16),
                     Expanded(
                       child: Text(
                         _dbStatus!,
                         style: TextStyle(
-                          color: _dbStatus!.contains('Errore') ? Colors.red : Colors.green,
+                          color: _dbStatus!.contains('Errore')
+                              ? Colors.red
+                              : Colors.green,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -999,11 +1177,10 @@ TONO E FORMATTAZIONE:
               size: 24,
             ),
             childrenPadding: EdgeInsets.only(
-              left: ResponsiveHelper.isMobile(context) ? 12 : 24, 
-              right: ResponsiveHelper.isMobile(context) ? 12 : 24, 
-              bottom: 24, 
-              top: 8
-            ),
+                left: ResponsiveHelper.isMobile(context) ? 12 : 24,
+                right: ResponsiveHelper.isMobile(context) ? 12 : 24,
+                bottom: 24,
+                top: 8),
             children: children,
           ),
         ),
@@ -1021,10 +1198,11 @@ TONO E FORMATTAZIONE:
     required ValueChanged<double> onChanged,
   }) {
     final isMobile = ResponsiveHelper.isMobile(context);
-    
+
     Widget sliderContent = Row(
       children: [
-        Text('${min.toInt()}', style: const TextStyle(color: Color(0xFF718096), fontSize: 12)),
+        Text('${min.toInt()}',
+            style: const TextStyle(color: Color(0xFF718096), fontSize: 12)),
         Expanded(
           child: Slider(
             value: value,
@@ -1036,7 +1214,8 @@ TONO E FORMATTAZIONE:
             onChanged: ApiService.isViewer ? null : onChanged,
           ),
         ),
-        Text('${max.toInt()}', style: const TextStyle(color: Color(0xFF718096), fontSize: 12)),
+        Text('${max.toInt()}',
+            style: const TextStyle(color: Color(0xFF718096), fontSize: 12)),
       ],
     );
 
@@ -1061,12 +1240,14 @@ TONO E FORMATTAZIONE:
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 15),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'Valore attuale: ${value.toInt()} $unit',
-                      style: const TextStyle(color: Color(0xFF718096), fontSize: 12),
+                      style: const TextStyle(
+                          color: Color(0xFF718096), fontSize: 12),
                     ),
                   ],
                 ),
@@ -1098,7 +1279,8 @@ TONO E FORMATTAZIONE:
             children: [
               Text(
                 title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 4),
               Text(
