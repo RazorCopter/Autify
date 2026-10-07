@@ -16,6 +16,8 @@ from ..analytics import compute_psychometric_analysis, compute_direct_scores, bu
 from datetime import datetime, timezone, timedelta
 import json
 import re
+import hashlib
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from pydantic import BaseModel
 import uuid
 import io
@@ -39,6 +41,24 @@ client_router = APIRouter(dependencies=[Depends(verify_auth)])
 # ==========================================
 # ADMIN ROUTER (/api/admin)
 # ==========================================
+
+def _get_backup_encryption_key() -> bytes:
+    secret = os.getenv("JWT_SECRET_KEY")
+    if not secret:
+        raise RuntimeError("JWT_SECRET_KEY non configurata")
+    return hashlib.sha256(secret.encode("utf-8")).digest()
+
+def encrypt_backup(data: bytes) -> bytes:
+    nonce = os.urandom(12)
+    ciphertext = AESGCM(_get_backup_encryption_key()).encrypt(nonce, data, None)
+    return nonce + ciphertext
+
+def decrypt_backup(encrypted_data: bytes) -> bytes:
+    if len(encrypted_data) < 12:
+        raise ValueError("File non valido o corrotto")
+    nonce = encrypted_data[:12]
+    ciphertext = encrypted_data[12:]
+    return AESGCM(_get_backup_encryption_key()).decrypt(nonce, ciphertext, None)
 
 async def _collect_collection(name: str, collection) -> list:
     """Raccoglie tutti i documenti di una collezione, convertendo ObjectId in stringa."""
@@ -74,28 +94,30 @@ async def export_database(auth: dict = Depends(verify_auth)):
         }
     }
     json_bytes = json.dumps(db_dump, ensure_ascii=False, indent=2, default=str).encode('utf-8')
+    encrypted_bytes = encrypt_backup(json_bytes)
 
-    filename = f"autify_backup_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
+    filename = f"autify_backup_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.enc"
     await log_audit(
         "EXPORT_DATABASE",
         auth["username"],
         f"Esportato backup completo del database ({filename})"
     )
     return StreamingResponse(
-        io.BytesIO(json_bytes),
-        media_type="application/json",
+        io.BytesIO(encrypted_bytes),
+        media_type="application/octet-stream",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 
 @admin_router.post("/import-db", tags=["Admin - Database"])
 async def import_database(file: UploadFile = File(...), auth: dict = Depends(verify_auth)):
-    """Importa l'intero database da un file JSON di backup."""
+    """Importa l'intero database da un file JSON o ENC di backup."""
     if auth["role"] != "admin":
         raise HTTPException(status_code=403, detail="Solo l'admin può importare il database")
 
-    if not (file.filename or '').lower().endswith('.json'):
-        raise HTTPException(status_code=400, detail="Il file deve essere un JSON (.json)")
+    filename = (file.filename or '').lower()
+    if not (filename.endswith('.json') or filename.endswith('.enc')):
+        raise HTTPException(status_code=400, detail="Il file deve essere un JSON (.json) o cifrato (.enc)")
 
     MAX_FILE_SIZE = 5 * 1024 * 1024
     content = await file.read(MAX_FILE_SIZE + 1)
@@ -103,9 +125,16 @@ async def import_database(file: UploadFile = File(...), auth: dict = Depends(ver
         raise HTTPException(status_code=400, detail="Il file supera la dimensione massima consentita di 5MB")
 
     try:
-        data = json.loads(content.decode('utf-8-sig'))
+        if filename.endswith('.enc'):
+            try:
+                decrypted_bytes = decrypt_backup(content)
+                data = json.loads(decrypted_bytes.decode('utf-8'))
+            except Exception as e:
+                raise HTTPException(status_code=400, detail="Impossibile decifrare il backup. La password (JWT_SECRET_KEY) potrebbe essere errata o il file corrotto.")
+        else:
+            data = json.loads(content.decode('utf-8-sig'))
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-        raise HTTPException(status_code=422, detail=f"JSON non valido: {exc}")
+        raise HTTPException(status_code=422, detail=f"File non valido o corrotto: {exc}")
 
     metadata = data.get("metadata")
     if not isinstance(metadata, dict) or "version" not in metadata:

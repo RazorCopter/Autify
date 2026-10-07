@@ -127,7 +127,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _importDatabase() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['json'],
+      allowedExtensions: ['json', 'enc'],
       withData: true,
     );
 
