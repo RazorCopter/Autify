@@ -65,4 +65,6 @@ abstract interface class LicenseApi {
   Future<LicenseServerInfo> getLicenseServerInfo();
 
   Future<LicenseStatus> activateLicense(String code);
+
+  Future<LicenseStatus> deactivateLicense();
 }

@@ -159,6 +159,7 @@ class ApiService implements LicenseApi {
     }
   }
 
+  @override
   Future<LicenseStatus> activateLicense(String code) async {
     late raw_http.Response response;
     try {
@@ -179,6 +180,31 @@ class ApiService implements LicenseApi {
     if (response.statusCode != 200) {
       throw LicenseApiException(
           _licenseError(response, 'Attivazione non riuscita'));
+    }
+    return LicenseStatus.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<LicenseStatus> deactivateLicense() async {
+    late raw_http.Response response;
+    try {
+      response = await http.post(
+        Uri.parse('$baseUrl/license/deactivate'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $kAuthToken',
+        },
+      );
+    } catch (_) {
+      throw const LicenseApiException(
+        'Server non raggiungibile. La disattivazione non è stata completata.',
+        networkError: true,
+      );
+    }
+    if (response.statusCode != 200) {
+      throw LicenseApiException(
+          _licenseError(response, 'Disattivazione non riuscita'));
     }
     return LicenseStatus.fromJson(
         jsonDecode(response.body) as Map<String, dynamic>);

@@ -82,6 +82,7 @@ def _serialize(document: dict, *, message: str | None = None) -> dict:
         "last_validated_at": document.get("last_validated_at"),
         "days_remaining": days_remaining,
         "offline": bool(document.get("offline", False)),
+        "permanently_activated": bool(document.get("permanently_activated", False)),
         "message": message,
     }
 
@@ -164,6 +165,7 @@ async def activate_license(code: str) -> dict:
     if not result.get("valid"):
         raise ValueError(result.get("reason", "Licenza non valida"))
     now = utcnow()
+    is_lifetime = result.get("plan") == "lifetime"
     updates = {
         "status": "active",
         "plan": result.get("plan"),
@@ -173,6 +175,7 @@ async def activate_license(code: str) -> dict:
         "code_suffix": code.strip().upper()[-6:],
         "last_validated_at": now,
         "offline": False,
+        "permanently_activated": is_lifetime,
         "updated_at": now,
     }
     await licenses_collection.update_one({"id": LICENSE_ID}, {"$set": updates})
@@ -182,6 +185,13 @@ async def activate_license(code: str) -> dict:
 async def get_license_status(force_remote: bool = False) -> dict:
     document = await ensure_trial_license()
     if document.get("plan") == "trial" or not document.get("license_token"):
+        return _serialize(document)
+
+    # Licenze lifetime già attivate: non ricontattare MAI il server
+    # (salvo force_remote esplicito dall'admin)
+    if not force_remote and document.get("plan") == "lifetime" \
+            and document.get("status") == "active" \
+            and document.get("permanently_activated"):
         return _serialize(document)
 
     now = utcnow()
@@ -216,6 +226,37 @@ async def get_license_status(force_remote: bool = False) -> dict:
         updates = {"status": "validation_required", "offline": True, "updated_at": now}
         await licenses_collection.update_one({"id": LICENSE_ID}, {"$set": updates})
         return _serialize({**document, **updates}, message="Impossibile validare la licenza: periodo offline scaduto")
+
+
+async def deactivate_license() -> dict:
+    """Rilascia la licenza corrente, liberando il codice per un'altra installazione."""
+    document = await licenses_collection.find_one({"id": LICENSE_ID})
+    if not document or document.get("plan") == "trial":
+        raise ValueError("Nessuna licenza commerciale attiva da disattivare")
+    if document.get("status") != "active":
+        raise ValueError("La licenza non è attiva e non può essere disattivata")
+
+    # Comunica al server licenze che questa istanza rilascia il codice
+    await _license_server_call(
+        "/v1/deactivate",
+        {"license_token": document["license_token"], "instance_id": document["instance_id"]},
+    )
+
+    # Reset locale: torna allo stato trial
+    now = utcnow()
+    reset = {
+        "status": "trial",
+        "plan": "trial",
+        "license_token": None,
+        "code_suffix": None,
+        "permanently_activated": False,
+        "expires_at": now + timedelta(days=TRIAL_DAYS),
+        "last_validated_at": None,
+        "offline": False,
+        "updated_at": now,
+    }
+    await licenses_collection.update_one({"id": LICENSE_ID}, {"$set": reset})
+    return _serialize({**document, **reset}, message="Licenza disattivata con successo. Il codice è ora riutilizzabile su un'altra installazione.")
 
 
 async def require_valid_license() -> dict:

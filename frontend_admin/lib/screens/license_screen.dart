@@ -28,6 +28,7 @@ class _LicenseScreenState extends State<LicenseScreen> {
   LicenseServerInfo? _serverInfo;
   bool _loading = true;
   bool _activating = false;
+  bool _deactivating = false;
   bool _connectionError = false;
   String? _error;
 
@@ -101,6 +102,75 @@ class _LicenseScreenState extends State<LicenseScreen> {
       if (mounted) setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _activating = false);
+    }
+  }
+
+  Future<void> _confirmDeactivate() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Rilascia Licenza'),
+          ],
+        ),
+        content: const Text(
+          'Vuoi davvero rilasciare la licenza da questa installazione?\n\n'
+          '• Questa installazione tornerà in modalità di prova (trial).\n'
+          '• Il codice licenza verrà liberato e potrà essere riutilizzato su un\'altra installazione.\n'
+          '• L\'azione è completamente reversibile: potrai reinserire questo stesso codice licenza in qualsiasi momento.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Annulla'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red.shade700,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Conferma rilascio'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deactivate();
+    }
+  }
+
+  Future<void> _deactivate() async {
+    setState(() {
+      _deactivating = true;
+      _error = null;
+      _connectionError = false;
+    });
+    try {
+      final value = await widget.api.deactivateLicense();
+      if (!mounted) return;
+      setState(() => _status = value);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Licenza rilasciata con successo. Il codice è ora nuovamente riutilizzabile.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } on LicenseApiException catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _connectionError = e.networkError;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _deactivating = false);
     }
   }
 
@@ -220,8 +290,9 @@ class _LicenseScreenState extends State<LicenseScreen> {
                                             onSubmitted: (_) => _activate()),
                                         const SizedBox(height: 14),
                                         FilledButton.icon(
-                                            onPressed:
-                                                _activating ? null : _activate,
+                                            onPressed: (_activating || _deactivating)
+                                                ? null
+                                                : _activate,
                                             icon: _activating
                                                 ? const SizedBox(
                                                     width: 18,
@@ -234,10 +305,41 @@ class _LicenseScreenState extends State<LicenseScreen> {
                                             label: Text(_activating
                                                 ? 'Attivazione...'
                                                 : 'Attiva licenza')),
+                                        if (value != null &&
+                                            !value.trial &&
+                                            value.valid) ...[
+                                          const SizedBox(height: 12),
+                                          OutlinedButton.icon(
+                                            key: const Key('license-deactivate-btn'),
+                                            onPressed: (_activating ||
+                                                    _deactivating ||
+                                                    _loading)
+                                                ? null
+                                                : _confirmDeactivate,
+                                            style: OutlinedButton.styleFrom(
+                                              foregroundColor:
+                                                  Colors.red.shade700,
+                                              side: BorderSide(
+                                                  color: Colors.red.shade300),
+                                            ),
+                                            icon: _deactivating
+                                                ? const SizedBox(
+                                                    width: 18,
+                                                    height: 18,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                            strokeWidth: 2))
+                                                : const Icon(
+                                                    Icons.link_off_rounded),
+                                            label: Text(_deactivating
+                                                ? 'Rilascio in corso...'
+                                                : 'Rilascia licenza da questa installazione'),
+                                          ),
+                                        ],
                                       ],
                                       const SizedBox(height: 8),
                                       TextButton.icon(
-                                          onPressed: _loading
+                                          onPressed: (_loading || _deactivating)
                                               ? null
                                               : () => _load(force: true),
                                           icon: const Icon(Icons.refresh),

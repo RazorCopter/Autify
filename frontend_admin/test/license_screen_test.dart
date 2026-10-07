@@ -34,6 +34,11 @@ class _FakeApiService implements LicenseApi {
     if (activationError != null) throw activationError!;
     return status;
   }
+
+  @override
+  Future<LicenseStatus> deactivateLicense() async {
+    return _trialStatus;
+  }
 }
 
 const _trialStatus = LicenseStatus(
@@ -158,4 +163,28 @@ void main() {
 
     expect(find.text('Codice non valido'), findsOneWidget);
   });
+
+  testWidgets('mostra pulsante di rilascio licenza se commerciale e apre dialog di conferma',
+      (tester) async {
+    final api = _FakeApiService(status: _activeStatus);
+
+    await tester.pumpWidget(_app(LicenseScreen(api: api)));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('license-deactivate-btn')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('license-deactivate-btn')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rilascia Licenza'), findsOneWidget);
+    expect(find.text('Conferma rilascio'), findsOneWidget);
+    expect(find.text('Annulla'), findsOneWidget);
+
+    // Conferma rilascio
+    await tester.tap(find.text('Conferma rilascio'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Periodo di prova attivo'), findsOneWidget);
+  });
 }
+

@@ -1,5 +1,21 @@
 # Changelog
 
+## [3.2.1] - 2026-10-07
+
+### Added
+- **Licenze Lifetime con Attivazione Permanente**: le installazioni con licenza `lifetime` non effettuano più richieste ricorrenti al server licenze una volta attivate con successo. Dopo la prima verifica positiva, `permanently_activated = true` viene salvato localmente e ogni successiva richiesta viene soddisfatta senza chiamate al server.
+- **Disattivazione Volontaria / Rilascio Licenza**: nuovo endpoint `POST /license/deactivate` protetto da ruolo admin e pulsante nel pannello Flutter per rilasciare la licenza dalla installazione corrente. Il codice viene liberato sul server centrale e riutilizzabile su qualsiasi altra installazione.
+- **Conferma con Dialog Esplicativo**: prima del rilascio viene mostrato un alert dialog che evidenzia la piena reversibilità dell'operazione (lo stesso codice può essere reinserito in qualsiasi momento sulla medesima o su una nuova installazione).
+
+### Changed
+- `permanently_activated` ora incluso nella risposta serializzata dello stato licenza (`_serialize()`) e nella risposta degli endpoint `/license/status` e `/license/activate`.
+- Il pulsante **Attiva licenza** viene disabilitato anche durante il rilascio in corso (`_deactivating`).
+- Il pulsante **Verifica nuovamente** viene disabilitato durante il rilascio in corso.
+
+### Compatibility
+- Compatibile con **Autify-LICENSE ≥ 1.0** (endpoint `/v1/deactivate` già presente nel server licenze).
+- Nessuna migrazione del database MongoDB richiesta: il campo `permanently_activated` viene aggiunto automaticamente al documento licenza al momento dell'attivazione.
+
 ## [3.2.0] - 2026-09-28
 
 ### Changed

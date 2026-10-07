@@ -141,3 +141,84 @@ async def test_offline_grace_and_expiry(collection, monkeypatch):
     expired = await license_service.get_license_status(force_remote=True)
     assert expired["valid"] is False
     assert expired["status"] == "validation_required"
+
+
+@pytest.mark.anyio
+async def test_lifetime_license_never_rechecks_server(collection, monkeypatch):
+    now = license_service.utcnow()
+    document = {
+        "id": license_service.LICENSE_ID,
+        "instance_id": "instance-id",
+        "license_token": "token",
+        "status": "active",
+        "plan": "lifetime",
+        "permanently_activated": True,
+        "expires_at": None,
+        "last_validated_at": now - timedelta(days=100),
+    }
+    collection.find_one.return_value = document
+    mock_server_call = AsyncMock()
+    monkeypatch.setattr(license_service, "_license_server_call", mock_server_call)
+
+    # Senza force_remote, non deve MAI chiamare il server
+    result = await license_service.get_license_status(force_remote=False)
+    assert result["valid"] is True
+    assert result["status"] == "active"
+    assert result["plan"] == "lifetime"
+    mock_server_call.assert_not_called()
+
+
+@pytest.mark.anyio
+async def test_activate_lifetime_sets_permanent_flag(collection, monkeypatch):
+    now = license_service.utcnow()
+    trial_doc = {
+        "id": license_service.LICENSE_ID,
+        "instance_id": "instance-id",
+        "status": "trial",
+        "plan": "trial",
+    }
+    collection.find_one.return_value = trial_doc
+    monkeypatch.setattr(
+        license_service,
+        "_license_server_call",
+        AsyncMock(return_value={
+            "valid": True,
+            "plan": "lifetime",
+            "activated_at": now.isoformat(),
+            "expires_at": None,
+            "license_token": "lifetime-token-xyz",
+        }),
+    )
+
+    result = await license_service.activate_license("AUTIFY-LIFETIME-CODE-123456")
+    assert result["valid"] is True
+    assert result["plan"] == "lifetime"
+    assert result["permanently_activated"] is True
+    collection.update_one.assert_awaited_once()
+    update_args = collection.update_one.call_args[0][1]["$set"]
+    assert update_args["permanently_activated"] is True
+
+
+@pytest.mark.anyio
+async def test_deactivate_license_calls_server_and_resets_trial(collection, monkeypatch):
+    active_doc = {
+        "id": license_service.LICENSE_ID,
+        "instance_id": "instance-id",
+        "license_token": "token-to-release",
+        "status": "active",
+        "plan": "lifetime",
+        "permanently_activated": True,
+    }
+    collection.find_one.return_value = active_doc
+    mock_server = AsyncMock(return_value={"status": "released"})
+    monkeypatch.setattr(license_service, "_license_server_call", mock_server)
+
+    result = await license_service.deactivate_license()
+    mock_server.assert_awaited_once_with(
+        "/v1/deactivate",
+        {"license_token": "token-to-release", "instance_id": "instance-id"},
+    )
+    assert result["status"] == "trial"
+    assert result["plan"] == "trial"
+    assert result["permanently_activated"] is False
+    collection.update_one.assert_awaited_once()

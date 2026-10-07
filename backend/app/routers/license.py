@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from ._helpers import log_audit, verify_auth
-from ..license_service import activate_license, get_license_server_info, get_license_status
+from ..license_service import activate_license, deactivate_license, get_license_server_info, get_license_status
 
 public_admin_router = APIRouter()
 admin_router = APIRouter(dependencies=[Depends(verify_auth)])
@@ -46,4 +46,27 @@ async def license_activate(payload: LicenseActivationRequest, auth: dict = Depen
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     await log_audit("license_activate", auth["username"], "Licenza commerciale attivata")
+    return result
+
+
+@admin_router.post("/license/deactivate", tags=["Admin - License"])
+async def license_deactivate(auth: dict = Depends(verify_auth)):
+    """Rilascia la licenza corrente, liberando il codice per un'altra installazione."""
+    if auth["role"] != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo gli amministratori possono disattivare la licenza")
+    try:
+        result = await deactivate_license()
+    except httpx.HTTPStatusError as exc:
+        detail = "Il server licenze ha rifiutato la disattivazione"
+        try:
+            detail = exc.response.json().get("detail", detail)
+        except ValueError:
+            pass
+        raise HTTPException(status_code=exc.response.status_code, detail=detail) from exc
+    except (httpx.HTTPError, RuntimeError) as exc:
+        _logger.warning("Disattivazione licenza non disponibile: %s", exc)
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Server licenze non raggiungibile") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    await log_audit("license_deactivate", auth["username"], "Licenza disattivata e rilasciata")
     return result
