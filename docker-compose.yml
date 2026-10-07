@@ -4,15 +4,13 @@ services:
     build:
       context: ./backend
       args:
-        - CACHE_BUST=3.2.1
+        - CACHE_BUST=3.2.2
     pull_policy: build
     environment:
       - MONGODB_URL=mongodb://autify-db:27017
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - TZ=Europe/Rome
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - LEGACY_ADMIN_PWD=${LEGACY_ADMIN_PWD}
-      - LEGACY_VIEWER_PWD=${LEGACY_VIEWER_PWD}
       - LICENSE_SERVER_URL=${LICENSE_SERVER_URL}
       - LICENSE_SHARED_SECRET=${LICENSE_SHARED_SECRET}
       - LICENSE_CACHE_HOURS=${LICENSE_CACHE_HOURS:-24}
@@ -28,7 +26,7 @@ services:
     build:
       context: ./frontend_admin
       args:
-        - CACHE_BUST=3.2.1
+        - CACHE_BUST=3.2.2
     pull_policy: build
     ports:
       - "8090:80"

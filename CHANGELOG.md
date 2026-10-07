@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.2.2] - 2026-10-07
+
+### Added
+- **Popup Cambio Password Obbligatorio**: inserito nuovo popup lato UI che obbliga l'amministratore a cambiare la password di default al primo accesso con un'installazione vergine. L'endpoint di login del backend ora trasmette il flag `must_change_password`. La modifica della password lo reimposta correttamente a false.
+
+
 ## [3.2.1] - 2026-10-07
 
 ### Added
