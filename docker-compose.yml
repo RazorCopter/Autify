@@ -4,7 +4,7 @@ services:
     build:
       context: ./backend
       args:
-        - CACHE_BUST=3.2.0
+        - CACHE_BUST=3.2.1
     pull_policy: build
     environment:
       - MONGODB_URL=mongodb://autify-db:27017
