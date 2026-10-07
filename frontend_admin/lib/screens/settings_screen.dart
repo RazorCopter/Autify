@@ -110,13 +110,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _isExporting = false);
     if (bytes != null) {
       final b64 = base64Encode(bytes);
-      final dataUrl = 'data:application/json;base64,$b64';
+      final dataUrl = 'data:application/octet-stream;base64,$b64';
       final timestamp = DateTime.now()
           .toIso8601String()
           .replaceAll(RegExp(r'[:.]'), '-')
           .substring(0, 19);
       html.AnchorElement(href: dataUrl)
-        ..setAttribute('download', 'autify_backup_$timestamp.json')
+        ..setAttribute('download', 'autify_backup_$timestamp.enc')
         ..click();
       setState(() => _dbStatus = 'Backup esportato con successo!');
     } else {

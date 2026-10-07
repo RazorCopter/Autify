@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.2.4] - 2026-10-07
+
+### Fixed
+- **Estensione File di Backup**: corretto un bug nel frontend che forzava l'estensione `.json` al download del backup nonostante il file fosse cifrato in formato `.enc`.
+
+
 ## [3.2.3] - 2026-10-07
 
 ### Added
