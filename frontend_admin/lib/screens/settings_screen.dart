@@ -1047,7 +1047,7 @@ TONO E FORMATTAZIONE:
             iconColor: Colors.indigo.shade700,
             children: [
               const Text(
-                  'Esporta l\'intero database in formato JSON per conservare un backup offline o ripristinare i dati precedenti.'),
+                  'Esporta l\'intero database in un file di backup criptato (.enc). Per motivi di sicurezza, il file è cifrato con la chiave di questa installazione e potrà essere ripristinato solo su questa specifica istanza di Autify (o su una configurata con la medesima chiave segreta).'),
               const SizedBox(height: 20),
               Row(
                 children: [

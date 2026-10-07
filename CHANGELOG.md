@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.2.5] - 2026-10-07
+
+### Changed
+- **Testo di Export Database**: modificato il testo descrittivo dell'esportazione del database per chiarire che il file generato è criptato e ripristinabile solo sulla medesima istanza o con la medesima chiave segreta.
+
+
 ## [3.2.4] - 2026-10-07
 
 ### Fixed
