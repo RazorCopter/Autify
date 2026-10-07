@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.2.3] - 2026-10-07
+
+### Added
+- **Backup Criptato (AES-GCM)**: la funzione di esportazione del database ora cifra nativamente il file di backup in un file `.enc` utilizzando la `JWT_SECRET_KEY` configurata, proteggendo i dati sensibili. La funzione di importazione decifra automaticamente i file `.enc` e mantiene la retrocompatibilità con i vecchi backup in chiaro `.json`.
+
+
 ## [3.2.2] - 2026-10-07
 
 ### Added
