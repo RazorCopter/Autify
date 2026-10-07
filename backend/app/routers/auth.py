@@ -77,6 +77,7 @@ async def auth_login(request: Request, payload: LoginRequest):
         "role": role,
         "ai_enabled": ai_enabled,
         "username": user_doc["username"],
+        "must_change_password": user_doc.get("must_change_password", False),
     }
 
 # ── CRUD Utenze ─────────────────────────────────────────────────────────────
@@ -134,6 +135,7 @@ async def update_user(username: str, payload: UserUpdate, auth: dict = Depends(v
 
     if payload.password:
         update_data["hashed_password"] = auth_module.hash_password(payload.password)
+        update_data["must_change_password"] = False
         should_increment_token = True
     if payload.role is not None:
         if user_doc.get("is_default") and payload.role != "admin":
