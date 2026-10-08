@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shimmer/shimmer.dart';
 import '../services/api_service.dart';
@@ -6,11 +6,14 @@ import '../utils/responsive_helper.dart';
 import '../theme/app_theme.dart';
 
 class DashboardScreen extends StatefulWidget {
-  final Function(int tabIndex, {String? searchFilter, String? semanticFilter}) onNavigate;
+  final Function(int tabIndex, {String? searchFilter, String? semanticFilter})
+      onNavigate;
+  final Widget? headerAction;
 
   const DashboardScreen({
     super.key,
     required this.onNavigate,
+    this.headerAction,
   });
 
   @override
@@ -94,8 +97,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildHeader() {
     final now = DateTime.now();
     final months = [
-      'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-      'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+      'Gennaio',
+      'Febbraio',
+      'Marzo',
+      'Aprile',
+      'Maggio',
+      'Giugno',
+      'Luglio',
+      'Agosto',
+      'Settembre',
+      'Ottobre',
+      'Novembre',
+      'Dicembre'
     ];
     final formattedDate = '${now.day} ${months[now.month - 1]} ${now.year}';
     final isMobile = ResponsiveHelper.isMobile(context);
@@ -133,7 +146,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.calendar_today_outlined, color: AppTheme.primaryColor, size: 14),
+                const Icon(Icons.calendar_today_outlined,
+                    color: AppTheme.primaryColor, size: 14),
                 const SizedBox(width: 6),
                 Text(
                   formattedDate,
@@ -184,11 +198,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             if (lastLoadedStr != null) ...[
               Row(
                 children: [
-                  const Icon(Icons.update_rounded, color: AppTheme.textSecondary, size: 13),
+                  const Icon(Icons.update_rounded,
+                      color: AppTheme.textSecondary, size: 13),
                   const SizedBox(width: 4),
                   Text(
                     lastLoadedStr,
-                    style: TextStyle(fontSize: 11, color: AppTheme.textSecondary.withValues(alpha: 0.7)),
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: AppTheme.textSecondary.withValues(alpha: 0.7)),
                   ),
                 ],
               ),
@@ -210,7 +227,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.calendar_today_outlined, color: AppTheme.primaryColor, size: 16),
+                  const Icon(Icons.calendar_today_outlined,
+                      color: AppTheme.primaryColor, size: 16),
                   const SizedBox(width: 8),
                   Text(
                     formattedDate,
@@ -223,6 +241,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ),
+            if (widget.headerAction != null) ...[
+              const SizedBox(width: 12),
+              widget.headerAction!,
+            ],
           ],
         ),
       ],
@@ -239,11 +261,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
+              const Icon(Icons.error_outline,
+                  size: 64, color: AppTheme.errorColor),
               const SizedBox(height: 16),
               const Text(
                 'Errore nel caricamento dei dati',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -305,16 +331,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ]);
           }
           return Row(
-            children: List.generate(3, (i) => Expanded(
-              child: Container(
-                height: 140,
-                margin: EdgeInsets.only(right: i == 2 ? 0 : 20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-            )),
+            children: List.generate(
+                3,
+                (i) => Expanded(
+                      child: Container(
+                        height: 140,
+                        margin: EdgeInsets.only(right: i == 2 ? 0 : 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    )),
           );
         }
 
@@ -366,8 +394,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final sisMancanti = coverage['sis_mancanti'] ?? 0;
 
     final alertList = (_stats?['ultimi_alert'] as List<dynamic>?) ?? [];
-    final distributions = (_stats?['distribuzione_scale'] as List<dynamic>?) ?? [];
-    final demographics = (_stats?['demographics'] as Map<String, dynamic>?) ?? {};
+    final distributions =
+        (_stats?['distribuzione_scale'] as List<dynamic>?) ?? [];
+    final demographics =
+        (_stats?['demographics'] as Map<String, dynamic>?) ?? {};
 
     // Calcolo dei contatori specifici per l'AlertBar dai dati globali reali del backend
     final alertStats = _stats?['alert_stats'] ?? {};
@@ -379,7 +409,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth > 992;
-        final isTablet = constraints.maxWidth > 650 && constraints.maxWidth <= 992;
+        final isTablet =
+            constraints.maxWidth > 650 && constraints.maxWidth <= 992;
 
         return Column(
           children: [
@@ -389,45 +420,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                  Expanded(
-                    child: _BentoKpiCard(
-                      title: 'UTENZE ATTIVE',
-                      value: activePatients.toDouble(),
-                      subtitle: 'su $totalPatients utenti censiti',
-                      icon: Icons.people_alt_outlined,
-                      themeColor: const Color(0xFF3B82F6),
-                      onTap: () => widget.onNavigate(2),
+                    Expanded(
+                      child: _BentoKpiCard(
+                        title: 'UTENZE ATTIVE',
+                        value: activePatients.toDouble(),
+                        subtitle: 'su $totalPatients utenti censiti',
+                        icon: Icons.people_alt_outlined,
+                        themeColor: const Color(0xFF3B82F6),
+                        onTap: () => widget.onNavigate(2),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: _BentoKpiCard(
-                      title: 'VALUTAZIONI ATTIVE',
-                      value: coveredCount.toDouble(),
-                      subtitle: 'Documentazione in corso di validità',
-                      icon: Icons.verified_user_outlined,
-                      themeColor: const Color(0xFF10B981),
-                      suffix: ' ($coveragePercent%)',
-                      onTap: () => widget.onNavigate(2),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: _BentoKpiCard(
+                        title: 'VALUTAZIONI ATTIVE',
+                        value: coveredCount.toDouble(),
+                        subtitle: 'Documentazione in corso di validità',
+                        icon: Icons.verified_user_outlined,
+                        themeColor: const Color(0xFF10B981),
+                        suffix: ' ($coveragePercent%)',
+                        onTap: () => widget.onNavigate(2),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: _BentoKpiCard(
-                      title: 'SCALE MANCANTI',
-                      value: expiredCount.toDouble(),
-                      subtitle: 'Scale scadute o mai compilate',
-                      icon: Icons.warning_amber_rounded,
-                      themeColor: const Color(0xFFEF4444),
-                      onTap: () => widget.onNavigate(2),
-                      breakdownPills: [
-                        _BreakdownPill(label: 'SIS', count: sisMancanti, color: const Color(0xFF00897B)),
-                        _BreakdownPill(label: 'POS', count: posMancanti, color: const Color(0xFF3B82F6)),
-                        _BreakdownPill(label: 'SM', count: sanMartinMancanti, color: const Color(0xFF6366F1)),
-                      ],
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: _BentoKpiCard(
+                        title: 'SCALE MANCANTI',
+                        value: expiredCount.toDouble(),
+                        subtitle: 'Scale scadute o mai compilate',
+                        icon: Icons.warning_amber_rounded,
+                        themeColor: const Color(0xFFEF4444),
+                        onTap: () => widget.onNavigate(2),
+                        breakdownPills: [
+                          _BreakdownPill(
+                              label: 'SIS',
+                              count: sisMancanti,
+                              color: const Color(0xFF00897B)),
+                          _BreakdownPill(
+                              label: 'POS',
+                              count: posMancanti,
+                              color: const Color(0xFF3B82F6)),
+                          _BreakdownPill(
+                              label: 'SM',
+                              count: sanMartinMancanti,
+                              color: const Color(0xFF6366F1)),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
                 ),
               )
             else
@@ -460,9 +500,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     themeColor: const Color(0xFFEF4444),
                     onTap: () => widget.onNavigate(2),
                     breakdownPills: [
-                      _BreakdownPill(label: 'SIS', count: sisMancanti, color: const Color(0xFF00897B)),
-                      _BreakdownPill(label: 'POS', count: posMancanti, color: const Color(0xFF3B82F6)),
-                      _BreakdownPill(label: 'SM', count: sanMartinMancanti, color: const Color(0xFF6366F1)),
+                      _BreakdownPill(
+                          label: 'SIS',
+                          count: sisMancanti,
+                          color: const Color(0xFF00897B)),
+                      _BreakdownPill(
+                          label: 'POS',
+                          count: posMancanti,
+                          color: const Color(0xFF3B82F6)),
+                      _BreakdownPill(
+                          label: 'SM',
+                          count: sanMartinMancanti,
+                          color: const Color(0xFF6366F1)),
                     ],
                   ),
                 ],
@@ -482,7 +531,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // Le due card vengono allineate prendendo il max tra le due altezze calcolate.
             if (isDesktop)
               () {
-                final distHeight = (distributions.length * 58.0 + 104).clamp(420.0, 520.0);
+                final distHeight =
+                    (distributions.length * 58.0 + 104).clamp(420.0, 520.0);
                 final rowHeight = distHeight;
                 return SizedBox(
                   height: rowHeight,
@@ -491,12 +541,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       Expanded(
                         flex: 2,
-                        child: _buildDocumentCoverageCard(coveredCount, expiredCount, coveragePercent, height: rowHeight),
+                        child: _buildDocumentCoverageCard(
+                            coveredCount, expiredCount, coveragePercent,
+                            height: rowHeight),
                       ),
                       const SizedBox(width: 24),
                       Expanded(
                         flex: 3,
-                        child: _buildDistributionCard(_sortedDistributions, activePatients, height: rowHeight),
+                        child: _buildDistributionCard(
+                            _sortedDistributions, activePatients,
+                            height: rowHeight),
                       ),
                     ],
                   ),
@@ -505,9 +559,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             else
               Column(
                 children: [
-                  _buildDocumentCoverageCard(coveredCount, expiredCount, coveragePercent, height: 380),
+                  _buildDocumentCoverageCard(
+                      coveredCount, expiredCount, coveragePercent,
+                      height: 380),
                   const SizedBox(height: 24),
-                  _buildDistributionCard(_sortedDistributions, activePatients, height: (_sortedDistributions.length * 58.0 + 104).clamp(380.0, 520.0)),
+                  _buildDistributionCard(_sortedDistributions, activePatients,
+                      height: (_sortedDistributions.length * 58.0 + 104)
+                          .clamp(380.0, 520.0)),
                 ],
               ),
 
@@ -588,7 +646,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: const Color(0xFFF59E0B),
                   backgroundColor: const Color(0xFFFEF3C7),
                   icon: Icons.warning_amber_rounded,
-                  onTap: () => widget.onNavigate(2, semanticFilter: 'in_scadenza'),
+                  onTap: () =>
+                      widget.onNavigate(2, semanticFilter: 'in_scadenza'),
                 ),
                 const SizedBox(height: 8),
                 _buildAlertBarItem(
@@ -597,7 +656,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: const Color(0xFF3B82F6),
                   backgroundColor: const Color(0xFFEFF6FF),
                   icon: Icons.assignment_late_outlined,
-                  onTap: () => widget.onNavigate(2, semanticFilter: 'incompleti'),
+                  onTap: () =>
+                      widget.onNavigate(2, semanticFilter: 'incompleti'),
                 ),
                 const SizedBox(height: 8),
                 _buildAlertBarItem(
@@ -606,7 +666,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: const Color(0xFF718096),
                   backgroundColor: const Color(0xFFF1F5F9),
                   icon: Icons.help_outline_rounded,
-                  onTap: () => widget.onNavigate(2, semanticFilter: 'mai_valutati'),
+                  onTap: () =>
+                      widget.onNavigate(2, semanticFilter: 'mai_valutati'),
                 ),
               ],
             )
@@ -620,7 +681,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: const Color(0xFFEF4444),
                     backgroundColor: const Color(0xFFFEE2E2),
                     icon: Icons.dangerous_outlined,
-                    onTap: () => widget.onNavigate(2, semanticFilter: 'scaduti'),
+                    onTap: () =>
+                        widget.onNavigate(2, semanticFilter: 'scaduti'),
                   ),
                 ),
                 Container(width: 1, height: 24, color: const Color(0xFFE2E8F0)),
@@ -631,7 +693,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: const Color(0xFFF59E0B),
                     backgroundColor: const Color(0xFFFEF3C7),
                     icon: Icons.warning_amber_rounded,
-                    onTap: () => widget.onNavigate(2, semanticFilter: 'in_scadenza'),
+                    onTap: () =>
+                        widget.onNavigate(2, semanticFilter: 'in_scadenza'),
                   ),
                 ),
                 Container(width: 1, height: 24, color: const Color(0xFFE2E8F0)),
@@ -642,7 +705,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: const Color(0xFF3B82F6),
                     backgroundColor: const Color(0xFFEFF6FF),
                     icon: Icons.assignment_late_outlined,
-                    onTap: () => widget.onNavigate(2, semanticFilter: 'incompleti'),
+                    onTap: () =>
+                        widget.onNavigate(2, semanticFilter: 'incompleti'),
                   ),
                 ),
                 Container(width: 1, height: 24, color: const Color(0xFFE2E8F0)),
@@ -653,7 +717,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: const Color(0xFF718096),
                     backgroundColor: const Color(0xFFF1F5F9),
                     icon: Icons.help_outline_rounded,
-                    onTap: () => widget.onNavigate(2, semanticFilter: 'mai_valutati'),
+                    onTap: () =>
+                        widget.onNavigate(2, semanticFilter: 'mai_valutati'),
                   ),
                 ),
               ],
@@ -719,7 +784,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ─── DOCUMENT COVERAGE CARD (DONUT CHART) ──────────────────────────────────
-  Widget _buildDocumentCoverageCard(int covered, int expired, double percent, {double? height}) {
+  Widget _buildDocumentCoverageCard(int covered, int expired, double percent,
+      {double? height}) {
     return _HoverBentoCard(
       height: height ?? 380,
       child: Padding(
@@ -729,7 +795,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             const Text(
               'Copertura Documentale',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary),
             ),
             const SizedBox(height: 4),
             const Text(
@@ -751,13 +820,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           startDegreeOffset: -90,
                           sections: [
                             PieChartSectionData(
-                              value: covered.toDouble().clamp(0.01, double.infinity),
+                              value: covered
+                                  .toDouble()
+                                  .clamp(0.01, double.infinity),
                               color: const Color(0xFF10B981),
                               radius: 24,
                               showTitle: false,
                             ),
                             PieChartSectionData(
-                              value: expired.toDouble().clamp(0.01, double.infinity),
+                              value: expired
+                                  .toDouble()
+                                  .clamp(0.01, double.infinity),
                               color: const Color(0xFFEF4444),
                               radius: 20,
                               showTitle: false,
@@ -798,9 +871,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildDonutLegendItem('Valide', covered, const Color(0xFF10B981)),
+                _buildDonutLegendItem(
+                    'Valide', covered, const Color(0xFF10B981)),
                 Container(width: 1, height: 24, color: const Color(0xFFE2E8F0)),
-                _buildDonutLegendItem('Mancanti', expired, const Color(0xFFEF4444)),
+                _buildDonutLegendItem(
+                    'Mancanti', expired, const Color(0xFFEF4444)),
               ],
             ),
           ],
@@ -828,11 +903,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             Text(
               label,
-              style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                  fontSize: 10,
+                  color: AppTheme.textSecondary,
+                  fontWeight: FontWeight.w600),
             ),
             Text(
               count.toString(),
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: color),
+              style: TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.w800, color: color),
             ),
           ],
         ),
@@ -854,7 +933,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       int scoreB = isNeverB ? 0 : (daysB > 395 ? 2 : 1);
 
       if (scoreA != scoreB) {
-        return scoreB.compareTo(scoreA); // Priorità maggiore in cima (Scaduto in cima)
+        return scoreB
+            .compareTo(scoreA); // Priorità maggiore in cima (Scaduto in cima)
       }
       return daysB.compareTo(daysA); // Più giorni prima
     });
@@ -864,7 +944,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       listContent = const Center(
         child: Text(
           'Tutti gli utenti sono coperti e monitorati.',
-          style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 13),
+          style: TextStyle(
+              color: Color(0xFF10B981),
+              fontWeight: FontWeight.bold,
+              fontSize: 13),
         ),
       );
       if (height == null) {
@@ -880,11 +963,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         itemCount: sortedAlerts.length,
         itemBuilder: (context, index) {
           final item = sortedAlerts[index];
-          final name = '${item['paziente_nome'] ?? ''} ${item['paziente_cognome'] ?? ''}'.trim();
+          final name =
+              '${item['paziente_nome'] ?? ''} ${item['paziente_cognome'] ?? ''}'
+                  .trim();
           final stato = item['stato'] ?? 'scaduto';
           final days = (item['giorni_da_ultima_valutazione'] ?? 0) as int;
           final scalaNome = item['scala_nome'] ?? '';
-          
+
           Color badgeColor;
           Color badgeBg;
           String badgeText;
@@ -937,7 +1022,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: ListTile(
                     dense: true,
                     onTap: () {
-                      widget.onNavigate(2, searchFilter: item['paziente_cognome']);
+                      widget.onNavigate(2,
+                          searchFilter: item['paziente_cognome']);
                     },
                     leading: CircleAvatar(
                       backgroundColor: badgeColor.withValues(alpha: 0.10),
@@ -953,17 +1039,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     title: Text(
                       name,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textPrimary),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: AppTheme.textPrimary),
                     ),
                     subtitle: Text(
                       daysText,
-                      style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                      style: const TextStyle(
+                          fontSize: 11, color: AppTheme.textSecondary),
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: badgeBg,
                             borderRadius: BorderRadius.circular(8),
@@ -982,14 +1073,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           style: TextButton.styleFrom(
                             foregroundColor: AppTheme.primaryColor,
                             backgroundColor: const Color(0xFFEFF6FF),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8)),
+                            textStyle: const TextStyle(
+                                fontSize: 11, fontWeight: FontWeight.w700),
                           ),
-                          icon: const Icon(Icons.arrow_forward_rounded, size: 13),
+                          icon:
+                              const Icon(Icons.arrow_forward_rounded, size: 13),
                           label: const Text('Vai'),
                           onPressed: () {
-                            widget.onNavigate(2, searchFilter: item['paziente_cognome']);
+                            widget.onNavigate(2,
+                                searchFilter: item['paziente_cognome']);
                           },
                         ),
                       ],
@@ -1016,17 +1112,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 const Text(
                   'Alert Center: Azioni Richieste Urgenti',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.textPrimary),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFEE2E2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     '${sortedAlerts.length} Criticità',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFFDC2626)),
+                    style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFFDC2626)),
                   ),
                 ),
               ],
@@ -1056,19 +1159,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ─── DEMOGRAPHICS CARD ──────────────────────────────────────────────────
-  Widget _buildDemographicsCard(Map<String, dynamic> demographics, {double? height}) {
+  Widget _buildDemographicsCard(Map<String, dynamic> demographics,
+      {double? height}) {
     if (demographics.isEmpty) return const SizedBox();
-    
+
     final sesso = demographics['sesso'] as Map<String, dynamic>? ?? {};
     final fasceEta = demographics['fasce_eta'] as Map<String, dynamic>? ?? {};
-    
+
     final men = (sesso['M'] ?? 0) as int;
     final women = (sesso['F'] ?? 0) as int;
     final total = men + women;
 
     final menPercent = total > 0 ? (men / total * 100) : 0.0;
     final womenPercent = total > 0 ? (women / total * 100) : 0.0;
-    
+
     // Calcola il massimo per le barre proporzionali delle fasce d'età
     final ageValues = [
       (fasceEta['0-18'] ?? 0) as int,
@@ -1077,7 +1181,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       (fasceEta['51+'] ?? 0) as int,
     ];
     final maxAge = ageValues.reduce((a, b) => a > b ? a : b).clamp(1, 9999);
-    
+
     return _HoverBentoCard(
       height: height,
       child: Padding(
@@ -1088,12 +1192,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             const Text(
               'Dati Socio-Demografici',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary),
             ),
             const SizedBox(height: 4),
             Text(
               'Distribuzione per genere e fasce d\'età ($total utenti)',
-              style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+              style:
+                  const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
             ),
             Expanded(
               child: Column(
@@ -1116,8 +1224,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 startDegreeOffset: -90,
                                 sections: [
                                   PieChartSectionData(
-                                    value: men.toDouble().clamp(0.01, double.infinity),
-                                    color: const Color(0xFF2563EB), // Blu Reale Acceso
+                                    value: men
+                                        .toDouble()
+                                        .clamp(0.01, double.infinity),
+                                    color: const Color(
+                                        0xFF2563EB), // Blu Reale Acceso
                                     radius: 18,
                                     showTitle: men > 0,
                                     title: '${menPercent.toStringAsFixed(0)}%',
@@ -1128,11 +1239,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                   ),
                                   PieChartSectionData(
-                                    value: women.toDouble().clamp(0.01, double.infinity),
-                                    color: const Color(0xFFF43F5E), // Rosa/Rose Acceso
+                                    value: women
+                                        .toDouble()
+                                        .clamp(0.01, double.infinity),
+                                    color: const Color(
+                                        0xFFF43F5E), // Rosa/Rose Acceso
                                     radius: 18,
                                     showTitle: women > 0,
-                                    title: '${womenPercent.toStringAsFixed(0)}%',
+                                    title:
+                                        '${womenPercent.toStringAsFixed(0)}%',
                                     titleStyle: const TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w800,
@@ -1242,13 +1357,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildAgeBar(String label, int count, int maxCount, int total) {
-    final barFraction = maxCount > 0 ? (count / maxCount).clamp(0.05, 1.0) : 0.05;
+    final barFraction =
+        maxCount > 0 ? (count / maxCount).clamp(0.05, 1.0) : 0.05;
     final percent = total > 0 ? (count / total * 100).toStringAsFixed(0) : '0';
     return Row(
       children: [
         SizedBox(
           width: 42,
-          child: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textSecondary)),
+          child: Text(label,
+              style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textSecondary)),
         ),
         Expanded(
           child: ClipRRect(
@@ -1256,7 +1376,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: LinearProgressIndicator(
               value: barFraction,
               backgroundColor: const Color(0xFFF1F5F9),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
               minHeight: 8,
             ),
           ),
@@ -1264,14 +1385,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(width: 12),
         Text(
           '$count ($percent%)',
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
+          style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textPrimary),
         ),
       ],
     );
   }
 
   // ─── DISTRIBUTION CARD ─────────────────────────────────────────────────────
-  Widget _buildDistributionCard(List<dynamic> distributions, int totalPatients, {double? height}) {
+  Widget _buildDistributionCard(List<dynamic> distributions, int totalPatients,
+      {double? height}) {
     return _HoverBentoCard(
       height: height,
       child: Padding(
@@ -1282,104 +1407,123 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             const Text(
               'Distribuzione Documentazione',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary),
             ),
             const SizedBox(height: 4),
             Text(
               'Completamento rispetto al totale di $totalPatients utenti',
-              style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+              style:
+                  const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 24),
             Expanded(
               child: distributions.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Nessuna scala ancora compilata.',
-                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-                    ),
-                  )
-                : Stack(
-                    children: [
-                      ListView.builder(
-                        itemCount: distributions.length,
-                        padding: const EdgeInsets.only(bottom: 20),
-                        itemBuilder: (context, index) {
-                          final item = distributions[index];
-                          final name = item['scala_nome'] ?? '';
-                          final count = (item['count'] ?? 0) as int;
-                          
-                          // Calcola la percentuale client-side
-                          final double percent = totalPatients > 0
-                              ? double.parse((count / totalPatients * 100).toStringAsFixed(1))
-                              : 0.0;
+                  ? const Center(
+                      child: Text(
+                        'Nessuna scala ancora compilata.',
+                        style: TextStyle(
+                            color: AppTheme.textSecondary, fontSize: 13),
+                      ),
+                    )
+                  : Stack(
+                      children: [
+                        ListView.builder(
+                          itemCount: distributions.length,
+                          padding: const EdgeInsets.only(bottom: 20),
+                          itemBuilder: (context, index) {
+                            final item = distributions[index];
+                            final name = item['scala_nome'] ?? '';
+                            final count = (item['count'] ?? 0) as int;
 
-                          // Colore progress bar semantico (Rosso <30%, Arancio 30-70%, Verde >70%)
-                          Color color;
-                          if (percent < 30.0) {
-                            color = const Color(0xFFEF4444);
-                          } else if (percent <= 70.0) {
-                            color = const Color(0xFFF59E0B);
-                          } else {
-                            color = const Color(0xFF10B981);
-                          }
+                            // Calcola la percentuale client-side
+                            final double percent = totalPatients > 0
+                                ? double.parse((count / totalPatients * 100)
+                                    .toStringAsFixed(1))
+                                : 0.0;
 
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 18),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        name,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textPrimary),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                            // Colore progress bar semantico (Rosso <30%, Arancio 30-70%, Verde >70%)
+                            Color color;
+                            if (percent < 30.0) {
+                              color = const Color(0xFFEF4444);
+                            } else if (percent <= 70.0) {
+                              color = const Color(0xFFF59E0B);
+                            } else {
+                              color = const Color(0xFF10B981);
+                            }
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 18),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          name,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                              color: AppTheme.textPrimary),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
+                                      Text(
+                                        '$count / $totalPatients ($percent%)',
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                            color: AppTheme.textSecondary),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: LinearProgressIndicator(
+                                      value: totalPatients > 0
+                                          ? (percent / 100).clamp(0.0, 1.0)
+                                          : 0,
+                                      backgroundColor: const Color(0xFFF1F5F9),
+                                      valueColor:
+                                          AlwaysStoppedAnimation<Color>(color),
+                                      minHeight: 8,
                                     ),
-                                    Text(
-                                      '$count / $totalPatients ($percent%)',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary),
-                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                        // Fade gradient in basso per indicare scrollabilità
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          height: 28,
+                          child: IgnorePointer(
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Color(0x00FFFFFF),
+                                    Color(0xFFFFFFFF)
                                   ],
                                 ),
-                                const SizedBox(height: 6),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: LinearProgressIndicator(
-                                    value: totalPatients > 0 ? (percent / 100).clamp(0.0, 1.0) : 0,
-                                    backgroundColor: const Color(0xFFF1F5F9),
-                                    valueColor: AlwaysStoppedAnimation<Color>(color),
-                                    minHeight: 8,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                      // Fade gradient in basso per indicare scrollabilità
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        height: 28,
-                        child: IgnorePointer(
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
             ),
           ],
         ),
@@ -1423,7 +1567,9 @@ class _HoverWrapperState extends State<_HoverWrapper> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: _isHovered ? widget.hoverBorderColor : widget.defaultBorderColor,
+            color: _isHovered
+                ? widget.hoverBorderColor
+                : widget.defaultBorderColor,
             width: 1,
           ),
           boxShadow: [
@@ -1461,7 +1607,8 @@ class _BreakdownPill {
   final String label;
   final int count;
   final Color color;
-  const _BreakdownPill({required this.label, required this.count, required this.color});
+  const _BreakdownPill(
+      {required this.label, required this.count, required this.color});
 }
 
 class _BentoKpiCard extends StatefulWidget {
@@ -1496,102 +1643,108 @@ class _BentoKpiCardState extends State<_BentoKpiCard> {
       hoverBorderColor: widget.themeColor.withValues(alpha: 0.35),
       defaultBorderColor: const Color(0xFFE2E8F0),
       child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: widget.onTap,
-            borderRadius: BorderRadius.circular(20),
-            splashColor: widget.themeColor.withValues(alpha: 0.05),
-            hoverColor: Colors.transparent,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          widget.title,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
-                            color: AppTheme.textSecondary,
-                            letterSpacing: 0.8,
-                          ),
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.onTap,
+          borderRadius: BorderRadius.circular(20),
+          splashColor: widget.themeColor.withValues(alpha: 0.05),
+          hoverColor: Colors.transparent,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          color: AppTheme.textSecondary,
+                          letterSpacing: 0.8,
                         ),
-                        const SizedBox(height: 8),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            TweenAnimationBuilder<double>(
-                              tween: Tween<double>(begin: 0, end: widget.value),
-                              duration: const Duration(milliseconds: 800),
-                              curve: Curves.easeOutCubic,
-                              builder: (context, val, child) {
-                                return Text(
-                                  '${val.toInt()}${widget.suffix}',
-                                  style: const TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w900,
-                                    color: AppTheme.textPrimary,
-                                    height: 1.0,
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          widget.subtitle,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppTheme.textSecondary.withValues(alpha: 0.8),
-                          ),
-                        ),
-                        if (widget.breakdownPills != null && widget.breakdownPills!.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 6,
-                            children: widget.breakdownPills!.map((pill) => Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: pill.color.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: pill.color.withValues(alpha: 0.3)),
-                              ),
-                              child: Text(
-                                '${pill.label}: ${pill.count}',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: pill.color,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          TweenAnimationBuilder<double>(
+                            tween: Tween<double>(begin: 0, end: widget.value),
+                            duration: const Duration(milliseconds: 800),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, val, child) {
+                              return Text(
+                                '${val.toInt()}${widget.suffix}',
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppTheme.textPrimary,
+                                  height: 1.0,
                                 ),
-                              ),
-                            )).toList(),
+                              );
+                            },
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.subtitle,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppTheme.textSecondary.withValues(alpha: 0.8),
+                        ),
+                      ),
+                      if (widget.breakdownPills != null &&
+                          widget.breakdownPills!.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 6,
+                          children: widget.breakdownPills!
+                              .map((pill) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: pill.color.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                          color: pill.color
+                                              .withValues(alpha: 0.3)),
+                                    ),
+                                    child: Text(
+                                      '${pill.label}: ${pill.count}',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: pill.color,
+                                      ),
+                                    ),
+                                  ))
+                              .toList(),
+                        ),
                       ],
-                    ),
+                    ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: widget.themeColor.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      widget.icon,
-                      color: widget.themeColor,
-                      size: 28,
-                    ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: widget.themeColor.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
                   ),
-                ],
-              ),
+                  child: Icon(
+                    widget.icon,
+                    color: widget.themeColor,
+                    size: 28,
+                  ),
+                ),
+              ],
             ),
           ),
+        ),
       ),
     );
 

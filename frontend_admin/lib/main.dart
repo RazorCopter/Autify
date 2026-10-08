@@ -166,25 +166,78 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _notificationBell() {
+  Widget _notificationBell({bool inHeader = false}) {
     final semanticLabel = _unreadNotifications > 0
         ? 'Notifiche, $_unreadNotifications non lette'
         : 'Notifiche';
 
-    return Semantics(
+    final bellButton = Semantics(
       button: true,
       label: semanticLabel,
-      child: IconButton(
-        tooltip: semanticLabel,
-        onPressed: _showNotifications,
-        icon: Badge(
-          isLabelVisible: _unreadNotifications > 0,
-          label:
-              Text(_unreadNotifications > 99 ? '99+' : '$_unreadNotifications'),
-          child: const Icon(Icons.notifications_none_rounded),
+      child: Tooltip(
+        message: semanticLabel,
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: Material(
+            color: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: InkWell(
+              onTap: _showNotifications,
+              borderRadius: BorderRadius.circular(12),
+              child: Center(
+                child: Badge(
+                  isLabelVisible: _unreadNotifications > 0,
+                  backgroundColor: AppTheme.errorColor,
+                  textColor: Colors.white,
+                  textStyle: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    height: 1.0,
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  alignment: AlignmentDirectional.topEnd,
+                  offset: const Offset(7, -5),
+                  label: Text(
+                    _unreadNotifications > 99 ? '99+' : '$_unreadNotifications',
+                  ),
+                  child: const Icon(
+                    Icons.notifications_outlined,
+                    size: 22,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
+
+    if (inHeader) {
+      return Container(
+        height: 40,
+        width: 40,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFE8EEF8), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: bellButton,
+      );
+    }
+
+    return bellButton;
   }
 
   Future<void> _checkLicense() async {
@@ -335,36 +388,25 @@ class _AdminDashboardState extends State<AdminDashboard> {
       children: [
         // Sidebar
         _buildSidebar(),
-        // Contenuto principale e azione header desktop nello stesso flusso.
+        // Contenuto principale
         Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
             children: [
-              Expanded(
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: _buildBody(),
-                    ),
-                    // Sfondo Watermark Bradipo HD Premium post-login (in overlay sopra il body per aggirare gli sfondi coprenti delle schede)
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: Opacity(
-                          opacity:
-                              0.015, // Trasparenza soft ottimizzata all'1.5% per garantire contrasto ottimale
-                          child: Image.asset(
-                            'assets/images/bradipo_hd_BG.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              Positioned.fill(
+                child: _buildBody(),
               ),
-              Padding(
-                padding: const EdgeInsets.only(top: 12, right: 18),
-                child: _notificationBell(),
+              // Sfondo Watermark Bradipo HD Premium post-login (in overlay sopra il body per aggirare gli sfondi coprenti delle schede)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Opacity(
+                    opacity:
+                        0.015, // Trasparenza soft ottimizzata all'1.5% per garantire contrasto ottimale
+                    child: Image.asset(
+                      'assets/images/bradipo_hd_BG.png',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -736,6 +778,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       child: switch (_selectedIndex) {
         0 => DashboardScreen(
             key: const ValueKey(0),
+            headerAction: _notificationBell(inHeader: true),
             onNavigate: (index, {searchFilter, semanticFilter}) {
               setState(() {
                 _patientSearchQuery = searchFilter;
