@@ -252,8 +252,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ? 'Notifiche, $_unreadNotifications non lette'
         : 'Notifiche';
 
-    const bellColorDesktop = Color(0xFFD97706);
-    final bellColor = inHeader ? bellColorDesktop : AppTheme.textPrimary;
+    const unreadBellColor = Color(0xFFD97706);
+    const idleBellColor = Color(0xFF5F6368);
+    final bellColor = _unreadNotifications > 0
+        ? unreadBellColor
+        : (inHeader ? idleBellColor : AppTheme.textSecondary);
     final borderRadius = BorderRadius.circular(inHeader ? 14 : 12);
 
     final bellContent = SizedBox(

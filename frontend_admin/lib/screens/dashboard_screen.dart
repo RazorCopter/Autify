@@ -1,19 +1,33 @@
-import 'package:flutter/material.dart';
+import 'dart:math' as math;
+
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+
 import '../services/api_service.dart';
-import '../utils/responsive_helper.dart';
-import '../theme/app_theme.dart';
+import '../widgets/dashboard_components.dart';
+
+typedef DashboardStatsLoader = Future<Map<String, dynamic>?> Function();
+typedef DashboardNavigationCallback = void Function(
+  int tabIndex, {
+  String? searchFilter,
+  String? semanticFilter,
+});
 
 class DashboardScreen extends StatefulWidget {
-  final Function(int tabIndex, {String? searchFilter, String? semanticFilter})
-      onNavigate;
+  final DashboardNavigationCallback onNavigate;
   final Widget? headerAction;
+
+  /// Iniezione opzionale usata dai test widget e dalle preview offline.
+  final DashboardStatsLoader? statsLoader;
+  final String? usernameOverride;
 
   const DashboardScreen({
     super.key,
     required this.onNavigate,
     this.headerAction,
+    this.statsLoader,
+    this.usernameOverride,
   });
 
   @override
@@ -24,8 +38,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final ApiService _apiService = ApiService();
   bool _isLoading = true;
   Map<String, dynamic>? _stats;
-  List<dynamic> _sortedDistributions = [];
   DateTime? _lastLoaded;
+
+  Future<Map<String, dynamic>?> _fetchStats() =>
+      widget.statsLoader?.call() ?? _apiService.getDashboardStats();
 
   @override
   void initState() {
@@ -34,1711 +50,967 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadStats() async {
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
     try {
-      final stats = await _apiService.getDashboardStats();
-      if (mounted) {
-        final distributions = List<dynamic>.from(
-            (stats?['distribuzione_scale'] as List<dynamic>?) ?? []);
-        final totalPatients = (stats?['totale_utenze'] ?? 0) as int;
-        distributions.sort((a, b) {
-          final countA = (a['count'] ?? 0) as int;
-          final countB = (b['count'] ?? 0) as int;
-          final percentA = totalPatients > 0 ? countA / totalPatients : 0.0;
-          final percentB = totalPatients > 0 ? countB / totalPatients : 0.0;
-          return percentA.compareTo(percentB);
-        });
-        setState(() {
-          _stats = stats;
-          _sortedDistributions = distributions;
-          _isLoading = false;
-          _lastLoaded = DateTime.now();
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      final stats = await _fetchStats();
+      if (!mounted) return;
+      setState(() {
+        _stats = stats;
+        _lastLoaded = stats == null ? null : DateTime.now();
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _stats = null;
+        _isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: DashboardTokens.canvas,
       body: RefreshIndicator(
         onRefresh: _loadStats,
-        color: AppTheme.primaryColor,
+        color: DashboardTokens.primary,
         child: SingleChildScrollView(
+          key: const ValueKey('dashboard-scroll-view'),
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.symmetric(
-            vertical: ResponsiveHelper.verticalPadding(context),
-            horizontal: ResponsiveHelper.horizontalPadding(context),
+          padding: EdgeInsets.fromLTRB(
+            _horizontalPadding(context),
+            20,
+            _horizontalPadding(context),
+            36,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 28),
-              if (_isLoading)
-                _buildShimmerSkeleton()
-              else if (_stats == null)
-                _buildErrorWidget()
-              else
-                _buildBentoGrid(),
-            ],
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1520),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 22),
+                  AnimatedSwitcher(
+                    duration: DashboardTokens.motion,
+                    child: _isLoading
+                        ? const _DashboardLoadingState(
+                            key: ValueKey('dashboard-loading'),
+                          )
+                        : _stats == null
+                            ? _buildErrorState()
+                            : _DashboardContent(
+                                key: const ValueKey('dashboard-content'),
+                                stats: _stats!,
+                                onNavigate: widget.onNavigate,
+                              ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  // ─── HEADER ───────────────────────────────────────────────────────────────
-  Widget _buildHeader() {
-    final now = DateTime.now();
-    final months = [
-      'Gennaio',
-      'Febbraio',
-      'Marzo',
-      'Aprile',
-      'Maggio',
-      'Giugno',
-      'Luglio',
-      'Agosto',
-      'Settembre',
-      'Ottobre',
-      'Novembre',
-      'Dicembre'
-    ];
-    final formattedDate = '${now.day} ${months[now.month - 1]} ${now.year}';
-    final isMobile = ResponsiveHelper.isMobile(context);
-    final titleSize = ResponsiveHelper.titleFontSize(context);
+  double _horizontalPadding(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    if (width < 600) return 12;
+    if (width < 1200) return 24;
+    return 32;
+  }
 
-    if (isMobile) {
+  Widget _buildHeader() {
+    final width = MediaQuery.sizeOf(context).width;
+    final compact = width < 600;
+    final now = DateTime.now();
+    final username =
+        (widget.usernameOverride ?? ApiService.currentUsername).trim();
+    final greeting = _greetingFor(now.hour);
+    final displayName = username.isEmpty ? 'team' : username;
+
+    final text = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$greeting, $displayName',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: DashboardTokens.text,
+            fontSize: compact ? 25 : 30,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.8,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          'Panoramica operativa · ${_formatLongDate(now)}',
+          style: const TextStyle(
+            color: DashboardTokens.textMuted,
+            fontSize: 13,
+          ),
+        ),
+        if (_lastLoaded != null) ...[
+          const SizedBox(height: 3),
+          Text(
+            'Dati aggiornati alle ${_twoDigits(_lastLoaded!.hour)}:${_twoDigits(_lastLoaded!.minute)}',
+            style: const TextStyle(
+              color: DashboardTokens.textMuted,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ],
+    );
+
+    final actions = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Tooltip(
+          message: 'Aggiorna dati dashboard',
+          child: Semantics(
+            button: true,
+            label: 'Aggiorna dati dashboard',
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: IconButton.outlined(
+                key: const ValueKey('dashboard-refresh-button'),
+                onPressed: _isLoading ? null : _loadStats,
+                icon: const Icon(Icons.refresh_rounded),
+                color: DashboardTokens.primary,
+                style: IconButton.styleFrom(
+                  backgroundColor: DashboardTokens.surface,
+                  side: const BorderSide(color: DashboardTokens.border),
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (widget.headerAction != null) ...[
+          const SizedBox(width: 10),
+          ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+            child: Center(child: widget.headerAction),
+          ),
+        ],
+      ],
+    );
+
+    if (compact) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Centro di Controllo',
-            style: TextStyle(
-              fontSize: titleSize,
-              fontWeight: FontWeight.w800,
-              color: AppTheme.textPrimary,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            'Stato e monitoraggio documentale',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.textSecondary.withValues(alpha: 0.8),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFE8EEF8), width: 1),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.calendar_today_outlined,
-                    color: AppTheme.primaryColor, size: 14),
-                const SizedBox(width: 6),
-                Text(
-                  formattedDate,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          text,
+          const SizedBox(height: 16),
+          Align(alignment: Alignment.centerRight, child: actions),
         ],
       );
     }
 
-    final lastLoadedStr = _lastLoaded != null
-        ? 'Aggiornato alle ${_lastLoaded!.hour.toString().padLeft(2, '0')}:${_lastLoaded!.minute.toString().padLeft(2, '0')}'
-        : null;
-
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Centro di Controllo Documentale',
-              style: TextStyle(
-                fontSize: titleSize,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.textPrimary,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Stato e monitoraggio della documentazione',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppTheme.textSecondary.withValues(alpha: 0.8),
-              ),
-            ),
-          ],
-        ),
-        Row(
-          children: [
-            if (lastLoadedStr != null) ...[
-              Row(
-                children: [
-                  const Icon(Icons.update_rounded,
-                      color: AppTheme.textSecondary, size: 13),
-                  const SizedBox(width: 4),
-                  Text(
-                    lastLoadedStr,
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: AppTheme.textSecondary.withValues(alpha: 0.7)),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 12),
-            ],
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE8EEF8), width: 1),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.calendar_today_outlined,
-                      color: AppTheme.primaryColor, size: 16),
-                  const SizedBox(width: 8),
-                  Text(
-                    formattedDate,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (widget.headerAction != null) ...[
-              const SizedBox(width: 12),
-              widget.headerAction!,
-            ],
-          ],
-        ),
+        Expanded(child: text),
+        const SizedBox(width: 20),
+        actions,
       ],
     );
   }
 
-  // ─── ERROR STATE ──────────────────────────────────────────────────────────
-  Widget _buildErrorWidget() {
-    return Center(
-      child: Card(
-        margin: const EdgeInsets.only(top: 60),
-        child: Padding(
-          padding: const EdgeInsets.all(40),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline,
-                  size: 64, color: AppTheme.errorColor),
-              const SizedBox(height: 16),
-              const Text(
-                'Errore nel caricamento dei dati',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Assicurati che il server backend sia attivo.',
-                style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _loadStats,
-                icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Riprova'),
-              ),
-            ],
+  Widget _buildErrorState() {
+    return DashboardSurfaceCard(
+      key: const ValueKey('dashboard-error'),
+      child: DashboardEmptyState(
+        icon: Icons.cloud_off_outlined,
+        title: 'Dati temporaneamente non disponibili',
+        message:
+            'Non è stato possibile recuperare la panoramica. I dati esistenti non sono stati sostituiti con valori stimati.',
+        action: SizedBox(
+          height: 44,
+          child: FilledButton.icon(
+            onPressed: _loadStats,
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Riprova'),
           ),
         ),
       ),
     );
   }
+}
 
-  // ─── SHIMMER SKELETON ──────────────────────────────────────────────────────
-  Widget _buildShimmerSkeleton() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isMobile = constraints.maxWidth < 600;
-        final isTablet = constraints.maxWidth < 1024;
+class _DashboardContent extends StatelessWidget {
+  final Map<String, dynamic> stats;
+  final DashboardNavigationCallback onNavigate;
 
-        Widget shimmerBlock(double height, {int flex = 1}) => Expanded(
-              flex: flex,
-              child: Container(
-                height: height,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
+  const _DashboardContent({
+    super.key,
+    required this.stats,
+    required this.onNavigate,
+  });
+
+  int _intValue(String key) => _asInt(stats[key]);
+
+  @override
+  Widget build(BuildContext context) {
+    final total = _intValue('totale_utenze');
+    final active = _intValue('totale_utenze_attive');
+    final evaluations = _intValue('totale_valutazioni_eseguite');
+    final coverage = _mapValue(stats['copertura_scale']);
+    final coveragePercent = _asDouble(coverage['coperti_percentuale']);
+    final alerts = _mapValue(stats['alert_stats']);
+    final overdue = _asInt(alerts['totale_scaduti']);
+    final expiring = _asInt(alerts['totale_in_scadenza']);
+    final neverEvaluated = _asInt(alerts['totale_mai_valutati']);
+    final incomplete = _asInt(alerts['totale_incompleti']);
+    final actionCount = overdue + expiring + neverEvaluated + incomplete;
+
+    final kpis = [
+      DashboardKpiData(
+        label: 'UTENZE ATTIVE',
+        value: '$active',
+        supportingText:
+            total == 0 ? 'Nessuna utenza censita' : 'su $total censite',
+        icon: Icons.people_alt_outlined,
+        accent: DashboardTokens.primary,
+        onTap: () => onNavigate(2),
+        tooltip: 'Apri l’anagrafica utenti',
+      ),
+      DashboardKpiData(
+        label: 'VALUTAZIONI ESEGUITE',
+        value: '$evaluations',
+        supportingText: 'somministrazioni registrate',
+        icon: Icons.fact_check_outlined,
+        accent: DashboardTokens.purple,
+        onTap: () => onNavigate(2),
+        tooltip: 'Apri l’anagrafica per consultare le valutazioni',
+      ),
+      DashboardKpiData(
+        label: 'COPERTURA SCALE',
+        value: '${_formatNumber(coveragePercent)}%',
+        supportingText: '${_asInt(coverage['coperti_count'])} coperture valide',
+        icon: Icons.verified_outlined,
+        accent: DashboardTokens.success,
+        onTap: () => onNavigate(2),
+        tooltip: 'Apri le utenze per verificare la copertura',
+      ),
+      const DashboardKpiData(
+        label: 'MEDIA FUNZIONALE',
+        value: 'N/D',
+        supportingText: 'dato non fornito dall’API',
+        icon: Icons.analytics_outlined,
+        accent: DashboardTokens.warning,
+        tooltip:
+            'La media funzionale non è disponibile nei dati reali della dashboard e non viene stimata.',
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DashboardKpiGrid(items: kpis),
+        const SizedBox(height: DashboardTokens.gap),
+        _SystemHealthBar(
+          active: active,
+          total: total,
+          coveragePercent: coveragePercent,
+          overdue: overdue,
+          actionCount: actionCount,
+          truncated: stats['is_truncated'] == true,
+          onOpenCritical: () => onNavigate(2, semanticFilter: 'scaduti'),
+        ),
+        const SizedBox(height: DashboardTokens.gap),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final desktop = constraints.maxWidth >= 1200;
+            final tablet = constraints.maxWidth >= 600;
+            final trendCard = _TrendChartCard(
+              trend: _listValue(stats['trend_somministrazioni']),
+              forecast: _listValue(stats['forecast_somministrazioni']),
+            );
+            final alertCard = _AlertCenterCard(
+              alerts: _listValue(stats['ultimi_alert']),
+              alertStats: alerts,
+              onNavigate: onNavigate,
             );
 
-        Widget kpiRow() {
-          if (isMobile) {
+            if (desktop) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 2, child: trendCard),
+                  const SizedBox(width: DashboardTokens.gap),
+                  Expanded(child: alertCard),
+                ],
+              );
+            }
+
             return Column(
               children: [
-                shimmerBlock(140),
-                const SizedBox(height: 12),
-                shimmerBlock(140),
-                const SizedBox(height: 12),
-                shimmerBlock(140),
+                trendCard,
+                const SizedBox(height: DashboardTokens.gap),
+                alertCard,
+                if (tablet) const SizedBox.shrink(),
               ],
             );
-          }
-          if (isTablet) {
-            return Column(children: [
-              Row(children: [
-                shimmerBlock(140),
-                const SizedBox(width: 20),
-                shimmerBlock(140),
-              ]),
-              const SizedBox(height: 12),
-              shimmerBlock(140),
-            ]);
-          }
-          return Row(
-            children: List.generate(
-                3,
-                (i) => Expanded(
-                      child: Container(
-                        height: 140,
-                        margin: EdgeInsets.only(right: i == 2 ? 0 : 20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                    )),
-          );
-        }
+          },
+        ),
+        const SizedBox(height: DashboardTokens.gap),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final twoColumns = constraints.maxWidth >= 600;
+            final distribution = _DistributionCard(
+              distributions: _listValue(stats['distribuzione_scale']),
+              totalPatients: total,
+            );
+            final demographics = _DemographicsCard(
+              demographics: _mapValue(stats['demographics']),
+            );
 
-        return Shimmer.fromColors(
-          baseColor: const Color(0xFFE2E8F0),
-          highlightColor: const Color(0xFFEDF2F7),
-          child: Column(
-            children: [
-              kpiRow(),
-              const SizedBox(height: 24),
-              if (isMobile) ...[
-                shimmerBlock(280),
-                const SizedBox(height: 12),
-                shimmerBlock(280),
-              ] else
-                Row(children: [
-                  shimmerBlock(380, flex: 2),
-                  const SizedBox(width: 24),
-                  shimmerBlock(380, flex: 3),
-                ]),
-              const SizedBox(height: 24),
-              if (isMobile) ...[
-                shimmerBlock(260),
-                const SizedBox(height: 12),
-                shimmerBlock(260),
-              ] else
-                Row(children: [
-                  shimmerBlock(320, flex: 3),
-                  const SizedBox(width: 24),
-                  shimmerBlock(320, flex: 2),
-                ]),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // ─── BENTO GRID ────────────────────────────────────────────────────────────
-  Widget _buildBentoGrid() {
-    final activePatients = _stats?['totale_utenze_attive'] ?? 0;
-    final totalPatients = _stats?['totale_utenze'] ?? activePatients;
-    final coverage = _stats?['copertura_scale'] ?? {};
-    final coveredCount = coverage['coperti_count'] ?? 0;
-    final expiredCount = coverage['scaduti_count'] ?? 0;
-    final coveragePercent = (coverage['coperti_percentuale'] ?? 0.0).toDouble();
-    final posMancanti = coverage['pos_mancanti'] ?? 0;
-    final sanMartinMancanti = coverage['san_martin_mancanti'] ?? 0;
-    final sisMancanti = coverage['sis_mancanti'] ?? 0;
-
-    final alertList = (_stats?['ultimi_alert'] as List<dynamic>?) ?? [];
-    final distributions =
-        (_stats?['distribuzione_scale'] as List<dynamic>?) ?? [];
-    final demographics =
-        (_stats?['demographics'] as Map<String, dynamic>?) ?? {};
-
-    // Calcolo dei contatori specifici per l'AlertBar dai dati globali reali del backend
-    final alertStats = _stats?['alert_stats'] ?? {};
-    final scadutiCount = (alertStats['totale_scaduti'] ?? 0) as int;
-    final inScadenzaCount = (alertStats['totale_in_scadenza'] ?? 0) as int;
-    final maiValutatiCount = (alertStats['totale_mai_valutati'] ?? 0) as int;
-    final incompleteCount = (alertStats['totale_incompleti'] ?? 0) as int;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth > 992;
-        final isTablet =
-            constraints.maxWidth > 650 && constraints.maxWidth <= 992;
-
-        return Column(
-          children: [
-            // Row 1: KPI Cards — IntrinsicHeight garantisce altezza uniforme
-            if (isDesktop || isTablet)
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: _BentoKpiCard(
-                        title: 'UTENZE ATTIVE',
-                        value: activePatients.toDouble(),
-                        subtitle: 'su $totalPatients utenti censiti',
-                        icon: Icons.people_alt_outlined,
-                        themeColor: const Color(0xFF3B82F6),
-                        onTap: () => widget.onNavigate(2),
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: _BentoKpiCard(
-                        title: 'VALUTAZIONI ATTIVE',
-                        value: coveredCount.toDouble(),
-                        subtitle: 'Documentazione in corso di validità',
-                        icon: Icons.verified_user_outlined,
-                        themeColor: const Color(0xFF10B981),
-                        suffix: ' ($coveragePercent%)',
-                        onTap: () => widget.onNavigate(2),
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: _BentoKpiCard(
-                        title: 'SCALE MANCANTI',
-                        value: expiredCount.toDouble(),
-                        subtitle: 'Scale scadute o mai compilate',
-                        icon: Icons.warning_amber_rounded,
-                        themeColor: const Color(0xFFEF4444),
-                        onTap: () => widget.onNavigate(2),
-                        breakdownPills: [
-                          _BreakdownPill(
-                              label: 'SIS',
-                              count: sisMancanti,
-                              color: const Color(0xFF00897B)),
-                          _BreakdownPill(
-                              label: 'POS',
-                              count: posMancanti,
-                              color: const Color(0xFF3B82F6)),
-                          _BreakdownPill(
-                              label: 'SM',
-                              count: sanMartinMancanti,
-                              color: const Color(0xFF6366F1)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              Column(
+            if (!twoColumns) {
+              return Column(
                 children: [
-                  _BentoKpiCard(
-                    title: 'UTENZE ATTIVE',
-                    value: activePatients.toDouble(),
-                    subtitle: 'su $totalPatients utenti censiti',
-                    icon: Icons.people_alt_outlined,
-                    themeColor: const Color(0xFF3B82F6),
-                    onTap: () => widget.onNavigate(2),
-                  ),
-                  const SizedBox(height: 16),
-                  _BentoKpiCard(
-                    title: 'VALUTAZIONI ATTIVE',
-                    value: coveredCount.toDouble(),
-                    subtitle: 'Documentazione in corso di validità',
-                    icon: Icons.verified_user_outlined,
-                    themeColor: const Color(0xFF10B981),
-                    suffix: ' ($coveragePercent%)',
-                    onTap: () => widget.onNavigate(2),
-                  ),
-                  const SizedBox(height: 16),
-                  _BentoKpiCard(
-                    title: 'SCALE MANCANTI',
-                    value: expiredCount.toDouble(),
-                    subtitle: 'Scale scadute o mai compilate',
-                    icon: Icons.warning_amber_rounded,
-                    themeColor: const Color(0xFFEF4444),
-                    onTap: () => widget.onNavigate(2),
-                    breakdownPills: [
-                      _BreakdownPill(
-                          label: 'SIS',
-                          count: sisMancanti,
-                          color: const Color(0xFF00897B)),
-                      _BreakdownPill(
-                          label: 'POS',
-                          count: posMancanti,
-                          color: const Color(0xFF3B82F6)),
-                      _BreakdownPill(
-                          label: 'SM',
-                          count: sanMartinMancanti,
-                          color: const Color(0xFF6366F1)),
-                    ],
-                  ),
+                  distribution,
+                  const SizedBox(height: DashboardTokens.gap),
+                  demographics,
                 ],
-              ),
-
-            const SizedBox(height: 24),
-            _buildAlertBar(
-              scadutiCount: scadutiCount,
-              inScadenzaCount: inScadenzaCount,
-              incompleteCount: incompleteCount,
-              maiValutatiCount: maiValutatiCount,
-            ),
-            const SizedBox(height: 24),
-
-            // Row 2: Copertura + Distribuzione.
-            // L'altezza della Distribuzione dipende dal numero di scale (58px/item + 104px header/padding).
-            // Le due card vengono allineate prendendo il max tra le due altezze calcolate.
-            if (isDesktop)
-              () {
-                final distHeight =
-                    (distributions.length * 58.0 + 104).clamp(420.0, 520.0);
-                final rowHeight = distHeight;
-                return SizedBox(
-                  height: rowHeight,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: _buildDocumentCoverageCard(
-                            coveredCount, expiredCount, coveragePercent,
-                            height: rowHeight),
-                      ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        flex: 3,
-                        child: _buildDistributionCard(
-                            _sortedDistributions, activePatients,
-                            height: rowHeight),
-                      ),
-                    ],
-                  ),
-                );
-              }()
-            else
-              Column(
-                children: [
-                  _buildDocumentCoverageCard(
-                      coveredCount, expiredCount, coveragePercent,
-                      height: 380),
-                  const SizedBox(height: 24),
-                  _buildDistributionCard(_sortedDistributions, activePatients,
-                      height: (_sortedDistributions.length * 58.0 + 104)
-                          .clamp(380.0, 520.0)),
-                ],
-              ),
-
-            const SizedBox(height: 24),
-
-            // Row 3: Alert list & Demographics
-            if (isDesktop)
-              SizedBox(
-                height: 440,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      flex: 7, // 70% width
-                      child: _buildAlertListCard(alertList, height: 440),
-                    ),
-                    const SizedBox(width: 24),
-                    Expanded(
-                      flex: 3, // 30% width
-                      child: _buildDemographicsCard(demographics, height: 440),
-                    ),
-                  ],
-                ),
-              )
-            else
-              Column(
-                children: [
-                  _buildAlertListCard(alertList, height: 420),
-                  const SizedBox(height: 24),
-                  _buildDemographicsCard(demographics),
-                ],
-              ),
-
-            // rimosso riga 4 (Demographics) poichè spostato in riga 3
-          ],
-        );
-      },
-    );
-  }
-
-  // ─── ALERT BAR ─────────────────────────────────────────────────────────────
-  Widget _buildAlertBar({
-    required int scadutiCount,
-    required int inScadenzaCount,
-    required int incompleteCount,
-    required int maiValutatiCount,
-  }) {
-    final isMobile = ResponsiveHelper.isMobile(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.015),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: isMobile
-          ? Column(
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildAlertBarItem(
-                  label: 'Valutazioni scadute',
-                  count: scadutiCount,
-                  color: const Color(0xFFEF4444),
-                  backgroundColor: const Color(0xFFFEE2E2),
-                  icon: Icons.dangerous_outlined,
-                  onTap: () => widget.onNavigate(2, semanticFilter: 'scaduti'),
-                ),
-                const SizedBox(height: 8),
-                _buildAlertBarItem(
-                  label: 'In scadenza',
-                  count: inScadenzaCount,
-                  color: const Color(0xFFF59E0B),
-                  backgroundColor: const Color(0xFFFEF3C7),
-                  icon: Icons.warning_amber_rounded,
-                  onTap: () =>
-                      widget.onNavigate(2, semanticFilter: 'in_scadenza'),
-                ),
-                const SizedBox(height: 8),
-                _buildAlertBarItem(
-                  label: 'Documenti incompleti',
-                  count: incompleteCount,
-                  color: const Color(0xFF3B82F6),
-                  backgroundColor: const Color(0xFFEFF6FF),
-                  icon: Icons.assignment_late_outlined,
-                  onTap: () =>
-                      widget.onNavigate(2, semanticFilter: 'incompleti'),
-                ),
-                const SizedBox(height: 8),
-                _buildAlertBarItem(
-                  label: 'Da verificare',
-                  count: maiValutatiCount,
-                  color: const Color(0xFF718096),
-                  backgroundColor: const Color(0xFFF1F5F9),
-                  icon: Icons.help_outline_rounded,
-                  onTap: () =>
-                      widget.onNavigate(2, semanticFilter: 'mai_valutati'),
-                ),
+                Expanded(child: distribution),
+                const SizedBox(width: DashboardTokens.gap),
+                Expanded(child: demographics),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _SystemHealthBar extends StatelessWidget {
+  final int active;
+  final int total;
+  final double coveragePercent;
+  final int overdue;
+  final int actionCount;
+  final bool truncated;
+  final VoidCallback onOpenCritical;
+
+  const _SystemHealthBar({
+    required this.active,
+    required this.total,
+    required this.coveragePercent,
+    required this.overdue,
+    required this.actionCount,
+    required this.truncated,
+    required this.onOpenCritical,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 600;
+    final healthColor = overdue > 0
+        ? DashboardTokens.danger
+        : actionCount > 0
+            ? DashboardTokens.warning
+            : DashboardTokens.success;
+    final label = overdue > 0
+        ? 'Attenzione richiesta'
+        : actionCount > 0
+            ? 'Monitoraggio attivo'
+            : 'Operatività regolare';
+
+    final details = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        DashboardStatusPill(
+          label: label,
+          color: healthColor,
+          icon: overdue > 0
+              ? Icons.error_outline_rounded
+              : Icons.check_circle_outline_rounded,
+        ),
+        DashboardStatusPill(
+          label: '$active/$total utenze attive',
+          color: DashboardTokens.primary,
+          icon: Icons.people_outline_rounded,
+        ),
+        DashboardStatusPill(
+          label: '${_formatNumber(coveragePercent)}% copertura',
+          color: DashboardTokens.success,
+          icon: Icons.verified_outlined,
+        ),
+        if (truncated)
+          const DashboardStatusPill(
+            label: 'Dataset parziale',
+            color: DashboardTokens.warning,
+            icon: Icons.info_outline_rounded,
+          ),
+      ],
+    );
+
+    final action = overdue > 0
+        ? SizedBox(
+            height: 44,
+            child: TextButton.icon(
+              onPressed: onOpenCritical,
+              icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+              label: Text('$overdue scadute'),
+              style: TextButton.styleFrom(
+                foregroundColor: DashboardTokens.danger,
+                minimumSize: const Size(44, 44),
+              ),
+            ),
+          )
+        : null;
+
+    return DashboardSurfaceCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      borderColor: healthColor.withValues(alpha: 0.24),
+      semanticLabel: 'Stato sistema: $label',
+      child: compact
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                details,
+                if (action != null) ...[
+                  const SizedBox(height: 6),
+                  Align(alignment: Alignment.centerRight, child: action),
+                ],
               ],
             )
           : Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                Expanded(
-                  child: _buildAlertBarItem(
-                    label: 'Valutazioni scadute',
-                    count: scadutiCount,
-                    color: const Color(0xFFEF4444),
-                    backgroundColor: const Color(0xFFFEE2E2),
-                    icon: Icons.dangerous_outlined,
-                    onTap: () =>
-                        widget.onNavigate(2, semanticFilter: 'scaduti'),
-                  ),
-                ),
-                Container(width: 1, height: 24, color: const Color(0xFFE2E8F0)),
-                Expanded(
-                  child: _buildAlertBarItem(
-                    label: 'In scadenza',
-                    count: inScadenzaCount,
-                    color: const Color(0xFFF59E0B),
-                    backgroundColor: const Color(0xFFFEF3C7),
-                    icon: Icons.warning_amber_rounded,
-                    onTap: () =>
-                        widget.onNavigate(2, semanticFilter: 'in_scadenza'),
-                  ),
-                ),
-                Container(width: 1, height: 24, color: const Color(0xFFE2E8F0)),
-                Expanded(
-                  child: _buildAlertBarItem(
-                    label: 'Documenti incompleti',
-                    count: incompleteCount,
-                    color: const Color(0xFF3B82F6),
-                    backgroundColor: const Color(0xFFEFF6FF),
-                    icon: Icons.assignment_late_outlined,
-                    onTap: () =>
-                        widget.onNavigate(2, semanticFilter: 'incompleti'),
-                  ),
-                ),
-                Container(width: 1, height: 24, color: const Color(0xFFE2E8F0)),
-                Expanded(
-                  child: _buildAlertBarItem(
-                    label: 'Da verificare',
-                    count: maiValutatiCount,
-                    color: const Color(0xFF718096),
-                    backgroundColor: const Color(0xFFF1F5F9),
-                    icon: Icons.help_outline_rounded,
-                    onTap: () =>
-                        widget.onNavigate(2, semanticFilter: 'mai_valutati'),
-                  ),
-                ),
-              ],
-            ),
-    );
-  }
-
-  Widget _buildAlertBarItem({
-    required String label,
-    required int count,
-    required Color color,
-    required Color backgroundColor,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: backgroundColor,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color, size: 16),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    count.toString(),
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: color,
-                    ),
-                  ),
+                Expanded(child: details),
+                if (action != null) ...[
+                  const SizedBox(width: 12),
+                  action,
                 ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ─── DOCUMENT COVERAGE CARD (DONUT CHART) ──────────────────────────────────
-  Widget _buildDocumentCoverageCard(int covered, int expired, double percent,
-      {double? height}) {
-    return _HoverBentoCard(
-      height: height ?? 380,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Copertura Documentale',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.textPrimary),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Rapporto scale valide / mancanti',
-              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-            ),
-            Expanded(
-              child: Center(
-                child: SizedBox(
-                  width: 160,
-                  height: 160,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      PieChart(
-                        PieChartData(
-                          sectionsSpace: 3,
-                          centerSpaceRadius: 50,
-                          startDegreeOffset: -90,
-                          sections: [
-                            PieChartSectionData(
-                              value: covered
-                                  .toDouble()
-                                  .clamp(0.01, double.infinity),
-                              color: const Color(0xFF10B981),
-                              radius: 24,
-                              showTitle: false,
-                            ),
-                            PieChartSectionData(
-                              value: expired
-                                  .toDouble()
-                                  .clamp(0.01, double.infinity),
-                              color: const Color(0xFFEF4444),
-                              radius: 20,
-                              showTitle: false,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '${percent.toStringAsFixed(0)}%',
-                            style: const TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xFF10B981),
-                              letterSpacing: -0.5,
-                              height: 1.0,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          const Text(
-                            'COPERTURA',
-                            style: TextStyle(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w800,
-                              color: AppTheme.textSecondary,
-                              letterSpacing: 1.0,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildDonutLegendItem(
-                    'Valide', covered, const Color(0xFF10B981)),
-                Container(width: 1, height: 24, color: const Color(0xFFE2E8F0)),
-                _buildDonutLegendItem(
-                    'Mancanti', expired, const Color(0xFFEF4444)),
               ],
             ),
-          ],
-        ),
-      ),
     );
   }
+}
 
-  Widget _buildDonutLegendItem(String label, int count, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(3),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                  fontSize: 10,
-                  color: AppTheme.textSecondary,
-                  fontWeight: FontWeight.w600),
-            ),
-            Text(
-              count.toString(),
-              style: TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w800, color: color),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+class _TrendChartCard extends StatelessWidget {
+  final List<dynamic> trend;
+  final List<dynamic> forecast;
 
-  // ─── ALERT CENTER (AZIONI URGENTI) ─────────────────────────────────────────
-  Widget _buildAlertListCard(List<dynamic> alerts, {double? height}) {
-    // Ordina per gravità decrescente
-    final sortedAlerts = List<dynamic>.from(alerts);
-    sortedAlerts.sort((a, b) {
-      final isNeverA = a['stato'] == 'mai_valutato';
-      final isNeverB = b['stato'] == 'mai_valutato';
-      final daysA = (a['giorni_da_ultima_valutazione'] ?? 0) as int;
-      final daysB = (b['giorni_da_ultima_valutazione'] ?? 0) as int;
+  const _TrendChartCard({required this.trend, required this.forecast});
 
-      int scoreA = isNeverA ? 0 : (daysA > 395 ? 2 : 1);
-      int scoreB = isNeverB ? 0 : (daysB > 395 ? 2 : 1);
-
-      if (scoreA != scoreB) {
-        return scoreB
-            .compareTo(scoreA); // Priorità maggiore in cima (Scaduto in cima)
-      }
-      return daysB.compareTo(daysA); // Più giorni prima
-    });
-
-    Widget listContent;
-    if (sortedAlerts.isEmpty) {
-      listContent = const Center(
-        child: Text(
-          'Tutti gli utenti sono coperti e monitorati.',
-          style: TextStyle(
-              color: Color(0xFF10B981),
-              fontWeight: FontWeight.bold,
-              fontSize: 13),
-        ),
-      );
-      if (height == null) {
-        listContent = Padding(
-          padding: const EdgeInsets.symmetric(vertical: 40),
-          child: listContent,
-        );
-      }
-    } else {
-      listContent = ListView.builder(
-        shrinkWrap: height == null,
-        physics: height == null ? const NeverScrollableScrollPhysics() : null,
-        itemCount: sortedAlerts.length,
-        itemBuilder: (context, index) {
-          final item = sortedAlerts[index];
-          final name =
-              '${item['paziente_nome'] ?? ''} ${item['paziente_cognome'] ?? ''}'
-                  .trim();
-          final stato = item['stato'] ?? 'scaduto';
-          final days = (item['giorni_da_ultima_valutazione'] ?? 0) as int;
-          final scalaNome = item['scala_nome'] ?? '';
-
-          Color badgeColor;
-          Color badgeBg;
-          String badgeText;
-
-          if (stato == 'mai_valutato') {
-            badgeColor = const Color(0xFFDC2626);
-            badgeBg = const Color(0xFFFEE2E2);
-            badgeText = 'MAI COMPILATA';
-          } else if (stato == 'in_scadenza') {
-            badgeColor = const Color(0xFFEAB308);
-            badgeBg = const Color(0xFFFEF9C3);
-            badgeText = 'IN SCADENZA';
-          } else {
-            badgeColor = const Color(0xFFDC2626);
-            badgeBg = const Color(0xFFFEE2E2);
-            badgeText = 'SCADUTA';
-          }
-
-          final daysText = stato == 'mai_valutato'
-              ? 'Nessuna scala $scalaNome compilata a sistema'
-              : 'Ultima compilazione $scalaNome $days giorni fa';
-
-          return TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0, end: 1),
-            duration: Duration(milliseconds: (300 + (index * 100)).toInt()),
-            builder: (context, animValue, child) {
-              return Opacity(
-                opacity: animValue,
-                child: Transform.translate(
-                  offset: Offset(0, 20 * (1 - animValue)),
-                  child: child,
-                ),
-              );
-            },
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFF1F5F9)),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border(
-                      left: BorderSide(color: badgeColor, width: 3),
-                    ),
-                  ),
-                  child: ListTile(
-                    dense: true,
-                    onTap: () {
-                      widget.onNavigate(2,
-                          searchFilter: item['paziente_cognome']);
-                    },
-                    leading: CircleAvatar(
-                      backgroundColor: badgeColor.withValues(alpha: 0.10),
-                      radius: 18,
-                      child: Text(
-                        _getInitials(name),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: badgeColor,
-                        ),
-                      ),
-                    ),
-                    title: Text(
-                      name,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          color: AppTheme.textPrimary),
-                    ),
-                    subtitle: Text(
-                      daysText,
-                      style: const TextStyle(
-                          fontSize: 11, color: AppTheme.textSecondary),
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: badgeBg,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            badgeText,
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color: badgeColor,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        TextButton.icon(
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppTheme.primaryColor,
-                            backgroundColor: const Color(0xFFEFF6FF),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 6),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
-                            textStyle: const TextStyle(
-                                fontSize: 11, fontWeight: FontWeight.w700),
-                          ),
-                          icon:
-                              const Icon(Icons.arrow_forward_rounded, size: 13),
-                          label: const Text('Vai'),
-                          onPressed: () {
-                            widget.onNavigate(2,
-                                searchFilter: item['paziente_cognome']);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      );
-    }
-
-    return _HoverBentoCard(
-      height: height,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Alert Center: Azioni Richieste Urgenti',
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.textPrimary),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEE2E2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${sortedAlerts.length} Criticità',
-                    style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFFDC2626)),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Utenti che necessitano di una nuova valutazione o rinnovo',
-              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-            ),
-            const SizedBox(height: 18),
-            height != null ? Expanded(child: listContent) : listContent,
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ─── HELPER: Iniziali utente ──────────────────────────────────────────────
-  String _getInitials(String fullName) {
-    final parts = fullName.trim().split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    } else if (parts.isNotEmpty && parts[0].isNotEmpty) {
-      return parts[0][0].toUpperCase();
-    }
-    return '?';
-  }
-
-  // ─── DEMOGRAPHICS CARD ──────────────────────────────────────────────────
-  Widget _buildDemographicsCard(Map<String, dynamic> demographics,
-      {double? height}) {
-    if (demographics.isEmpty) return const SizedBox();
-
-    final sesso = demographics['sesso'] as Map<String, dynamic>? ?? {};
-    final fasceEta = demographics['fasce_eta'] as Map<String, dynamic>? ?? {};
-
-    final men = (sesso['M'] ?? 0) as int;
-    final women = (sesso['F'] ?? 0) as int;
-    final total = men + women;
-
-    final menPercent = total > 0 ? (men / total * 100) : 0.0;
-    final womenPercent = total > 0 ? (women / total * 100) : 0.0;
-
-    // Calcola il massimo per le barre proporzionali delle fasce d'età
-    final ageValues = [
-      (fasceEta['0-18'] ?? 0) as int,
-      (fasceEta['19-35'] ?? 0) as int,
-      (fasceEta['36-50'] ?? 0) as int,
-      (fasceEta['51+'] ?? 0) as int,
+  @override
+  Widget build(BuildContext context) {
+    final historical = trend.map(_TrendPoint.fromHistory).toList();
+    final forecastPoints = forecast.map(_TrendPoint.fromForecast).toList();
+    final hasHistory = historical.isNotEmpty;
+    final hasForecast = forecastPoints.any((point) => point.value > 0);
+    final allValues = [
+      ...historical.map((point) => point.value),
+      ...forecastPoints.map((point) => point.value),
     ];
-    final maxAge = ageValues.reduce((a, b) => a > b ? a : b).clamp(1, 9999);
+    final maxValue = allValues.isEmpty
+        ? 1.0
+        : math.max(1.0, allValues.reduce(math.max).toDouble());
+    final chartMaxY = math.max(4.0, (maxValue * 1.25).ceilToDouble());
+    final chartHeight = MediaQuery.sizeOf(context).width < 600 ? 236.0 : 278.0;
 
-    return _HoverBentoCard(
-      height: height,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Dati Socio-Demografici',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.textPrimary),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Distribuzione per genere e fasce d\'età ($total utenti)',
-              style:
-                  const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-            ),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // ── Genere: Donut Chart Premium ──
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 120,
-                        height: 120,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            PieChart(
-                              PieChartData(
-                                sectionsSpace: 2,
-                                centerSpaceRadius: 38,
-                                startDegreeOffset: -90,
-                                sections: [
-                                  PieChartSectionData(
-                                    value: men
-                                        .toDouble()
-                                        .clamp(0.01, double.infinity),
-                                    color: const Color(
-                                        0xFF2563EB), // Blu Reale Acceso
-                                    radius: 18,
-                                    showTitle: men > 0,
-                                    title: '${menPercent.toStringAsFixed(0)}%',
-                                    titleStyle: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  PieChartSectionData(
-                                    value: women
-                                        .toDouble()
-                                        .clamp(0.01, double.infinity),
-                                    color: const Color(
-                                        0xFFF43F5E), // Rosa/Rose Acceso
-                                    radius: 18,
-                                    showTitle: women > 0,
-                                    title:
-                                        '${womenPercent.toStringAsFixed(0)}%',
-                                    titleStyle: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '$total',
-                                  style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w900,
-                                    color: AppTheme.textPrimary,
-                                    height: 1.0,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                const Text(
-                                  'UTENTI',
-                                  style: TextStyle(
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppTheme.textSecondary,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF2563EB),
-                                  borderRadius: BorderRadius.circular(3),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Uomini: $men (${menPercent.toStringAsFixed(0)}%)',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppTheme.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF43F5E),
-                                  borderRadius: BorderRadius.circular(3),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Donne: $women (${womenPercent.toStringAsFixed(0)}%)',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppTheme.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  // ── Fasce d'Età: Barre proporzionali ──
-                  _buildAgeBar('0-18', ageValues[0], maxAge, total),
-                  const SizedBox(height: 8),
-                  _buildAgeBar('19-35', ageValues[1], maxAge, total),
-                  const SizedBox(height: 8),
-                  _buildAgeBar('36-50', ageValues[2], maxAge, total),
-                  const SizedBox(height: 8),
-                  _buildAgeBar('51+', ageValues[3], maxAge, total),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAgeBar(String label, int count, int maxCount, int total) {
-    final barFraction =
-        maxCount > 0 ? (count / maxCount).clamp(0.05, 1.0) : 0.05;
-    final percent = total > 0 ? (count / total * 100).toStringAsFixed(0) : '0';
-    return Row(
-      children: [
-        SizedBox(
-          width: 42,
-          child: Text(label,
-              style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textSecondary)),
-        ),
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: barFraction,
-              backgroundColor: const Color(0xFFF1F5F9),
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
-              minHeight: 8,
-            ),
+    final series = <LineChartBarData>[];
+    if (hasHistory) {
+      series.add(
+        LineChartBarData(
+          spots: historical
+              .asMap()
+              .entries
+              .map((entry) => FlSpot(entry.key.toDouble(), entry.value.value))
+              .toList(),
+          isCurved: true,
+          curveSmoothness: 0.28,
+          color: DashboardTokens.primary,
+          barWidth: 3,
+          isStrokeCapRound: true,
+          dotData: const FlDotData(show: true),
+          belowBarData: BarAreaData(
+            show: true,
+            color: DashboardTokens.primary.withValues(alpha: 0.1),
           ),
         ),
-        const SizedBox(width: 12),
-        Text(
-          '$count ($percent%)',
-          style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: AppTheme.textPrimary),
+      );
+    }
+    if (hasForecast) {
+      final forecastStartX = historical.length.toDouble();
+      series.add(
+        LineChartBarData(
+          spots: forecastPoints
+              .asMap()
+              .entries
+              .map(
+                (entry) => FlSpot(
+                  forecastStartX + entry.key,
+                  entry.value.value,
+                ),
+              )
+              .toList(),
+          isCurved: true,
+          color: DashboardTokens.warning,
+          barWidth: 2.5,
+          dashArray: const [7, 5],
+          dotData: const FlDotData(show: true),
+          belowBarData: BarAreaData(show: false),
         ),
-      ],
-    );
-  }
+      );
+    }
 
-  // ─── DISTRIBUTION CARD ─────────────────────────────────────────────────────
-  Widget _buildDistributionCard(List<dynamic> distributions, int totalPatients,
-      {double? height}) {
-    return _HoverBentoCard(
-      height: height,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Distribuzione Documentazione',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.textPrimary),
+    final labels = [
+      ...historical.map((point) => point.label),
+      if (hasForecast) ...forecastPoints.map((point) => point.label),
+    ];
+
+    return DashboardSurfaceCard(
+      semanticLabel: 'Andamento somministrazioni e previsione',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DashboardSectionHeader(
+            title: 'Andamento somministrazioni',
+            subtitle: 'Volumi mensili reali e criticità previste a 8 settimane',
+            trailing: Wrap(
+              spacing: 10,
+              runSpacing: 6,
+              children: [
+                const _ChartLegend(
+                  label: 'Storico',
+                  color: DashboardTokens.primary,
+                ),
+                if (hasForecast)
+                  const _ChartLegend(
+                    label: 'Forecast criticità',
+                    color: DashboardTokens.warning,
+                    dashed: true,
+                  ),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Completamento rispetto al totale di $totalPatients utenti',
-              style:
-                  const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-            ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: distributions.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'Nessuna scala ancora compilata.',
-                        style: TextStyle(
-                            color: AppTheme.textSecondary, fontSize: 13),
+          ),
+          const SizedBox(height: 18),
+          if (!hasHistory && !hasForecast)
+            SizedBox(
+              height: chartHeight,
+              child: const DashboardEmptyState(
+                icon: Icons.show_chart_rounded,
+                title: 'Nessuna serie disponibile',
+                message:
+                    'Le somministrazioni compariranno qui quando saranno registrate.',
+              ),
+            )
+          else
+            SizedBox(
+              height: chartHeight,
+              child: Semantics(
+                label:
+                    'Grafico con ${historical.length} periodi storici e ${hasForecast ? forecastPoints.length : 0} periodi previsionali',
+                child: LineChart(
+                  LineChartData(
+                    minX: 0,
+                    maxX: math.max(1, labels.length - 1).toDouble(),
+                    minY: 0,
+                    maxY: chartMaxY,
+                    lineBarsData: series,
+                    borderData: FlBorderData(
+                      show: true,
+                      border: const Border(
+                        bottom: BorderSide(color: DashboardTokens.border),
+                        left: BorderSide(color: DashboardTokens.border),
                       ),
-                    )
-                  : Stack(
-                      children: [
-                        ListView.builder(
-                          itemCount: distributions.length,
-                          padding: const EdgeInsets.only(bottom: 20),
-                          itemBuilder: (context, index) {
-                            final item = distributions[index];
-                            final name = item['scala_nome'] ?? '';
-                            final count = (item['count'] ?? 0) as int;
-
-                            // Calcola la percentuale client-side
-                            final double percent = totalPatients > 0
-                                ? double.parse((count / totalPatients * 100)
-                                    .toStringAsFixed(1))
-                                : 0.0;
-
-                            // Colore progress bar semantico (Rosso <30%, Arancio 30-70%, Verde >70%)
-                            Color color;
-                            if (percent < 30.0) {
-                              color = const Color(0xFFEF4444);
-                            } else if (percent <= 70.0) {
-                              color = const Color(0xFFF59E0B);
-                            } else {
-                              color = const Color(0xFF10B981);
+                    ),
+                    gridData: FlGridData(
+                      drawVerticalLine: false,
+                      horizontalInterval: math.max(1, chartMaxY / 4),
+                      getDrawingHorizontalLine: (_) => const FlLine(
+                        color: DashboardTokens.border,
+                        strokeWidth: 1,
+                      ),
+                    ),
+                    titlesData: FlTitlesData(
+                      topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 32,
+                          interval: math.max(1, chartMaxY / 4),
+                          getTitlesWidget: (value, meta) => Text(
+                            value.toInt().toString(),
+                            style: const TextStyle(
+                              color: DashboardTokens.textMuted,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 32,
+                          interval: 1,
+                          getTitlesWidget: (value, meta) {
+                            final index = value.round();
+                            if (index < 0 || index >= labels.length) {
+                              return const SizedBox.shrink();
                             }
-
+                            final showEvery = labels.length > 10 ? 2 : 1;
+                            if (index % showEvery != 0 &&
+                                index != labels.length - 1) {
+                              return const SizedBox.shrink();
+                            }
                             return Padding(
-                              padding: const EdgeInsets.only(bottom: 18),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          name,
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 13,
-                                              color: AppTheme.textPrimary),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      Text(
-                                        '$count / $totalPatients ($percent%)',
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                            color: AppTheme.textSecondary),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: LinearProgressIndicator(
-                                      value: totalPatients > 0
-                                          ? (percent / 100).clamp(0.0, 1.0)
-                                          : 0,
-                                      backgroundColor: const Color(0xFFF1F5F9),
-                                      valueColor:
-                                          AlwaysStoppedAnimation<Color>(color),
-                                      minHeight: 8,
-                                    ),
-                                  ),
-                                ],
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                labels[index],
+                                style: const TextStyle(
+                                  color: DashboardTokens.textMuted,
+                                  fontSize: 9.5,
+                                ),
                               ),
                             );
                           },
                         ),
-                        // Fade gradient in basso per indicare scrollabilità
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          height: 28,
-                          child: IgnorePointer(
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Color(0x00FFFFFF),
-                                    Color(0xFFFFFFFF)
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
+                    lineTouchData: LineTouchData(
+                      handleBuiltInTouches: true,
+                      touchTooltipData: LineTouchTooltipData(
+                        getTooltipColor: (_) => DashboardTokens.text,
+                        tooltipRoundedRadius: 10,
+                        getTooltipItems: (spots) => spots.map((spot) {
+                          final index = spot.x.round();
+                          final label = index >= 0 && index < labels.length
+                              ? labels[index]
+                              : 'Periodo';
+                          final forecastSpot = spot.barIndex > 0;
+                          return LineTooltipItem(
+                            '$label\n${spot.y.toInt()} ${forecastSpot ? 'criticità' : 'somministrazioni'}',
+                            const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                  duration: DashboardTokens.motion,
+                  curve: Curves.easeOutCubic,
+                ),
+              ),
+            ),
+          if (forecast.isNotEmpty && !hasForecast) ...[
+            const SizedBox(height: 12),
+            const Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: 16,
+                  color: DashboardTokens.textMuted,
+                ),
+                SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    'Il backend non segnala criticità previste. La componente “routine” non è pianificata e resta esclusa dal grafico.',
+                    style: TextStyle(
+                      color: DashboardTokens.textMuted,
+                      fontSize: 11,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
-        ),
+        ],
       ),
     );
   }
 }
 
-// ─── CARD COMPONENT WITH HOVER EFFECT ────────────────────────────────────────
-class _HoverWrapper extends StatefulWidget {
-  final Widget child;
-  final double? height;
-  final Color hoverBorderColor;
-  final Color defaultBorderColor;
-
-  const _HoverWrapper({
-    required this.child,
-    this.height,
-    this.hoverBorderColor = const Color(0xFF1E3A8A),
-    this.defaultBorderColor = const Color(0xFFE8EEF8),
-  });
-
-  @override
-  State<_HoverWrapper> createState() => _HoverWrapperState();
-}
-
-class _HoverWrapperState extends State<_HoverWrapper> {
-  bool _isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-        height: widget.height,
-        transform: Matrix4.translationValues(0.0, _isHovered ? -4.0 : 0.0, 0.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: _isHovered
-                ? widget.hoverBorderColor
-                : widget.defaultBorderColor,
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: _isHovered ? 0.06 : 0.02),
-              blurRadius: _isHovered ? 16 : 8,
-              offset: Offset(0, _isHovered ? 8 : 4),
-            ),
-          ],
-        ),
-        child: widget.child,
-      ),
-    );
-  }
-}
-
-class _HoverBentoCard extends StatelessWidget {
-  final Widget child;
-  final double? height;
-
-  const _HoverBentoCard({required this.child, this.height});
-
-  @override
-  Widget build(BuildContext context) {
-    return _HoverWrapper(
-      height: height,
-      hoverBorderColor: AppTheme.primaryColor.withValues(alpha: 0.3),
-      child: child,
-    );
-  }
-}
-
-// ─── KPI BENTO CARD WITH TWEEN ANIMATION ─────────────────────────────────────
-class _BreakdownPill {
+class _TrendPoint {
   final String label;
-  final int count;
-  final Color color;
-  const _BreakdownPill(
-      {required this.label, required this.count, required this.color});
+  final double value;
+
+  const _TrendPoint(this.label, this.value);
+
+  factory _TrendPoint.fromHistory(dynamic raw) {
+    final item = _mapValue(raw);
+    return _TrendPoint(
+      (item['mese'] ?? '—').toString(),
+      _asDouble(item['count']),
+    );
+  }
+
+  factory _TrendPoint.fromForecast(dynamic raw) {
+    final item = _mapValue(raw);
+    return _TrendPoint(
+      (item['settimana'] ?? '—').toString(),
+      _asDouble(item['criticita']),
+    );
+  }
 }
 
-class _BentoKpiCard extends StatefulWidget {
-  final String title;
-  final double value;
-  final String subtitle;
-  final IconData icon;
-  final Color themeColor;
-  final String suffix;
-  final VoidCallback onTap;
-  final List<_BreakdownPill>? breakdownPills;
+class _ChartLegend extends StatelessWidget {
+  final String label;
+  final Color color;
+  final bool dashed;
 
-  const _BentoKpiCard({
-    required this.title,
-    required this.value,
-    required this.subtitle,
-    required this.icon,
-    required this.themeColor,
-    this.suffix = '',
-    required this.onTap,
-    this.breakdownPills,
+  const _ChartLegend({
+    required this.label,
+    required this.color,
+    this.dashed = false,
   });
 
   @override
-  State<_BentoKpiCard> createState() => _BentoKpiCardState();
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 20,
+          child: Row(
+            children: dashed
+                ? [
+                    Container(width: 7, height: 3, color: color),
+                    const SizedBox(width: 3),
+                    Container(width: 7, height: 3, color: color),
+                  ]
+                : [Container(width: 20, height: 3, color: color)],
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            color: DashboardTokens.textMuted,
+            fontSize: 10.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-class _BentoKpiCardState extends State<_BentoKpiCard> {
+class _AlertCenterCard extends StatelessWidget {
+  final List<dynamic> alerts;
+  final Map<String, dynamic> alertStats;
+  final DashboardNavigationCallback onNavigate;
+
+  const _AlertCenterCard({
+    required this.alerts,
+    required this.alertStats,
+    required this.onNavigate,
+  });
+
+  int _priority(dynamic raw) {
+    final status = _mapValue(raw)['stato']?.toString();
+    if (status == 'scaduto') return 0;
+    if (status == 'mai_valutato') return 1;
+    return 2;
+  }
+
   @override
   Widget build(BuildContext context) {
-    Widget cardContent = _HoverWrapper(
-      hoverBorderColor: widget.themeColor.withValues(alpha: 0.35),
-      defaultBorderColor: const Color(0xFFE2E8F0),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: widget.onTap,
-          borderRadius: BorderRadius.circular(20),
-          splashColor: widget.themeColor.withValues(alpha: 0.05),
-          hoverColor: Colors.transparent,
+    final sorted = [...alerts]..sort((a, b) {
+        final priority = _priority(a).compareTo(_priority(b));
+        if (priority != 0) return priority;
+        return _asInt(_mapValue(b)['giorni_da_ultima_valutazione'])
+            .compareTo(_asInt(_mapValue(a)['giorni_da_ultima_valutazione']));
+      });
+    final visible = sorted.take(5).toList();
+    final totalActions = _asInt(alertStats['totale_scaduti']) +
+        _asInt(alertStats['totale_in_scadenza']) +
+        _asInt(alertStats['totale_mai_valutati']) +
+        _asInt(alertStats['totale_incompleti']);
+
+    return DashboardSurfaceCard(
+      semanticLabel: 'Centro alert: $totalActions azioni rilevate',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DashboardSectionHeader(
+            title: 'Centro alert',
+            subtitle: '$totalActions azioni ordinate per priorità clinica',
+            trailing: DashboardStatusPill(
+              label: '$totalActions',
+              color: totalActions > 0
+                  ? DashboardTokens.danger
+                  : DashboardTokens.success,
+              icon: totalActions > 0
+                  ? Icons.notifications_active_outlined
+                  : Icons.check_rounded,
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (visible.isEmpty)
+            const DashboardEmptyState(
+              icon: Icons.task_alt_rounded,
+              title: 'Nessun alert prioritario',
+              message: 'Le utenze risultano coperte e monitorate.',
+            )
+          else
+            for (var index = 0; index < visible.length; index++) ...[
+              _AlertRow(
+                alert: _mapValue(visible[index]),
+                onTap: () {
+                  final item = _mapValue(visible[index]);
+                  final surname = item['paziente_cognome']?.toString().trim();
+                  onNavigate(
+                    2,
+                    searchFilter:
+                        surname == null || surname.isEmpty ? null : surname,
+                    semanticFilter: item['stato']?.toString(),
+                  );
+                },
+              ),
+              if (index != visible.length - 1)
+                const Divider(height: 1, color: DashboardTokens.border),
+            ],
+          if (totalActions > 0) ...[
+            const SizedBox(height: 14),
+            SizedBox(
+              height: 44,
+              child: OutlinedButton.icon(
+                onPressed: () => onNavigate(2, semanticFilter: 'scaduti'),
+                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                label: const Text('Gestisci priorità'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: DashboardTokens.primary,
+                  side: const BorderSide(color: DashboardTokens.border),
+                  minimumSize: const Size(44, 44),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _AlertRow extends StatelessWidget {
+  final Map<String, dynamic> alert;
+  final VoidCallback onTap;
+
+  const _AlertRow({required this.alert, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final status = alert['stato']?.toString() ?? '';
+    final overdue = status == 'scaduto';
+    final never = status == 'mai_valutato';
+    final color = overdue
+        ? DashboardTokens.danger
+        : never
+            ? DashboardTokens.warning
+            : DashboardTokens.warning;
+    final statusLabel = overdue
+        ? 'Scaduta'
+        : never
+            ? 'Mai valutata'
+            : 'In scadenza';
+    final firstName = alert['paziente_nome']?.toString().trim() ?? '';
+    final lastName = alert['paziente_cognome']?.toString().trim() ?? '';
+    final patient = '$firstName $lastName'.trim();
+    final scale = alert['scala_nome']?.toString() ?? 'Scala';
+    final days = _asInt(alert['giorni_da_ultima_valutazione']);
+    final detail = never || days >= 9999
+        ? '$scale · nessuna somministrazione'
+        : '$scale · $days giorni dall’ultima';
+
+    return Semantics(
+      button: true,
+      label: '${patient.isEmpty ? 'Utenza' : patient}, $statusLabel, $detail',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 68),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+            padding: const EdgeInsets.symmetric(vertical: 10),
             child: Row(
               children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Icon(
+                    overdue
+                        ? Icons.priority_high_rounded
+                        : Icons.schedule_rounded,
+                    color: color,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 11),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        widget.title,
+                        patient.isEmpty ? 'Utenza senza nominativo' : patient,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          color: AppTheme.textSecondary,
-                          letterSpacing: 0.8,
+                          color: DashboardTokens.text,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12.5,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          TweenAnimationBuilder<double>(
-                            tween: Tween<double>(begin: 0, end: widget.value),
-                            duration: const Duration(milliseconds: 800),
-                            curve: Curves.easeOutCubic,
-                            builder: (context, val, child) {
-                              return Text(
-                                '${val.toInt()}${widget.suffix}',
-                                style: const TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppTheme.textPrimary,
-                                  height: 1.0,
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 3),
                       Text(
-                        widget.subtitle,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppTheme.textSecondary.withValues(alpha: 0.8),
+                        detail,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: DashboardTokens.textMuted,
+                          fontSize: 10.5,
                         ),
                       ),
-                      if (widget.breakdownPills != null &&
-                          widget.breakdownPills!.isNotEmpty) ...[
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 6,
-                          children: widget.breakdownPills!
-                              .map((pill) => Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: pill.color.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                          color: pill.color
-                                              .withValues(alpha: 0.3)),
-                                    ),
-                                    child: Text(
-                                      '${pill.label}: ${pill.count}',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700,
-                                        color: pill.color,
-                                      ),
-                                    ),
-                                  ))
-                              .toList(),
-                        ),
-                      ],
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: widget.themeColor.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    widget.icon,
-                    color: widget.themeColor,
-                    size: 28,
+                const SizedBox(width: 8),
+                Tooltip(
+                  message: statusLabel,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.09),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      statusLabel,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -1747,7 +1019,432 @@ class _BentoKpiCardState extends State<_BentoKpiCard> {
         ),
       ),
     );
-
-    return cardContent;
   }
 }
+
+class _DistributionCard extends StatelessWidget {
+  final List<dynamic> distributions;
+  final int totalPatients;
+
+  const _DistributionCard({
+    required this.distributions,
+    required this.totalPatients,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sorted = distributions.map(_mapValue).toList()
+      ..sort((a, b) =>
+          _asDouble(b['percentuale']).compareTo(_asDouble(a['percentuale'])));
+
+    return DashboardSurfaceCard(
+      semanticLabel: 'Distribuzione delle scale',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DashboardSectionHeader(
+            title: 'Distribuzione scale',
+            subtitle: 'Utenze coperte per strumento su $totalPatients censite',
+          ),
+          const SizedBox(height: 20),
+          if (sorted.isEmpty)
+            const DashboardEmptyState(
+              icon: Icons.stacked_bar_chart_rounded,
+              title: 'Nessuna scala compilata',
+              message: 'La copertura per strumento comparirà qui.',
+            )
+          else
+            for (var index = 0; index < sorted.length; index++) ...[
+              _DistributionBar(item: sorted[index]),
+              if (index != sorted.length - 1) const SizedBox(height: 17),
+            ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DistributionBar extends StatelessWidget {
+  final Map<String, dynamic> item;
+
+  const _DistributionBar({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = item['scala_nome']?.toString() ?? 'Scala senza nome';
+    final count = _asInt(item['count']);
+    final percent = _asDouble(item['percentuale']).clamp(0, 100).toDouble();
+
+    return Semantics(
+      label: '$name, $count utenze, ${_formatNumber(percent)} per cento',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Tooltip(
+                  message: name,
+                  child: Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: DashboardTokens.text,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '$count · ${_formatNumber(percent)}%',
+                style: const TextStyle(
+                  color: DashboardTokens.textMuted,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: percent / 100,
+              minHeight: 9,
+              backgroundColor: const Color(0xFFEDF1F6),
+              valueColor: const AlwaysStoppedAnimation(DashboardTokens.primary),
+              semanticsLabel: 'Copertura $name',
+              semanticsValue: '${_formatNumber(percent)}%',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DemographicsCard extends StatelessWidget {
+  final Map<String, dynamic> demographics;
+
+  const _DemographicsCard({required this.demographics});
+
+  @override
+  Widget build(BuildContext context) {
+    final gender = _mapValue(demographics['sesso']);
+    final ages = _mapValue(demographics['fasce_eta']);
+    final ageEntries = <MapEntry<String, int>>[
+      MapEntry('0–18', _asInt(ages['0-18'])),
+      MapEntry('19–35', _asInt(ages['19-35'])),
+      MapEntry('36–50', _asInt(ages['36-50'])),
+      MapEntry('51+', _asInt(ages['51+'])),
+      MapEntry('Non specificata', _asInt(ages['Non specificata'])),
+    ];
+    final total =
+        gender.values.fold<int>(0, (sum, value) => sum + _asInt(value));
+    final maxAge = ageEntries.fold<int>(
+      0,
+      (current, entry) => math.max(current, entry.value),
+    );
+
+    return DashboardSurfaceCard(
+      semanticLabel: 'Profilo demografico',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const DashboardSectionHeader(
+            title: 'Profilo demografico',
+            subtitle: 'Distribuzione reale delle utenze attive',
+          ),
+          const SizedBox(height: 20),
+          if (demographics.isEmpty || total == 0)
+            const DashboardEmptyState(
+              icon: Icons.groups_outlined,
+              title: 'Dati demografici assenti',
+              message:
+                  'Completa le anagrafiche per visualizzare la distribuzione.',
+            )
+          else ...[
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _DemographicChip(
+                  label: 'Donne',
+                  value: _asInt(gender['F']),
+                  color: DashboardTokens.purple,
+                ),
+                _DemographicChip(
+                  label: 'Uomini',
+                  value: _asInt(gender['M']),
+                  color: DashboardTokens.primary,
+                ),
+                _DemographicChip(
+                  label: 'Altro / N.S.',
+                  value: _asInt(gender['Altro/Non specificato']),
+                  color: DashboardTokens.textMuted,
+                ),
+              ],
+            ),
+            const SizedBox(height: 22),
+            for (var index = 0; index < ageEntries.length; index++) ...[
+              _AgeBar(entry: ageEntries[index], maxValue: maxAge),
+              if (index != ageEntries.length - 1) const SizedBox(height: 11),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DemographicChip extends StatelessWidget {
+  final String label;
+  final int value;
+  final Color color;
+
+  const _DemographicChip({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 44),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 9,
+            height: 9,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$label  $value',
+            style: const TextStyle(
+              color: DashboardTokens.text,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AgeBar extends StatelessWidget {
+  final MapEntry<String, int> entry;
+  final int maxValue;
+
+  const _AgeBar({required this.entry, required this.maxValue});
+
+  @override
+  Widget build(BuildContext context) {
+    final fraction = maxValue == 0 ? 0.0 : entry.value / maxValue;
+    return Semantics(
+      label: 'Fascia ${entry.key}: ${entry.value} utenze',
+      child: Row(
+        children: [
+          SizedBox(
+            width: 88,
+            child: Text(
+              entry.key,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: DashboardTokens.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                minHeight: 8,
+                value: fraction,
+                backgroundColor: const Color(0xFFEDF1F6),
+                valueColor:
+                    const AlwaysStoppedAnimation(DashboardTokens.purple),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 28,
+            child: Text(
+              '${entry.value}',
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                color: DashboardTokens.text,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardLoadingState extends StatelessWidget {
+  const _DashboardLoadingState({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      label: 'Caricamento dati dashboard',
+      child: Shimmer.fromColors(
+        baseColor: const Color(0xFFE8ECF2),
+        highlightColor: const Color(0xFFF8FAFC),
+        period: const Duration(milliseconds: 1100),
+        child: Column(
+          children: [
+            const _KpiSkeletonGrid(),
+            const SizedBox(height: DashboardTokens.gap),
+            const _SkeletonBox(height: 68),
+            const SizedBox(height: DashboardTokens.gap),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth >= 1200) {
+                  return const Row(
+                    children: [
+                      Expanded(flex: 2, child: _SkeletonBox(height: 390)),
+                      SizedBox(width: DashboardTokens.gap),
+                      Expanded(child: _SkeletonBox(height: 390)),
+                    ],
+                  );
+                }
+                return const Column(
+                  children: [
+                    _SkeletonBox(height: 360),
+                    SizedBox(height: DashboardTokens.gap),
+                    _SkeletonBox(height: 320),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _KpiSkeletonGrid extends StatelessWidget {
+  const _KpiSkeletonGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 1200 ? 4 : 2;
+        const gap = DashboardTokens.gap;
+        final width = (constraints.maxWidth - gap * (columns - 1)) / columns;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: List.generate(
+            4,
+            (_) => SizedBox(
+              width: width,
+              child: const _SkeletonBox(height: 162),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SkeletonBox extends StatelessWidget {
+  final double height;
+
+  const _SkeletonBox({required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(DashboardTokens.radius),
+      ),
+    );
+  }
+}
+
+Map<String, dynamic> _mapValue(dynamic value) {
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) {
+    return value.map((key, value) => MapEntry(key.toString(), value));
+  }
+  return const {};
+}
+
+List<dynamic> _listValue(dynamic value) => value is List ? value : const [];
+
+int _asInt(dynamic value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+double _asDouble(dynamic value) {
+  if (value is num) return value.toDouble();
+  return double.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+String _formatNumber(double value) {
+  if (value == value.roundToDouble()) return value.toInt().toString();
+  return value.toStringAsFixed(1).replaceAll('.', ',');
+}
+
+String _greetingFor(int hour) {
+  if (hour < 12) return 'Buongiorno';
+  if (hour < 18) return 'Buon pomeriggio';
+  return 'Buonasera';
+}
+
+String _formatLongDate(DateTime date) {
+  const weekdays = [
+    'lunedì',
+    'martedì',
+    'mercoledì',
+    'giovedì',
+    'venerdì',
+    'sabato',
+    'domenica',
+  ];
+  const months = [
+    'gennaio',
+    'febbraio',
+    'marzo',
+    'aprile',
+    'maggio',
+    'giugno',
+    'luglio',
+    'agosto',
+    'settembre',
+    'ottobre',
+    'novembre',
+    'dicembre',
+  ];
+  return '${weekdays[date.weekday - 1]} ${date.day} ${months[date.month - 1]} ${date.year}';
+}
+
+String _twoDigits(int value) => value.toString().padLeft(2, '0');
