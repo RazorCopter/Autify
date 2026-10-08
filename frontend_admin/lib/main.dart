@@ -334,7 +334,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
               Positioned.fill(
                 child: _buildBody(),
               ),
-              Positioned(top: 12, right: 18, child: _notificationBell()),
               // Sfondo Watermark Bradipo HD Premium post-login (in overlay sopra il body per aggirare gli sfondi coprenti delle schede)
               Positioned.fill(
                 child: IgnorePointer(
@@ -348,6 +347,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ),
                 ),
               ),
+              Positioned(top: 12, right: 18, child: _notificationBell()),
             ],
           ),
         ),
