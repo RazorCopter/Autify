@@ -10,7 +10,7 @@ from typing import List, Optional
 from bson import ObjectId
 import httpx
 from ..models import Scale, Evaluation, Patient, PaginatedPatients, AppSettings, Section, Question, Option, DOMINI_POS, AggregatedEvaluation, EvaluationUpdateRequest, AiAnalysis, AiAnalysisCreate, AiAnalysisUpdate, AiAnalysisRequest, AiPdfRequest, UserCreate, UserUpdate, AuditLogCreate, AuditLogResponse
-from ..database import evaluations_collection, settings_collection, patients_collection, scales_collection, users_collection, ai_analyses_collection, audit_logs_collection
+from ..database import evaluations_collection, settings_collection, patients_collection, scales_collection, users_collection, ai_analyses_collection, audit_logs_collection, ai_jobs_collection, notifications_collection
 from ..pdf_generator import generate_evaluation_pdf, generate_ai_analysis_pdf
 from ..analytics import compute_psychometric_analysis, compute_direct_scores, build_domain_map, calcola_punteggi_sis
 from datetime import datetime, timezone, timedelta
@@ -31,6 +31,10 @@ from ..ai import (
     AIDiscoverModelsResponse,
     AIAnalyzeRequest,
     AIAnalyzeResponse,
+    AIAttachment,
+    AIJobDetail,
+    AINotification,
+    AINotificationUnreadCount,
     DEFAULT_SYSTEM_PROMPT,
     decrypt_secret,
     resolve_secret,
@@ -299,22 +303,146 @@ async def discover_openai_compatible_models(
 
     return AIDiscoverModelsResponse(models=models, count=len(models))
 
-@admin_router.post("/ai/analyze", response_model=AIAnalyzeResponse, tags=["Admin - AI Analyses"])
+def _iso(value) -> Optional[str]:
+    if isinstance(value, datetime):
+        return value.astimezone(timezone.utc).isoformat()
+    return value
+
+
+def _public_job(document: dict) -> dict:
+    return {
+        "id": document["id"],
+        "job_id": document["id"],
+        "username": document["username"],
+        "id_paziente": document.get("id_paziente"),
+        "patient_name": document.get("patient_name"),
+        "status": document["status"],
+        "created_at": _iso(document["created_at"]),
+        "started_at": _iso(document.get("started_at")),
+        "completed_at": _iso(document.get("completed_at")),
+        "error_message": document.get("error_message"),
+        "analysis_id": document.get("analysis_id"),
+        "report_preview": document.get("report_preview"),
+    }
+
+
+def _public_notification(document: dict) -> dict:
+    return {
+        "id": document["id"],
+        "username": document["username"],
+        "type": document.get("type", "ai_analysis_completed"),
+        "title": document.get("title", "Elaborazione IA"),
+        "message": document["message"],
+        "job_id": document.get("job_id"),
+        "analysis_id": document.get("analysis_id"),
+        "id_paziente": document.get("id_paziente"),
+        "patient_name": document.get("patient_name"),
+        "read": document.get("read", False),
+        "created_at": _iso(document["created_at"]),
+    }
+
+
+async def _process_ai_job(job_id: str) -> None:
+    """Esegue esattamente una volta il job persistito, reclamandolo atomicamente."""
+    claimed = await ai_jobs_collection.find_one_and_update(
+        {"id": job_id, "status": "pending"},
+        {"$set": {"status": "running", "started_at": datetime.now(timezone.utc)}},
+        return_document=True,
+    )
+    if not claimed:
+        return
+
+    try:
+        stored = await get_or_migrate_ai_settings()
+        adapter = get_ai_adapter(settings=stored)
+        report_text, usage = await adapter.generate(
+            system_prompt=claimed["system_prompt"],
+            user_prompt=claimed["user_prompt"],
+            attachment=AIAttachment.model_validate(claimed["attachment"]) if claimed.get("attachment") else None,
+        )
+        now = datetime.now(timezone.utc)
+        analysis_id = f"an_{uuid.uuid4().hex[:8]}"
+        model = (
+            stored.gemini.model if stored.active_provider == "gemini"
+            else stored.openai.model if stored.active_provider == "openai"
+            else stored.openai_compatible.model
+        )
+        await ai_analyses_collection.insert_one({
+            "id": analysis_id,
+            "id_paziente": claimed.get("id_paziente") or "sconosciuto",
+            "timestamp": now,
+            "report": report_text,
+            "notes": "",
+            "evaluations_used": claimed.get("evaluations_used", []),
+            "provider": stored.active_provider,
+            "model": model,
+            "usage": usage,
+            "owner_username": claimed["username"],
+        })
+        await ai_jobs_collection.update_one(
+            {"id": job_id, "status": "running"},
+            {"$set": {
+                "status": "completed", "completed_at": now,
+                "analysis_id": analysis_id, "error_message": None,
+                "report_preview": report_text[:240],
+            }},
+        )
+        patient_name = claimed.get("patient_name") or "Utente"
+        await notifications_collection.insert_one({
+            "id": f"nt_{uuid.uuid4().hex[:12]}",
+            "username": claimed["username"],
+            "type": "ai_analysis_completed",
+            "title": "Elaborazione IA completata",
+            "message": f'Elaborazione IA "{patient_name}" terminata',
+            "job_id": job_id,
+            "analysis_id": analysis_id,
+            "id_paziente": claimed.get("id_paziente"),
+            "patient_name": patient_name,
+            "read": False,
+            "created_at": now,
+        })
+        await log_audit(
+            "AI_ANALYSIS", claimed["username"],
+            f"{claimed['username']} ha generato analisi IA ({stored.active_provider})",
+            claimed.get("id_paziente") or "globale",
+        )
+    except Exception as exc:
+        _logger.exception("Job IA %s fallito", job_id)
+        now = datetime.now(timezone.utc)
+        safe_error = str(exc)[:500] or "Errore sconosciuto durante l'elaborazione IA"
+        await ai_jobs_collection.update_one(
+            {"id": job_id, "status": "running"},
+            {"$set": {"status": "failed", "completed_at": now, "error_message": safe_error}},
+        )
+        patient_name = claimed.get("patient_name") or "Utente"
+        await notifications_collection.insert_one({
+            "id": f"nt_{uuid.uuid4().hex[:12]}",
+            "username": claimed["username"],
+            "type": "ai_analysis_failed",
+            "title": "Elaborazione IA non riuscita",
+            "message": f'Elaborazione IA "{patient_name}" non riuscita',
+            "job_id": job_id,
+            "id_paziente": claimed.get("id_paziente"),
+            "patient_name": patient_name,
+            "read": False,
+            "created_at": now,
+        })
+
+
+@admin_router.post("/ai/analyze", response_model=AIAnalyzeResponse, status_code=status.HTTP_202_ACCEPTED, tags=["Admin - AI Analyses"])
 @_limiter.limit("20/minute")
 async def analyze_evaluation(
     request: Request,
     body: AIAnalyzeRequest,
     auth: dict = Depends(verify_auth),
 ):
-    """Analizza una valutazione o l'intero profilo di funzionamento usando il provider IA configurato."""
+    """Valida la richiesta, persiste il job e restituisce immediatamente HTTP 202."""
     if not auth.get("ai_enabled", False):
         raise HTTPException(status_code=403, detail="Non sei abilitato all'uso dell'IA")
 
     stored = await get_or_migrate_ai_settings()
-
     if auth.get("role") == "viewer" and not stored.viewer_ai_enabled:
         raise HTTPException(status_code=403, detail="L'uso dell'IA per i profili Viewer è disabilitato a livello globale")
-
     if auth.get("role") == "viewer" and body.system_prompt:
         raise HTTPException(status_code=403, detail="I profili Viewer non sono autorizzati a personalizzare il prompt di sistema")
 
@@ -322,7 +450,6 @@ async def analyze_evaluation(
     evaluations_used = list(body.evaluation_ids or [])
     patient_data = body.patient
     evaluations_data = list(body.evaluations or [])
-
     if body.id_valutazione and not evaluations_data:
         eval_doc = await _find_evaluation_document(body.id_valutazione)
         if not eval_doc:
@@ -330,83 +457,88 @@ async def analyze_evaluation(
         evaluations_data.append(eval_doc)
         if body.id_valutazione not in evaluations_used:
             evaluations_used.append(body.id_valutazione)
-        if not patient_id:
-            patient_id = eval_doc.get("id_paziente")
-
+        patient_id = patient_id or eval_doc.get("id_paziente")
     if patient_id and not patient_data:
-        pat_doc = await patients_collection.find_one({"id": patient_id})
-        if pat_doc:
-            patient_data = pat_doc
-
+        patient_data = await patients_collection.find_one({"id": patient_id})
     if not patient_id and patient_data:
         patient_id = patient_data.get("id")
-
     if not evaluations_data and not (body.notes and body.notes.strip()) and not body.attachment:
         raise HTTPException(status_code=400, detail="Nessun dato fornito per l'analisi (valutazioni, note o allegato)")
 
-    user_prompt = _build_educational_prompt(
-        patient=patient_data,
-        evaluations=evaluations_data,
-        notes=body.notes,
-        history_reports=body.history_reports,
-    )
-
-    system_prompt = (body.system_prompt if auth.get("role") != "viewer" else None) or stored.system_prompt or DEFAULT_SYSTEM_PROMPT
-
-    adapter = get_ai_adapter(settings=stored)
-    report_text, usage = await adapter.generate(
-        system_prompt=system_prompt,
-        user_prompt=user_prompt,
-        attachment=body.attachment,
-    )
-
-    analysis_id = f"an_{uuid.uuid4().hex[:8]}"
+    username = auth.get("username", "operatore")
+    patient_name = " ".join(filter(None, [
+        (patient_data or {}).get("nome"), (patient_data or {}).get("cognome")
+    ])).strip() or "Utente"
     created_at = datetime.now(timezone.utc)
-    new_analysis = {
-        "id": analysis_id,
-        "id_paziente": patient_id or "sconosciuto",
-        "timestamp": created_at,
-        "report": report_text,
-        "notes": "",
+    job_id = f"job_{uuid.uuid4().hex[:12]}"
+    await ai_jobs_collection.insert_one({
+        "id": job_id,
+        "username": username,
+        "id_paziente": patient_id,
+        "patient_name": patient_name,
+        "status": "pending",
+        "created_at": created_at,
+        "started_at": None,
+        "completed_at": None,
+        "error_message": None,
+        "analysis_id": None,
         "evaluations_used": evaluations_used,
-        "provider": stored.active_provider,
-        "model": (
-            stored.gemini.model if stored.active_provider == "gemini"
-            else stored.openai.model if stored.active_provider == "openai"
-            else stored.openai_compatible.model
-        ),
-        "usage": usage,
-    }
-
-    await ai_analyses_collection.insert_one(new_analysis)
-
-    operatore = auth.get("username", "operatore")
-    target_for_audit = patient_id if patient_id else (evaluations_used[0] if evaluations_used else "globale")
-    await log_audit(
-        "AI_ANALYSIS",
-        operatore,
-        f"{operatore} ha generato analisi IA ({stored.active_provider})",
-        target_for_audit,
-    )
-
-    prompt_tok = usage.get("prompt_tokens") if usage else None
-    comp_tok = usage.get("completion_tokens") if usage else None
-    tot_tok = usage.get("total_tokens") if usage else None
-
+        "user_prompt": _build_educational_prompt(patient_data, evaluations_data, body.notes, body.history_reports),
+        "system_prompt": (body.system_prompt if auth.get("role") != "viewer" else None) or stored.system_prompt or DEFAULT_SYSTEM_PROMPT,
+        "attachment": body.attachment.model_dump() if body.attachment else None,
+    })
+    asyncio.create_task(_process_ai_job(job_id))
     return AIAnalyzeResponse(
-        id=analysis_id,
-        id_paziente=patient_id or "sconosciuto",
-        timestamp=created_at.isoformat(),
-        report=report_text,
-        notes="",
-        evaluations_used=evaluations_used,
-        provider=new_analysis["provider"],
-        model=new_analysis["model"],
-        usage=usage,
-        prompt_tokens=prompt_tok,
-        completion_tokens=comp_tok,
-        total_tokens=tot_tok,
-        created_at=created_at.isoformat(),
+        id=job_id, job_id=job_id, status="pending", id_paziente=patient_id,
+        patient_name=patient_name, created_at=created_at.isoformat(),
+        message="Elaborazione IA avviata in background",
     )
+
+
+@admin_router.get("/ai/jobs", response_model=List[AIJobDetail], tags=["Admin - AI Jobs"])
+async def list_ai_jobs(limit: int = Query(30, ge=1, le=100), auth: dict = Depends(verify_auth)):
+    documents = await ai_jobs_collection.find({"username": auth["username"]}).sort("created_at", -1).limit(limit).to_list(length=limit)
+    return [_public_job(document) for document in documents]
+
+
+@admin_router.get("/ai/jobs/{job_id}", response_model=AIJobDetail, tags=["Admin - AI Jobs"])
+async def get_ai_job(job_id: str, auth: dict = Depends(verify_auth)):
+    document = await ai_jobs_collection.find_one({"id": job_id, "username": auth["username"]})
+    if not document:
+        raise HTTPException(status_code=404, detail="Job IA non trovato")
+    return _public_job(document)
+
+
+@admin_router.get("/notifications", response_model=List[AINotification], tags=["Admin - Notifications"])
+async def list_notifications(limit: int = Query(50, ge=1, le=100), auth: dict = Depends(verify_auth)):
+    documents = await notifications_collection.find({"username": auth["username"]}).sort("created_at", -1).limit(limit).to_list(length=limit)
+    return [_public_notification(document) for document in documents]
+
+
+@admin_router.get("/notifications/unread-count", response_model=AINotificationUnreadCount, tags=["Admin - Notifications"])
+async def unread_notification_count(auth: dict = Depends(verify_auth)):
+    count = await notifications_collection.count_documents({"username": auth["username"], "read": False})
+    return AINotificationUnreadCount(unread_count=count)
+
+
+@admin_router.post("/notifications/{notification_id}/read", response_model=AINotification, tags=["Admin - Notifications"])
+async def mark_notification_read(notification_id: str, auth: dict = Depends(verify_auth)):
+    document = await notifications_collection.find_one_and_update(
+        {"id": notification_id, "username": auth["username"]},
+        {"$set": {"read": True, "read_at": datetime.now(timezone.utc)}},
+        return_document=True,
+    )
+    if not document:
+        raise HTTPException(status_code=404, detail="Notifica non trovata")
+    return _public_notification(document)
+
+
+@admin_router.post("/notifications/read-all", tags=["Admin - Notifications"])
+async def mark_all_notifications_read(auth: dict = Depends(verify_auth)):
+    result = await notifications_collection.update_many(
+        {"username": auth["username"], "read": False},
+        {"$set": {"read": True, "read_at": datetime.now(timezone.utc)}},
+    )
+    return {"updated": result.modified_count}
 
 

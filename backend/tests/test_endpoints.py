@@ -150,6 +150,13 @@ class MockCollection:
                 count += 1
         return count
 
+    async def find_one_and_update(self, filter_query, update_query, **kwargs):
+        matched = await self.find_one(filter_query)
+        if not matched:
+            return None
+        await self.update_one(filter_query, update_query)
+        return await self.find_one({"id": matched.get("id")})
+
     async def update_one(self, filter_query, update_query):
         set_fields = update_query.get("$set", {})
         inc_fields = update_query.get("$inc", {})
@@ -324,6 +331,8 @@ def setup_mock_db(mock_patients, mock_scales, mock_evaluations, mock_users):
     mock_scales_coll = MockCollection("scales", mock_scales)
     mock_evals_coll = MockCollection("evaluations", mock_evaluations)
     mock_ai_analyses_coll = MockCollection("ai_analyses", [])
+    mock_ai_jobs_coll = MockCollection("ai_jobs", [])
+    mock_notifications_coll = MockCollection("notifications", [])
     mock_users_coll = MockCollection("users", mock_users)
 
     # Router modules that import database collections (ARCH-01 refactoring)
@@ -355,6 +364,10 @@ def setup_mock_db(mock_patients, mock_scales, mock_evaluations, mock_users):
     for mod in ROUTER_MODULES:
         for coll_name, mock_coll in collection_map.items():
             patches.append(patch(f"{mod}.{coll_name}", mock_coll))
+    patches.extend([
+        patch("app.routers.ai.ai_jobs_collection", mock_ai_jobs_coll),
+        patch("app.routers.ai.notifications_collection", mock_notifications_coll),
+    ])
     # Also patch the auth module's own users_collection
     patches.append(patch("app.auth.users_collection", mock_users_coll))
 

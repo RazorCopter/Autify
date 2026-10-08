@@ -66,10 +66,10 @@ def test_analyze_multidimensional_context(client, setup_mock_db):
         }
 
         res = client.post("/api/admin/ai/analyze", json=payload)
-        assert res.status_code == 200
+        assert res.status_code == 202
         data = res.json()
-        assert data["id"].startswith("an_")
+        assert data["job_id"].startswith("job_")
+        assert data["status"] == "pending"
         assert data["id_paziente"] == "pat_1"
-        assert "Paziente in miglioramento" in data["report"]
-        assert len(mock_analysis_coll.documents) == 1
-        assert mock_analysis_coll.documents[0]["id"] == data["id"]
+        assert data["patient_name"] == "Mario Rossi"
+        assert data["report"] == ""

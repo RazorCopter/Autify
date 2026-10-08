@@ -15,6 +15,9 @@ export 'license_api.dart';
 class _Http {
   const _Http();
 
+  // Client HTTP con timeout esteso per operazioni AI lunghe
+  static final _client = raw_http.Client();
+
   void _handleUnauthorized() {
     try {
       html.window.localStorage.clear();
@@ -26,7 +29,18 @@ class _Http {
   }
 
   Future<raw_http.Response> get(Uri url, {Map<String, String>? headers}) async {
-    final response = await raw_http.get(url, headers: headers);
+    final request = raw_http.Request('GET', url);
+    if (headers != null) request.headers.addAll(headers);
+
+    final response = await _client
+        .send(request)
+        .timeout(
+          const Duration(
+              seconds: 350), // Margine oltre il timeout backend (300s)
+        )
+        .then((streamedResponse) =>
+            raw_http.Response.fromStream(streamedResponse));
+
     if (response.statusCode == 401) {
       _handleUnauthorized();
     }
@@ -35,8 +49,23 @@ class _Http {
 
   Future<raw_http.Response> post(Uri url,
       {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
-    final response = await raw_http.post(url,
-        headers: headers, body: body, encoding: encoding);
+    final request = raw_http.Request('POST', url);
+    if (headers != null) request.headers.addAll(headers);
+    if (body != null) {
+      if (body is String) {
+        request.body = body;
+      } else {
+        request.bodyBytes = body as List<int>;
+      }
+    }
+
+    final timeout = url.path.contains('/ai/analyze')
+        ? const Duration(seconds: 350) // Timeout esteso per analisi AI
+        : const Duration(seconds: 60); // Timeout normale per altre operazioni
+
+    final response = await _client.send(request).timeout(timeout).then(
+        (streamedResponse) => raw_http.Response.fromStream(streamedResponse));
+
     if (response.statusCode == 401 && !url.path.contains('/auth/login')) {
       _handleUnauthorized();
     }
@@ -45,8 +74,24 @@ class _Http {
 
   Future<raw_http.Response> put(Uri url,
       {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
-    final response = await raw_http.put(url,
-        headers: headers, body: body, encoding: encoding);
+    final request = raw_http.Request('PUT', url);
+    if (headers != null) request.headers.addAll(headers);
+    if (body != null) {
+      if (body is String) {
+        request.body = body;
+      } else {
+        request.bodyBytes = body as List<int>;
+      }
+    }
+
+    final response = await _client
+        .send(request)
+        .timeout(
+          const Duration(seconds: 60),
+        )
+        .then((streamedResponse) =>
+            raw_http.Response.fromStream(streamedResponse));
+
     if (response.statusCode == 401) {
       _handleUnauthorized();
     }
@@ -55,8 +100,24 @@ class _Http {
 
   Future<raw_http.Response> patch(Uri url,
       {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
-    final response = await raw_http.patch(url,
-        headers: headers, body: body, encoding: encoding);
+    final request = raw_http.Request('PATCH', url);
+    if (headers != null) request.headers.addAll(headers);
+    if (body != null) {
+      if (body is String) {
+        request.body = body;
+      } else {
+        request.bodyBytes = body as List<int>;
+      }
+    }
+
+    final response = await _client
+        .send(request)
+        .timeout(
+          const Duration(seconds: 60),
+        )
+        .then((streamedResponse) =>
+            raw_http.Response.fromStream(streamedResponse));
+
     if (response.statusCode == 401) {
       _handleUnauthorized();
     }
@@ -65,8 +126,24 @@ class _Http {
 
   Future<raw_http.Response> delete(Uri url,
       {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
-    final response = await raw_http.delete(url,
-        headers: headers, body: body, encoding: encoding);
+    final request = raw_http.Request('DELETE', url);
+    if (headers != null) request.headers.addAll(headers);
+    if (body != null) {
+      if (body is String) {
+        request.body = body;
+      } else {
+        request.bodyBytes = body as List<int>;
+      }
+    }
+
+    final response = await _client
+        .send(request)
+        .timeout(
+          const Duration(seconds: 60),
+        )
+        .then((streamedResponse) =>
+            raw_http.Response.fromStream(streamedResponse));
+
     if (response.statusCode == 401) {
       _handleUnauthorized();
     }
@@ -528,7 +605,8 @@ class ApiService implements LicenseApi {
     }
   }
 
-  Future<Map<String, dynamic>> testAiConnection(Map<String, dynamic> config) async {
+  Future<Map<String, dynamic>> testAiConnection(
+      Map<String, dynamic> config) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/ai/test-connection'),
@@ -544,7 +622,8 @@ class ApiService implements LicenseApi {
       final err = jsonDecode(response.body);
       return {
         'success': false,
-        'message': err['detail'] ?? 'Errore test connessione (${response.statusCode})',
+        'message':
+            err['detail'] ?? 'Errore test connessione (${response.statusCode})',
       };
     } catch (e) {
       return {
@@ -588,7 +667,8 @@ class ApiService implements LicenseApi {
         return list.map((e) => e.toString()).toList();
       } else {
         final err = jsonDecode(response.body);
-        throw Exception(err['detail'] ?? 'Errore nel recupero modelli (${response.statusCode})');
+        throw Exception(err['detail'] ??
+            'Errore nel recupero modelli (${response.statusCode})');
       }
     } catch (e, s) {
       debugPrint('[ApiService] discoverCompatibleModels error: $e | $s');
@@ -596,7 +676,7 @@ class ApiService implements LicenseApi {
     }
   }
 
-  Future<String> analyzePatientData({
+  Future<Map<String, dynamic>> analyzePatientData({
     required PatientModel patient,
     required List<AggregatedEvaluation> evaluations,
     String? notes,
@@ -613,12 +693,14 @@ class ApiService implements LicenseApi {
         'anno': e.anno,
         'data_compilazione': e.dataCompilazione,
         'nome_operatore': e.nomeOperatore,
-        'domini': e.domini.map((d) => {
-          'codice': d.codice,
-          'etichetta': d.etichetta,
-          'punteggio': d.punteggio,
-          'num_domande': d.numDomande,
-        }).toList(),
+        'domini': e.domini
+            .map((d) => {
+                  'codice': d.codice,
+                  'etichetta': d.etichetta,
+                  'punteggio': d.punteggio,
+                  'num_domande': d.numDomande,
+                })
+            .toList(),
       };
       final analysis = analyses?[e.idValutazione] ?? analyses?[e.idScala];
       if (analysis != null) {
@@ -630,14 +712,16 @@ class ApiService implements LicenseApi {
           'alert_medico': analysis.alertMedico,
           'alert_comportamentale': analysis.alertComportamentale,
           'sezione_2_top4': analysis.sezione2Top4,
-          'domini': analysis.domini.map((da) => {
-            'codice': da.codice,
-            'etichetta': da.etichetta,
-            'punteggio_diretto': da.punteggioDiretto,
-            'punteggio_standard': da.punteggioStandard,
-            'percentile': da.percentileDominio,
-            'fascia': da.fascia,
-          }).toList(),
+          'domini': analysis.domini
+              .map((da) => {
+                    'codice': da.codice,
+                    'etichetta': da.etichetta,
+                    'punteggio_diretto': da.punteggioDiretto,
+                    'punteggio_standard': da.punteggioStandard,
+                    'percentile': da.percentileDominio,
+                    'fascia': da.fascia,
+                  })
+              .toList(),
         };
       }
       return m;
@@ -650,7 +734,9 @@ class ApiService implements LicenseApi {
       attachmentPayload = {
         'filename': 'allegato.$ext',
         'extension': ext,
-        'data_base64': base64Encode(bytes is Uint8List ? bytes : Uint8List.fromList(List<int>.from(bytes))),
+        'data_base64': base64Encode(bytes is Uint8List
+            ? bytes
+            : Uint8List.fromList(List<int>.from(bytes))),
       };
     }
 
@@ -673,9 +759,8 @@ class ApiService implements LicenseApi {
       body: jsonEncode(payload),
     );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return (data['report'] as String?) ?? '';
+    if (response.statusCode == 200 || response.statusCode == 202) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
     }
 
     String errorMsg = 'Errore analisi IA (${response.statusCode})';
@@ -688,6 +773,52 @@ class ApiService implements LicenseApi {
     throw Exception(errorMsg);
   }
 
+  Future<List<Map<String, dynamic>>> getAiJobs({int limit = 30}) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/ai/jobs?limit=$limit'),
+      headers: {'Authorization': 'Bearer $kAuthToken'},
+    );
+    if (response.statusCode != 200)
+      throw Exception('Errore caricamento job IA');
+    return (jsonDecode(response.body) as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<List<Map<String, dynamic>>> getNotifications({int limit = 50}) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/notifications?limit=$limit'),
+      headers: {'Authorization': 'Bearer $kAuthToken'},
+    );
+    if (response.statusCode != 200)
+      throw Exception('Errore caricamento notifiche');
+    return (jsonDecode(response.body) as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<int> getUnreadNotificationCount() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/notifications/unread-count'),
+      headers: {'Authorization': 'Bearer $kAuthToken'},
+    );
+    if (response.statusCode != 200) return 0;
+    return (jsonDecode(response.body)['unread_count'] as num?)?.toInt() ?? 0;
+  }
+
+  Future<void> markNotificationRead(String id) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/notifications/$id/read'),
+      headers: {'Authorization': 'Bearer $kAuthToken'},
+    );
+    if (response.statusCode != 200)
+      throw Exception('Errore aggiornamento notifica');
+  }
+
+  Future<void> markAllNotificationsRead() async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/notifications/read-all'),
+      headers: {'Authorization': 'Bearer $kAuthToken'},
+    );
+    if (response.statusCode != 200)
+      throw Exception('Errore aggiornamento notifiche');
+  }
 
   // --- ANAGRAFICA (PATIENTS) ---
 

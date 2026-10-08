@@ -193,8 +193,8 @@ def test_viewer_ai_policy_enforcement(setup_mock_db):
             "id_paziente": "pat_1",
             "notes": "Note cliniche per analisi",
         })
-        assert res.status_code == 200
-        assert res.json()["report"] == "Report generated"
+        assert res.status_code == 202
+        assert res.json()["status"] == "pending"
 
         # 2. Viewer trying to override system prompt -> 403 Forbidden
         res_override = c.post("/api/admin/ai/analyze", json={

@@ -23,10 +23,12 @@ class MultidimensionalDashboardScreen extends StatefulWidget {
   const MultidimensionalDashboardScreen({super.key, required this.patient});
 
   @override
-  State<MultidimensionalDashboardScreen> createState() => _MultidimensionalDashboardScreenState();
+  State<MultidimensionalDashboardScreen> createState() =>
+      _MultidimensionalDashboardScreenState();
 }
 
-class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashboardScreen> {
+class _MultidimensionalDashboardScreenState
+    extends State<MultidimensionalDashboardScreen> {
   final ApiService _apiService = ApiService();
 
   bool _isLoading = true;
@@ -60,8 +62,14 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   bool _includeSavedAnalyses = true;
 
   static const List<Color> _domainColors = [
-    Color(0xFF60A5FA), Color(0xFFF59E0B), Color(0xFF34D399), Color(0xFFA78BFA),
-    Color(0xFFF87171), Color(0xFF38BDF8), Color(0xFF86EFAC), Color(0xFFFB923C),
+    Color(0xFF60A5FA),
+    Color(0xFFF59E0B),
+    Color(0xFF34D399),
+    Color(0xFFA78BFA),
+    Color(0xFFF87171),
+    Color(0xFF38BDF8),
+    Color(0xFF86EFAC),
+    Color(0xFFFB923C),
   ];
 
   @override
@@ -76,7 +84,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       final dob = DateTime.parse(widget.patient.dataNascita!);
       final now = DateTime.now();
       int age = now.year - dob.year;
-      if (now.month < dob.month || (now.month == dob.month && now.day < dob.day)) {
+      if (now.month < dob.month ||
+          (now.month == dob.month && now.day < dob.day)) {
         age--;
       }
       return age;
@@ -93,7 +102,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     if (aiSettings != null) {
       _viewerAiEnabled = (aiSettings['viewer_ai_enabled'] as bool?) ?? false;
       _aiPrompt = aiSettings['system_prompt'] as String?;
-      _activeAiProvider = (aiSettings['active_provider'] as String?) ?? 'gemini';
+      _activeAiProvider =
+          (aiSettings['active_provider'] as String?) ?? 'gemini';
       final prov = aiSettings[_activeAiProvider] as Map<String, dynamic>?;
       _activeAiModel = (prov?['model'] as String?) ?? '';
       final keyObj = prov?['api_key'] as Map<String, dynamic>?;
@@ -105,14 +115,17 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
     // 3. Carica ultima valutazione + analisi psicometrica per ogni scala
     for (final scale in _availableScales) {
-      final history = await _apiService.getAggregatedEvaluationHistory(widget.patient.id, scale.id);
+      final history = await _apiService.getAggregatedEvaluationHistory(
+          widget.patient.id, scale.id);
       if (history.isNotEmpty) {
-        history.sort((a, b) => b.dataCompilazione.compareTo(a.dataCompilazione));
+        history
+            .sort((a, b) => b.dataCompilazione.compareTo(a.dataCompilazione));
         _latestEvaluations[scale.id] = history.first;
         _evaluationsHistory[scale.id] = history;
         // Carica analisi psicometrica (indicizzata per idValutazione per AI-01)
         try {
-          final analysis = await _apiService.getEvaluationAnalysis(history.first.idValutazione);
+          final analysis = await _apiService
+              .getEvaluationAnalysis(history.first.idValutazione);
           _analyses[history.first.idValutazione] = analysis;
           _analyses[scale.id] = analysis;
         } catch (_) {
@@ -129,7 +142,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
   bool _isSanMartinScale(String scaleId, [String? scaleName]) {
     String normalize(String s) {
-      return s.toLowerCase()
+      return s
+          .toLowerCase()
           .replaceAll(' ', '')
           .replaceAll('-', '')
           .replaceAll('_', '')
@@ -144,6 +158,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           .replaceAll('ù', 'u')
           .replaceAll('ú', 'u');
     }
+
     final normalizedId = normalize(scaleId);
     final normalizedName = normalize(scaleName ?? '');
     return normalizedId.contains('sanmartin') ||
@@ -155,13 +170,20 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   bool _isBehaviorScale(String id, String nome) {
     final lowerId = id.toLowerCase();
     final lowerNome = nome.toLowerCase();
-    return lowerId.contains('sabs') || lowerId.contains('behavior') || lowerId.contains('comportament') || lowerId.contains('odflab') ||
-           lowerNome.contains('sabs') || lowerNome.contains('behavior') || lowerNome.contains('comportament') || lowerNome.contains('odflab');
+    return lowerId.contains('sabs') ||
+        lowerId.contains('behavior') ||
+        lowerId.contains('comportament') ||
+        lowerId.contains('odflab') ||
+        lowerNome.contains('sabs') ||
+        lowerNome.contains('behavior') ||
+        lowerNome.contains('comportament') ||
+        lowerNome.contains('odflab');
   }
 
   bool _isSisScale(String scaleId, [String? scaleName]) {
     String normalize(String s) {
-      return s.toLowerCase()
+      return s
+          .toLowerCase()
           .replaceAll(' ', '')
           .replaceAll('-', '')
           .replaceAll('_', '')
@@ -176,6 +198,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           .replaceAll('ù', 'u')
           .replaceAll('ú', 'u');
     }
+
     final normalizedId = normalize(scaleId);
     final normalizedName = normalize(scaleName ?? '');
     return normalizedId.contains('sis') ||
@@ -219,7 +242,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       if (evaluationsToInclude.isEmpty &&
           _aiNotesController.text.trim().isEmpty &&
           _aiAttachment == null) {
-        throw Exception('Nessun dato (valutazione, note o allegato) selezionato per l\'analisi.');
+        throw Exception(
+            'Nessun dato (valutazione, note o allegato) selezionato per l\'analisi.');
       }
 
       Map<String, dynamic>? attachmentMap;
@@ -232,11 +256,12 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
       final historyToInclude = _includeSavedAnalyses
           ? _savedAnalyses
-              .where((a) => _selectedAnalysesIdsForContext.contains(a['id']?.toString()))
+              .where((a) =>
+                  _selectedAnalysesIdsForContext.contains(a['id']?.toString()))
               .toList()
           : <Map<String, dynamic>>[];
 
-      final report = await _apiService.analyzePatientData(
+      final job = await _apiService.analyzePatientData(
         patient: widget.patient,
         evaluations: evaluationsToInclude,
         notes: _aiNotesController.text,
@@ -246,22 +271,18 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         analyses: _analyses,
       );
 
-      setState(() {
-        _aiReport = report;
-      });
-
       _aiNotesController.clear();
       _aiAttachment = null;
       _selectedAnalysesIdsForContext.clear();
-      await _loadSavedAnalyses();
-
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Relazione educativa IA generata e salvata con successo!'),
+        SnackBar(
+          content: Text(job['message']?.toString() ??
+              'Elaborazione IA avviata in background'),
           backgroundColor: Colors.teal,
         ),
       );
-
+      Navigator.of(context).maybePop();
     } catch (e) {
       String cleanError = e.toString();
       if (cleanError.startsWith('Exception: ')) {
@@ -283,7 +304,6 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     }
   }
 
-
   Future<void> _pickAiAttachment() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -296,7 +316,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Il file selezionato supera la dimensione massima consentita di 10 MB.'),
+              content: Text(
+                  'Il file selezionato supera la dimensione massima consentita di 10 MB.'),
               backgroundColor: Colors.redAccent,
             ),
           );
@@ -311,7 +332,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
   Future<void> _loadSavedAnalyses() async {
     try {
-      final analyses = await _apiService.getPatientAiAnalyses(widget.patient.id);
+      final analyses =
+          await _apiService.getPatientAiAnalyses(widget.patient.id);
       setState(() {
         _savedAnalyses = analyses;
       });
@@ -382,7 +404,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Conferma Eliminazione'),
-        content: const Text('Sei sicuro di voler eliminare questa analisi dallo storico? Questa azione non può essere annullata.'),
+        content: const Text(
+            'Sei sicuro di voler eliminare questa analisi dallo storico? Questa azione non può essere annullata.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -434,7 +457,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   Future<void> _exportAiPdf() async {
     if (_aiReport == null || _isExportingPdf) return;
     setState(() => _isExportingPdf = true);
-    
+
     try {
       final bytes = await _apiService.downloadAiAnalysisPdf(
         widget.patient,
@@ -445,14 +468,15 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         final b64 = base64Encode(bytes);
         final dataUrl = 'data:application/pdf;base64,$b64';
         html.AnchorElement(href: dataUrl)
-          ..setAttribute(
-              'download', 'analisi_ai_${widget.patient.cognome}.pdf')
+          ..setAttribute('download', 'analisi_ai_${widget.patient.cognome}.pdf')
           ..click();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Errore generazione PDF AI')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Errore generazione PDF AI')));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Errore: $e')));
     } finally {
       if (mounted) setState(() => _isExportingPdf = false);
     }
@@ -467,18 +491,27 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           Scaffold(
             backgroundColor: AppTheme.backgroundColor,
             appBar: AppBar(
-              title: const Text('Analisi Utente', style: TextStyle(fontWeight: FontWeight.bold)),
+              title: const Text('Analisi Utente',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               bottom: TabBar(
                 tabs: const [
-                  Tab(icon: Icon(Icons.self_improvement_outlined), text: 'Qualità della Vita'),
-                  Tab(icon: Icon(Icons.accessibility_new_outlined), text: 'Comp. Adattivo'),
-                  Tab(icon: Icon(Icons.psychology_outlined), text: 'Analisi IA'),
+                  Tab(
+                      icon: Icon(Icons.self_improvement_outlined),
+                      text: 'Qualità della Vita'),
+                  Tab(
+                      icon: Icon(Icons.accessibility_new_outlined),
+                      text: 'Comp. Adattivo'),
+                  Tab(
+                      icon: Icon(Icons.psychology_outlined),
+                      text: 'Analisi IA'),
                 ],
                 indicatorColor: AppTheme.primaryColor,
                 labelColor: AppTheme.primaryColor,
                 unselectedLabelColor: AppTheme.textSecondary,
-                labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                labelStyle:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                unselectedLabelStyle:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                 indicatorWeight: 3,
                 dividerColor: const Color(0xFFE8EEF8),
               ),
@@ -508,7 +541,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                         constraints: const BoxConstraints(maxWidth: 600),
                         child: Card(
                           elevation: 20,
-                          shadowColor: AppTheme.primaryColor.withValues(alpha: 0.25),
+                          shadowColor:
+                              AppTheme.primaryColor.withValues(alpha: 0.25),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(28),
                           ),
@@ -525,7 +559,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                               ),
                             ),
                             child: const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 48, horizontal: 36),
+                              padding: EdgeInsets.symmetric(
+                                  vertical: 48, horizontal: 36),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -552,7 +587,9 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
   Widget _buildQualitaVitaTab() {
     final lifeScales = _availableScales
-        .where((s) => _latestEvaluations.containsKey(s.id) && !_isBehaviorScale(s.id, s.nome))
+        .where((s) =>
+            _latestEvaluations.containsKey(s.id) &&
+            !_isBehaviorScale(s.id, s.nome))
         .toList();
 
     // Ordina le scale per stabilità di visualizzazione: POS, San Martín, SIS
@@ -561,7 +598,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       final isBSis = _isSisScale(b.id, b.nome);
       final isASM = _isSanMartinScale(a.id, a.nome);
       final isBSM = _isSanMartinScale(b.id, b.nome);
-      
+
       int valA = isASis ? 2 : (isASM ? 1 : 0);
       int valB = isBSis ? 2 : (isBSM ? 1 : 0);
       return valA.compareTo(valB);
@@ -610,7 +647,9 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               transitionBuilder: (child, animation) => FadeTransition(
                 opacity: animation,
                 child: SlideTransition(
-                  position: Tween<Offset>(begin: const Offset(0, 0.03), end: Offset.zero).animate(animation),
+                  position: Tween<Offset>(
+                          begin: const Offset(0, 0.03), end: Offset.zero)
+                      .animate(animation),
                   child: child,
                 ),
               ),
@@ -623,8 +662,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                           children: lifeScales.map((scale) {
                             return Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 6),
-                                child: _buildExpandableScaleCard(scale, initiallyExpanded: true),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 6),
+                                child: _buildExpandableScaleCard(scale,
+                                    initiallyExpanded: true),
                               ),
                             );
                           }).toList(),
@@ -651,7 +692,9 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
   Widget _buildBehaviorTab() {
     final behaviorScales = _availableScales
-        .where((s) => _latestEvaluations.containsKey(s.id) && _isBehaviorScale(s.id, s.nome))
+        .where((s) =>
+            _latestEvaluations.containsKey(s.id) &&
+            _isBehaviorScale(s.id, s.nome))
         .toList();
 
     return SingleChildScrollView(
@@ -670,9 +713,9 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             ),
           ] else ...[
             ...behaviorScales.map((scale) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildExpandableScaleCard(scale),
-            )),
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildExpandableScaleCard(scale),
+                )),
           ],
         ],
       ),
@@ -712,7 +755,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             child: Center(
               child: Text(
                 '${p.nome.isNotEmpty ? p.nome[0] : ''}${p.cognome.isNotEmpty ? p.cognome[0] : ''}',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
               ),
             ),
           ),
@@ -723,7 +769,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               children: [
                 Text(
                   '${p.nome} ${p.cognome}',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
                 ),
                 const SizedBox(height: 2),
                 const Text(
@@ -742,11 +791,15 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.assessment_outlined, color: Colors.white70, size: 14),
+                const Icon(Icons.assessment_outlined,
+                    color: Colors.white70, size: 14),
                 const SizedBox(width: 6),
                 Text(
                   '${_availableScales.where((s) => _latestEvaluations.containsKey(s.id) && _isBehaviorScale(s.id, s.nome)).length} scale',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12),
                 ),
               ],
             ),
@@ -757,7 +810,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   }
 
   /// Costruisce una ExpandableScaleCard per qualsiasi scala
-  Widget _buildExpandableScaleCard(ScaleModel scale, {bool initiallyExpanded = false}) {
+  Widget _buildExpandableScaleCard(ScaleModel scale,
+      {bool initiallyExpanded = false}) {
     final eval = _latestEvaluations[scale.id]!;
     final analysis = _analyses[eval.idValutazione] ?? _analyses[scale.id];
     final isSM = _isSanMartinScale(scale.id, scale.nome);
@@ -767,7 +821,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     final List<Color> gradientColors = isSis
         ? const [Color(0xFF00695C), Color(0xFF26A69A)]
         : isBehavior
-            ? const [Color(0xFFFFB300), Color(0xFFF57C00)] // Gradiente dal giallo all'arancio
+            ? const [
+                Color(0xFFFFB300),
+                Color(0xFFF57C00)
+              ] // Gradiente dal giallo all'arancio
             : isSM
                 ? const [Color(0xFF1A237E), Color(0xFF3949AB)]
                 : const [Color(0xFF0D47A1), Color(0xFF1565C0)];
@@ -782,7 +839,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 : Icons.self_improvement_outlined;
 
     // Summary chips per stato chiuso
-    final List<Widget> summaryChips = _buildSummaryChips(eval, analysis, isSM, isSis, isBehavior, gradientColors.first);
+    final List<Widget> summaryChips = _buildSummaryChips(
+        eval, analysis, isSM, isSis, isBehavior, gradientColors.first);
 
     // Azioni header (Storico + Dettaglio)
     final List<Widget> headerActions = [
@@ -799,7 +857,9 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         color: Colors.white.withValues(alpha: 0.18),
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => EvaluationDetailScreen(patient: widget.patient, scale: scale)),
+          MaterialPageRoute(
+              builder: (_) => EvaluationDetailScreen(
+                  patient: widget.patient, scale: scale)),
         ),
       ),
     ];
@@ -819,14 +879,17 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         const SizedBox(height: 20),
         if (eval.domini.isNotEmpty)
           SizedBox(
-            height: (isSM && analysis != null && analysis.domini.isNotEmpty) ? 250 : (eval.domini.length > 10 ? 295 : 250),
+            height: (isSM && analysis != null && analysis.domini.isNotEmpty)
+                ? 250
+                : (eval.domini.length > 10 ? 295 : 250),
             child: isSM && analysis != null && analysis.domini.isNotEmpty
                 ? _buildRadarChartForPanel(analysis)
                 : _buildBarChartForPanel(
                     eval.domini,
                     isSm: isSM,
                     isSis: isSis,
-                    isSabs: scale.id.toLowerCase().contains("sabs") || scale.nome.toLowerCase().contains("sabs"),
+                    isSabs: scale.id.toLowerCase().contains("sabs") ||
+                        scale.nome.toLowerCase().contains("sabs"),
                   ),
           ),
       ],
@@ -893,7 +956,9 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     } else if (isSis) {
       int total = eval.domini.fold(0, (s, d) => s + d.punteggio);
       chips.add(ScaleSummaryChip(
-        label: analysis != null && analysis.indiceQv != null ? 'Indice SIS' : 'Punteggio',
+        label: analysis != null && analysis.indiceQv != null
+            ? 'Indice SIS'
+            : 'Punteggio',
         value: analysis != null && analysis.indiceQv != null
             ? analysis.indiceQv.toString()
             : total.toString(),
@@ -944,13 +1009,17 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     if (history != null && history.length >= 2) {
       final sorted = List<AggregatedEvaluation>.from(history)
         ..sort((a, b) => a.dataCompilazione.compareTo(b.dataCompilazione));
-      final recent = sorted.length > 3 ? sorted.sublist(sorted.length - 3) : sorted;
+      final recent =
+          sorted.length > 3 ? sorted.sublist(sorted.length - 3) : sorted;
 
       // Calcola il totale punteggio per ogni valutazione storica
-      final totals = recent.map((e) => e.domini.fold(0, (s, d) => s + d.punteggio).toDouble()).toList();
+      final totals = recent
+          .map((e) => e.domini.fold(0, (s, d) => s + d.punteggio).toDouble())
+          .toList();
 
       // Trend: confronta l'ultima con la penultima
-      final trend = totals.length >= 2 ? totals.last - totals[totals.length - 2] : 0.0;
+      final trend =
+          totals.length >= 2 ? totals.last - totals[totals.length - 2] : 0.0;
       final trendIcon = trend > 0 ? '↑' : (trend < 0 ? '↓' : '→');
       final trendColor = trend > 0
           ? const Color(0xFF4ADE80)
@@ -990,7 +1059,11 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             children: [
               Icon(icon, size: 13, color: Colors.white),
               const SizedBox(width: 4),
-              Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+              Text(label,
+                  style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white)),
             ],
           ),
         ),
@@ -999,7 +1072,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   }
 
   /// Placeholder quando un tab non ha scale compilate
-  Widget _buildEmptyScalesPlaceholder({required IconData icon, required String message}) {
+  Widget _buildEmptyScalesPlaceholder(
+      {required IconData icon, required String message}) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 64),
@@ -1013,12 +1087,17 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 color: AppTheme.primaryColor.withValues(alpha: 0.06),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 40, color: AppTheme.primaryColor.withValues(alpha: 0.3)),
+              child: Icon(icon,
+                  size: 40,
+                  color: AppTheme.primaryColor.withValues(alpha: 0.3)),
             ),
             const SizedBox(height: 16),
             Text(
               message,
-              style: const TextStyle(fontSize: 15, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                  fontSize: 15,
+                  color: AppTheme.textSecondary,
+                  fontWeight: FontWeight.w500),
               textAlign: TextAlign.center,
             ),
           ],
@@ -1029,7 +1108,6 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
   Widget _buildCompareToggle(bool canCompare) {
     return Container(
-
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -1102,7 +1180,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     );
   }
 
-  Widget _buildComparePanel(AggregatedEvaluation posEval, AggregatedEvaluation smEval) {
+  Widget _buildComparePanel(
+      AggregatedEvaluation posEval, AggregatedEvaluation smEval) {
     final commonCodes = posEval.domini
         .map((d) => d.codice)
         .where((code) => smEval.domini.any((d) => d.codice == code))
@@ -1128,7 +1207,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     color: Colors.indigo.shade50,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(Icons.analytics_outlined, color: Colors.indigo.shade800),
+                  child: Icon(Icons.analytics_outlined,
+                      color: Colors.indigo.shade800),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -1137,12 +1217,16 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     children: [
                       const Text(
                         'Comparazione',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimary),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Confronto diretto normalizzato (0-100%) dei domini comuni',
-                        style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                        style: TextStyle(
+                            fontSize: 12, color: AppTheme.textSecondary),
                       ),
                     ],
                   ),
@@ -1187,12 +1271,16 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline, color: Colors.indigo, size: 20),
+                    const Icon(Icons.info_outline,
+                        color: Colors.indigo, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'I punteggi dei singoli domini sono normalizzati in percentuale (0-100%) rispetto al rispettivo punteggio massimo teorico (numero domande × 3 per POS e numero domande × 4 per San Martín) per consentire una visualizzazione e un confronto coerente.',
-                        style: TextStyle(fontSize: 12, height: 1.5, color: Colors.indigo.shade900),
+                        style: TextStyle(
+                            fontSize: 12,
+                            height: 1.5,
+                            color: Colors.indigo.shade900),
                       ),
                     ),
                   ],
@@ -1237,7 +1325,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     );
   }
 
-  Widget _buildGroupedBarChart(AggregatedEvaluation posEval, AggregatedEvaluation smEval, List<String> commonCodes) {
+  Widget _buildGroupedBarChart(AggregatedEvaluation posEval,
+      AggregatedEvaluation smEval, List<String> commonCodes) {
     return BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
@@ -1248,19 +1337,21 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           touchTooltipData: BarTouchTooltipData(
             getTooltipColor: (_) => Colors.grey.shade900,
             tooltipBorder: const BorderSide(color: Colors.white24, width: 0.5),
-            tooltipPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            tooltipPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
               final code = commonCodes[group.x];
               final isPos = rodIndex == 0;
               final scaleName = isPos ? 'POS' : 'San Martín';
-              
+
               final DomainScore ds = isPos
                   ? posEval.domini.firstWhere((d) => d.codice == code)
                   : smEval.domini.firstWhere((d) => d.codice == code);
-                  
-              final maxTheoretical = isPos ? ds.numDomande * 3 : ds.numDomande * 4;
+
+              final maxTheoretical =
+                  isPos ? ds.numDomande * 3 : ds.numDomande * 4;
               final percent = rod.toY.toStringAsFixed(1);
-              
+
               return BarTooltipItem(
                 '$scaleName\n',
                 const TextStyle(
@@ -1278,7 +1369,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     ),
                   ),
                   TextSpan(
-                    text: 'Punteggio: ${ds.punteggio} / $maxTheoretical ($percent%)',
+                    text:
+                        'Punteggio: ${ds.punteggio} / $maxTheoretical ($percent%)',
                     style: const TextStyle(
                       color: Colors.amberAccent,
                       fontWeight: FontWeight.bold,
@@ -1298,11 +1390,13 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               reservedSize: 75,
               getTitlesWidget: (value, meta) {
                 final idx = value.toInt();
-                if (idx < 0 || idx >= commonCodes.length) return const SizedBox.shrink();
+                if (idx < 0 || idx >= commonCodes.length)
+                  return const SizedBox.shrink();
                 final code = commonCodes[idx];
                 final posDs = posEval.domini.firstWhere(
                   (d) => d.codice == code,
-                  orElse: () => smEval.domini.firstWhere((d) => d.codice == code),
+                  orElse: () =>
+                      smEval.domini.firstWhere((d) => d.codice == code),
                 );
                 final name = posDs.etichetta;
                 return SideTitleWidget(
@@ -1346,8 +1440,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               },
             ),
           ),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         gridData: FlGridData(
           show: true,
@@ -1364,11 +1460,15 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           final posDs = posEval.domini.firstWhere((d) => d.codice == code);
           final smDs = smEval.domini.firstWhere((d) => d.codice == code);
 
-          final double posMax = posDs.numDomande > 0 ? (posDs.numDomande * 3).toDouble() : 15.0;
-          final double smMax = smDs.numDomande > 0 ? (smDs.numDomande * 4).toDouble() : 20.0;
+          final double posMax =
+              posDs.numDomande > 0 ? (posDs.numDomande * 3).toDouble() : 15.0;
+          final double smMax =
+              smDs.numDomande > 0 ? (smDs.numDomande * 4).toDouble() : 20.0;
 
-          final double posPercent = posMax > 0 ? (posDs.punteggio / posMax) * 100.0 : 0.0;
-          final double smPercent = smMax > 0 ? (smDs.punteggio / smMax) * 100.0 : 0.0;
+          final double posPercent =
+              posMax > 0 ? (posDs.punteggio / posMax) * 100.0 : 0.0;
+          final double smPercent =
+              smMax > 0 ? (smDs.punteggio / smMax) * 100.0 : 0.0;
 
           return BarChartGroupData(
             x: i,
@@ -1378,7 +1478,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 toY: posPercent,
                 color: const Color(0xFF3B82F6),
                 width: 14,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(4)),
                 backDrawRodData: BackgroundBarChartRodData(
                   show: true,
                   toY: 100,
@@ -1389,7 +1490,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 toY: smPercent,
                 color: const Color(0xFFF59E0B),
                 width: 14,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(4)),
                 backDrawRodData: BackgroundBarChartRodData(
                   show: true,
                   toY: 100,
@@ -1403,7 +1505,6 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     );
   }
 
-
   // ── Patient Header ──────────────────────────────────────────────────────────
   Widget _buildPatientHeader() {
     final age = _calculateAge();
@@ -1416,22 +1517,29 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
+        border:
+            Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
       ),
       child: Center(
         child: Text(
           '${p.nome.isNotEmpty ? p.nome[0] : ''}${p.cognome.isNotEmpty ? p.cognome[0] : ''}',
-          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+          style: const TextStyle(
+              fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),
     );
 
     final info = Column(
-      crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      crossAxisAlignment:
+          isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
         Text(
           '${p.nome} ${p.cognome}',
-          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: -0.5),
+          style: const TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              letterSpacing: -0.5),
           textAlign: isMobile ? TextAlign.center : TextAlign.left,
         ),
         const SizedBox(height: 8),
@@ -1440,12 +1548,12 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           runSpacing: 8,
           alignment: isMobile ? WrapAlignment.center : WrapAlignment.start,
           children: [
-            if (age != null)
-              _headerChip(Icons.cake_outlined, '$age anni'),
+            if (age != null) _headerChip(Icons.cake_outlined, '$age anni'),
             if (p.sesso != null && p.sesso!.isNotEmpty)
               _headerChip(Icons.person_outline, p.sesso!),
             if (p.dataNascita != null)
-              _headerChip(Icons.calendar_today_outlined, _formatDateReadable(p.dataNascita!.split('T')[0])),
+              _headerChip(Icons.calendar_today_outlined,
+                  _formatDateReadable(p.dataNascita!.split('T')[0])),
           ],
         ),
       ],
@@ -1460,11 +1568,13 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.assessment_outlined, color: Colors.white70, size: 18),
+          const Icon(Icons.assessment_outlined,
+              color: Colors.white70, size: 18),
           const SizedBox(width: 8),
           Text(
             '${_latestEvaluations.length} Scale Compilate',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
           ),
         ],
       ),
@@ -1479,7 +1589,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: const Color(0xFF1A237E).withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 8)),
+          BoxShadow(
+              color: const Color(0xFF1A237E).withValues(alpha: 0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 8)),
         ],
       ),
       padding: const EdgeInsets.all(28),
@@ -1513,7 +1626,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       children: [
         Icon(icon, size: 16, color: Colors.white70),
         const SizedBox(width: 6),
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+        Text(label,
+            style: const TextStyle(color: Colors.white70, fontSize: 14)),
       ],
     );
   }
@@ -1521,49 +1635,58 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   void _showTimelineDialog(ScaleModel scale) {
     final history = _evaluationsHistory[scale.id]!;
     // Sort ascending for chart (oldest first)
-    final sorted = List<AggregatedEvaluation>.from(history)..sort((a, b) => a.dataCompilazione.compareTo(b.dataCompilazione));
+    final sorted = List<AggregatedEvaluation>.from(history)
+      ..sort((a, b) => a.dataCompilazione.compareTo(b.dataCompilazione));
 
     showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: Container(
-            width: 800,
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.timeline, color: AppTheme.primaryColor),
-                        const SizedBox(width: 12),
-                        Text('Storico Punteggi: ${scale.nome}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text('Visualizzazione dell\'andamento dei domini nel tempo (normalizzato a 100%).', style: TextStyle(color: AppTheme.textSecondary)),
-                const SizedBox(height: 24),
-                SizedBox(
-                  height: 400,
-                  child: _buildTimelineChart(sorted, scale),
-                ),
-              ],
+        context: context,
+        builder: (context) {
+          return Dialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Container(
+              width: 800,
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.timeline,
+                              color: AppTheme.primaryColor),
+                          const SizedBox(width: 12),
+                          Text('Storico Punteggi: ${scale.nome}',
+                              style: const TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                      'Visualizzazione dell\'andamento dei domini nel tempo (normalizzato a 100%).',
+                      style: TextStyle(color: AppTheme.textSecondary)),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    height: 400,
+                    child: _buildTimelineChart(sorted, scale),
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      }
-    );
+          );
+        });
   }
 
-  Widget _buildTimelineChart(List<AggregatedEvaluation> sorted, ScaleModel scale) {
+  Widget _buildTimelineChart(
+      List<AggregatedEvaluation> sorted, ScaleModel scale) {
     // Collect all domain codes and their labels
     final Map<String, String> codeToLabel = {};
     for (var eval in sorted) {
@@ -1592,19 +1715,22 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     final idx = e.key;
                     final eval = e.value;
                     final domain = eval.domini.firstWhere(
-                      (d) => d.codice == code, 
-                      orElse: () => DomainScore(codice: code, etichetta: '', punteggio: 0, numDomande: 0)
-                    );
-                    
+                        (d) => d.codice == code,
+                        orElse: () => DomainScore(
+                            codice: code,
+                            etichetta: '',
+                            punteggio: 0,
+                            numDomande: 0));
+
                     if (domain.numDomande == 0) {
-                       return FlSpot(idx.toDouble(), 0);
+                      return FlSpot(idx.toDouble(), 0);
                     }
 
                     // Normalize to 100%
                     final isPos = scale.nome.toLowerCase().contains('pos');
                     final isSM = scale.nome.toLowerCase().contains('martin');
                     final isSis = scale.nome.toLowerCase().contains('sis');
-                    
+
                     double maxTheoretical = domain.numDomande.toDouble();
                     if (isPos) {
                       maxTheoretical *= 3;
@@ -1619,7 +1745,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     } else {
                       maxTheoretical = 100; // Default fallback
                     }
-                    
+
                     if (maxTheoretical == 0) maxTheoretical = 1;
                     final percent = (domain.punteggio / maxTheoretical) * 100.0;
                     return FlSpot(idx.toDouble(), percent);
@@ -1638,16 +1764,24 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     interval: 1,
                     getTitlesWidget: (value, meta) {
                       final idx = value.toInt();
-                      if (idx < 0 || idx >= sorted.length || value != idx.toDouble()) return const SizedBox.shrink();
-                      
-                      final dateParts = sorted[idx].dataCompilazione.split('T')[0].split('-');
-                      final dateStr = dateParts.length == 3 ? '${dateParts[2]}/${dateParts[1]}/${dateParts[0]}' : sorted[idx].dataCompilazione.split('T')[0];
-                      
+                      if (idx < 0 ||
+                          idx >= sorted.length ||
+                          value != idx.toDouble())
+                        return const SizedBox.shrink();
+
+                      final dateParts =
+                          sorted[idx].dataCompilazione.split('T')[0].split('-');
+                      final dateStr = dateParts.length == 3
+                          ? '${dateParts[2]}/${dateParts[1]}/${dateParts[0]}'
+                          : sorted[idx].dataCompilazione.split('T')[0];
+
                       return Padding(
                         padding: const EdgeInsets.only(top: 16.0),
                         child: Transform.rotate(
                           angle: -0.6,
-                          child: Text(dateStr, style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
+                          child: Text(dateStr,
+                              style: const TextStyle(
+                                  fontSize: 10, color: AppTheme.textSecondary)),
                         ),
                       );
                     },
@@ -1658,32 +1792,52 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     showTitles: true,
                     reservedSize: 40,
                     getTitlesWidget: (value, meta) {
-                      return Text('${value.toInt()}%', style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary));
+                      return Text('${value.toInt()}%',
+                          style: const TextStyle(
+                              fontSize: 10, color: AppTheme.textSecondary));
                     },
                   ),
                 ),
-                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
               ),
               gridData: FlGridData(
                 show: true,
                 drawVerticalLine: true,
                 horizontalInterval: 20,
-                getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.shade300, strokeWidth: 1, dashArray: [5, 5]),
-                getDrawingVerticalLine: (value) => FlLine(color: Colors.grey.shade200, strokeWidth: 1),
+                getDrawingHorizontalLine: (value) => FlLine(
+                    color: Colors.grey.shade300,
+                    strokeWidth: 1,
+                    dashArray: [5, 5]),
+                getDrawingVerticalLine: (value) =>
+                    FlLine(color: Colors.grey.shade200, strokeWidth: 1),
               ),
-              borderData: FlBorderData(show: true, border: Border.all(color: Colors.grey.shade300)),
+              borderData: FlBorderData(
+                  show: true, border: Border.all(color: Colors.grey.shade300)),
               lineTouchData: LineTouchData(
                 touchTooltipData: LineTouchTooltipData(
-                  getTooltipColor: (_) => Colors.blueGrey.shade900.withValues(alpha: 0.9),
+                  getTooltipColor: (_) =>
+                      Colors.blueGrey.shade900.withValues(alpha: 0.9),
                   getTooltipItems: (touchedSpots) {
                     return touchedSpots.map((spot) {
                       final code = codeList[spot.barIndex];
                       final eval = sorted[spot.x.toInt()];
-                      final domain = eval.domini.firstWhere((d) => d.codice == code, orElse: () => DomainScore(codice: code, etichetta: code, punteggio: 0, numDomande: 0));
+                      final domain = eval.domini.firstWhere(
+                          (d) => d.codice == code,
+                          orElse: () => DomainScore(
+                              codice: code,
+                              etichetta: code,
+                              punteggio: 0,
+                              numDomande: 0));
                       return LineTooltipItem(
                         '${domain.etichetta}\n${spot.y.toStringAsFixed(1)}%',
-                        TextStyle(color: _domainColors[spot.barIndex % _domainColors.length], fontWeight: FontWeight.bold, fontSize: 12),
+                        TextStyle(
+                            color: _domainColors[
+                                spot.barIndex % _domainColors.length],
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12),
                       );
                     }).toList();
                   },
@@ -1708,12 +1862,16 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 Container(
                   width: 14,
                   height: 14,
-                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                  decoration:
+                      BoxDecoration(color: color, shape: BoxShape.circle),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   label,
-                  style: const TextStyle(fontSize: 12, color: AppTheme.textPrimary, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textPrimary,
+                      fontWeight: FontWeight.w500),
                 ),
               ],
             );
@@ -1733,7 +1891,20 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       final month = int.parse(parts[1]);
       final day = int.parse(parts[2]);
       final date = DateTime(year, month, day);
-      const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+      const months = [
+        'Gen',
+        'Feb',
+        'Mar',
+        'Apr',
+        'Mag',
+        'Giu',
+        'Lug',
+        'Ago',
+        'Set',
+        'Ott',
+        'Nov',
+        'Dic'
+      ];
       final formatted = '$day ${months[month - 1]} $year';
       final diff = DateTime.now().difference(date).inDays;
       if (diff == 0) return '$formatted (oggi)';
@@ -1749,10 +1920,12 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       spacing: 16,
       runSpacing: 8,
       children: [
-        _metaChip(Icons.calendar_today, 'Data', _formatDateReadable(eval.dataCompilazione.split('T')[0])),
+        _metaChip(Icons.calendar_today, 'Data',
+            _formatDateReadable(eval.dataCompilazione.split('T')[0])),
         _metaChip(Icons.person, 'Operatore', eval.nomeOperatore),
         if (eval.nomeIntervistato != null)
-          _metaChip(Icons.record_voice_over, 'Intervistato', eval.nomeIntervistato!),
+          _metaChip(
+              Icons.record_voice_over, 'Intervistato', eval.nomeIntervistato!),
       ],
     );
   }
@@ -1770,8 +1943,14 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         children: [
           Icon(icon, size: 14, color: AppTheme.textSecondary),
           const SizedBox(width: 6),
-          Text('$label: ', style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+          Text('$label: ',
+              style:
+                  const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary)),
         ],
       ),
     );
@@ -1793,7 +1972,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         children: [
           Row(
             children: [
-              Expanded(child: _indicatorTile(
+              Expanded(
+                  child: _indicatorTile(
                 title: 'Indice QV',
                 value: analysis.indiceQv?.toString() ?? '—',
                 subtitle: 'Scala centrata su 100',
@@ -1801,9 +1981,12 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 color: Colors.pinkAccent,
               )),
               const SizedBox(width: 16),
-              Expanded(child: _indicatorTile(
+              Expanded(
+                  child: _indicatorTile(
                 title: 'Percentile',
-                value: analysis.percentile != null ? '${analysis.percentile}°' : '—',
+                value: analysis.percentile != null
+                    ? '${analysis.percentile}°'
+                    : '—',
                 subtitle: 'vs. campione normativo',
                 icon: Icons.leaderboard,
                 color: const Color(0xFFAED581),
@@ -1813,7 +1996,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _indicatorTile(
+              Expanded(
+                  child: _indicatorTile(
                 title: 'Somma Std.',
                 value: analysis.sommaPunteggiStandard?.toString() ?? '—',
                 subtitle: 'Somma degli 8 domini',
@@ -1821,7 +2005,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 color: const Color(0xFF90CAF9),
               )),
               const SizedBox(width: 16),
-              Expanded(child: _indicatorBadge(
+              Expanded(
+                  child: _indicatorBadge(
                 title: 'Fascia',
                 value: analysis.fasciaQv ?? '—',
                 subtitle: 'Fascia di Supporto',
@@ -1841,17 +2026,22 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             ),
             child: Row(
               children: [
-                const Icon(Icons.flag_outlined, color: Colors.amberAccent, size: 20),
+                const Icon(Icons.flag_outlined,
+                    color: Colors.amberAccent, size: 20),
                 const SizedBox(width: 10),
                 const Expanded(
                   child: Text(
                     'Target normativo: Indice QV ≥ 100  |  Percentile ≥ 50°',
-                    style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500),
                   ),
                 ),
                 if (analysis.indiceQv != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: (analysis.indiceQv! >= 100)
                           ? Colors.green.withValues(alpha: 0.3)
@@ -1859,9 +2049,13 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      (analysis.indiceQv! >= 100) ? '✓ Raggiunto' : '↑ Da raggiungere',
+                      (analysis.indiceQv! >= 100)
+                          ? '✓ Raggiunto'
+                          : '↑ Da raggiungere',
                       style: TextStyle(
-                        color: (analysis.indiceQv! >= 100) ? Colors.greenAccent : Colors.orangeAccent,
+                        color: (analysis.indiceQv! >= 100)
+                            ? Colors.greenAccent
+                            : Colors.orangeAccent,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1895,13 +2089,17 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             children: [
               Icon(icon, color: color, size: 16),
               const SizedBox(width: 6),
-              Text(title, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+              Text(title,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12)),
             ],
           ),
           const SizedBox(height: 8),
-          Text(value, style: TextStyle(color: color, fontSize: 28, fontWeight: FontWeight.bold)),
+          Text(value,
+              style: TextStyle(
+                  color: color, fontSize: 28, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+          Text(subtitle,
+              style: const TextStyle(color: Colors.white54, fontSize: 11)),
         ],
       ),
     );
@@ -1912,18 +2110,67 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   static ({Color bg, Color text, IconData icon}) _fasciaColors(String value) {
     final lv = value.toLowerCase();
     // Fasce SM
-    if (lv.contains('molto alto')) return (bg: const Color(0xFF14532D).withValues(alpha: 0.35), text: const Color(0xFF86EFAC), icon: Icons.arrow_upward_rounded);
-    if (lv.contains('alto')) return (bg: const Color(0xFF166534).withValues(alpha: 0.3), text: const Color(0xFF4ADE80), icon: Icons.trending_up_rounded);
-    if (lv.contains('medio')) return (bg: const Color(0xFF854D0E).withValues(alpha: 0.3), text: const Color(0xFFFBBF24), icon: Icons.trending_flat_rounded);
-    if (lv.contains('molto basso')) return (bg: const Color(0xFF7F1D1D).withValues(alpha: 0.35), text: const Color(0xFFFCA5A5), icon: Icons.arrow_downward_rounded);
-    if (lv.contains('basso')) return (bg: const Color(0xFF991B1B).withValues(alpha: 0.3), text: const Color(0xFFF87171), icon: Icons.trending_down_rounded);
+    if (lv.contains('molto alto'))
+      return (
+        bg: const Color(0xFF14532D).withValues(alpha: 0.35),
+        text: const Color(0xFF86EFAC),
+        icon: Icons.arrow_upward_rounded
+      );
+    if (lv.contains('alto'))
+      return (
+        bg: const Color(0xFF166534).withValues(alpha: 0.3),
+        text: const Color(0xFF4ADE80),
+        icon: Icons.trending_up_rounded
+      );
+    if (lv.contains('medio'))
+      return (
+        bg: const Color(0xFF854D0E).withValues(alpha: 0.3),
+        text: const Color(0xFFFBBF24),
+        icon: Icons.trending_flat_rounded
+      );
+    if (lv.contains('molto basso'))
+      return (
+        bg: const Color(0xFF7F1D1D).withValues(alpha: 0.35),
+        text: const Color(0xFFFCA5A5),
+        icon: Icons.arrow_downward_rounded
+      );
+    if (lv.contains('basso'))
+      return (
+        bg: const Color(0xFF991B1B).withValues(alpha: 0.3),
+        text: const Color(0xFFF87171),
+        icon: Icons.trending_down_rounded
+      );
     // Livelli SIS (I = basso bisogno, IV = alto bisogno)
-    if (lv.contains('livello iv')) return (bg: const Color(0xFF7F1D1D).withValues(alpha: 0.35), text: const Color(0xFFFCA5A5), icon: Icons.arrow_upward_rounded);
-    if (lv.contains('livello iii')) return (bg: const Color(0xFF854D0E).withValues(alpha: 0.3), text: const Color(0xFFFBBF24), icon: Icons.trending_up_rounded);
-    if (lv.contains('livello ii')) return (bg: const Color(0xFF166534).withValues(alpha: 0.3), text: const Color(0xFF4ADE80), icon: Icons.trending_flat_rounded);
-    if (lv.contains('livello i')) return (bg: const Color(0xFF14532D).withValues(alpha: 0.35), text: const Color(0xFF86EFAC), icon: Icons.trending_down_rounded);
+    if (lv.contains('livello iv'))
+      return (
+        bg: const Color(0xFF7F1D1D).withValues(alpha: 0.35),
+        text: const Color(0xFFFCA5A5),
+        icon: Icons.arrow_upward_rounded
+      );
+    if (lv.contains('livello iii'))
+      return (
+        bg: const Color(0xFF854D0E).withValues(alpha: 0.3),
+        text: const Color(0xFFFBBF24),
+        icon: Icons.trending_up_rounded
+      );
+    if (lv.contains('livello ii'))
+      return (
+        bg: const Color(0xFF166534).withValues(alpha: 0.3),
+        text: const Color(0xFF4ADE80),
+        icon: Icons.trending_flat_rounded
+      );
+    if (lv.contains('livello i'))
+      return (
+        bg: const Color(0xFF14532D).withValues(alpha: 0.35),
+        text: const Color(0xFF86EFAC),
+        icon: Icons.trending_down_rounded
+      );
     // Default
-    return (bg: Colors.blue.withValues(alpha: 0.2), text: Colors.lightBlueAccent, icon: Icons.info_outline_rounded);
+    return (
+      bg: Colors.blue.withValues(alpha: 0.2),
+      text: Colors.lightBlueAccent,
+      icon: Icons.info_outline_rounded
+    );
   }
 
   Widget _indicatorBadge({
@@ -1947,7 +2194,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             children: [
               Icon(icon, color: Colors.amberAccent, size: 16),
               const SizedBox(width: 6),
-              Text(title, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+              Text(title,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12)),
             ],
           ),
           const SizedBox(height: 8),
@@ -1963,12 +2211,17 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               children: [
                 Icon(colors.icon, color: colors.text, size: 14),
                 const SizedBox(width: 6),
-                Text(value, style: TextStyle(color: colors.text, fontSize: 14, fontWeight: FontWeight.bold)),
+                Text(value,
+                    style: TextStyle(
+                        color: colors.text,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold)),
               ],
             ),
           ),
           const SizedBox(height: 4),
-          Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+          Text(subtitle,
+              style: const TextStyle(color: Colors.white54, fontSize: 11)),
         ],
       ),
     );
@@ -1996,7 +2249,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         children: [
           Row(
             children: [
-              Expanded(child: _indicatorTile(
+              Expanded(
+                  child: _indicatorTile(
                 title: 'Punteggio Totale',
                 value: total.toString(),
                 subtitle: '${eval.domini.length} domini analizzati',
@@ -2004,9 +2258,12 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 color: Colors.amberAccent,
               )),
               const SizedBox(width: 16),
-              Expanded(child: _indicatorTile(
+              Expanded(
+                  child: _indicatorTile(
                 title: 'Media per Dominio',
-                value: eval.domini.isNotEmpty ? (total / eval.domini.length).toStringAsFixed(1) : '—',
+                value: eval.domini.isNotEmpty
+                    ? (total / eval.domini.length).toStringAsFixed(1)
+                    : '—',
                 subtitle: 'Valore medio calcolato',
                 icon: Icons.bar_chart,
                 color: const Color(0xFF90CAF9),
@@ -2026,7 +2283,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     // Dividiamo i domini in 2 colonne
     final int itemsPerCol = (domains.length / 2).ceil();
     final List<List<DomainScore>> columns = [[], []];
-    
+
     for (int i = 0; i < domains.length; i++) {
       final colIndex = i ~/ itemsPerCol;
       if (colIndex < 2) {
@@ -2049,7 +2306,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         children: [
           const Row(
             children: [
-              Icon(Icons.legend_toggle_outlined, color: Colors.amberAccent, size: 14),
+              Icon(Icons.legend_toggle_outlined,
+                  color: Colors.amberAccent, size: 14),
               SizedBox(width: 6),
               Text(
                 'Legenda Domini',
@@ -2079,22 +2337,31 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                           children: [
                             const Text(
                               '• ',
-                              style: TextStyle(color: Colors.amberAccent, fontSize: 13, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                  color: Colors.amberAccent,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold),
                             ),
                             Expanded(
                               child: RichText(
                                 text: TextSpan(
-                                  style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.2),
+                                  style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 11,
+                                      height: 1.2),
                                   children: [
                                     TextSpan(
                                       text: '${d.codice.toUpperCase()}: ',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontFamily: 'monospace'),
                                     ),
                                     TextSpan(text: d.etichetta),
                                     TextSpan(
                                       text: ' (${d.punteggio})',
                                       style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.7),
+                                        color:
+                                            Colors.white.withValues(alpha: 0.7),
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -2117,20 +2384,29 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   }
 
   // ── SIS indicators ───────────────────────────────────────────────────────────
-  Widget _buildSisIndicators(AggregatedEvaluation eval, PsychometricAnalysis? analysis) {
+  Widget _buildSisIndicators(
+      AggregatedEvaluation eval, PsychometricAnalysis? analysis) {
     int totalGrezzo = 0;
     for (final d in eval.domini) {
       totalGrezzo += d.punteggio;
     }
-    
-    final String mainTitle1 = analysis != null ? 'Indice SIS' : 'Punteggio Grezzo';
-    final String mainValue1 = analysis != null && analysis.indiceQv != null ? analysis.indiceQv.toString() : totalGrezzo.toString();
-    final String sub1 = analysis != null ? 'Somma standard: ${analysis.sommaPunteggiStandard ?? 0}' : '${eval.domini.length} domini analizzati';
-    
-    final String mainTitle2 = analysis != null ? 'Percentile Globale' : 'Media per Dominio';
+
+    final String mainTitle1 =
+        analysis != null ? 'Indice SIS' : 'Punteggio Grezzo';
+    final String mainValue1 = analysis != null && analysis.indiceQv != null
+        ? analysis.indiceQv.toString()
+        : totalGrezzo.toString();
+    final String sub1 = analysis != null
+        ? 'Somma standard: ${analysis.sommaPunteggiStandard ?? 0}'
+        : '${eval.domini.length} domini analizzati';
+
+    final String mainTitle2 =
+        analysis != null ? 'Percentile Globale' : 'Media per Dominio';
     final String mainValue2 = analysis != null && analysis.percentile != null
         ? '${analysis.percentile}°'
-        : (eval.domini.isNotEmpty ? (totalGrezzo / eval.domini.length).toStringAsFixed(1) : '—');
+        : (eval.domini.isNotEmpty
+            ? (totalGrezzo / eval.domini.length).toStringAsFixed(1)
+            : '—');
     final String sub2 = 'vs. campione normativo';
 
     // Classificazione intensità SIS come badge colorato
@@ -2151,7 +2427,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         children: [
           Row(
             children: [
-              Expanded(child: _indicatorTile(
+              Expanded(
+                  child: _indicatorTile(
                 title: mainTitle1,
                 value: mainValue1,
                 subtitle: sub1,
@@ -2159,7 +2436,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 color: Colors.amberAccent,
               )),
               const SizedBox(width: 16),
-              Expanded(child: _indicatorTile(
+              Expanded(
+                  child: _indicatorTile(
                 title: mainTitle2,
                 value: mainValue2,
                 subtitle: sub2,
@@ -2198,26 +2476,39 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     }).toList();
 
     Widget _legendRow(DomainScore d, Color bullet) => Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('• ', style: TextStyle(color: bullet, fontSize: 13, fontWeight: FontWeight.bold)),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.2),
-                children: [
-                  TextSpan(text: '${d.codice.toUpperCase()}: ', style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                  TextSpan(text: d.etichetta),
-                  TextSpan(text: ' (${d.punteggio})', style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontWeight: FontWeight.bold)),
-                ],
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('• ',
+                  style: TextStyle(
+                      color: bullet,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold)),
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 11, height: 1.2),
+                    children: [
+                      TextSpan(
+                          text: '${d.codice.toUpperCase()}: ',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'monospace')),
+                      TextSpan(text: d.etichetta),
+                      TextSpan(
+                          text: ' (${d.punteggio})',
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-    );
+        );
 
     return Container(
       margin: const EdgeInsets.only(top: 12),
@@ -2233,10 +2524,14 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           // ── Sezione 1: Domini A-F ──────────────────────────────────────
           const Row(
             children: [
-              Icon(Icons.legend_toggle_outlined, color: Colors.amberAccent, size: 14),
+              Icon(Icons.legend_toggle_outlined,
+                  color: Colors.amberAccent, size: 14),
               SizedBox(width: 6),
               Text('Sezione 1 — Attività (A–F)',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12)),
             ],
           ),
           const SizedBox(height: 8),
@@ -2244,8 +2539,20 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: sez1.sublist(0, (sez1.length / 2).ceil()).map((d) => _legendRow(d, Colors.amberAccent)).toList())),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: sez1.sublist((sez1.length / 2).ceil()).map((d) => _legendRow(d, Colors.amberAccent)).toList())),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: sez1
+                            .sublist(0, (sez1.length / 2).ceil())
+                            .map((d) => _legendRow(d, Colors.amberAccent))
+                            .toList())),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: sez1
+                            .sublist((sez1.length / 2).ceil())
+                            .map((d) => _legendRow(d, Colors.amberAccent))
+                            .toList())),
               ],
             ),
 
@@ -2256,10 +2563,14 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             const SizedBox(height: 8),
             const Row(
               children: [
-                Icon(Icons.add_circle_outline_rounded, color: Color(0xFF80CBC4), size: 13),
+                Icon(Icons.add_circle_outline_rounded,
+                    color: Color(0xFF80CBC4), size: 13),
                 SizedBox(width: 6),
                 Text('Sezioni Supplementari (Sez. 2 & 3)',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12)),
               ],
             ),
             const SizedBox(height: 8),
@@ -2276,7 +2587,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     if (domini.isEmpty) return const SizedBox();
 
     final patientValues = domini
-        .map((d) => ((d.punteggioStandard ?? d.punteggioDiretto).clamp(0, 20)).toDouble())
+        .map((d) => ((d.punteggioStandard ?? d.punteggioDiretto).clamp(0, 20))
+            .toDouble())
         .toList();
 
     return LayoutBuilder(
@@ -2292,46 +2604,67 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   RadarChartData(
                     radarShape: RadarShape.polygon,
                     tickCount: 4,
-                    ticksTextStyle: const TextStyle(fontSize: 9, color: Color(0xFF64748B)),
-                    tickBorderData: const BorderSide(color: Color(0xFFE2E8F0), width: 0.8),
-                    gridBorderData: const BorderSide(color: Color(0xFFCBD5E1), width: 1.0),
-                    radarBorderData: const BorderSide(color: Color(0xFF94A3B8), width: 1.5),
+                    ticksTextStyle:
+                        const TextStyle(fontSize: 9, color: Color(0xFF64748B)),
+                    tickBorderData:
+                        const BorderSide(color: Color(0xFFE2E8F0), width: 0.8),
+                    gridBorderData:
+                        const BorderSide(color: Color(0xFFCBD5E1), width: 1.0),
+                    radarBorderData:
+                        const BorderSide(color: Color(0xFF94A3B8), width: 1.5),
                     radarBackgroundColor: const Color(0xFFF8FAFC),
                     titlePositionPercentageOffset: 0.15,
-                    titleTextStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                    titleTextStyle: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary),
                     getTitle: (index, _) {
-                      if (index < 0 || index >= domini.length) return const RadarChartTitle(text: '');
+                      if (index < 0 || index >= domini.length)
+                        return const RadarChartTitle(text: '');
                       return RadarChartTitle(text: domini[index].codice);
                     },
                     dataSets: [
                       // Max reference (20)
                       RadarDataSet(
-                        dataEntries: List.generate(domini.length, (_) => const RadarEntry(value: 20)),
+                        dataEntries: List.generate(
+                            domini.length, (_) => const RadarEntry(value: 20)),
                         borderColor: Colors.transparent,
                         fillColor: Colors.transparent,
                         entryRadius: 0,
                       ),
                       // Range medio (12) - dataset green transparency
                       RadarDataSet(
-                        dataEntries: List.generate(domini.length, (_) => const RadarEntry(value: 12)),
-                        borderColor: const Color(0xFF22C55E).withValues(alpha: 0.35),
-                        fillColor: const Color(0xFF22C55E).withValues(alpha: 0.08),
+                        dataEntries: List.generate(
+                            domini.length, (_) => const RadarEntry(value: 12)),
+                        borderColor:
+                            const Color(0xFF22C55E).withValues(alpha: 0.35),
+                        fillColor:
+                            const Color(0xFF22C55E).withValues(alpha: 0.08),
                         borderWidth: 1.5,
                         entryRadius: 0,
                       ),
                       // Media normativa (10) - dataset red transparency
                       RadarDataSet(
-                        dataEntries: List.generate(domini.length, (_) => const RadarEntry(value: 10)),
-                        borderColor: const Color(0xFFEF4444).withValues(alpha: 0.35),
-                        fillColor: const Color(0xFFEF4444).withValues(alpha: 0.08),
+                        dataEntries: List.generate(
+                            domini.length, (_) => const RadarEntry(value: 10)),
+                        borderColor:
+                            const Color(0xFFEF4444).withValues(alpha: 0.35),
+                        fillColor:
+                            const Color(0xFFEF4444).withValues(alpha: 0.08),
                         borderWidth: 1.5,
                         entryRadius: 0,
                       ),
                       // Patient data
                       RadarDataSet(
-                        dataEntries: domini.map((d) => RadarEntry(value: (d.punteggioStandard ?? d.punteggioDiretto).toDouble())).toList(),
+                        dataEntries: domini
+                            .map((d) => RadarEntry(
+                                value:
+                                    (d.punteggioStandard ?? d.punteggioDiretto)
+                                        .toDouble()))
+                            .toList(),
                         borderColor: const Color(0xFFF97316),
-                        fillColor: const Color(0xFFF97316).withValues(alpha: 0.2),
+                        fillColor:
+                            const Color(0xFFF97316).withValues(alpha: 0.2),
                         borderWidth: 2.5,
                         entryRadius: 4,
                       ),
@@ -2355,7 +2688,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     );
   }
 
-  Widget _buildBarChartForPanel(List<DomainScore> domini, {bool isSm = false, bool isSis = false, bool isSabs = false}) {
+  Widget _buildBarChartForPanel(List<DomainScore> domini,
+      {bool isSm = false, bool isSis = false, bool isSabs = false}) {
     if (domini.isEmpty) return const SizedBox();
 
     // Calcola il maxY dinamico basato sul punteggio massimo + 5
@@ -2369,104 +2703,119 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
     return BarChart(
       BarChartData(
-          alignment: BarChartAlignment.spaceAround,
-          maxY: dynamicMaxY,
-          barTouchData: BarTouchData(
-            touchTooltipData: BarTouchTooltipData(
-              getTooltipItem: (group, gIdx, rod, rIdx) {
-                if (group.x < 0 || group.x >= domini.length) return null;
-                return BarTooltipItem(
-                  '${domini[group.x].etichetta}\n${rod.toY.toInt()} pt',
-                  const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+        alignment: BarChartAlignment.spaceAround,
+        maxY: dynamicMaxY,
+        barTouchData: BarTouchData(
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipItem: (group, gIdx, rod, rIdx) {
+              if (group.x < 0 || group.x >= domini.length) return null;
+              return BarTooltipItem(
+                '${domini[group.x].etichetta}\n${rod.toY.toInt()} pt',
+                const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold),
+              );
+            },
+          ),
+        ),
+        titlesData: FlTitlesData(
+          show: true,
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: domini.length > 10 ? 75 : 40,
+              getTitlesWidget: (value, meta) {
+                final idx = value.toInt();
+                if (idx < 0 || idx >= domini.length)
+                  return const SizedBox.shrink();
+
+                final titleWidget = Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    domini[idx].codice,
+                    style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary),
+                    textAlign: TextAlign.center,
+                  ),
+                );
+
+                if (domini.length > 10) {
+                  return SideTitleWidget(
+                    axisSide: meta.axisSide,
+                    space: 2,
+                    child: RotatedBox(
+                      quarterTurns: 3,
+                      child: titleWidget,
+                    ),
+                  );
+                }
+
+                return titleWidget;
+              },
+            ),
+          ),
+          leftTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                final idx = value.toInt();
+                if (idx < 0 || idx >= domini.length)
+                  return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    '${domini[idx].punteggio}',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: _domainColors[idx % _domainColors.length]),
+                  ),
                 );
               },
             ),
           ),
-          titlesData: FlTitlesData(
-            show: true,
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: domini.length > 10 ? 75 : 40,
-                getTitlesWidget: (value, meta) {
-                  final idx = value.toInt();
-                  if (idx < 0 || idx >= domini.length) return const SizedBox.shrink();
-                  
-                  final titleWidget = Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      domini[idx].codice,
-                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-                      textAlign: TextAlign.center,
-                    ),
-                  );
-
-                  if (domini.length > 10) {
-                    return SideTitleWidget(
-                      axisSide: meta.axisSide,
-                      space: 2,
-                      child: RotatedBox(
-                        quarterTurns: 3,
-                        child: titleWidget,
-                      ),
-                    );
-                  }
-
-                  return titleWidget;
-                },
-              ),
-            ),
-            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (value, meta) {
-                  final idx = value.toInt();
-                  if (idx < 0 || idx >= domini.length) return const SizedBox.shrink();
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      '${domini[idx].punteggio}',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _domainColors[idx % _domainColors.length]),
-                    ),
-                  );
-                },
-              ),
-            ),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          ),
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            horizontalInterval: 3,
-            getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.shade200, strokeWidth: 0.8),
-          ),
-          borderData: FlBorderData(show: false),
-          barGroups: List.generate(domini.length, (i) {
-            final double toYValue = domini[i].punteggio.toDouble();
-            final double backYValue = dynamicMaxY;
-            
-            return BarChartGroupData(
-              x: i,
-              barRods: [
-                BarChartRodData(
-                  toY: toYValue,
-                  color: _domainColors[i % _domainColors.length],
-                  width: 28,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-                  backDrawRodData: BackgroundBarChartRodData(
-                    show: true,
-                    toY: backYValue,
-                    color: Colors.grey.shade100,
-                  ),
-                ),
-              ],
-              showingTooltipIndicators: [],
-            );
-          }),
-          extraLinesData: ExtraLinesData(horizontalLines: []),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
-      );
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: 3,
+          getDrawingHorizontalLine: (value) =>
+              FlLine(color: Colors.grey.shade200, strokeWidth: 0.8),
+        ),
+        borderData: FlBorderData(show: false),
+        barGroups: List.generate(domini.length, (i) {
+          final double toYValue = domini[i].punteggio.toDouble();
+          final double backYValue = dynamicMaxY;
+
+          return BarChartGroupData(
+            x: i,
+            barRods: [
+              BarChartRodData(
+                toY: toYValue,
+                color: _domainColors[i % _domainColors.length],
+                width: 28,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(6)),
+                backDrawRodData: BackgroundBarChartRodData(
+                  show: true,
+                  toY: backYValue,
+                  color: Colors.grey.shade100,
+                ),
+              ),
+            ],
+            showingTooltipIndicators: [],
+          );
+        }),
+        extraLinesData: ExtraLinesData(horizontalLines: []),
+      ),
+    );
     // We overlay real bars on top — simplified: use single bar with backDrawRodData
   }
 
@@ -2521,9 +2870,15 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary)),
               const SizedBox(height: 2),
-              Text(subtitle, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+              Text(subtitle,
+                  style: const TextStyle(
+                      fontSize: 11, color: AppTheme.textSecondary)),
             ],
           ),
         ),
@@ -2531,13 +2886,15 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     );
   }
 
-  Widget _compactCheckbox(String label, bool value, ValueChanged<bool?> onChanged) {
+  Widget _compactCheckbox(
+      String label, bool value, ValueChanged<bool?> onChanged) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: CheckboxListTile(
         dense: true,
         visualDensity: VisualDensity.compact,
-        title: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        title: Text(label,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
         value: value,
         activeColor: AppTheme.primaryColor,
         controlAffinity: ListTileControlAffinity.leading,
@@ -2569,28 +2926,37 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             ? Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.cloud_upload_outlined, color: Colors.deepPurple.shade300, size: 20),
+                  Icon(Icons.cloud_upload_outlined,
+                      color: Colors.deepPurple.shade300, size: 20),
                   const SizedBox(width: 10),
                   const Text(
                     'Allega Documentazione (PDF, TXT, Immagini)',
-                    style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w600, fontSize: 12),
+                    style: TextStyle(
+                        color: Colors.deepPurple,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12),
                   ),
                 ],
               )
             : Row(
                 children: [
-                  const Icon(Icons.insert_drive_file, color: Colors.deepPurple, size: 20),
+                  const Icon(Icons.insert_drive_file,
+                      color: Colors.deepPurple, size: 20),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       _aiAttachment!.name,
-                      style: const TextStyle(fontSize: 12, color: Colors.deepPurple, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.deepPurple,
+                          fontWeight: FontWeight.w500),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                    icon: const Icon(Icons.delete_outline,
+                        color: Colors.redAccent, size: 18),
                     onPressed: () => setState(() => _aiAttachment = null),
                     constraints: const BoxConstraints(),
                     padding: EdgeInsets.zero,
@@ -2631,12 +2997,23 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   spacing: 32,
                   runSpacing: 12,
                   children: [
-                    _buildPatientDetailItem('Sesso', widget.patient.sesso ?? '—'),
-                    _buildPatientDetailItem('Età', _calculateAge() != null ? '${_calculateAge()} anni' : '—'),
-                    _buildPatientDetailItem('Data di Nascita', widget.patient.dataNascita != null ? _formatDateReadable(widget.patient.dataNascita!.split('T')[0]) : '—'),
+                    _buildPatientDetailItem(
+                        'Sesso', widget.patient.sesso ?? '—'),
+                    _buildPatientDetailItem(
+                        'Età',
+                        _calculateAge() != null
+                            ? '${_calculateAge()} anni'
+                            : '—'),
+                    _buildPatientDetailItem(
+                        'Data di Nascita',
+                        widget.patient.dataNascita != null
+                            ? _formatDateReadable(
+                                widget.patient.dataNascita!.split('T')[0])
+                            : '—'),
                   ],
                 ),
-                if (widget.patient.note != null && widget.patient.note!.trim().isNotEmpty) ...[
+                if (widget.patient.note != null &&
+                    widget.patient.note!.trim().isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -2648,12 +3025,16 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.info_outline, size: 16, color: Colors.amber.shade700),
+                        Icon(Icons.info_outline,
+                            size: 16, color: Colors.amber.shade700),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             widget.patient.note!,
-                            style: TextStyle(fontSize: 12, color: Colors.amber.shade900, height: 1.3),
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.amber.shade900,
+                                height: 1.3),
                           ),
                         ),
                       ],
@@ -2669,14 +3050,20 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 _buildSectionHeader(
                   icon: Icons.tune_outlined,
                   title: 'Scale da Includere',
-                  subtitle: 'Seleziona quali dati inviare all\'IA per l\'analisi',
+                  subtitle:
+                      'Seleziona quali dati inviare all\'IA per l\'analisi',
                   iconBgColor: Colors.indigo.shade50,
                   iconColor: Colors.indigo.shade600,
                 ),
                 const SizedBox(height: 12),
-                _compactCheckbox('Scala POS (Qualità della Vita)', _includePos, (v) => setState(() => _includePos = v ?? true)),
-                _compactCheckbox('Scala San Martín', _includeSm, (v) => setState(() => _includeSm = v ?? true)),
-                _compactCheckbox('Scala SIS (Supports Intensity Scale)', _includeSis, (v) => setState(() => _includeSis = v ?? true)),
+                _compactCheckbox('Scala POS (Qualità della Vita)', _includePos,
+                    (v) => setState(() => _includePos = v ?? true)),
+                _compactCheckbox('Scala San Martín', _includeSm,
+                    (v) => setState(() => _includeSm = v ?? true)),
+                _compactCheckbox(
+                    'Scala SIS (Supports Intensity Scale)',
+                    _includeSis,
+                    (v) => setState(() => _includeSis = v ?? true)),
 
                 const SizedBox(height: 24),
                 const Divider(height: 1, color: Color(0xFFE8EEF8)),
@@ -2686,13 +3073,20 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 _buildSectionHeader(
                   icon: Icons.history_rounded,
                   title: 'Contesto Aggiuntivo',
-                  subtitle: 'Arricchisci l\'analisi con dati storici e relazioni pregresse',
+                  subtitle:
+                      'Arricchisci l\'analisi con dati storici e relazioni pregresse',
                   iconBgColor: Colors.teal.shade50,
                   iconColor: Colors.teal.shade700,
                 ),
                 const SizedBox(height: 12),
-                _compactCheckbox('Storico Scale (trend temporale)', _includeHistory, (v) => setState(() => _includeHistory = v ?? true)),
-                _compactCheckbox('Storico Valutazioni IA (relazioni pregresse)', _includeSavedAnalyses, (v) => setState(() => _includeSavedAnalyses = v ?? true)),
+                _compactCheckbox(
+                    'Storico Scale (trend temporale)',
+                    _includeHistory,
+                    (v) => setState(() => _includeHistory = v ?? true)),
+                _compactCheckbox(
+                    'Storico Valutazioni IA (relazioni pregresse)',
+                    _includeSavedAnalyses,
+                    (v) => setState(() => _includeSavedAnalyses = v ?? true)),
 
                 const SizedBox(height: 24),
                 const Divider(height: 1, color: Color(0xFFE8EEF8)),
@@ -2702,7 +3096,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 _buildSectionHeader(
                   icon: Icons.add_circle_outline,
                   title: 'Dati Aggiuntivi',
-                  subtitle: 'Note testuali e documentazione allegata (opzionale)',
+                  subtitle:
+                      'Note testuali e documentazione allegata (opzionale)',
                   iconBgColor: Colors.deepPurple.shade50,
                   iconColor: Colors.deepPurple.shade400,
                 ),
@@ -2712,8 +3107,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   maxLines: 3,
                   style: const TextStyle(fontSize: 13),
                   decoration: InputDecoration(
-                    hintText: 'Osservazioni, contesto familiare o scolastico...',
-                    hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                    hintText:
+                        'Osservazioni, contesto familiare o scolastico...',
+                    hintStyle:
+                        TextStyle(color: Colors.grey.shade400, fontSize: 13),
                     filled: true,
                     fillColor: Colors.grey.shade50,
                     border: OutlineInputBorder(
@@ -2740,9 +3137,13 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     gradient: LinearGradient(
-                      colors: (_isAnalyzing || (ApiService.isViewer && !_viewerAiEnabled))
+                      colors: (_isAnalyzing ||
+                              (ApiService.isViewer && !_viewerAiEnabled))
                           ? [Colors.grey.shade400, Colors.grey.shade400]
-                          : [Colors.deepPurple.shade700, Colors.indigo.shade600],
+                          : [
+                              Colors.deepPurple.shade700,
+                              Colors.indigo.shade600
+                            ],
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -2757,19 +3158,30 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
                       padding: const EdgeInsets.symmetric(vertical: 20),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
                     ),
-                    onPressed: (_isAnalyzing || (ApiService.isViewer && !_viewerAiEnabled)) ? null : _runAiAnalysis,
+                    onPressed: (_isAnalyzing ||
+                            (ApiService.isViewer && !_viewerAiEnabled))
+                        ? null
+                        : _runAiAnalysis,
                     icon: _isAnalyzing
                         ? const SizedBox(
                             width: 24,
                             height: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
                           )
-                        : const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
+                        : const Icon(Icons.auto_awesome,
+                            color: Colors.white, size: 24),
                     label: Text(
-                      _isAnalyzing ? 'Elaborazione in corso...' : 'Avvia Analisi con IA',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      _isAnalyzing
+                          ? 'Elaborazione in corso...'
+                          : 'Avvia Analisi con IA',
+                      style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white),
                     ),
                   ),
                 ),
@@ -2778,7 +3190,9 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      _isAiConfigured ? Icons.check_circle_outline : Icons.info_outline,
+                      _isAiConfigured
+                          ? Icons.check_circle_outline
+                          : Icons.info_outline,
                       size: 13,
                       color: Colors.white70,
                     ),
@@ -2787,7 +3201,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                       _isAiConfigured
                           ? 'Motore attivo: ${_activeAiModel.isNotEmpty ? _activeAiModel : _activeAiProvider}'
                           : 'IA non configurata (verifica Impostazioni)',
-                      style: const TextStyle(fontSize: 11, color: Colors.white70),
+                      style:
+                          const TextStyle(fontSize: 11, color: Colors.white70),
                     ),
                   ],
                 ),
@@ -2819,7 +3234,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                           color: Colors.teal.shade100,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.check, color: Colors.teal, size: 24),
+                        child: const Icon(Icons.check,
+                            color: Colors.teal, size: 24),
                       ),
                       const SizedBox(width: 16),
                       const Expanded(
@@ -2837,7 +3253,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   const SizedBox(height: 12),
                   const Text(
                     'La nuova relazione è stata completata con successo ed è stata salvata automaticamente nello storico.',
-                    style: TextStyle(fontSize: 13, color: AppTheme.textPrimary, height: 1.4),
+                    style: TextStyle(
+                        fontSize: 13, color: AppTheme.textPrimary, height: 1.4),
                   ),
                   const SizedBox(height: 20),
                   Row(
@@ -2848,7 +3265,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                             backgroundColor: Colors.indigo.shade600,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
                           ),
                           onPressed: () {
                             Navigator.push(
@@ -2876,11 +3294,16 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                           backgroundColor: Colors.deepPurple.shade900,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.all(16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: _isExportingPdf ? null : _exportAiPdf,
                         icon: _isExportingPdf
-                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white))
                             : const Icon(Icons.picture_as_pdf),
                       ),
                     ],
@@ -2906,17 +3329,22 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
           children: [
             Row(
               children: [
-                Icon(Icons.history_toggle_off_rounded, color: Colors.teal.shade700, size: 22),
+                Icon(Icons.history_toggle_off_rounded,
+                    color: Colors.teal.shade700, size: 22),
                 const SizedBox(width: 8),
                 const Expanded(
                   child: Text(
                     'Storico Relazioni IA',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary),
                   ),
                 ),
                 if (_selectedAnalysesIdsForContext.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.teal.shade50,
                       borderRadius: BorderRadius.circular(20),
@@ -2924,7 +3352,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     ),
                     child: Text(
                       '${_selectedAnalysesIdsForContext.length} selezionate',
-                      style: TextStyle(color: Colors.teal.shade800, fontSize: 11, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.teal.shade800,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
               ],
@@ -2937,16 +3368,21 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.archive_outlined, size: 48, color: Colors.grey.shade300),
+                      Icon(Icons.archive_outlined,
+                          size: 48, color: Colors.grey.shade300),
                       const SizedBox(height: 12),
                       const Text(
                         'Nessuna relazione in archivio.',
-                        style: TextStyle(fontSize: 13, color: AppTheme.textSecondary, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: AppTheme.textSecondary,
+                            fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'I report generati appariranno qui automaticamente.',
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                        style: TextStyle(
+                            fontSize: 11, color: Colors.grey.shade500),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -2956,7 +3392,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             ] else ...[
               Container(
                 margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   color: Colors.teal.shade50,
                   borderRadius: BorderRadius.circular(12),
@@ -2964,7 +3401,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline_rounded, color: Colors.teal.shade700, size: 18),
+                    Icon(Icons.info_outline_rounded,
+                        color: Colors.teal.shade700, size: 18),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -2984,13 +3422,15 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: _savedAnalyses.length,
-                separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                separatorBuilder: (context, index) =>
+                    const Divider(height: 1, color: Color(0xFFF1F5F9)),
                 itemBuilder: (context, index) {
                   final analysis = _savedAnalyses[index];
                   final String id = analysis['id']?.toString() ?? '';
                   final String report = analysis['report']?.toString() ?? '';
                   final String? notes = analysis['notes']?.toString();
-                  final String rawTimestamp = analysis['timestamp']?.toString() ?? '';
+                  final String rawTimestamp =
+                      analysis['timestamp']?.toString() ?? '';
 
                   String formattedTimestamp = rawTimestamp;
                   try {
@@ -3012,7 +3452,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                         Checkbox(
                           value: isChecked,
                           activeColor: Colors.teal.shade700,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4)),
                           onChanged: (bool? val) {
                             setState(() {
                               if (val == true) {
@@ -3055,7 +3496,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                         const SizedBox(width: 8),
                         IconButton(
                           tooltip: 'Leggi Relazione',
-                          icon: Icon(Icons.chrome_reader_mode_outlined, color: Colors.indigo.shade600, size: 20),
+                          icon: Icon(Icons.chrome_reader_mode_outlined,
+                              color: Colors.indigo.shade600, size: 20),
                           onPressed: () {
                             Navigator.push(
                               context,
@@ -3067,22 +3509,29 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                                     if (_isExportingPdf) return;
                                     setState(() => _isExportingPdf = true);
                                     try {
-                                      final bytes = await _apiService.downloadAiAnalysisPdf(
+                                      final bytes = await _apiService
+                                          .downloadAiAnalysisPdf(
                                         widget.patient,
                                         report,
                                       );
                                       if (bytes != null) {
                                         final b64 = base64Encode(bytes);
-                                        final dataUrl = 'data:application/pdf;base64,$b64';
+                                        final dataUrl =
+                                            'data:application/pdf;base64,$b64';
                                         html.AnchorElement(href: dataUrl)
-                                          ..setAttribute(
-                                              'download', 'analisi_ai_${widget.patient.cognome}_$formattedTimestamp.pdf')
+                                          ..setAttribute('download',
+                                              'analisi_ai_${widget.patient.cognome}_$formattedTimestamp.pdf')
                                           ..click();
                                       } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Errore generazione PDF AI')));
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(const SnackBar(
+                                                content: Text(
+                                                    'Errore generazione PDF AI')));
                                       }
                                     } catch (e) {
-                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore: $e')));
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(SnackBar(
+                                              content: Text('Errore: $e')));
                                     } finally {
                                       setState(() => _isExportingPdf = false);
                                     }
@@ -3095,12 +3544,15 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                         ),
                         IconButton(
                           tooltip: 'Rinomina Nota/Label',
-                          icon: Icon(Icons.edit_outlined, color: Colors.blue.shade700, size: 20),
-                          onPressed: () => _renameSavedAnalysisLabel(id, notes ?? ''),
+                          icon: Icon(Icons.edit_outlined,
+                              color: Colors.blue.shade700, size: 20),
+                          onPressed: () =>
+                              _renameSavedAnalysisLabel(id, notes ?? ''),
                         ),
                         IconButton(
                           tooltip: 'Elimina Relazione',
-                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                          icon: const Icon(Icons.delete_outline,
+                              color: Colors.redAccent, size: 20),
                           onPressed: () => _deleteSavedAnalysis(id),
                         ),
                       ],
@@ -3130,12 +3582,16 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               ),
               child: Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: Colors.amber.shade800, size: 24),
+                  Icon(Icons.warning_amber_rounded,
+                      color: Colors.amber.shade800, size: 24),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Text(
                       'L\'accesso alle funzionalità IA di analisi dei dati utente è attualmente disabilitato per il profilo Viewer. Contatta un amministratore per abilitarlo.',
-                      style: TextStyle(color: Colors.amber.shade900, fontWeight: FontWeight.w500, fontSize: 14),
+                      style: TextStyle(
+                          color: Colors.amber.shade900,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14),
                     ),
                   ),
                 ],
@@ -3147,7 +3603,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.deepPurple.shade700, Colors.deepPurple.shade400],
+                colors: [
+                  Colors.deepPurple.shade700,
+                  Colors.deepPurple.shade400
+                ],
               ),
               borderRadius: BorderRadius.circular(16),
             ),
@@ -3161,7 +3620,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     children: [
                       Text(
                         'Analisi con Intelligenza Artificiale',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white),
                       ),
                       SizedBox(height: 6),
                       Text(
@@ -3175,7 +3637,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
             ),
           ),
           const SizedBox(height: 24),
-          
+
           if (_aiError != null) ...[
             Container(
               padding: const EdgeInsets.all(16),
@@ -3192,7 +3654,8 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                   Expanded(
                     child: Text(
                       _aiError!,
-                      style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                          color: Colors.red, fontWeight: FontWeight.w500),
                     ),
                   ),
                   if (_aiError!.contains('mancante') ||
@@ -3200,7 +3663,10 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                       _aiError!.contains('API key') ||
                       _aiError!.contains('non valida'))
                     TextButton(
-                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                      onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const SettingsScreen())),
                       child: const Text('Vai a Impostazioni'),
                     ),
                 ],
@@ -3319,7 +3785,8 @@ class _RadarLabelsPainter extends CustomPainter {
           ..strokeWidth = 0.8,
       );
       // Paint text centered inside badge
-      tp.paint(canvas, Offset(pText.dx - tp.width / 2, pText.dy - tp.height / 2));
+      tp.paint(
+          canvas, Offset(pText.dx - tp.width / 2, pText.dy - tp.height / 2));
     }
   }
 
@@ -3337,18 +3804,19 @@ class _SlothPuzzleLoader extends StatefulWidget {
   State<_SlothPuzzleLoader> createState() => _SlothPuzzleLoaderState();
 }
 
-class _SlothPuzzleLoaderState extends State<_SlothPuzzleLoader> with SingleTickerProviderStateMixin {
+class _SlothPuzzleLoaderState extends State<_SlothPuzzleLoader>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   final List<_PuzzlePiece> _pieces = [];
   final math.Random _random = math.Random();
-  
+
   int _textIndex = 0;
   late final List<String> _loadingTexts;
-  
+
   final int N = 5; // 5x5 grid = 25 pezzi
   final double imageSize = 280.0;
   late final double tileSize;
-  
+
   @override
   void initState() {
     super.initState();
@@ -3375,8 +3843,10 @@ class _SlothPuzzleLoaderState extends State<_SlothPuzzleLoader> with SingleTicke
           col: j,
           startDx: (_random.nextDouble() - 0.5) * 400, // Dispersione ampia
           startDy: (_random.nextDouble() - 0.5) * 400,
-          startAngle: (_random.nextDouble() - 0.5) * 4 * math.pi, // Rotazione casuale
-          delay: _random.nextDouble() * 0.4, // Iniziano ad assemblarsi tra 0.0 e 0.4
+          startAngle:
+              (_random.nextDouble() - 0.5) * 4 * math.pi, // Rotazione casuale
+          delay: _random.nextDouble() *
+              0.4, // Iniziano ad assemblarsi tra 0.0 e 0.4
         ));
       }
     }
@@ -3413,7 +3883,7 @@ class _SlothPuzzleLoaderState extends State<_SlothPuzzleLoader> with SingleTicke
             animation: _controller,
             builder: (context, child) {
               final double t = _controller.value;
-              
+
               // Pulsazione e bagliore quando assemblato
               double masterScale = 1.0;
               double glowOpacity = 0.0;
@@ -3455,20 +3925,27 @@ class _SlothPuzzleLoaderState extends State<_SlothPuzzleLoader> with SingleTicke
                         // Calcolo progresso pezzo (p)
                         double p = 0.0;
                         if (t < 0.7) {
-                           double start = piece.delay;
-                           double end = start + 0.3; // ogni pezzo ci mette 30% del tempo
-                           double localT = ((t - start) / (end - start)).clamp(0.0, 1.0);
-                           p = Curves.easeOutBack.transform(localT); // effetto aggancio magnetico
+                          double start = piece.delay;
+                          double end =
+                              start + 0.3; // ogni pezzo ci mette 30% del tempo
+                          double localT =
+                              ((t - start) / (end - start)).clamp(0.0, 1.0);
+                          p = Curves.easeOutBack
+                              .transform(localT); // effetto aggancio magnetico
                         } else if (t < 0.85) {
-                           p = 1.0;
+                          p = 1.0;
                         } else {
-                           double explodeT = ((t - 0.85) / 0.15).clamp(0.0, 1.0);
-                           p = 1.0 - Curves.easeInQuint.transform(explodeT); // esplosione veloce
+                          double explodeT = ((t - 0.85) / 0.15).clamp(0.0, 1.0);
+                          p = 1.0 -
+                              Curves.easeInQuint
+                                  .transform(explodeT); // esplosione veloce
                         }
 
                         // Posizione base (assemblata)
-                        final double baseX = (piece.col - (N - 1) / 2) * tileSize;
-                        final double baseY = (piece.row - (N - 1) / 2) * tileSize;
+                        final double baseX =
+                            (piece.col - (N - 1) / 2) * tileSize;
+                        final double baseY =
+                            (piece.row - (N - 1) / 2) * tileSize;
 
                         // Posizione attuale (interpolata tra start e base)
                         final double dx = piece.startDx * (1.0 - p);
@@ -3492,7 +3969,8 @@ class _SlothPuzzleLoaderState extends State<_SlothPuzzleLoader> with SingleTicke
                                 height: tileSize,
                                 decoration: BoxDecoration(
                                   border: Border.all(
-                                    color: Colors.white.withValues(alpha: borderOpacity * 0.5),
+                                    color: Colors.white
+                                        .withValues(alpha: borderOpacity * 0.5),
                                     width: 1.0,
                                   ),
                                 ),

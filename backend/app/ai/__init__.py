@@ -24,6 +24,9 @@ from .models import (
     AIAttachment,
     AIAnalyzeRequest,
     AIAnalyzeResponse,
+    AIJobDetail,
+    AINotification,
+    AINotificationUnreadCount,
     DEFAULT_SYSTEM_PROMPT,
 )
 from .crypto import (
@@ -62,6 +65,9 @@ __all__ = [
     "AIAttachment",
     "AIAnalyzeRequest",
     "AIAnalyzeResponse",
+    "AIJobDetail",
+    "AINotification",
+    "AINotificationUnreadCount",
     "DEFAULT_SYSTEM_PROMPT",
     "encrypt_secret",
     "decrypt_secret",

@@ -7,7 +7,7 @@ import 'api_service.dart';
 class GeminiService {
   final ApiService _apiService = const ApiService();
 
-  Future<String> analyzePatientData(
+  Future<Map<String, dynamic>> analyzePatientData(
     PatientModel patient,
     List<AggregatedEvaluation> evaluations,
     String? apiKey,

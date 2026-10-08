@@ -30,7 +30,7 @@ class AIGenerationSettings(BaseModel):
     reasoning_effort: Optional[ReasoningEffort] = None
 
 class AINetworkSettings(BaseModel):
-    timeout_seconds: int = Field(default=60, ge=5, le=300)
+    timeout_seconds: int = Field(default=300, ge=5, le=600)
     max_retries: int = Field(default=2, ge=0, le=5)
 
 # --- PROVIDER STORED SETTINGS (CON CHIAVI CIFRATE) ---
@@ -313,15 +313,52 @@ class AIAnalyzeRequest(BaseModel):
 
 class AIAnalyzeResponse(BaseModel):
     id: str
+    job_id: Optional[str] = None
+    status: Optional[str] = "pending"
     id_paziente: Optional[str] = None
-    report: str
+    patient_name: Optional[str] = None
+    message: Optional[str] = "Elaborazione IA avviata in background"
+    report: Optional[str] = ""
     notes: Optional[str] = ""
     evaluations_used: List[str] = Field(default_factory=list)
-    provider: str
-    model: str
+    provider: Optional[str] = None
+    model: Optional[str] = None
     usage: Optional[dict] = None
     timestamp: Optional[str] = None
     prompt_tokens: Optional[int] = None
     completion_tokens: Optional[int] = None
     total_tokens: Optional[int] = None
     created_at: Optional[str] = None
+
+
+class AIJobDetail(BaseModel):
+    id: str
+    job_id: str
+    username: str
+    id_paziente: Optional[str] = None
+    patient_name: Optional[str] = None
+    status: str
+    created_at: str
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+    error_message: Optional[str] = None
+    analysis_id: Optional[str] = None
+    report_preview: Optional[str] = None
+
+
+class AINotification(BaseModel):
+    id: str
+    username: str
+    type: str = "ai_analysis_completed"
+    title: str = "Elaborazione IA"
+    message: str
+    job_id: Optional[str] = None
+    analysis_id: Optional[str] = None
+    id_paziente: Optional[str] = None
+    patient_name: Optional[str] = None
+    read: bool = False
+    created_at: str
+
+
+class AINotificationUnreadCount(BaseModel):
+    unread_count: int

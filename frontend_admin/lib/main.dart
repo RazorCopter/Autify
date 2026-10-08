@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:html' as html;
 import 'dart:js' as js;
 import 'package:flutter/material.dart';
@@ -63,11 +64,119 @@ class _AdminDashboardState extends State<AdminDashboard> {
   bool _checkingLicense = true;
   bool _licenseValid = false;
   bool _licenseCheckUnavailable = false;
+  int _unreadNotifications = 0;
+  List<Map<String, dynamic>> _notifications = [];
+  Timer? _notificationTimer;
 
   @override
   void initState() {
     super.initState();
     _checkLicense();
+    _pollNotifications();
+    _notificationTimer = Timer.periodic(
+      const Duration(seconds: 15),
+      (_) => _pollNotifications(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _notificationTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _pollNotifications() async {
+    try {
+      final api = ApiService();
+      final values = await Future.wait([
+        api.getNotifications(),
+        api.getUnreadNotificationCount(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _notifications = values[0] as List<Map<String, dynamic>>;
+        _unreadNotifications = values[1] as int;
+      });
+    } catch (_) {
+      // Polling silenzioso: la shell resta utilizzabile se la rete non è disponibile.
+    }
+  }
+
+  Future<void> _showNotifications() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Row(
+          children: [
+            const Expanded(child: Text('Notifiche')),
+            if (_unreadNotifications > 0)
+              TextButton(
+                onPressed: () async {
+                  await ApiService().markAllNotificationsRead();
+                  if (dialogContext.mounted) Navigator.pop(dialogContext);
+                  await _pollNotifications();
+                },
+                child: const Text('Segna tutte lette'),
+              ),
+          ],
+        ),
+        content: SizedBox(
+          width: 520,
+          child: _notifications.isEmpty
+              ? const Text('Nessuna notifica')
+              : ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: _notifications.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (_, index) {
+                    final item = _notifications[index];
+                    final failed = item['type'] == 'ai_analysis_failed';
+                    return ListTile(
+                      leading: Icon(
+                        failed ? Icons.error_outline : Icons.auto_awesome,
+                        color: failed ? Colors.redAccent : Colors.teal,
+                      ),
+                      title: Text(item['message']?.toString() ?? ''),
+                      subtitle: Text(item['created_at']?.toString() ?? ''),
+                      tileColor: item['read'] == true
+                          ? null
+                          : AppTheme.primaryColor.withValues(alpha: 0.05),
+                      onTap: () async {
+                        await ApiService()
+                            .markNotificationRead(item['id'].toString());
+                        if (dialogContext.mounted) Navigator.pop(dialogContext);
+                        setState(() {
+                          _selectedIndex = 2;
+                          _patientSearchQuery =
+                              item['patient_name']?.toString();
+                        });
+                        await _pollNotifications();
+                      },
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Chiudi'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _notificationBell() {
+    return IconButton(
+      tooltip: 'Notifiche',
+      onPressed: _showNotifications,
+      icon: Badge(
+        isLabelVisible: _unreadNotifications > 0,
+        label:
+            Text(_unreadNotifications > 99 ? '99+' : '$_unreadNotifications'),
+        child: const Icon(Icons.notifications_none_rounded),
+      ),
+    );
   }
 
   Future<void> _checkLicense() async {
@@ -194,6 +303,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   onPressed: () => Scaffold.of(context).openDrawer(),
                 ),
               ),
+              actions: [_notificationBell()],
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(1),
                 child: Container(
@@ -224,6 +334,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               Positioned.fill(
                 child: _buildBody(),
               ),
+              Positioned(top: 12, right: 18, child: _notificationBell()),
               // Sfondo Watermark Bradipo HD Premium post-login (in overlay sopra il body per aggirare gli sfondi coprenti delle schede)
               Positioned.fill(
                 child: IgnorePointer(
