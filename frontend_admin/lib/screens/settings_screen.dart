@@ -18,8 +18,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final ApiService _apiService = ApiService();
-  final TextEditingController _apiKeyController = TextEditingController();
-  final TextEditingController _promptController = TextEditingController();
 
   // --- Stato Gestione Utenze ---
   List<Map<String, dynamic>> _users = [];
@@ -31,6 +29,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _uploadStatus;
   String? _dbStatus;
 
+  // --- Stato Configurazione IA Cline-Style ---
+  String _activeProvider = 'gemini'; // 'gemini' | 'openai' | 'openai_compatible'
+
+  // Gemini
+  bool _geminiKeyConfigured = false;
+  String? _geminiKeyHint;
+  final TextEditingController _geminiKeyController = TextEditingController();
+  String _geminiSelectedModel = 'gemini-2.5-pro';
+  final TextEditingController _geminiCustomModelController = TextEditingController();
+  bool _geminiIsCustom = false;
+
+  // OpenAI
+  bool _openaiKeyConfigured = false;
+  String? _openaiKeyHint;
+  final TextEditingController _openaiKeyController = TextEditingController();
+  String _openaiSelectedModel = 'gpt-4o';
+  final TextEditingController _openaiCustomModelController = TextEditingController();
+  bool _openaiIsCustom = false;
+  String _openaiProtocol = 'chat_completions';
+
+  // OpenAI-Compatible (OmniRoute / vLLM / Ollama)
+  final TextEditingController _compatBaseUrlController = TextEditingController(text: 'https://ia.ghome.it/v1');
+  bool _compatKeyConfigured = false;
+  String? _compatKeyHint;
+  final TextEditingController _compatKeyController = TextEditingController();
+  final TextEditingController _compatModelController = TextEditingController(text: 'cx/gpt-5.6-sol-high');
+  String _compatProtocol = 'chat_completions';
+  final List<MapEntry<TextEditingController, TextEditingController>> _compatHeaderControllers = [];
+
+  // Parametri Generazione
+  double? _temperature;
+  double? _topP;
+  int _maxOutputTokens = 4096;
+  String? _reasoningEffort;
+
+  // Parametri Rete
+  int _timeoutSeconds = 60;
+  int _maxRetries = 2;
+
+  // System Prompt
+  final TextEditingController _promptController = TextEditingController();
+
+  // Test Connessione & Salvataggio
+  bool _isTestingConnection = false;
+  Map<String, dynamic>? _testConnectionResult;
+  bool _isSavingAI = false;
+
   @override
   void initState() {
     super.initState();
@@ -38,29 +83,83 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (ApiService.isAdmin) _loadUsers();
   }
 
-  String _selectedModel = 'gemini-1.5-pro';
-
   Future<void> _loadSettings() async {
-    final settings = await _apiService.getGeminiSettings();
-    final String? key = settings['key'] as String?;
-    if (key != null && key.isNotEmpty) {
-      _apiKeyController.text = key;
-    }
-    final String loadedPrompt = (settings['prompt'] as String?) ?? '';
-    _promptController.text =
-        loadedPrompt.isNotEmpty ? loadedPrompt : _defaultSystemPrompt;
-    final String rawModel = (settings['model'] as String?) ?? 'gemini-1.5-pro';
-    setState(() {
-      if (rawModel == 'gemini-1.5-pro' ||
-          rawModel == 'gemini-1.5-flash' ||
-          rawModel == 'gemini-1.5-pro-latest') {
-        _selectedModel = rawModel;
-      } else if (rawModel.contains('flash')) {
-        _selectedModel = 'gemini-1.5-flash';
-      } else {
-        _selectedModel = 'gemini-1.5-pro';
+    final aiSettings = await _apiService.getAiSettings();
+    if (aiSettings != null) {
+      _activeProvider = (aiSettings['active_provider'] as String?) ?? 'gemini';
+
+      final gen = aiSettings['generation'] as Map<String, dynamic>?;
+      if (gen != null) {
+        _temperature = (gen['temperature'] as num?)?.toDouble();
+        _topP = (gen['top_p'] as num?)?.toDouble();
+        _maxOutputTokens = (gen['max_output_tokens'] as int?) ?? 4096;
+        _reasoningEffort = gen['reasoning_effort'] as String?;
       }
-    });
+
+      final net = aiSettings['network'] as Map<String, dynamic>?;
+      if (net != null) {
+        _timeoutSeconds = (net['timeout_seconds'] as int?) ?? 60;
+        _maxRetries = (net['max_retries'] as int?) ?? 2;
+      }
+
+      final prompt = aiSettings['system_prompt'] as String?;
+      _promptController.text = (prompt != null && prompt.isNotEmpty) ? prompt : _defaultSystemPrompt;
+
+      // Gemini
+      final gem = aiSettings['gemini'] as Map<String, dynamic>?;
+      if (gem != null) {
+        final keyStatus = gem['api_key'] as Map<String, dynamic>?;
+        _geminiKeyConfigured = keyStatus?['configured'] == true;
+        _geminiKeyHint = keyStatus?['hint'] as String?;
+        final m = gem['model'] as String? ?? 'gemini-2.5-pro';
+        if (['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'].contains(m)) {
+          _geminiSelectedModel = m;
+          _geminiIsCustom = false;
+        } else {
+          _geminiSelectedModel = 'custom';
+          _geminiCustomModelController.text = m;
+          _geminiIsCustom = true;
+        }
+      }
+
+      // OpenAI
+      final oai = aiSettings['openai'] as Map<String, dynamic>?;
+      if (oai != null) {
+        final keyStatus = oai['api_key'] as Map<String, dynamic>?;
+        _openaiKeyConfigured = keyStatus?['configured'] == true;
+        _openaiKeyHint = keyStatus?['hint'] as String?;
+        _openaiProtocol = (oai['protocol'] as String?) ?? 'chat_completions';
+        final m = oai['model'] as String? ?? 'gpt-4o';
+        if (['gpt-4o', 'gpt-4o-mini', 'o3-mini', 'gpt-5'].contains(m)) {
+          _openaiSelectedModel = m;
+          _openaiIsCustom = false;
+        } else {
+          _openaiSelectedModel = 'custom';
+          _openaiCustomModelController.text = m;
+          _openaiIsCustom = true;
+        }
+      }
+
+      // OpenAI-Compatible
+      final oac = aiSettings['openai_compatible'] as Map<String, dynamic>?;
+      if (oac != null) {
+        final keyStatus = oac['api_key'] as Map<String, dynamic>?;
+        _compatKeyConfigured = keyStatus?['configured'] == true;
+        _compatKeyHint = keyStatus?['hint'] as String?;
+        _compatBaseUrlController.text = (oac['base_url'] as String?) ?? 'https://ia.ghome.it/v1';
+        _compatModelController.text = (oac['model'] as String?) ?? 'cx/gpt-5.6-sol-high';
+        _compatProtocol = (oac['protocol'] as String?) ?? 'chat_completions';
+        final headers = oac['custom_headers'] as Map<String, dynamic>? ?? {};
+        _compatHeaderControllers.clear();
+        headers.forEach((k, v) {
+          _compatHeaderControllers.add(MapEntry(
+            TextEditingController(text: k),
+            TextEditingController(text: v.toString()),
+          ));
+        });
+      }
+      setState(() {});
+    }
   }
 
   Future<void> _loadUsers() async {
@@ -151,24 +250,162 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _saveAIConfig() async {
-    setState(() => _isLoading = true);
-    final success = await _apiService.saveGeminiSettings(
-      _apiKeyController.text,
-      _selectedModel,
-      prompt: _promptController.text.trim().isEmpty
-          ? null
-          : _promptController.text.trim(),
+  Future<void> _clearAIKey(String provider) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Conferma Rimozione Chiave'),
+        content: Text('Vuoi rimuovere la chiave API salvata per il provider $provider?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annulla')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
+            child: const Text('Rimuovi'),
+          ),
+        ],
+      ),
     );
-    setState(() => _isLoading = false);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(success
-                ? 'Configurazione AI salvata!'
-                : 'Errore nel salvataggio')),
-      );
+    if (confirm == true) {
+      final patch = <String, dynamic>{
+        provider: {'clear_api_key': true}
+      };
+      final success = await _apiService.patchAiSettings(patch);
+      if (success) {
+        await _loadSettings();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Chiave API rimossa con successo!'), backgroundColor: Colors.teal),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _testAIConnection() async {
+    setState(() {
+      _isTestingConnection = true;
+      _testConnectionResult = null;
+    });
+
+    final payload = <String, dynamic>{
+      'provider': _activeProvider,
+    };
+
+    if (_activeProvider == 'gemini') {
+      payload['model'] = _geminiIsCustom ? _geminiCustomModelController.text.trim() : _geminiSelectedModel;
+      if (_geminiKeyController.text.trim().isNotEmpty) {
+        payload['api_key'] = _geminiKeyController.text.trim();
+      }
+    } else if (_activeProvider == 'openai') {
+      payload['model'] = _openaiIsCustom ? _openaiCustomModelController.text.trim() : _openaiSelectedModel;
+      payload['protocol'] = _openaiProtocol;
+      if (_openaiKeyController.text.trim().isNotEmpty) {
+        payload['api_key'] = _openaiKeyController.text.trim();
+      }
+    } else if (_activeProvider == 'openai_compatible') {
+      payload['base_url'] = _compatBaseUrlController.text.trim();
+      payload['model'] = _compatModelController.text.trim();
+      payload['protocol'] = _compatProtocol;
+      if (_compatKeyController.text.trim().isNotEmpty) {
+        payload['api_key'] = _compatKeyController.text.trim();
+      }
+      final headers = <String, String>{};
+      for (final entry in _compatHeaderControllers) {
+        final k = entry.key.text.trim();
+        final v = entry.value.text.trim();
+        if (k.isNotEmpty) headers[k] = v;
+      }
+      payload['custom_headers'] = headers;
+    }
+
+    final res = await _apiService.testAiConnection(payload);
+    setState(() {
+      _isTestingConnection = false;
+      _testConnectionResult = res;
+    });
+  }
+
+  Future<void> _saveAIConfig() async {
+    setState(() => _isSavingAI = true);
+
+    final patch = <String, dynamic>{
+      'active_provider': _activeProvider,
+      'system_prompt': _promptController.text.trim().isEmpty ? null : _promptController.text.trim(),
+      'generation': {
+        'temperature': _temperature,
+        'top_p': _topP,
+        'max_output_tokens': _maxOutputTokens,
+        'reasoning_effort': _reasoningEffort,
+      },
+      'network': {
+        'timeout_seconds': _timeoutSeconds,
+        'max_retries': _maxRetries,
+      },
+    };
+
+    if (_activeProvider == 'gemini') {
+      final gemPatch = <String, dynamic>{
+        'model': _geminiIsCustom ? _geminiCustomModelController.text.trim() : _geminiSelectedModel,
+      };
+      if (_geminiKeyController.text.trim().isNotEmpty) {
+        gemPatch['api_key'] = _geminiKeyController.text.trim();
+      }
+      patch['gemini'] = gemPatch;
+    } else if (_activeProvider == 'openai') {
+      final oaiPatch = <String, dynamic>{
+        'model': _openaiIsCustom ? _openaiCustomModelController.text.trim() : _openaiSelectedModel,
+        'protocol': _openaiProtocol,
+      };
+      if (_openaiKeyController.text.trim().isNotEmpty) {
+        oaiPatch['api_key'] = _openaiKeyController.text.trim();
+      }
+      patch['openai'] = oaiPatch;
+    } else if (_activeProvider == 'openai_compatible') {
+      final headers = <String, String>{};
+      for (final entry in _compatHeaderControllers) {
+        final k = entry.key.text.trim();
+        final v = entry.value.text.trim();
+        if (k.isNotEmpty) headers[k] = v;
+      }
+      final oacPatch = <String, dynamic>{
+        'base_url': _compatBaseUrlController.text.trim(),
+        'model': _compatModelController.text.trim(),
+        'protocol': _compatProtocol,
+        'custom_headers': headers,
+      };
+      if (_compatKeyController.text.trim().isNotEmpty) {
+        oacPatch['api_key'] = _compatKeyController.text.trim();
+      }
+      patch['openai_compatible'] = oacPatch;
+    }
+
+    final success = await _apiService.patchAiSettings(patch);
+    setState(() => _isSavingAI = false);
+
+    if (success) {
+      _geminiKeyController.clear();
+      _openaiKeyController.clear();
+      _compatKeyController.clear();
+      await _loadSettings();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Configurazione IA salvata con successo!'),
+            backgroundColor: Colors.teal,
+          ),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Errore durante il salvataggio della configurazione IA.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
@@ -804,173 +1041,10 @@ TONO E FORMATTAZIONE:
             ],
           ),
 
-          // 3. Configurazione AI (Gemini)
-          _buildPremiumExpansionTile(
-            context: context,
-            title: 'Configurazione AI (Gemini)',
-            subtitle:
-                'API Key, modelli e prompt personalizzato del consulente IA',
-            icon: Icons.psychology_rounded,
-            iconColor: Colors.purple.shade700,
-            initiallyExpanded: false,
-            children: [
-              const Text(
-                  'Configura i parametri di connessione e il comportamento dell\'Intelligenza Artificiale per l\'analisi clinica.'),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: TextField(
-                      controller: _apiKeyController,
-                      obscureText: true,
-                      enabled: !ApiService.isViewer,
-                      decoration: const InputDecoration(
-                        labelText: 'Gemini API Key',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.key),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    flex: 1,
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _selectedModel,
-                      decoration: const InputDecoration(
-                        labelText: 'Modello',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.psychology),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                            value: 'gemini-1.5-pro',
-                            child: Text('Gemini 1.5 Pro')),
-                        DropdownMenuItem(
-                            value: 'gemini-1.5-flash',
-                            child: Text('Gemini 1.5 Flash')),
-                        DropdownMenuItem(
-                            value: 'gemini-1.5-pro-latest',
-                            child: Text('Gemini 1.5 Pro Latest')),
-                        DropdownMenuItem(
-                            value: 'gemini-2.5-pro',
-                            child: Text('Gemini 2.5 Pro (Consigliato)')),
-                        DropdownMenuItem(
-                            value: 'gemini-2.5-flash',
-                            child: Text('Gemini 2.5 Flash')),
-                        DropdownMenuItem(
-                            value: 'gemini-3.5-flash',
-                            child: Text('Gemini 3.5 Flash')),
-                      ],
-                      onChanged: ApiService.isViewer
-                          ? null
-                          : (value) {
-                              if (value != null) {
-                                setState(() {
-                                  _selectedModel = value;
-                                });
-                              }
-                            },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
+          // 3. Configurazione AI Multi-Provider
+          _buildAIConfigurationSection(context),
 
-              // Switch permessi IA ai viewer (ora per-utente)
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.purple.shade50,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.purple.shade100),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline_rounded,
-                        size: 16, color: Colors.purple.shade700),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'L\'abilitazione AI è ora gestita per singolo operatore nella sezione "Gestione Utenze".',
-                        style: TextStyle(
-                            fontSize: 13, color: Colors.purple.shade700),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
 
-              // System Prompt di Gemini
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'System Prompt di Analisi (Consulente IA)',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15),
-                      ),
-                      TextButton.icon(
-                        onPressed:
-                            ApiService.isViewer ? null : _resetDefaultPrompt,
-                        icon:
-                            const Icon(Icons.settings_backup_restore, size: 18),
-                        label: const Text('Ripristina Default'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.purple.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: _promptController,
-                    maxLines: 12,
-                    minLines: 5,
-                    enabled: !ApiService.isViewer,
-                    decoration: InputDecoration(
-                      hintText:
-                          'Inserisci il prompt di sistema per personalizzare l\'analisi...',
-                      hintStyle: TextStyle(color: Colors.grey.shade400),
-                      border: const OutlineInputBorder(),
-                      fillColor: const Color(0xFFF8FAFC),
-                      filled: true,
-                    ),
-                    style: const TextStyle(
-                      fontFamily: 'Courier',
-                      fontSize: 13,
-                      height: 1.4,
-                      color: Color(0xFF334155),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purple.shade700,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(140, 56),
-                    ),
-                    onPressed: _isLoading || ApiService.isViewer
-                        ? null
-                        : _saveAIConfig,
-                    icon: const Icon(Icons.save),
-                    label: const Text('Salva Configurazione AI',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ),
-            ],
-          ),
 
           // 4. Parametri di Validità Scale
           Consumer<SettingsNotifier>(
@@ -1295,6 +1369,773 @@ TONO E FORMATTAZIONE:
           flex: 3,
           child: sliderContent,
         ),
+      ],
+    );
+  }
+
+  Widget _buildAIStatusBadge(bool configured, String? hint, String provider) {
+    if (configured) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.green.shade200),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle_rounded, color: Colors.green.shade700, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              hint != null ? 'Chiave attiva ($hint)' : 'Chiave attiva nel server',
+              style: TextStyle(color: Colors.green.shade800, fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(width: 8),
+            InkWell(
+              onTap: ApiService.isViewer ? null : () => _clearAIKey(provider),
+              child: Tooltip(
+                message: 'Rimuovi chiave salvata',
+                child: Icon(Icons.close_rounded, color: Colors.green.shade800, size: 16),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.amber.shade50,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.amber.shade200),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.warning_amber_rounded, color: Colors.amber.shade800, size: 16),
+          const SizedBox(width: 6),
+          Text(
+            'Nessuna chiave configurata',
+            style: TextStyle(color: Colors.amber.shade900, fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProviderSelector() {
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          ChoiceChip(
+            label: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.auto_awesome, size: 16),
+                SizedBox(width: 6),
+                Text('Google Gemini'),
+              ],
+            ),
+            selected: _activeProvider == 'gemini',
+            selectedColor: Colors.purple.shade700,
+            labelStyle: TextStyle(
+              color: _activeProvider == 'gemini' ? Colors.white : const Color(0xFF334155),
+              fontWeight: FontWeight.bold,
+            ),
+            onSelected: ApiService.isViewer ? null : (sel) {
+              if (sel) setState(() => _activeProvider = 'gemini');
+            },
+          ),
+          ChoiceChip(
+            label: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.bolt_rounded, size: 16),
+                SizedBox(width: 6),
+                Text('OpenAI (Ufficiale)'),
+              ],
+            ),
+            selected: _activeProvider == 'openai',
+            selectedColor: Colors.purple.shade700,
+            labelStyle: TextStyle(
+              color: _activeProvider == 'openai' ? Colors.white : const Color(0xFF334155),
+              fontWeight: FontWeight.bold,
+            ),
+            onSelected: ApiService.isViewer ? null : (sel) {
+              if (sel) setState(() => _activeProvider = 'openai');
+            },
+          ),
+          ChoiceChip(
+            label: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.alt_route_rounded, size: 16),
+                SizedBox(width: 6),
+                Text('OpenAI-Compatible (OmniRoute / vLLM)'),
+              ],
+            ),
+            selected: _activeProvider == 'openai_compatible',
+            selectedColor: Colors.purple.shade700,
+            labelStyle: TextStyle(
+              color: _activeProvider == 'openai_compatible' ? Colors.white : const Color(0xFF334155),
+              fontWeight: FontWeight.bold,
+            ),
+            onSelected: ApiService.isViewer ? null : (sel) {
+              if (sel) setState(() => _activeProvider = 'openai_compatible');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+  Widget _buildGeminiCard() {
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.purple.shade100),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text('Configurazione Google Gemini',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Spacer(),
+                _buildAIStatusBadge(_geminiKeyConfigured, _geminiKeyHint, 'gemini'),
+              ],
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _geminiKeyController,
+              obscureText: true,
+              enabled: !ApiService.isViewer,
+              decoration: const InputDecoration(
+                labelText: 'Nuova Gemini API Key',
+                hintText: 'Lascia vuoto per mantenere la chiave attuale',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.key),
+              ),
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: _geminiIsCustom ? 'custom' : _geminiSelectedModel,
+              decoration: const InputDecoration(
+                labelText: 'Modello Gemini',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.psychology),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'gemini-2.5-pro', child: Text('Gemini 2.5 Pro (Consigliato)')),
+                DropdownMenuItem(value: 'gemini-2.5-flash', child: Text('Gemini 2.5 Flash (Ultra rapido)')),
+                DropdownMenuItem(value: 'gemini-1.5-pro', child: Text('Gemini 1.5 Pro')),
+                DropdownMenuItem(value: 'gemini-1.5-flash', child: Text('Gemini 1.5 Flash')),
+                DropdownMenuItem(value: 'custom', child: Text('Modello Personalizzato...')),
+              ],
+              onChanged: ApiService.isViewer ? null : (val) {
+                if (val != null) {
+                  setState(() {
+                    if (val == 'custom') {
+                      _geminiIsCustom = true;
+                    } else {
+                      _geminiIsCustom = false;
+                      _geminiSelectedModel = val;
+                    }
+                  });
+                }
+              },
+            ),
+            if (_geminiIsCustom) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _geminiCustomModelController,
+                enabled: !ApiService.isViewer,
+                decoration: const InputDecoration(
+                  labelText: 'Model ID Personalizzato (es. gemini-2.5-flash-latest)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.edit_note),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOpenAICard() {
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.purple.shade100),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text('Configurazione OpenAI (Nativo)',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Spacer(),
+                _buildAIStatusBadge(_openaiKeyConfigured, _openaiKeyHint, 'openai'),
+              ],
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _openaiKeyController,
+              obscureText: true,
+              enabled: !ApiService.isViewer,
+              decoration: const InputDecoration(
+                labelText: 'Nuova OpenAI API Key',
+                hintText: 'Lascia vuoto per mantenere la chiave attuale',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.key),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: DropdownButtonFormField<String>(
+                    value: _openaiIsCustom ? 'custom' : _openaiSelectedModel,
+                    decoration: const InputDecoration(
+                      labelText: 'Modello OpenAI',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.psychology),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'gpt-4o', child: Text('GPT-4o (Consigliato)')),
+                      DropdownMenuItem(value: 'gpt-4o-mini', child: Text('GPT-4o Mini (Economico)')),
+                      DropdownMenuItem(value: 'o3-mini', child: Text('o3-mini (Ragionamento)')),
+                      DropdownMenuItem(value: 'gpt-5', child: Text('GPT-5')),
+                      DropdownMenuItem(value: 'custom', child: Text('Modello Personalizzato...')),
+                    ],
+                    onChanged: ApiService.isViewer ? null : (val) {
+                      if (val != null) {
+                        setState(() {
+                          if (val == 'custom') {
+                            _openaiIsCustom = true;
+                          } else {
+                            _openaiIsCustom = false;
+                            _openaiSelectedModel = val;
+                          }
+                        });
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 1,
+                  child: DropdownButtonFormField<String>(
+                    value: _openaiProtocol,
+                    decoration: const InputDecoration(
+                      labelText: 'Protocollo API',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'chat_completions', child: Text('Chat Completions')),
+                      DropdownMenuItem(value: 'responses', child: Text('Responses API')),
+                    ],
+                    onChanged: ApiService.isViewer ? null : (val) {
+                      if (val != null) setState(() => _openaiProtocol = val);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            if (_openaiIsCustom) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _openaiCustomModelController,
+                enabled: !ApiService.isViewer,
+                decoration: const InputDecoration(
+                  labelText: 'Model ID Personalizzato (es. gpt-4-turbo)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.edit_note),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompatCard() {
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.purple.shade100),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text('Gateway OpenAI-Compatible (OmniRoute / vLLM)',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Spacer(),
+                _buildAIStatusBadge(_compatKeyConfigured, _compatKeyHint, 'openai_compatible'),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: TextField(
+                    controller: _compatBaseUrlController,
+                    enabled: !ApiService.isViewer,
+                    decoration: const InputDecoration(
+                      labelText: 'Base URL',
+                      hintText: 'https://ia.ghome.it/v1',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.link),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 1,
+                  child: DropdownButtonFormField<String>(
+                    value: _compatProtocol,
+                    decoration: const InputDecoration(
+                      labelText: 'Protocollo',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'chat_completions', child: Text('Chat Completions')),
+                      DropdownMenuItem(value: 'responses', child: Text('Responses API')),
+                    ],
+                    onChanged: ApiService.isViewer ? null : (val) {
+                      if (val != null) setState(() => _compatProtocol = val);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: TextField(
+                    controller: _compatModelController,
+                    enabled: !ApiService.isViewer,
+                    decoration: const InputDecoration(
+                      labelText: 'Model ID (es. cx/gpt-5.6-sol-high)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.psychology),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 1,
+                  child: TextField(
+                    controller: _compatKeyController,
+                    obscureText: true,
+                    enabled: !ApiService.isViewer,
+                    decoration: const InputDecoration(
+                      labelText: 'API Key (Opzionale)',
+                      hintText: 'Lascia vuoto per preservare',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.key),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Text('Custom HTTP Headers', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: ApiService.isViewer ? null : () {
+                    setState(() {
+                      _compatHeaderControllers.add(MapEntry(TextEditingController(), TextEditingController()));
+                    });
+                  },
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Aggiungi Header'),
+                ),
+              ],
+            ),
+            if (_compatHeaderControllers.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              ..._compatHeaderControllers.asMap().entries.map((item) => Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: item.value.key,
+                        enabled: !ApiService.isViewer,
+                        decoration: const InputDecoration(labelText: 'Header', border: OutlineInputBorder(), isDense: true),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 3,
+                      child: TextField(
+                        controller: item.value.value,
+                        enabled: !ApiService.isViewer,
+                        decoration: const InputDecoration(labelText: 'Valore', border: OutlineInputBorder(), isDense: true),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                      onPressed: ApiService.isViewer ? null : () => setState(() => _compatHeaderControllers.removeAt(item.key)),
+                    ),
+                  ],
+                ),
+              )),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGenerationParamsCard() {
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade300),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: false,
+          leading: const Icon(Icons.tune, color: Color(0xFF64748B)),
+          title: const Text('Parametri di Generazione (Stile Cline)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          subtitle: const Text('Temperature, Top-P, Max Output Tokens, Reasoning Effort',
+              style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+          childrenPadding: const EdgeInsets.all(16),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Temperature: ${_temperature != null ? _temperature!.toStringAsFixed(2) : "Predefinito"}',
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                      Slider(
+                        value: _temperature ?? 0.7,
+                        min: 0.0,
+                        max: 2.0,
+                        divisions: 20,
+                        label: (_temperature ?? 0.7).toStringAsFixed(2),
+                        onChanged: ApiService.isViewer ? null : (v) => setState(() => _temperature = v),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Top P: ${_topP != null ? _topP!.toStringAsFixed(2) : "Predefinito"}',
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                      Slider(
+                        value: _topP ?? 0.95,
+                        min: 0.0,
+                        max: 1.0,
+                        divisions: 20,
+                        label: (_topP ?? 0.95).toStringAsFixed(2),
+                        onChanged: ApiService.isViewer ? null : (v) => setState(() => _topP = v),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: DropdownButtonFormField<int>(
+                    value: _maxOutputTokens,
+                    decoration: const InputDecoration(labelText: 'Max Output Tokens', border: OutlineInputBorder()),
+                    items: const [
+                      DropdownMenuItem(value: 2048, child: Text('2,048 token')),
+                      DropdownMenuItem(value: 4096, child: Text('4,096 token (Consigliato)')),
+                      DropdownMenuItem(value: 8192, child: Text('8,192 token')),
+                      DropdownMenuItem(value: 16384, child: Text('16,384 token')),
+                    ],
+                    onChanged: ApiService.isViewer ? null : (v) {
+                      if (v != null) setState(() => _maxOutputTokens = v);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 1,
+                  child: DropdownButtonFormField<String?>(
+                    value: _reasoningEffort,
+                    decoration: const InputDecoration(labelText: 'Reasoning Effort', border: OutlineInputBorder()),
+                    items: const [
+                      DropdownMenuItem(value: null, child: Text('Nessuno / Predefinito')),
+                      DropdownMenuItem(value: 'low', child: Text('Low (Veloce)')),
+                      DropdownMenuItem(value: 'medium', child: Text('Medium')),
+                      DropdownMenuItem(value: 'high', child: Text('High (Massima accuratezza)')),
+                    ],
+                    onChanged: ApiService.isViewer ? null : (v) => setState(() => _reasoningEffort = v),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNetworkParamsCard() {
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade300),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: false,
+          leading: const Icon(Icons.network_ping, color: Color(0xFF64748B)),
+          title: const Text('Rete & Resilienza Gateway',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          subtitle: const Text('Timeout HTTP e tentativi di retry automatici',
+              style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+          childrenPadding: const EdgeInsets.all(16),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    value: _timeoutSeconds,
+                    decoration: const InputDecoration(labelText: 'Timeout Richiesta', border: OutlineInputBorder()),
+                    items: const [
+                      DropdownMenuItem(value: 30, child: Text('30 secondi')),
+                      DropdownMenuItem(value: 60, child: Text('60 secondi (Predefinito)')),
+                      DropdownMenuItem(value: 120, child: Text('120 secondi')),
+                      DropdownMenuItem(value: 180, child: Text('180 secondi')),
+                    ],
+                    onChanged: ApiService.isViewer ? null : (v) {
+                      if (v != null) setState(() => _timeoutSeconds = v);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    value: _maxRetries,
+                    decoration: const InputDecoration(labelText: 'Retry su errori transitori', border: OutlineInputBorder()),
+                    items: const [
+                      DropdownMenuItem(value: 0, child: Text('Nessun retry')),
+                      DropdownMenuItem(value: 1, child: Text('1 tentativo')),
+                      DropdownMenuItem(value: 2, child: Text('2 tentativi (Consigliato)')),
+                      DropdownMenuItem(value: 3, child: Text('3 tentativi')),
+                    ],
+                    onChanged: ApiService.isViewer ? null : (v) {
+                      if (v != null) setState(() => _maxRetries = v);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSystemPromptCard() {
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade300),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: false,
+          leading: const Icon(Icons.description_outlined, color: Color(0xFF64748B)),
+          title: const Text('Istruzioni di Sistema (System Prompt)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          subtitle: Text('${_promptController.text.length} caratteri configurati',
+              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+          childrenPadding: const EdgeInsets.all(16),
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Definisce il ruolo e le linee guida del consulente clinico:'),
+                TextButton.icon(
+                  onPressed: ApiService.isViewer ? null : _resetDefaultPrompt,
+                  icon: const Icon(Icons.restart_alt, size: 16),
+                  label: const Text('Ripristina Predefinito'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _promptController,
+              maxLines: 12,
+              minLines: 5,
+              enabled: !ApiService.isViewer,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                fillColor: Color(0xFFF8FAFC),
+                filled: true,
+              ),
+              style: const TextStyle(
+                fontFamily: 'Courier',
+                fontSize: 13,
+                height: 1.4,
+                color: Color(0xFF334155),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTestAndSaveFooter() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_testConnectionResult != null) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _testConnectionResult!['success'] == true ? Colors.green.shade50 : Colors.red.shade50,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: _testConnectionResult!['success'] == true ? Colors.green.shade200 : Colors.red.shade200,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _testConnectionResult!['success'] == true ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+                  color: _testConnectionResult!['success'] == true ? Colors.green.shade700 : Colors.red.shade700,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _testConnectionResult!['message']?.toString() ?? '',
+                    style: TextStyle(
+                      color: _testConnectionResult!['success'] == true ? Colors.green.shade900 : Colors.red.shade900,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(160, 52),
+                side: BorderSide(color: Colors.purple.shade400),
+                foregroundColor: Colors.purple.shade800,
+              ),
+              onPressed: (_isTestingConnection || _isSavingAI || ApiService.isViewer) ? null : _testAIConnection,
+              icon: _isTestingConnection
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.speed_rounded),
+              label: Text(_isTestingConnection ? 'Verifica...' : 'Test Connessione'),
+            ),
+            const SizedBox(width: 12),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple.shade700,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(180, 52),
+              ),
+              onPressed: (_isSavingAI || _isTestingConnection || ApiService.isViewer) ? null : _saveAIConfig,
+              icon: _isSavingAI
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.save),
+              label: Text(_isSavingAI ? 'Salvataggio...' : 'Salva Configurazione IA',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAIConfigurationSection(BuildContext context) {
+    return _buildPremiumExpansionTile(
+      context: context,
+      title: 'Configurazione IA Multi-Provider',
+      subtitle: 'Google Gemini, OpenAI, Gateway compatibili (OmniRoute / vLLM) e parametri avanzati',
+      icon: Icons.psychology_rounded,
+      iconColor: Colors.purple.shade700,
+      initiallyExpanded: false,
+      children: [
+        const Text(
+          'Configura il motore IA per le analisi cliniche multidimensionali. '
+          'Tutte le chiamate e le chiavi API sono gestite in modo sicuro direttamente dal server backend.',
+          style: TextStyle(color: Color(0xFF475569), fontSize: 13),
+        ),
+        const SizedBox(height: 16),
+        _buildProviderSelector(),
+        const SizedBox(height: 16),
+        if (_activeProvider == 'gemini') _buildGeminiCard(),
+        if (_activeProvider == 'openai') _buildOpenAICard(),
+        if (_activeProvider == 'openai_compatible') _buildCompatCard(),
+        const SizedBox(height: 16),
+        _buildGenerationParamsCard(),
+        const SizedBox(height: 12),
+        _buildNetworkParamsCard(),
+        const SizedBox(height: 12),
+        _buildSystemPromptCard(),
+        const SizedBox(height: 20),
+        _buildTestAndSaveFooter(),
       ],
     );
   }

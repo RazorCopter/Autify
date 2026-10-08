@@ -7,7 +7,6 @@ import '../models/patient_model.dart';
 import '../models/evaluation_model.dart';
 import '../models/scale_model.dart';
 import '../services/api_service.dart';
-import '../services/gemini_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/responsive_helper.dart';
 import '../widgets/expandable_scale_card.dart';
@@ -29,16 +28,16 @@ class MultidimensionalDashboardScreen extends StatefulWidget {
 
 class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashboardScreen> {
   final ApiService _apiService = ApiService();
-  final GeminiService _geminiService = GeminiService();
 
   bool _isLoading = true;
   bool _isAnalyzing = false;
   bool _isCompareMode = false;
 
-  String? _geminiKey;
-  String _geminiModel = 'gemini-2.5-pro';
+  bool _isAiConfigured = false;
+  String _activeAiProvider = 'gemini';
+  String _activeAiModel = '';
   bool _viewerAiEnabled = false;
-  String? _geminiPrompt;
+  String? _aiPrompt;
 
   List<ScaleModel> _availableScales = [];
   Map<String, AggregatedEvaluation> _latestEvaluations = {};
@@ -53,7 +52,6 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
 
   List<Map<String, dynamic>> _savedAnalyses = [];
   final List<String> _selectedAnalysesIdsForContext = [];
-  bool _isSavingAnalysis = false;
 
   bool _includePos = true;
   bool _includeSm = true;
@@ -91,21 +89,15 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     setState(() => _isLoading = true);
 
     // 1. Carica configurazione AI
-    final settings = await _apiService.getGeminiSettings();
-    _geminiKey = settings['key'] as String?;
-    _viewerAiEnabled = (settings['viewer_ai_enabled'] as bool?) ?? false;
-    _geminiPrompt = settings['prompt'] as String?;
-    final String rawModel = (settings['model'] as String?) ?? 'gemini-1.5-pro';
-    if (rawModel.contains('1.5-pro') || rawModel == 'gemini-1.5-pro') {
-      _geminiModel = 'gemini-2.5-pro';
-    } else if (rawModel.contains('1.5-flash') || rawModel == 'gemini-1.5-flash') {
-      _geminiModel = 'gemini-2.5-flash';
-    } else {
-      if (rawModel != 'gemini-2.5-pro' && rawModel != 'gemini-2.5-flash' && rawModel != 'gemini-3.5-flash') {
-        _geminiModel = 'gemini-2.5-pro';
-      } else {
-        _geminiModel = rawModel;
-      }
+    final aiSettings = await _apiService.getAiSettings();
+    if (aiSettings != null) {
+      _viewerAiEnabled = (aiSettings['viewer_ai_enabled'] as bool?) ?? false;
+      _aiPrompt = aiSettings['system_prompt'] as String?;
+      _activeAiProvider = (aiSettings['active_provider'] as String?) ?? 'gemini';
+      final prov = aiSettings[_activeAiProvider] as Map<String, dynamic>?;
+      _activeAiModel = (prov?['model'] as String?) ?? '';
+      final keyObj = prov?['api_key'] as Map<String, dynamic>?;
+      _isAiConfigured = keyObj?['configured'] == true;
     }
 
     // 2. Carica scale disponibili
@@ -193,16 +185,6 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
   }
 
   Future<void> _runAiAnalysis() async {
-    if (_geminiKey == null || _geminiKey!.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Chiave API Gemini non configurata nelle impostazioni.'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
-    }
-
     setState(() {
       _isAnalyzing = true;
       _aiReport = null;
@@ -254,15 +236,13 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
               .toList()
           : <Map<String, dynamic>>[];
 
-      final report = await _geminiService.analyzePatientData(
-        widget.patient,
-        evaluationsToInclude,
-        _geminiKey!,
-        _geminiModel,
-        systemPrompt: _geminiPrompt,
+      final report = await _apiService.analyzePatientData(
+        patient: widget.patient,
+        evaluations: evaluationsToInclude,
         notes: _aiNotesController.text,
         attachment: attachmentMap,
         historyToInclude: historyToInclude,
+        systemPrompt: _aiPrompt,
         analyses: _analyses,
       );
 
@@ -270,9 +250,17 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
         _aiReport = report;
       });
 
-      // Auto-salvataggio in background con gli ID delle valutazioni effettivamente utilizzate
-      final usedEvaluationIds = evaluationsToInclude.map((e) => e.idValutazione).toList();
-      await _autoSaveAnalysis(usedEvaluationIds: usedEvaluationIds);
+      _aiNotesController.clear();
+      _aiAttachment = null;
+      _selectedAnalysesIdsForContext.clear();
+      await _loadSavedAnalyses();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Relazione educativa IA generata e salvata con successo!'),
+          backgroundColor: Colors.teal,
+        ),
+      );
 
     } catch (e) {
       String cleanError = e.toString();
@@ -295,50 +283,6 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
     }
   }
 
-  Future<void> _autoSaveAnalysis({List<String>? usedEvaluationIds}) async {
-    if (_aiReport == null || _isSavingAnalysis) return;
-    setState(() => _isSavingAnalysis = true);
-    try {
-      final notes = _aiNotesController.text;
-      
-      final result = await _apiService.savePatientAiAnalysis(
-        widget.patient.id,
-        _aiReport!,
-        notes: notes,
-        evaluationsUsed: usedEvaluationIds ?? _latestEvaluations.values.map((e) => e.idValutazione).toList(),
-      );
-      if (result != null) {
-        // Puliamo i campi temporanei
-        _aiNotesController.clear();
-        _aiAttachment = null;
-        _selectedAnalysesIdsForContext.clear();
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Relazione elaborata e salvata automaticamente!'),
-            backgroundColor: Colors.teal,
-          ),
-        );
-        await _loadSavedAnalyses();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Errore durante il salvataggio automatico della relazione.'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Errore auto-salvataggio: $e'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-    } finally {
-      setState(() => _isSavingAnalysis = false);
-    }
-  }
 
   Future<void> _pickAiAttachment() async {
     final result = await FilePicker.platform.pickFiles(
@@ -2713,7 +2657,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                 _buildSectionHeader(
                   icon: Icons.tune_outlined,
                   title: 'Scale da Includere',
-                  subtitle: 'Seleziona quali dati inviare a Gemini per l\'analisi',
+                  subtitle: 'Seleziona quali dati inviare all\'IA per l\'analisi',
                   iconBgColor: Colors.indigo.shade50,
                   iconColor: Colors.indigo.shade600,
                 ),
@@ -2816,6 +2760,24 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                   ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      _isAiConfigured ? Icons.check_circle_outline : Icons.info_outline,
+                      size: 13,
+                      color: Colors.white70,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _isAiConfigured
+                          ? 'Motore attivo: ${_activeAiModel.isNotEmpty ? _activeAiModel : _activeAiProvider}'
+                          : 'IA non configurata (verifica Impostazioni)',
+                      style: const TextStyle(fontSize: 11, color: Colors.white70),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -2994,7 +2956,7 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Seleziona le relazioni passate dell\'utente per iniettarle come contesto nella prossima analisi di Gemini, valutando l\'andamento educativo e di supporto nel tempo.',
+                        'Seleziona le relazioni passate dell\'utente per iniettarle come contesto nella prossima analisi IA, valutando l\'andamento educativo e di supporto nel tempo.',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,

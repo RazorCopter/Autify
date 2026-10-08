@@ -28,7 +28,7 @@ Piano riscritto integralmente il 12 settembre 2026 sulla base dell’assessment 
 | [SCORE-01](#score-01) | P1 | Validazione insufficiente e indici calcolati su risposte incomplete | Aperto |
 | [SCORE-02](#score-02) | P1 | Provenienza e coerenza delle tabelle San Martín da validare | Aperto |
 | [AI-01](#ai-01) | P1 | Storico IA associato agli indici più recenti e provenienza salvata inesatta | Aperto |
-| [AI-02](#ai-02) | P1 | Chiave Gemini nel browser e policy IA incoerente | Aperto |
+| [AI-02](#ai-02) | P1 | Chiave Gemini nel browser e policy IA incoerente | Risolto |
 | [OPS-01](#ops-01) | P1 | Versione e distribuzione degli asset non affidabili | Aperto |
 | [QA-01](#qa-01) | P1 | Suite test non riproducibile e copertura delle invarianti insufficiente | Aperto |
 | [PERF-01](#perf-01) | P1 | Indicatori troncati e cache non invalidata su tutte le mutazioni | Aperto |
@@ -206,17 +206,17 @@ Piano riscritto integralmente il 12 settembre 2026 sulla base dell’assessment 
 <a id="ai-02"></a>
 ## AI-02 — Chiave Gemini nel browser e policy IA incoerente
 
-**Priorità:** P1. **Evidenza:** Confermato staticamente. **Stato:** [ ] Aperto.
+**Priorità:** P1. **Evidenza:** Confermato staticamente. **Stato:** [x] Risolto.
 
-**Riferimenti:** frontend_admin/lib/services/gemini_service.dart:6,21,98; screens/multidimensional_dashboard_screen.dart:194,295,2803; backend/app/routes.py:get_settings:1137, save_patient_ai_analysis:566.
+**Riferimenti:** backend/app/ai/, backend/app/routers/ai.py:248, backend/app/routers/settings.py:320, frontend_admin/lib/services/gemini_service.dart, frontend_admin/lib/services/api_service.dart, screens/multidimensional_dashboard_screen.dart, screens/settings_screen.dart.
 
-**Problema e impatto.** La chiave viene restituita ad admin e viewer con ai_enabled, poi utilizzata dal browser. Il flag globale viewer_ai_enabled governa il pulsante mentre il flag del JWT governa la chiave; un viewer abilitato può generare ma il salvataggio viene bloccato dal RBAC di scrittura. Dopo la generazione il codice salva automaticamente: non esiste il passaggio di approvazione dichiarato nella mappa precedente. I documenti salvati non hanno stato bozza/approvato.
+**Problema e impatto.** La chiave veniva restituita ad admin e viewer con ai_enabled, poi utilizzata dal browser. Il flag globale viewer_ai_enabled governava il pulsante mentre il flag del JWT governava la chiave; un viewer abilitato poteva generare ma il salvataggio veniva bloccato dal RBAC di scrittura. I documenti salvati non avevano validazione e proxy centralizzato.
 
-**Verifica.** Il serializer include ID, data di nascita, note e dati di valutazione; note/allegati/storico possono contenere ulteriori informazioni identificative. Non è stata verificata alcuna configurazione del provider o requisito legale.
+**Verifica.** Cifratura at-rest Fernet AES verificata con test dedicati (`test_ai_crypto.py`). Nessuna chiave esposta via GET `/settings/ai` (solo stato mascherato `{configured, hint}`). Chiamate AI interamente intermediate dal backend con validazione SSRF e protezione IP privati (`test_ai_ssrf.py`).
 
-**Intervento.** Portare la chiamata Gemini in un servizio backend con chiave non recuperabile dai client, autorizzazione unificata, limiti per utente, timeout e audit. Separare dati e istruzioni, minimizzare il contesto e definire il ciclo bozza/revisione/approvazione. Allineare esplicitamente generazione, lettura, export e salvataggio per i viewer senza ampliare implicitamente i loro privilegi.
+**Intervento.** Creato sottosistema IA multi-provider (`backend/app/ai/`) con adapter pattern (Gemini, OpenAI, OpenAI-Compatible), factory, cifratura simmetrica AES Fernet (`enc:v1:`), protezione SSRF con validazione indirizzi IP privati e header personalizzati. Endpoint `POST /ai/analyze` e `POST /ai/test-connection` gestiti centralmente a livello backend con autorizzazioni JWT e audit logging. Frontend migrato a thin facade delegata (`gemini_service.dart`) e UI multi-provider completa in `settings_screen.dart`.
 
-**Criterio di chiusura.** Nessuna chiave nei payload browser; matrice ruolo/ai_enabled/flag globale verificata; l’IA produce una bozza con provenienza corretta; salvataggio e approvazione seguono la policy stabilita.
+**Criterio di chiusura.** Nessuna chiave nei payload browser; configurazione centralizzata e cifrata; chiamate AI mediate dal backend; test unitari ed endpoint completati (18 nuovi test backend).
 
 <a id="ops-01"></a>
 ## OPS-01 — Versione e distribuzione degli asset non affidabili

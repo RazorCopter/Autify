@@ -53,6 +53,16 @@ class _Http {
     return response;
   }
 
+  Future<raw_http.Response> patch(Uri url,
+      {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
+    final response = await raw_http.patch(url,
+        headers: headers, body: body, encoding: encoding);
+    if (response.statusCode == 401) {
+      _handleUnauthorized();
+    }
+    return response;
+  }
+
   Future<raw_http.Response> delete(Uri url,
       {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
     final response = await raw_http.delete(url,
@@ -482,6 +492,160 @@ class ApiService implements LicenseApi {
       return false;
     }
   }
+
+  // --- NUOVI ENDPOINT CONFIGURAZIONE IA SICURA ---
+
+  Future<Map<String, dynamic>?> getAiSettings() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/settings/ai'),
+        headers: {'Authorization': 'Bearer $kAuthToken'},
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e, s) {
+      debugPrint('[ApiService] getAiSettings error: $e | $s');
+      return null;
+    }
+  }
+
+  Future<bool> patchAiSettings(Map<String, dynamic> patch) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl/settings/ai'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $kAuthToken',
+        },
+        body: jsonEncode(patch),
+      );
+      return response.statusCode == 200;
+    } catch (e, s) {
+      debugPrint('[ApiService] patchAiSettings error: $e | $s');
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>> testAiConnection(Map<String, dynamic> config) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/ai/test-connection'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $kAuthToken',
+        },
+        body: jsonEncode(config),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      final err = jsonDecode(response.body);
+      return {
+        'success': false,
+        'message': err['detail'] ?? 'Errore test connessione (${response.statusCode})',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Impossibile contattare il server: $e',
+      };
+    }
+  }
+
+  Future<String> analyzePatientData({
+    required PatientModel patient,
+    required List<AggregatedEvaluation> evaluations,
+    String? notes,
+    Map<String, dynamic>? attachment,
+    List<Map<String, dynamic>>? historyToInclude,
+    String? systemPrompt,
+    Map<String, PsychometricAnalysis?>? analyses,
+  }) async {
+    final List<Map<String, dynamic>> evalsJson = evaluations.map((e) {
+      final m = <String, dynamic>{
+        'id_valutazione': e.idValutazione,
+        'id_paziente': e.idPaziente,
+        'id_scala': e.idScala,
+        'anno': e.anno,
+        'data_compilazione': e.dataCompilazione,
+        'nome_operatore': e.nomeOperatore,
+        'domini': e.domini.map((d) => {
+          'codice': d.codice,
+          'etichetta': d.etichetta,
+          'punteggio': d.punteggio,
+          'num_domande': d.numDomande,
+        }).toList(),
+      };
+      final analysis = analyses?[e.idValutazione] ?? analyses?[e.idScala];
+      if (analysis != null) {
+        m['analysis'] = {
+          'somma_punteggi_standard': analysis.sommaPunteggiStandard,
+          'indice_qv': analysis.indiceQv,
+          'percentile': analysis.percentile,
+          'fascia_qv': analysis.fasciaQv,
+          'alert_medico': analysis.alertMedico,
+          'alert_comportamentale': analysis.alertComportamentale,
+          'sezione_2_top4': analysis.sezione2Top4,
+          'domini': analysis.domini.map((da) => {
+            'codice': da.codice,
+            'etichetta': da.etichetta,
+            'punteggio_diretto': da.punteggioDiretto,
+            'punteggio_standard': da.punteggioStandard,
+            'percentile': da.percentileDominio,
+            'fascia': da.fascia,
+          }).toList(),
+        };
+      }
+      return m;
+    }).toList();
+
+    Map<String, dynamic>? attachmentPayload;
+    if (attachment != null && attachment['bytes'] != null) {
+      final bytes = attachment['bytes'];
+      final ext = (attachment['extension'] as String?) ?? 'pdf';
+      attachmentPayload = {
+        'filename': 'allegato.$ext',
+        'extension': ext,
+        'data_base64': base64Encode(bytes is Uint8List ? bytes : Uint8List.fromList(List<int>.from(bytes))),
+      };
+    }
+
+    final payload = {
+      'id_paziente': patient.id,
+      'patient': patient.toJson(),
+      'evaluations': evalsJson,
+      'notes': notes,
+      'history_reports': historyToInclude,
+      'attachment': attachmentPayload,
+      'system_prompt': systemPrompt,
+    };
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/ai/analyze'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $kAuthToken',
+      },
+      body: jsonEncode(payload),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return (data['report'] as String?) ?? '';
+    }
+
+    String errorMsg = 'Errore analisi IA (${response.statusCode})';
+    try {
+      final data = jsonDecode(response.body);
+      if (data is Map && data.containsKey('detail')) {
+        errorMsg = data['detail'].toString();
+      }
+    } catch (_) {}
+    throw Exception(errorMsg);
+  }
+
 
   // --- ANAGRAFICA (PATIENTS) ---
 

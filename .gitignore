@@ -19,6 +19,8 @@ pubspec.lock
 .DS_Store
 Thumbs.db
 
+*.pptx
+
 # Python
 __pycache__/
 *.py[cod]

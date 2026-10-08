@@ -14,16 +14,6 @@ from app.license_service import require_valid_license
 from app.routers import license as license_router
 
 
-@pytest.fixture(autouse=True)
-def valid_license_override():
-    """I test endpoint esistenti verificano il dominio, non il server licenze esterno."""
-    async def _valid_license():
-        return {"valid": True, "status": "active"}
-
-    app.dependency_overrides[require_valid_license] = _valid_license
-    yield
-    app.dependency_overrides.pop(require_valid_license, None)
-
 # ==============================================================================
 # MOTOR / MONGODB ASYNC MOCKS
 # ==============================================================================

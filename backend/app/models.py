@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union
 from datetime import datetime, timezone
 import uuid
 
@@ -103,10 +103,45 @@ class AppSettings(BaseModel):
     gemini_model: Optional[str] = "gemini-2.5-pro"
     chatgpt_api_key: Optional[str] = None
     chatgpt_model: Optional[str] = "gpt-4o"
-    ai_provider: str = Field(default="gemini", description="Provider AI attivo: 'gemini' o 'chatgpt'")
+    ai_provider: str = Field(default="gemini", description="Provider AI attivo: 'gemini', 'openai' o 'openai_compatible'")
     gemini_prompt: Optional[str] = None
     viewer_ai_enabled: Optional[bool] = False
     scale_validity_months: dict = Field(default_factory=lambda: {"pos": 12, "san_martin": 12, "sis": 36, "ogva": 12, "sabs": 12, "oso": 12})
+    ai: Optional[dict] = None
+
+    def to_ai_stored(self) -> Any:
+        from .ai.models import AISettingsStored, DEFAULT_SYSTEM_PROMPT
+        from .ai.crypto import encrypt_secret
+
+        if self.ai and isinstance(self.ai, dict):
+            try:
+                return AISettingsStored.model_validate(self.ai)
+            except Exception:
+                pass
+
+        # Fallback dai campi legacy
+        provider = "openai" if self.ai_provider == "chatgpt" else (self.ai_provider or "gemini")
+        if provider not in ("gemini", "openai", "openai_compatible"):
+            provider = "gemini"
+
+        stored = AISettingsStored(
+            schema_version=2,
+            active_provider=provider,
+            viewer_ai_enabled=bool(self.viewer_ai_enabled),
+            system_prompt=self.gemini_prompt or DEFAULT_SYSTEM_PROMPT,
+        )
+        if self.gemini_model:
+            stored.gemini.model = self.gemini_model
+        if self.gemini_api_key and self.gemini_api_key != "***-HIDDEN":
+            stored.gemini.api_key_encrypted = encrypt_secret(self.gemini_api_key)
+
+        if self.chatgpt_model:
+            stored.openai.model = self.chatgpt_model
+        if self.chatgpt_api_key and self.chatgpt_api_key != "***-HIDDEN":
+            stored.openai.api_key_encrypted = encrypt_secret(self.chatgpt_api_key)
+
+        return stored
+
 
 # --- MODELLI SCALA (Scale Models) ---
 

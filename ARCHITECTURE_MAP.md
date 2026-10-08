@@ -117,10 +117,10 @@ flowchart TD
     NGINX --> API["FastAPI e policy"]
     API --> DB["MongoDB autanalysis"]
     API --> CALC["Calcolo e PDF"]
-    UI --> GEM["Gemini diretto"]
+    API --> AI["Provider IA (Gemini / OpenAI / OpenAI-Compatible)"]
 ```
 
-Il collegamento diretto UI → Gemini è il comportamento corrente. Il servizio IA backend è una proposta di AI-02, non un componente già implementato.
+Il sottosistema IA backend gestisce i provider Gemini, OpenAI e OpenAI-Compatible con cifratura at-rest Fernet AES (`enc:v1:`), protezione SSRF sui base_url e adapter dedicati. Il frontend delega l'analisi al backend via `api_service.dart` e non espone chiavi API in chiaro.
 
 ### 1. Prodotto e confini
 
@@ -130,10 +130,10 @@ Autify supporta una struttura educativa con anagrafiche utenti, somministrazione
 | --- | --- |
 | UI | Flutter Web, Provider per settings, HTTP, fl_chart, flutter_markdown, file_picker |
 | API | FastAPI; router admin protetto, router pubblico admin e router client separati |
-| Dati | Motor / MongoDB; database legacy `autanalysis`; sette collezioni |
+| Dati | Motor / MongoDB; database legacy `autanalysis`; otto collezioni (incluse licenses) |
 | Calcolo | `analytics.py`: punteggi diretti, conversioni San Martín, motore SIS |
 | Documenti | `pdf_generator.py`: ReportLab + Matplotlib, PDF valutazioni e relazioni IA |
-| IA | `gemini_service.dart` chiama direttamente Google Gemini via HTTP dal frontend |
+| IA | Subsystem backend multi-provider (`backend/app/ai/`) con Fernet AES, SSRF protection e adapter Gemini/OpenAI/Compatible; frontend delegato |
 | Runtime | Docker Compose: autify-admin → autify-api → autify-db |
 
 Il target verificato è Web: `main.dart` e `api_service.dart` importano `dart:html`; il supporto Desktop non è dimostrato.
@@ -146,7 +146,7 @@ Tutti i percorsi UI seguenti sono relativi a `frontend_admin/lib/`.
 | --- | --- | --- |
 | Avvio e navigazione | main.dart, config.dart, app_version.dart | Shell, sessione browser, selezione schermate, URL API e versione |
 | Accesso | screens/login_screen.dart, services/api_service.dart | Login JWT, localStorage, header Bearer e gestione 401 |
-| Configurazione | screens/settings_screen.dart, services/settings_notifier.dart, models/app_settings.dart | Gemini/utenze/backup via API; durate e alert in SharedPreferences locali, non nel backup DB |
+| Configurazione | screens/settings_screen.dart, services/settings_notifier.dart, models/app_settings.dart | Provider IA (Gemini/OpenAI/Compatible)/utenze/backup via API; durate e alert in SharedPreferences locali, non nel backup DB |
 | Anagrafiche | screens/anagrafica_screen.dart, models/patient_model.dart | CRUD, ricerca, filtri, paginazione e storico |
 | Scale | screens/protocols_screen.dart, models/scale_model.dart | Import e gestione protocolli |
 | Compilazione | screens/selection_screen.dart, screens/wizard_screen.dart, screens/sis_wizard_screen.dart | Selezione utente/scala, risposte generiche e percorso SIS |
@@ -154,7 +154,7 @@ Tutti i percorsi UI seguenti sono relativi a `frontend_admin/lib/`.
 | SIS | widgets/sis_3d_item_card.dart, widgets/sis_medical_list.dart, widgets/sis_ranking_widget.dart | Componenti delle tre sezioni; nomi file legacy conservati |
 | Dashboard | screens/dashboard_screen.dart, services/validity_calculator.dart | Indicatori, scadenze e validità |
 | Dettagli | screens/evaluation_detail_screen.dart, models/evaluation_model.dart | Storico, risposte, analisi, modifica e PDF |
-| Multidimensionale | screens/multidimensional_dashboard_screen.dart, services/gemini_service.dart | Confronto scale, contesto IA, note/allegati/storico |
+| Multidimensionale | screens/multidimensional_dashboard_screen.dart, services/api_service.dart | Confronto scale, contesto IA backend, note/allegati/storico |
 | Relazioni | screens/document_reader_screen.dart | Lettura e presentazione documento |
 | Audit | screens/audit_log_screen.dart, models/audit_log.dart | Consultazione eventi |
 | UI condivisa | theme/app_theme.dart, utils/responsive_helper.dart, widgets/expandable_scale_card.dart, widgets/connection_status_indicator.dart | Tema, layout, card e stato connessione |
@@ -164,9 +164,12 @@ Tutti i percorsi UI seguenti sono relativi a `frontend_admin/lib/`.
 | --- | --- |
 | backend/app/main.py | Entrypoint, lifespan, bootstrap, CORS, limiter, montaggio router e health |
 | backend/app/auth.py | JWT HS256 (8 ore), bcrypt (12 round), bootstrap, indici e migrazione campo attivo |
-| backend/app/database.py | Connessione Motor con pool/timeout e sette collection |
-| backend/app/models.py | Contratti Pydantic: utenze, anagrafiche, scale, risposte, analisi, PDF, audit |
+| backend/app/database.py | Connessione Motor con pool/timeout e otto collection (inclusa licenses) |
+| backend/app/models.py | Contratti Pydantic: utenze, anagrafiche, scale, risposte, analisi, PDF, audit e modelli IA settings |
 | backend/app/routes.py | Endpoint, RBAC per metodo, audit, import/export, aggregazioni e cache dashboard |
+| backend/app/ai/ | Modulo IA: crypto Fernet AES (`enc:v1:`), validazione SSRF, adapter Gemini/OpenAI/Compatible e factory |
+| backend/app/routers/ai.py | Endpoint IA: generazione analisi multidimensionale (`POST /ai/analyze`) e test connessione (`POST /ai/test-connection`) |
+| backend/app/routers/settings.py | Router impostazioni: configurazione applicativa e credenziali IA cifrate (`GET/PATCH /settings/ai`) |
 | backend/app/analytics.py | Calcoli diretti, conversioni San Martín e SIS |
 | backend/app/pdf_generator.py | Grafici e composizione PDF in memoria |
 | backend/app/seed_db.py | Import iniziale POS da CSV esterno, non presente nello snapshot |
@@ -179,8 +182,8 @@ Tutti i percorsi UI seguenti sono relativi a `frontend_admin/lib/`.
 1. **Accesso:** UI → POST login → bcrypt → JWT → localStorage → Bearer sulle chiamate admin. Il wrapper in routes.py aggiunge al controllo JWT il blocco delle scritture viewer; POST PDF IA è un'eccezione esplicita.
 2. **Compilazione:** wizard → POST /api/client/evaluations → persistenza risposte → invalidazione cache → audit. Questo endpoint non invoca il motore di calcolo e non aggiorna un campo ultima_compilazione nell'anagrafica. Le analisi vengono costruite nei percorsi di lettura/aggregazione/PDF.
 3. **Analisi e PDF:** routes.py recupera valutazioni e scale → analytics.py → risposta strutturata o pdf_generator.py.
-4. **IA:** UI raccoglie valutazioni, note, allegato opzionale e relazioni pregresse → Gemini direttamente → Markdown → autosalvataggio in ai_analyses via API. Non c’è un passaggio esplicito di approvazione né uno stato approvato nel modello. Lo storico usa gli indici dell’ultima valutazione per scala e gli ID salvati non coincidono sempre con la selezione (AI-01). Non risulta un proxy backend Gemini.
-5. **Backup:** export JSON delle sette collection, inclusi utenti e settings; import limitato a 5 MiB. L'import cancella/reinserisce solo le collection con elenco non vuoto: un elenco vuoto non svuota la collection esistente.
+4. **IA:** UI raccoglie valutazioni, note, allegato opzionale e relazioni pregresse → inoltra a `POST /api/admin/ai/analyze` via `api_service.dart` → backend decifra credenziali, valida SSRF, interroga l'adapter attivo (Gemini, OpenAI o OpenAI-Compatible) → restituisce Markdown strutturato e memorizza l'analisi in `ai_analyses` con tracciamento audit.
+5. **Backup:** export JSON delle otto collection, inclusi utenti e settings; import limitato a 5 MiB con cifratura AES. L'import cancella/reinserisce solo le collection con elenco non vuoto: un elenco vuoto non svuota la collection esistente.
 6. **Dashboard:** aggregazioni in routes.py, cache in processo con TTL 300 secondi e invalidazione esplicita.
 
 ### 4. Database
@@ -191,9 +194,10 @@ Tutti i percorsi UI seguenti sono relativi a `frontend_admin/lib/`.
 | evaluations | Risposte e storico valutazioni | Sì |
 | scales | Struttura delle scale | Sì |
 | users | Operatori, hash password, ruoli | Sì |
-| settings | Impostazioni e configurazione Gemini | Sì |
+| settings | Impostazioni e configurazione IA multi-provider | Sì |
 | ai_analyses | Relazioni IA salvate | Sì |
 | audit_logs | Eventi applicativi | Sì |
+| licenses | Licenze e controlli di attivazione cliente | Sì |
 
 Bootstrap: indici su username (univoco), identificativi valutazione/utente, identificativo utente univoco, riferimenti e timestamp delle analisi, timestamp audit. L'integrità referenziale, la completezza del tracciamento e il ripristino atomico non sono garantiti dai percorsi esaminati (DATA-01, DATA-02, OBS-01).
 
@@ -229,6 +233,10 @@ Protezione rilevata dal codice, senza richieste live. Il nome di un router non g
 | PUT | `/api/admin/evaluations/{evaluation_id}` | JWT + filtro viewer |
 | POST | `/api/admin/settings` | JWT + filtro viewer |
 | GET | `/api/admin/settings` | JWT + filtro viewer |
+| GET | `/api/admin/settings/ai` | JWT (admin o viewer con ai_enabled) - stato chiavi mascherato |
+| PATCH | `/api/admin/settings/ai` | JWT + ruolo admin esplicito - aggiorna config e cifra chiavi |
+| POST | `/api/admin/ai/test-connection` | JWT + ruolo admin esplicito - verifica connettività provider |
+| POST | `/api/admin/ai/analyze` | JWT + ai_enabled - genera e memorizza analisi educativa IA |
 | GET | `/api/admin/dashboard-stats` | JWT + filtro viewer |
 | DELETE | `/api/admin/dashboard-stats/cache` | JWT + filtro viewer |
 | GET | `/api/admin/export-db` | JWT + filtro viewer |
