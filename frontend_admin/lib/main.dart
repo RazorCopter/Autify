@@ -167,14 +167,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _notificationBell() {
-    return IconButton(
-      tooltip: 'Notifiche',
-      onPressed: _showNotifications,
-      icon: Badge(
-        isLabelVisible: _unreadNotifications > 0,
-        label:
-            Text(_unreadNotifications > 99 ? '99+' : '$_unreadNotifications'),
-        child: const Icon(Icons.notifications_none_rounded),
+    final semanticLabel = _unreadNotifications > 0
+        ? 'Notifiche, $_unreadNotifications non lette'
+        : 'Notifiche';
+
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: IconButton(
+        tooltip: semanticLabel,
+        onPressed: _showNotifications,
+        icon: Badge(
+          isLabelVisible: _unreadNotifications > 0,
+          label:
+              Text(_unreadNotifications > 99 ? '99+' : '$_unreadNotifications'),
+          child: const Icon(Icons.notifications_none_rounded),
+        ),
       ),
     );
   }
@@ -327,27 +335,37 @@ class _AdminDashboardState extends State<AdminDashboard> {
       children: [
         // Sidebar
         _buildSidebar(),
-        // Contenuto principale
+        // Contenuto principale e azione header desktop nello stesso flusso.
         Expanded(
-          child: Stack(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Positioned.fill(
-                child: _buildBody(),
-              ),
-              // Sfondo Watermark Bradipo HD Premium post-login (in overlay sopra il body per aggirare gli sfondi coprenti delle schede)
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: Opacity(
-                    opacity:
-                        0.015, // Trasparenza soft ottimizzata all'1.5% per garantire contrasto ottimale
-                    child: Image.asset(
-                      'assets/images/bradipo_hd_BG.png',
-                      fit: BoxFit.cover,
+              Expanded(
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: _buildBody(),
                     ),
-                  ),
+                    // Sfondo Watermark Bradipo HD Premium post-login (in overlay sopra il body per aggirare gli sfondi coprenti delle schede)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: Opacity(
+                          opacity:
+                              0.015, // Trasparenza soft ottimizzata all'1.5% per garantire contrasto ottimale
+                          child: Image.asset(
+                            'assets/images/bradipo_hd_BG.png',
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Positioned(top: 12, right: 18, child: _notificationBell()),
+              Padding(
+                padding: const EdgeInsets.only(top: 12, right: 18),
+                child: _notificationBell(),
+              ),
             ],
           ),
         ),
