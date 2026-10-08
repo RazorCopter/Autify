@@ -50,6 +50,87 @@ class AdminApp extends StatelessWidget {
   }
 }
 
+class _NotificationBellPainter extends CustomPainter {
+  const _NotificationBellPainter({
+    required this.color,
+    required this.filled,
+  });
+
+  final Color color;
+  final bool filled;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final strokeWidth = size.shortestSide * 0.09;
+    final centerX = size.width / 2;
+    final bellPath = Path()
+      ..moveTo(size.width * 0.24, size.height * 0.70)
+      ..quadraticBezierTo(
+        size.width * 0.31,
+        size.height * 0.61,
+        size.width * 0.31,
+        size.height * 0.43,
+      )
+      ..cubicTo(
+        size.width * 0.31,
+        size.height * 0.22,
+        size.width * 0.40,
+        size.height * 0.14,
+        centerX,
+        size.height * 0.14,
+      )
+      ..cubicTo(
+        size.width * 0.60,
+        size.height * 0.14,
+        size.width * 0.69,
+        size.height * 0.22,
+        size.width * 0.69,
+        size.height * 0.43,
+      )
+      ..quadraticBezierTo(
+        size.width * 0.69,
+        size.height * 0.61,
+        size.width * 0.76,
+        size.height * 0.70,
+      )
+      ..quadraticBezierTo(
+        size.width * 0.78,
+        size.height * 0.76,
+        size.width * 0.70,
+        size.height * 0.76,
+      )
+      ..lineTo(size.width * 0.30, size.height * 0.76)
+      ..quadraticBezierTo(
+        size.width * 0.22,
+        size.height * 0.76,
+        size.width * 0.24,
+        size.height * 0.70,
+      )
+      ..close();
+
+    final bellPaint = Paint()
+      ..color = color
+      ..style = filled ? PaintingStyle.fill : PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(bellPath, bellPaint);
+
+    final clapperPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(
+      Offset(centerX, size.height * 0.84),
+      size.shortestSide * 0.075,
+      clapperPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _NotificationBellPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.filled != filled;
+}
+
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
 
@@ -71,7 +152,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   void initState() {
     super.initState();
-    assert(_preservedBellIcons.isNotEmpty);
     _checkLicense();
     _pollNotifications();
     _notificationTimer = Timer.periodic(
@@ -167,15 +247,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // Assicura che i glifi delle icone notifica non vengano rimossi dal tree-shaking web
-  static const List<IconData> _preservedBellIcons = [
-    Icons.notifications,
-    Icons.notifications_none,
-    Icons.notifications_active,
-    Icons.notifications_outlined,
-    Icons.notifications_rounded,
-  ];
-
   Widget _notificationBell({bool inHeader = false}) {
     final semanticLabel = _unreadNotifications > 0
         ? 'Notifiche, $_unreadNotifications non lette'
@@ -190,23 +261,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
       height: 40,
       child: Center(
         child: SizedBox(
-          width: 24,
-          height: 24,
+          width: 28,
+          height: 28,
           child: Stack(
             clipBehavior: Clip.none,
             alignment: Alignment.center,
             children: [
-              Icon(
-                _unreadNotifications > 0
-                    ? Icons.notifications
-                    : Icons.notifications_none,
-                size: 22,
-                color: bellColor,
+              CustomPaint(
+                key: const ValueKey('notification-bell-symbol'),
+                size: const Size(24, 24),
+                painter: _NotificationBellPainter(
+                  color: bellColor,
+                  filled: _unreadNotifications > 0,
+                ),
               ),
               if (_unreadNotifications > 0)
                 Positioned(
                   top: -5,
-                  right: -7,
+                  right: -6,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 4, vertical: 1.5),
