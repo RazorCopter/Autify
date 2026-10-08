@@ -15,13 +15,15 @@ def is_private_ip(ip_str: str) -> bool:
 def normalize_base_url(url: str) -> str:
     """
     Pulisce e normalizza la base URL di un provider OpenAI-compatible.
-    Rimuove slash finali e suffissi erroneamente inclusi come /chat/completions o /responses.
+    Rimuove slash finali e suffissi erroneamente inclusi come /chat/completions, /responses o /models.
     """
     clean = url.strip().rstrip("/")
     if clean.endswith("/chat/completions"):
         clean = clean[:-len("/chat/completions")].rstrip("/")
     elif clean.endswith("/responses"):
         clean = clean[:-len("/responses")].rstrip("/")
+    elif clean.endswith("/models"):
+        clean = clean[:-len("/models")].rstrip("/")
     return clean
 
 def validate_base_url(url: str) -> str:
@@ -52,6 +54,21 @@ def validate_base_url(url: str) -> str:
         )
 
     hostname = parsed.hostname.lower()
+
+    # Verifica contro allowlist esplicita se definita
+    allowed_hosts_env = os.environ.get("ALLOWED_AI_HOSTS", "").strip()
+    if allowed_hosts_env:
+        allowed_list = [h.strip().lower() for h in allowed_hosts_env.split(",") if h.strip()]
+        is_allowed = any(
+            hostname == allowed or hostname.endswith(f".{allowed}")
+            for allowed in allowed_list
+        )
+        if not is_allowed:
+            raise HTTPException(
+                status_code=400,
+                detail=f"L'host '{hostname}' non è autorizzato nella whitelist di sistema (ALLOWED_AI_HOSTS)."
+            )
+
     allow_private = os.environ.get("ALLOW_PRIVATE_AI_ENDPOINTS", "").lower() in ("true", "1", "yes")
 
     # Se l'hostname è già un IP letterale

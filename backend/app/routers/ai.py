@@ -27,10 +27,17 @@ from ..ai import (
     AISettingsStored,
     AITestConnectionRequest,
     AITestConnectionResponse,
+    AIDiscoverModelsRequest,
+    AIDiscoverModelsResponse,
     AIAnalyzeRequest,
+    AIAnalyzeResponse,
     DEFAULT_SYSTEM_PROMPT,
+    decrypt_secret,
+    resolve_secret,
+    resolve_custom_headers,
 )
 from ..ai.adapters import get_ai_adapter
+from ..ai.adapters.openai_compatible import OpenAICompatibleAdapter
 from .settings import get_or_migrate_ai_settings
 
 
@@ -211,7 +218,9 @@ def _build_educational_prompt(
     return "\n".join(lines)
 
 @admin_router.post("/ai/test-connection", response_model=AITestConnectionResponse, tags=["Admin - AI"])
+@_limiter.limit("15/minute")
 async def test_ai_connection(
+    request: Request,
     req: AITestConnectionRequest,
     auth: dict = Depends(verify_auth),
 ):
@@ -237,6 +246,15 @@ async def test_ai_connection(
         else stored.openai.model if target_provider == "openai"
         else stored.openai_compatible.model
     )
+
+    operatore = auth.get("username", "operatore")
+    await log_audit(
+        "AI_TEST_CONNECTION",
+        operatore,
+        f"Provider: {target_provider}, Model: {target_model}, Esito: {'OK' if success else 'KO'} ({latency_ms}ms)",
+        None,
+    )
+
     return AITestConnectionResponse(
         success=success,
         provider=target_provider,
@@ -245,26 +263,73 @@ async def test_ai_connection(
         message=message,
     )
 
-@admin_router.post("/ai/analyze", tags=["Admin - AI Analyses"])
-async def analyze_evaluation(request: AIAnalyzeRequest, auth: dict = Depends(verify_auth)):
+@admin_router.post("/ai/openai-compatible/models", response_model=AIDiscoverModelsResponse, tags=["Admin - AI"])
+@_limiter.limit("15/minute")
+async def discover_openai_compatible_models(
+    request: Request,
+    req: AIDiscoverModelsRequest,
+    auth: dict = Depends(verify_auth),
+):
+    if auth.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Solo gli amministratori possono scoprire i modelli IA")
+
+    stored = await get_or_migrate_ai_settings()
+
+    target_base_url = req.base_url or stored.openai_compatible.base_url
+    target_api_key = resolve_secret(req.api_key, stored.openai_compatible.api_key_encrypted)
+    target_headers = resolve_custom_headers(req.custom_headers, stored.openai_compatible.custom_headers)
+
+    adapter = OpenAICompatibleAdapter(
+        base_url=target_base_url,
+        api_key=target_api_key,
+        custom_headers=target_headers,
+        generation=stored.generation,
+        network=stored.network,
+    )
+
+    models = await adapter.fetch_available_models()
+
+    operatore = auth.get("username", "operatore")
+    await log_audit(
+        "AI_DISCOVER_MODELS",
+        operatore,
+        f"Base URL: {target_base_url}, Modelli trovati: {len(models)}",
+        None,
+    )
+
+    return AIDiscoverModelsResponse(models=models, count=len(models))
+
+@admin_router.post("/ai/analyze", response_model=AIAnalyzeResponse, tags=["Admin - AI Analyses"])
+@_limiter.limit("20/minute")
+async def analyze_evaluation(
+    request: Request,
+    body: AIAnalyzeRequest,
+    auth: dict = Depends(verify_auth),
+):
     """Analizza una valutazione o l'intero profilo di funzionamento usando il provider IA configurato."""
     if not auth.get("ai_enabled", False):
         raise HTTPException(status_code=403, detail="Non sei abilitato all'uso dell'IA")
 
     stored = await get_or_migrate_ai_settings()
 
-    patient_id = request.id_paziente
-    evaluations_used = list(request.evaluation_ids or [])
-    patient_data = request.patient
-    evaluations_data = list(request.evaluations or [])
+    if auth.get("role") == "viewer" and not stored.viewer_ai_enabled:
+        raise HTTPException(status_code=403, detail="L'uso dell'IA per i profili Viewer è disabilitato a livello globale")
 
-    if request.id_valutazione and not evaluations_data:
-        eval_doc = await _find_evaluation_document(request.id_valutazione)
+    if auth.get("role") == "viewer" and body.system_prompt:
+        raise HTTPException(status_code=403, detail="I profili Viewer non sono autorizzati a personalizzare il prompt di sistema")
+
+    patient_id = body.id_paziente
+    evaluations_used = list(body.evaluation_ids or [])
+    patient_data = body.patient
+    evaluations_data = list(body.evaluations or [])
+
+    if body.id_valutazione and not evaluations_data:
+        eval_doc = await _find_evaluation_document(body.id_valutazione)
         if not eval_doc:
             raise HTTPException(status_code=404, detail="Valutazione non trovata")
         evaluations_data.append(eval_doc)
-        if request.id_valutazione not in evaluations_used:
-            evaluations_used.append(request.id_valutazione)
+        if body.id_valutazione not in evaluations_used:
+            evaluations_used.append(body.id_valutazione)
         if not patient_id:
             patient_id = eval_doc.get("id_paziente")
 
@@ -276,23 +341,23 @@ async def analyze_evaluation(request: AIAnalyzeRequest, auth: dict = Depends(ver
     if not patient_id and patient_data:
         patient_id = patient_data.get("id")
 
-    if not evaluations_data and not (request.notes and request.notes.strip()) and not request.attachment:
+    if not evaluations_data and not (body.notes and body.notes.strip()) and not body.attachment:
         raise HTTPException(status_code=400, detail="Nessun dato fornito per l'analisi (valutazioni, note o allegato)")
 
     user_prompt = _build_educational_prompt(
         patient=patient_data,
         evaluations=evaluations_data,
-        notes=request.notes,
-        history_reports=request.history_reports,
+        notes=body.notes,
+        history_reports=body.history_reports,
     )
 
-    system_prompt = request.system_prompt or stored.system_prompt or DEFAULT_SYSTEM_PROMPT
+    system_prompt = (body.system_prompt if auth.get("role") != "viewer" else None) or stored.system_prompt or DEFAULT_SYSTEM_PROMPT
 
     adapter = get_ai_adapter(settings=stored)
     report_text, usage = await adapter.generate(
         system_prompt=system_prompt,
         user_prompt=user_prompt,
-        attachment=request.attachment,
+        attachment=body.attachment,
     )
 
     analysis_id = f"an_{uuid.uuid4().hex[:8]}"
@@ -324,16 +389,24 @@ async def analyze_evaluation(request: AIAnalyzeRequest, auth: dict = Depends(ver
         target_for_audit,
     )
 
-    return {
-        "id": analysis_id,
-        "id_paziente": patient_id or "sconosciuto",
-        "timestamp": created_at.isoformat(),
-        "report": report_text,
-        "notes": "",
-        "evaluations_used": evaluations_used,
-        "provider": new_analysis["provider"],
-        "model": new_analysis["model"],
-        "usage": usage,
-    }
+    prompt_tok = usage.get("prompt_tokens") if usage else None
+    comp_tok = usage.get("completion_tokens") if usage else None
+    tot_tok = usage.get("total_tokens") if usage else None
+
+    return AIAnalyzeResponse(
+        id=analysis_id,
+        id_paziente=patient_id or "sconosciuto",
+        timestamp=created_at.isoformat(),
+        report=report_text,
+        notes="",
+        evaluations_used=evaluations_used,
+        provider=new_analysis["provider"],
+        model=new_analysis["model"],
+        usage=usage,
+        prompt_tokens=prompt_tok,
+        completion_tokens=comp_tok,
+        total_tokens=tot_tok,
+        created_at=created_at.isoformat(),
+    )
 
 

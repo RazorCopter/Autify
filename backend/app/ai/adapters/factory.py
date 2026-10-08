@@ -1,7 +1,7 @@
 from typing import Dict, Optional
 from fastapi import HTTPException
 from ..models import AISettingsStored
-from ..crypto import decrypt_secret
+from ..crypto import decrypt_secret, resolve_secret, resolve_custom_headers
 from .base import BaseAIAdapter
 from .gemini import GeminiAdapter
 from .openai import OpenAIAdapter
@@ -19,7 +19,7 @@ def get_ai_adapter(
     provider = provider_override or settings.active_provider
 
     if provider == "gemini":
-        key = api_key_override if api_key_override is not None else decrypt_secret(settings.gemini.api_key_encrypted)
+        key = resolve_secret(api_key_override, settings.gemini.api_key_encrypted)
         model = model_override or settings.gemini.model
         return GeminiAdapter(
             api_key=key,
@@ -29,7 +29,7 @@ def get_ai_adapter(
         )
 
     elif provider == "openai":
-        key = api_key_override if api_key_override is not None else decrypt_secret(settings.openai.api_key_encrypted)
+        key = resolve_secret(api_key_override, settings.openai.api_key_encrypted)
         model = model_override or settings.openai.model
         protocol = protocol_override or settings.openai.protocol
         return OpenAIAdapter(
@@ -41,11 +41,11 @@ def get_ai_adapter(
         )
 
     elif provider == "openai_compatible":
-        key = api_key_override if api_key_override is not None else decrypt_secret(settings.openai_compatible.api_key_encrypted)
+        key = resolve_secret(api_key_override, settings.openai_compatible.api_key_encrypted)
         base_url = base_url_override or settings.openai_compatible.base_url
         model = model_override or settings.openai_compatible.model
         protocol = protocol_override or settings.openai_compatible.protocol
-        headers = custom_headers_override if custom_headers_override is not None else settings.openai_compatible.custom_headers
+        headers = resolve_custom_headers(custom_headers_override, settings.openai_compatible.custom_headers)
         return OpenAICompatibleAdapter(
             base_url=base_url,
             api_key=key,

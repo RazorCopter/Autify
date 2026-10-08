@@ -291,8 +291,20 @@ class _MultidimensionalDashboardScreenState extends State<MultidimensionalDashbo
       withData: true,
     );
     if (result != null && result.files.isNotEmpty) {
+      final file = result.files.first;
+      if (file.size > 10 * 1024 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Il file selezionato supera la dimensione massima consentita di 10 MB.'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+        return;
+      }
       setState(() {
-        _aiAttachment = result.files.first;
+        _aiAttachment = file;
       });
     }
   }

@@ -19,12 +19,21 @@ from .models import (
     OpenAICompatiblePatch,
     AITestConnectionRequest,
     AITestConnectionResponse,
+    AIDiscoverModelsRequest,
+    AIDiscoverModelsResponse,
     AIAttachment,
     AIAnalyzeRequest,
     AIAnalyzeResponse,
     DEFAULT_SYSTEM_PROMPT,
 )
-from .crypto import encrypt_secret, decrypt_secret, mask_secret
+from .crypto import (
+    encrypt_secret,
+    decrypt_secret,
+    mask_secret,
+    is_masked_or_empty,
+    resolve_secret,
+    resolve_custom_headers,
+)
 from .ssrf import validate_base_url, normalize_base_url
 
 __all__ = [
@@ -48,6 +57,8 @@ __all__ = [
     "OpenAICompatiblePatch",
     "AITestConnectionRequest",
     "AITestConnectionResponse",
+    "AIDiscoverModelsRequest",
+    "AIDiscoverModelsResponse",
     "AIAttachment",
     "AIAnalyzeRequest",
     "AIAnalyzeResponse",
@@ -55,6 +66,9 @@ __all__ = [
     "encrypt_secret",
     "decrypt_secret",
     "mask_secret",
+    "is_masked_or_empty",
+    "resolve_secret",
+    "resolve_custom_headers",
     "validate_base_url",
     "normalize_base_url",
 ]

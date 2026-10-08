@@ -50,13 +50,25 @@ class GeminiAdapter(BaseAIAdapter):
 
         parts = [{"text": user_prompt}]
         if attachment and attachment.data_base64:
-            mime = attachment.mime_type or "application/octet-stream"
-            if not attachment.mime_type and attachment.extension:
-                ext = attachment.extension.lower()
-                if ext == "pdf": mime = "application/pdf"
-                elif ext == "txt": mime = "text/plain"
-                elif ext == "png": mime = "image/png"
-                elif ext in ("jpg", "jpeg"): mime = "image/jpeg"
+            mime = (attachment.mime_type or "").lower()
+            ext = (attachment.extension or "").lower()
+            if not mime and ext:
+                if ext == "pdf":
+                    mime = "application/pdf"
+                elif ext in ("txt", "csv"):
+                    mime = "text/plain" if ext == "txt" else "text/csv"
+                elif ext in ("png", "jpg", "jpeg", "webp", "heic", "heif"):
+                    mime = f"image/{'jpeg' if ext in ('jpg', 'jpeg') else ext}"
+
+            allowed_gemini = (
+                "application/pdf", "image/png", "image/jpeg", "image/webp",
+                "image/heic", "image/heif", "text/plain", "text/csv"
+            )
+            if mime not in allowed_gemini:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Il provider Gemini non supporta allegati di tipo '{mime or ext}'. Sono supportati PDF, TXT, CSV e immagini (PNG, JPEG, WEBP, HEIC).",
+                )
             parts.append({"inlineData": {"mimeType": mime, "data": attachment.data_base64}})
 
         payload = {"contents": [{"parts": parts}]}
@@ -76,7 +88,7 @@ class GeminiAdapter(BaseAIAdapter):
             payload["generationConfig"] = gen_config
 
         async def _do_req():
-            async with httpx.AsyncClient(timeout=float(self.network.timeout_seconds)) as client:
+            async with httpx.AsyncClient(timeout=float(self.network.timeout_seconds), follow_redirects=False) as client:
                 res = await client.post(url, json=payload)
                 if res.status_code != 200:
                     err = self._parse_gemini_error(res.status_code, res.text)
@@ -109,7 +121,7 @@ class GeminiAdapter(BaseAIAdapter):
         }
         start = time.perf_counter()
         try:
-            async with httpx.AsyncClient(timeout=float(min(15, self.network.timeout_seconds))) as client:
+            async with httpx.AsyncClient(timeout=float(min(15, self.network.timeout_seconds)), follow_redirects=False) as client:
                 res = await client.post(url, json=payload)
                 lat = round((time.perf_counter() - start) * 1000, 2)
                 if res.status_code == 200:

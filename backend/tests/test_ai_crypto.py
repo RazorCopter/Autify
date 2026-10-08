@@ -6,7 +6,7 @@ def test_crypto_roundtrip():
     encrypted = encrypt_secret(secret)
     assert encrypted != secret
     assert encrypted.startswith("enc:v1:")
-    
+
     decrypted = decrypt_secret(encrypted)
     assert decrypted == secret
 
@@ -15,7 +15,7 @@ def test_crypto_idempotency_and_none():
     assert encrypt_secret("") is None
     assert decrypt_secret(None) is None
     assert decrypt_secret("") is None
-    
+
     # Non cifra due volte se già enc:v1:
     encrypted = encrypt_secret("my-secret")
     assert encrypt_secret(encrypted) == encrypted

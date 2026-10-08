@@ -554,6 +554,48 @@ class ApiService implements LicenseApi {
     }
   }
 
+  Future<List<String>> discoverCompatibleModels({
+    String? providerBaseUrl,
+    String? baseUrl,
+    String? apiKey,
+    Map<String, String>? customHeaders,
+  }) async {
+    try {
+      final targetUrl = (providerBaseUrl ?? baseUrl)?.trim();
+      final payload = <String, dynamic>{};
+      if (targetUrl != null && targetUrl.isNotEmpty) {
+        payload['base_url'] = targetUrl;
+      }
+      if (apiKey != null && apiKey.isNotEmpty) {
+        payload['api_key'] = apiKey;
+      }
+      if (customHeaders != null && customHeaders.isNotEmpty) {
+        payload['custom_headers'] = customHeaders;
+      }
+
+      final response = await http.post(
+        Uri.parse('${ApiService.baseUrl}/ai/openai-compatible/models'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $kAuthToken',
+        },
+        body: jsonEncode(payload),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final list = data['models'] as List<dynamic>? ?? [];
+        return list.map((e) => e.toString()).toList();
+      } else {
+        final err = jsonDecode(response.body);
+        throw Exception(err['detail'] ?? 'Errore nel recupero modelli (${response.statusCode})');
+      }
+    } catch (e, s) {
+      debugPrint('[ApiService] discoverCompatibleModels error: $e | $s');
+      rethrow;
+    }
+  }
+
   Future<String> analyzePatientData({
     required PatientModel patient,
     required List<AggregatedEvaluation> evaluations,

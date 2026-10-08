@@ -34,12 +34,14 @@ from ..ai import (
     encrypt_secret,
     decrypt_secret,
     mask_secret,
+    is_masked_or_empty,
     validate_base_url,
 )
 
 
 from ._helpers import (
     verify_auth,
+    log_audit,
 )
 
 admin_router = APIRouter(dependencies=[Depends(verify_auth)])
@@ -227,30 +229,28 @@ async def update_settings(settings: AppSettings):
     settings_dict = settings.model_dump()
     existing = await settings_collection.find_one({"id": settings.id})
 
-    # Se il frontend invia la chiave mascherata, recuperiamo quella vera dal DB
-    if settings_dict.get("gemini_api_key") == "***-HIDDEN":
-        if existing:
-            settings_dict["gemini_api_key"] = existing.get("gemini_api_key")
-        else:
-            settings_dict["gemini_api_key"] = None
-
-    if settings_dict.get("chatgpt_api_key") == "***-HIDDEN":
-        if existing:
-            settings_dict["chatgpt_api_key"] = existing.get("chatgpt_api_key")
-        else:
-            settings_dict["chatgpt_api_key"] = None
-
-    # Preserva il sotto-documento AI se già presente
-    if existing and "ai" in existing and "ai" not in settings_dict:
+    # Preserva o inizializza il sotto-documento AI
+    if existing and "ai" in existing and isinstance(existing["ai"], dict):
         settings_dict["ai"] = existing["ai"]
+    elif "ai" not in settings_dict or not settings_dict["ai"]:
+        settings_dict["ai"] = AISettingsStored().model_dump()
 
-    # Se la chiave è stata modificata esplicitamente, sincronizza ai.gemini
+    # Se il payload legacy include chiavi non mascherate, sincronizza ai.gemini e ai.openai
     if settings_dict.get("gemini_api_key") and settings_dict.get("gemini_api_key") != "***-HIDDEN":
-        if "ai" not in settings_dict or not settings_dict["ai"]:
-            settings_dict["ai"] = AISettingsStored().model_dump()
         settings_dict["ai"]["gemini"]["api_key_encrypted"] = encrypt_secret(settings_dict["gemini_api_key"])
+    if settings_dict.get("chatgpt_api_key") and settings_dict.get("chatgpt_api_key") != "***-HIDDEN":
+        settings_dict["ai"]["openai"]["api_key_encrypted"] = encrypt_secret(settings_dict["chatgpt_api_key"])
+
+    # Rimuovi categoricamente le credenziali in chiaro dal dizionario prima del salvataggio
+    settings_dict.pop("gemini_api_key", None)
+    settings_dict.pop("chatgpt_api_key", None)
 
     await settings_collection.replace_one({"id": settings.id}, settings_dict, upsert=True)
+    # Assicura il purge a livello DB nel caso in cui fossero presenti campi residui
+    await settings_collection.update_one(
+        {"id": settings.id},
+        {"$unset": {"gemini_api_key": "", "chatgpt_api_key": ""}}
+    )
     return {"message": "Impostazioni salvate con successo"}
 
 @admin_router.get("/settings", response_model=AppSettings, tags=["Admin - Configuration"])
@@ -258,10 +258,10 @@ async def get_settings(auth: dict = Depends(verify_auth)):
     doc = await settings_collection.find_one({"id": "global_settings"})
     if doc:
         settings = AppSettings(**doc)
-        # Nasconde la API Key ai viewer che non hanno ai_enabled
-        if settings.gemini_api_key and auth["role"] == "viewer":
-            if not auth.get("ai_enabled", False):
-                settings.gemini_api_key = "***-HIDDEN"
+        # Non restituire mai le credenziali in chiaro né il sotto-documento AI cifrato
+        settings.gemini_api_key = None
+        settings.chatgpt_api_key = None
+        settings.ai = None
         return settings
     return AppSettings()
 
@@ -270,6 +270,12 @@ def stored_to_ai_response(stored: AISettingsStored) -> AISettingsResponse:
     gem_key = decrypt_secret(stored.gemini.api_key_encrypted)
     oai_key = decrypt_secret(stored.openai.api_key_encrypted)
     oac_key = decrypt_secret(stored.openai_compatible.api_key_encrypted)
+
+    masked_headers = {}
+    if stored.openai_compatible.custom_headers:
+        for k, v in stored.openai_compatible.custom_headers.items():
+            plain_v = decrypt_secret(v)
+            masked_headers[k] = mask_secret(plain_v) or "***"
 
     return AISettingsResponse(
         schema_version=stored.schema_version,
@@ -301,7 +307,7 @@ def stored_to_ai_response(stored: AISettingsStored) -> AISettingsResponse:
                 configured=bool(oac_key),
                 hint=mask_secret(oac_key) if oac_key else None,
             ),
-            custom_headers=stored.openai_compatible.custom_headers,
+            custom_headers=masked_headers,
         ),
     )
 
@@ -309,13 +315,61 @@ async def get_or_migrate_ai_settings() -> AISettingsStored:
     doc = await settings_collection.find_one({"id": "global_settings"})
     if not doc:
         return AISettingsStored()
+
+    needs_purge = False
+    unset_fields = {}
+    for legacy_key in ("gemini_api_key", "chatgpt_api_key"):
+        if legacy_key in doc:
+            needs_purge = True
+            unset_fields[legacy_key] = ""
+
     if "ai" in doc and isinstance(doc["ai"], dict):
         try:
-            return AISettingsStored.model_validate(doc["ai"])
+            stored = AISettingsStored.model_validate(doc["ai"])
+            needs_save = False
+
+            # Migrazione at-rest per segreti preesistenti non ancora cifrati
+            if stored.gemini.api_key_encrypted and not stored.gemini.api_key_encrypted.startswith("enc:v1:"):
+                stored.gemini.api_key_encrypted = encrypt_secret(stored.gemini.api_key_encrypted)
+                needs_save = True
+
+            if stored.openai.api_key_encrypted and not stored.openai.api_key_encrypted.startswith("enc:v1:"):
+                stored.openai.api_key_encrypted = encrypt_secret(stored.openai.api_key_encrypted)
+                needs_save = True
+
+            if stored.openai_compatible.api_key_encrypted and not stored.openai_compatible.api_key_encrypted.startswith("enc:v1:"):
+                stored.openai_compatible.api_key_encrypted = encrypt_secret(stored.openai_compatible.api_key_encrypted)
+                needs_save = True
+
+            if stored.openai_compatible.custom_headers:
+                migrated_headers = {}
+                for k, v in stored.openai_compatible.custom_headers.items():
+                    if v and not v.startswith("enc:v1:"):
+                        migrated_headers[k] = encrypt_secret(v)
+                        needs_save = True
+                    else:
+                        migrated_headers[k] = v
+                stored.openai_compatible.custom_headers = migrated_headers
+
+            if needs_save:
+                await settings_collection.update_one(
+                    {"id": "global_settings"},
+                    {"$set": {"ai": stored.model_dump()}}
+                )
+
+            if needs_purge:
+                await settings_collection.update_one({"id": "global_settings"}, {"$unset": unset_fields})
+            return stored
         except Exception:
             pass
+
     legacy = AppSettings(**doc)
-    return legacy.to_ai_stored()
+    stored = legacy.to_ai_stored()
+    update_doc = {"$set": {"ai": stored.model_dump()}}
+    if needs_purge:
+        update_doc["$unset"] = unset_fields
+    await settings_collection.update_one({"id": "global_settings"}, update_doc, upsert=True)
+    return stored
 
 @admin_router.get("/settings/ai", response_model=AISettingsResponse, tags=["Admin - AI"])
 async def get_ai_settings_endpoint(auth: dict = Depends(verify_auth)):
@@ -348,7 +402,9 @@ async def patch_ai_settings_endpoint(patch: AISettingsPatch, auth: dict = Depend
         if patch.gemini.clear_api_key:
             stored.gemini.api_key_encrypted = None
         elif patch.gemini.api_key and patch.gemini.api_key.strip():
-            stored.gemini.api_key_encrypted = encrypt_secret(patch.gemini.api_key)
+            cur_plain = decrypt_secret(stored.gemini.api_key_encrypted)
+            if not is_masked_or_empty(patch.gemini.api_key, cur_plain):
+                stored.gemini.api_key_encrypted = encrypt_secret(patch.gemini.api_key)
 
     if patch.openai is not None:
         if patch.openai.model:
@@ -358,7 +414,9 @@ async def patch_ai_settings_endpoint(patch: AISettingsPatch, auth: dict = Depend
         if patch.openai.clear_api_key:
             stored.openai.api_key_encrypted = None
         elif patch.openai.api_key and patch.openai.api_key.strip():
-            stored.openai.api_key_encrypted = encrypt_secret(patch.openai.api_key)
+            cur_plain = decrypt_secret(stored.openai.api_key_encrypted)
+            if not is_masked_or_empty(patch.openai.api_key, cur_plain):
+                stored.openai.api_key_encrypted = encrypt_secret(patch.openai.api_key)
 
     if patch.openai_compatible is not None:
         if patch.openai_compatible.base_url:
@@ -369,11 +427,26 @@ async def patch_ai_settings_endpoint(patch: AISettingsPatch, auth: dict = Depend
         if patch.openai_compatible.protocol:
             stored.openai_compatible.protocol = patch.openai_compatible.protocol
         if patch.openai_compatible.custom_headers is not None:
-            stored.openai_compatible.custom_headers = patch.openai_compatible.custom_headers
+            updated_headers = {}
+            current_encrypted = stored.openai_compatible.custom_headers or {}
+            for k, v in patch.openai_compatible.custom_headers.items():
+                if not k or not str(k).strip():
+                    continue
+                k_clean = str(k).strip()
+                v_clean = str(v).strip()
+                if k_clean in current_encrypted:
+                    cur_plain = decrypt_secret(current_encrypted[k_clean])
+                    if is_masked_or_empty(v_clean, cur_plain):
+                        updated_headers[k_clean] = current_encrypted[k_clean]
+                        continue
+                updated_headers[k_clean] = encrypt_secret(v_clean) or ""
+            stored.openai_compatible.custom_headers = updated_headers
         if patch.openai_compatible.clear_api_key:
             stored.openai_compatible.api_key_encrypted = None
         elif patch.openai_compatible.api_key and patch.openai_compatible.api_key.strip():
-            stored.openai_compatible.api_key_encrypted = encrypt_secret(patch.openai_compatible.api_key)
+            cur_plain = decrypt_secret(stored.openai_compatible.api_key_encrypted)
+            if not is_masked_or_empty(patch.openai_compatible.api_key, cur_plain):
+                stored.openai_compatible.api_key_encrypted = encrypt_secret(patch.openai_compatible.api_key)
 
     existing = await settings_collection.find_one({"id": "global_settings"}) or {"id": "global_settings"}
     existing["ai"] = stored.model_dump()
@@ -382,7 +455,22 @@ async def patch_ai_settings_endpoint(patch: AISettingsPatch, auth: dict = Depend
     existing["gemini_model"] = stored.gemini.model
     existing["gemini_prompt"] = stored.system_prompt
     existing["chatgpt_model"] = stored.openai.model
+    existing.pop("gemini_api_key", None)
+    existing.pop("chatgpt_api_key", None)
 
     await settings_collection.replace_one({"id": "global_settings"}, existing, upsert=True)
+    await settings_collection.update_one(
+        {"id": "global_settings"},
+        {"$unset": {"gemini_api_key": "", "chatgpt_api_key": ""}}
+    )
+
+    operatore = auth.get("username", "operatore")
+    await log_audit(
+        "MODIFICA_IMPOSTAZIONI_IA",
+        operatore,
+        f"Aggiornate impostazioni AI (provider: {stored.active_provider}, viewer: {stored.viewer_ai_enabled})",
+        None,
+    )
+
     return stored_to_ai_response(stored)
 

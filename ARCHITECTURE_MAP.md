@@ -29,7 +29,7 @@ Single Source of Truth (SSOT) del Progetto — v4.0.0
 ### Regola 3: Gestione del Ruolo (RBAC)
 
 > [!NOTE]
-> Ogni nuova operazione di scrittura (POST/PUT/DELETE) implementata nel backend deve essere obbligatoriamente protetta con `Depends(verify_auth)`. Qualsiasi operazione eseguita dal ruolo `viewer` deve essere bloccata sollevando `403 Forbidden`.
+> Ogni nuova operazione di scrittura (POST/PUT/DELETE) implementata nel backend deve essere obbligatoriamente protetta con `Depends(verify_auth)`. Le operazioni di scrittura clinica e configurativa eseguite dal ruolo `viewer` devono essere bloccate sollevando `403 Forbidden`. Per la generazione dell'analisi IA (`POST /api/admin/ai/analyze`), l'accesso al ruolo `viewer` è consentito esclusivamente se abilitato sia a livello di singolo utente (`ai_enabled: true` nel token JWT) sia a livello globale di sistema (`viewer_ai_enabled: true`), senza alcuna facoltà di sovrascrivere prompt di sistema o accedere a impostazioni riservate agli amministratori.
 
 ### Regola 4: Versionamento — Fonte Unica di Verità
 
@@ -168,7 +168,7 @@ Tutti i percorsi UI seguenti sono relativi a `frontend_admin/lib/`.
 | backend/app/models.py | Contratti Pydantic: utenze, anagrafiche, scale, risposte, analisi, PDF, audit e modelli IA settings |
 | backend/app/routes.py | Endpoint, RBAC per metodo, audit, import/export, aggregazioni e cache dashboard |
 | backend/app/ai/ | Modulo IA: crypto Fernet AES (`enc:v1:`), validazione SSRF, adapter Gemini/OpenAI/Compatible e factory |
-| backend/app/routers/ai.py | Endpoint IA: generazione analisi multidimensionale (`POST /ai/analyze`) e test connessione (`POST /ai/test-connection`) |
+| backend/app/routers/ai.py | Endpoint IA: generazione analisi multidimensionale (`POST /ai/analyze`), test connessione (`POST /ai/test-connection`) e scoperta modelli compatibili (`POST /ai/openai-compatible/models`) |
 | backend/app/routers/settings.py | Router impostazioni: configurazione applicativa e credenziali IA cifrate (`GET/PATCH /settings/ai`) |
 | backend/app/analytics.py | Calcoli diretti, conversioni San Martín e SIS |
 | backend/app/pdf_generator.py | Grafici e composizione PDF in memoria |
@@ -236,6 +236,7 @@ Protezione rilevata dal codice, senza richieste live. Il nome di un router non g
 | GET | `/api/admin/settings/ai` | JWT (admin o viewer con ai_enabled) - stato chiavi mascherato |
 | PATCH | `/api/admin/settings/ai` | JWT + ruolo admin esplicito - aggiorna config e cifra chiavi |
 | POST | `/api/admin/ai/test-connection` | JWT + ruolo admin esplicito - verifica connettività provider |
+| POST | `/api/admin/ai/openai-compatible/models` | JWT + ruolo admin esplicito - scoperta dinamica modelli gateway |
 | POST | `/api/admin/ai/analyze` | JWT + ai_enabled - genera e memorizza analisi educativa IA |
 | GET | `/api/admin/dashboard-stats` | JWT + filtro viewer |
 | DELETE | `/api/admin/dashboard-stats/cache` | JWT + filtro viewer |

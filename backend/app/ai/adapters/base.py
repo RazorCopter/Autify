@@ -2,7 +2,7 @@ import abc
 import asyncio
 import random
 import time
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 import httpx
 from fastapi import HTTPException
 from ..models import AIAttachment, AIGenerationSettings, AINetworkSettings
@@ -30,6 +30,13 @@ class BaseAIAdapter(abc.ABC):
     async def test_connection(self) -> Tuple[bool, float, str]:
         """Verifica la connessione al provider. Ritorna (success, latency_ms, messaggio)."""
         pass
+
+    async def fetch_available_models(self) -> List[str]:
+        """Recupera la lista dei modelli disponibili dal provider. Di default non supportato."""
+        raise HTTPException(
+            status_code=400,
+            detail="La scoperta dinamica dei modelli non è supportata per questo provider."
+        )
 
     async def _execute_with_retry(self, request_fn):
         """

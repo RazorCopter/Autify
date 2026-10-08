@@ -153,6 +153,7 @@ class MockCollection:
     async def update_one(self, filter_query, update_query):
         set_fields = update_query.get("$set", {})
         inc_fields = update_query.get("$inc", {})
+        unset_fields = update_query.get("$unset", {})
         matched = False
         for doc in self.documents:
             match = True
@@ -165,6 +166,8 @@ class MockCollection:
                     doc[field] = val
                 for field, val in inc_fields.items():
                     doc[field] = doc.get(field, 0) + val
+                for field in unset_fields.keys():
+                    doc.pop(field, None)
                 matched = True
                 break
         class UpdateOneResult:
@@ -635,8 +638,8 @@ def test_update_settings_masking(client, setup_mock_db):
     with patch("app.routers.settings.settings_collection", MockCollection("settings", [])) as mock_settings:
         response = client.post("/api/admin/settings", json=settings_payload)
         assert response.status_code == 200
-        # Check that saved doc in DB has gemini_api_key as None
-        assert mock_settings.documents[0]["gemini_api_key"] is None
+        # Check that saved doc in DB has gemini_api_key as None or unset
+        assert mock_settings.documents[0].get("gemini_api_key") is None
 
 
 def test_analytics_zero_questions():

@@ -61,7 +61,7 @@ def test_analyze_multidimensional_context(client, setup_mock_db):
             "attachment": {
                 "filename": "documento.pdf",
                 "extension": "pdf",
-                "data_base64": "JVBERi0xLjQK..."
+                "data_base64": "JVBERi0xLjQKJcTl8uXrp/Og0MTGCjQgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCj4+CmVuZG9iam=="
             }
         }
 

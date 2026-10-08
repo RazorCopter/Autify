@@ -1,3 +1,4 @@
+import base64
 from typing import Dict, List, Literal, Optional, Union
 from pydantic import BaseModel, Field, field_validator
 
@@ -121,6 +122,22 @@ class OpenAIProviderPatch(BaseModel):
             raise ValueError("Il modello OpenAI non può essere una stringa vuota.")
         return v.strip() if v else None
 
+def _validate_headers_dict(headers: Optional[Dict[str, str]]) -> Optional[Dict[str, str]]:
+    if headers is None:
+        return None
+    cleaned = {}
+    for k, v in headers.items():
+        if not k or not str(k).strip():
+            continue
+        key = str(k).strip()
+        val = str(v).strip()
+        if any(c in key or c in val for c in ("\r", "\n")):
+            raise ValueError("Gli header HTTP non possono contenere caratteri newline (CRLF).")
+        if key.lower() in ("host", "content-length", "connection", "transfer-encoding"):
+            raise ValueError(f"L'header '{key}' non può essere personalizzato per motivi di sicurezza.")
+        cleaned[key] = val
+    return cleaned
+
 class OpenAICompatiblePatch(BaseModel):
     base_url: Optional[str] = None
     model: Optional[str] = None
@@ -136,6 +153,11 @@ class OpenAICompatiblePatch(BaseModel):
             raise ValueError("Il modello OpenAI-Compatible non può essere una stringa vuota.")
         return v.strip() if v else None
 
+    @field_validator("custom_headers")
+    @classmethod
+    def check_custom_headers(cls, v: Optional[Dict[str, str]]) -> Optional[Dict[str, str]]:
+        return _validate_headers_dict(v)
+
 class AISettingsPatch(BaseModel):
     active_provider: Optional[AIProvider] = None
     viewer_ai_enabled: Optional[bool] = None
@@ -146,7 +168,7 @@ class AISettingsPatch(BaseModel):
     openai: Optional[OpenAIProviderPatch] = None
     openai_compatible: Optional[OpenAICompatiblePatch] = None
 
-# --- TEST CONNECTION & ANALYZE MODELS ---
+# --- TEST CONNECTION, DISCOVERY & ANALYZE MODELS ---
 
 class AITestConnectionRequest(BaseModel):
     provider: Optional[AIProvider] = None
@@ -156,6 +178,11 @@ class AITestConnectionRequest(BaseModel):
     protocol: Optional[AIProtocol] = None
     custom_headers: Optional[Dict[str, str]] = None
 
+    @field_validator("custom_headers")
+    @classmethod
+    def check_custom_headers(cls, v: Optional[Dict[str, str]]) -> Optional[Dict[str, str]]:
+        return _validate_headers_dict(v)
+
 class AITestConnectionResponse(BaseModel):
     success: bool
     provider: str
@@ -163,11 +190,87 @@ class AITestConnectionResponse(BaseModel):
     latency_ms: Optional[float] = None
     message: str
 
+class AIDiscoverModelsRequest(BaseModel):
+    base_url: Optional[str] = None
+    api_key: Optional[str] = None
+    custom_headers: Optional[Dict[str, str]] = None
+
+    @field_validator("custom_headers")
+    @classmethod
+    def check_custom_headers(cls, v: Optional[Dict[str, str]]) -> Optional[Dict[str, str]]:
+        return _validate_headers_dict(v)
+
+class AIDiscoverModelsResponse(BaseModel):
+    models: List[str]
+    count: int
+
+MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+
+ALLOWED_ATTACHMENT_MIME_TYPES = {
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "image/gif",
+    "image/heic",
+    "image/heif",
+    "application/pdf",
+    "text/plain",
+    "text/csv",
+}
+
+ALLOWED_ATTACHMENT_EXTENSIONS = {
+    "png", "jpg", "jpeg", "webp", "gif", "heic", "heif", "pdf", "txt", "csv"
+}
+
 class AIAttachment(BaseModel):
     filename: Optional[str] = None
     extension: Optional[str] = None
     mime_type: Optional[str] = None
     data_base64: str
+
+    @field_validator("filename")
+    @classmethod
+    def validate_filename(cls, v: Optional[str]) -> Optional[str]:
+        if not v:
+            return None
+        clean = v.replace("\\", "/").split("/")[-1].strip()
+        return clean[:255] if clean else None
+
+    @field_validator("extension")
+    @classmethod
+    def validate_extension(cls, v: Optional[str]) -> Optional[str]:
+        if not v:
+            return None
+        clean = v.strip().lower().lstrip(".")
+        if clean and clean not in ALLOWED_ATTACHMENT_EXTENSIONS:
+            raise ValueError(f"Estensione allegato non consentita: .{clean}")
+        return clean
+
+    @field_validator("mime_type")
+    @classmethod
+    def validate_mime_type(cls, v: Optional[str]) -> Optional[str]:
+        if not v:
+            return None
+        clean = v.strip().lower()
+        if clean and clean not in ALLOWED_ATTACHMENT_MIME_TYPES:
+            raise ValueError(f"MIME type allegato non consentito: {clean}")
+        return clean
+
+    @field_validator("data_base64")
+    @classmethod
+    def validate_data_base64(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Il contenuto base64 dell'allegato non può essere vuoto.")
+        raw = v.strip()
+        if len(raw) > 16 * 1024 * 1024:
+            raise ValueError("La dimensione dell'allegato supera il limite consentito di 10MB.")
+        try:
+            decoded = base64.b64decode(raw, validate=True)
+        except Exception:
+            raise ValueError("Il campo data_base64 non contiene una codifica Base64 valida.")
+        if len(decoded) > MAX_ATTACHMENT_SIZE_BYTES:
+            raise ValueError("La dimensione del file decodificato supera il limite massimo di 10MB.")
+        return raw
 
 class AIAnalyzeRequest(BaseModel):
     id_valutazione: Optional[str] = None
@@ -180,16 +283,45 @@ class AIAnalyzeRequest(BaseModel):
     attachment: Optional[AIAttachment] = None
     system_prompt: Optional[str] = None
 
+    @field_validator("notes")
+    @classmethod
+    def validate_notes(cls, v: Optional[str]) -> Optional[str]:
+        if v and len(v) > 20000:
+            raise ValueError("Le note aggiuntive superano la lunghezza massima consentita (20000 caratteri).")
+        return v
+
+    @field_validator("system_prompt")
+    @classmethod
+    def validate_system_prompt(cls, v: Optional[str]) -> Optional[str]:
+        if v and len(v) > 10000:
+            raise ValueError("Il prompt di sistema supera la lunghezza massima consentita (10000 caratteri).")
+        return v
+
+    @field_validator("evaluations")
+    @classmethod
+    def validate_evaluations(cls, v: Optional[List[dict]]) -> Optional[List[dict]]:
+        if v and len(v) > 100:
+            raise ValueError("Numero massimo di valutazioni superato (max 100).")
+        return v
+
+    @field_validator("history_reports")
+    @classmethod
+    def validate_history_reports(cls, v: Optional[List[dict]]) -> Optional[List[dict]]:
+        if v and len(v) > 50:
+            raise ValueError("Numero massimo di relazioni storiche superato (max 50).")
+        return v
+
 class AIAnalyzeResponse(BaseModel):
     id: str
+    id_paziente: Optional[str] = None
     report: str
+    notes: Optional[str] = ""
+    evaluations_used: List[str] = Field(default_factory=list)
     provider: str
     model: str
+    usage: Optional[dict] = None
+    timestamp: Optional[str] = None
     prompt_tokens: Optional[int] = None
     completion_tokens: Optional[int] = None
     total_tokens: Optional[int] = None
-    created_at: str
-
-    gemini: GeminiStoredConfig = Field(default_factory=GeminiStoredConfig)
-    openai: OpenAIStoredConfig = Field(default_factory=OpenAIStoredConfig)
-    openai_compatible: OpenAICompatibleStoredConfig = Field(default_factory=OpenAICompatibleStoredConfig)
+    created_at: Optional[str] = None

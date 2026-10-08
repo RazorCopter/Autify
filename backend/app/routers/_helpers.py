@@ -33,6 +33,7 @@ async def verify_auth(request: Request) -> dict:
         and request.url.path
         not in (
             "/api/admin/evaluations/ai-analysis-pdf",
+            "/api/admin/ai/analyze",
             "/api/admin/auth/login",
         )
     ):

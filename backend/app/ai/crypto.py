@@ -75,3 +75,57 @@ def mask_secret(secret: Optional[str]) -> Optional[str]:
     if s.startswith("sk-") and len(s) > 12:
         return f"{s[:7]}...{s[-4:]}"
     return f"{s[:4]}...{s[-4:]}"
+
+def is_masked_or_empty(val: Optional[str], stored_decrypted: Optional[str] = None) -> bool:
+    """
+    Verifica se un valore di credenziale fornito dal client è una maschera,
+    un placeholder, un token di cifratura o vuoto.
+    """
+    if not val or not str(val).strip():
+        return True
+    v = str(val).strip()
+    if v in ("***", "enc:v1:", "***-HIDDEN"):
+        return True
+    if "..." in v:
+        return True
+    if stored_decrypted and (v == mask_secret(stored_decrypted) or v == f"Bearer {mask_secret(stored_decrypted)}"):
+        return True
+    return False
+
+def resolve_secret(
+    override_val: Optional[str],
+    stored_encrypted: Optional[str],
+) -> Optional[str]:
+    """
+    Risolve un segreto (API key o header sensibile):
+    Se l'override è fornito e non è mascherato/vuoto, usa l'override in chiaro.
+    Se l'override è mascherato, vuoto o None, recupera e decifra il segreto memorizzato.
+    """
+    stored_plain = decrypt_secret(stored_encrypted) if stored_encrypted else None
+    if is_masked_or_empty(override_val, stored_plain):
+        return stored_plain
+    return str(override_val).strip() if override_val else stored_plain
+
+def resolve_custom_headers(
+    headers_override: Optional[dict],
+    stored_headers_encrypted: Optional[dict],
+) -> dict:
+    """
+    Risolve i custom header decifrando quelli memorizzati e consentendo
+    override puntuali solo se non contengono valori mascherati.
+    """
+    stored_enc = stored_headers_encrypted or {}
+    if headers_override is None:
+        return {k: decrypt_secret(v) or "" for k, v in stored_enc.items()}
+
+    resolved = {}
+    for k, v in headers_override.items():
+        if not k or not str(k).strip():
+            continue
+        k_clean = str(k).strip()
+        v_clean = str(v).strip() if v is not None else ""
+        stored_cipher = stored_enc.get(k_clean)
+        res_val = resolve_secret(v_clean, stored_cipher)
+        if res_val is not None:
+            resolved[k_clean] = res_val
+    return resolved

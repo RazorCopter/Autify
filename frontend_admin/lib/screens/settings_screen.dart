@@ -50,13 +50,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _openaiProtocol = 'chat_completions';
 
   // OpenAI-Compatible (OmniRoute / vLLM / Ollama)
-  final TextEditingController _compatBaseUrlController = TextEditingController(text: 'https://ia.ghome.it/v1');
+  final TextEditingController _compatBaseUrlController = TextEditingController();
   bool _compatKeyConfigured = false;
   String? _compatKeyHint;
   final TextEditingController _compatKeyController = TextEditingController();
-  final TextEditingController _compatModelController = TextEditingController(text: 'cx/gpt-5.6-sol-high');
+  final TextEditingController _compatModelController = TextEditingController();
   String _compatProtocol = 'chat_completions';
   final List<MapEntry<TextEditingController, TextEditingController>> _compatHeaderControllers = [];
+  List<String> _discoveredCompatModels = [];
+  bool _isDiscoveringModels = false;
+  bool _compatManualModel = false;
 
   // Parametri Generazione
   double? _temperature;
@@ -146,8 +149,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final keyStatus = oac['api_key'] as Map<String, dynamic>?;
         _compatKeyConfigured = keyStatus?['configured'] == true;
         _compatKeyHint = keyStatus?['hint'] as String?;
-        _compatBaseUrlController.text = (oac['base_url'] as String?) ?? 'https://ia.ghome.it/v1';
-        _compatModelController.text = (oac['model'] as String?) ?? 'cx/gpt-5.6-sol-high';
+        _compatBaseUrlController.text = (oac['base_url'] as String?) ?? '';
+        _compatModelController.text = (oac['model'] as String?) ?? '';
         _compatProtocol = (oac['protocol'] as String?) ?? 'chat_completions';
         final headers = oac['custom_headers'] as Map<String, dynamic>? ?? {};
         _compatHeaderControllers.clear();
@@ -325,6 +328,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _isTestingConnection = false;
       _testConnectionResult = res;
     });
+  }
+
+  Future<void> _discoverModels() async {
+    setState(() {
+      _isDiscoveringModels = true;
+    });
+    try {
+      final headers = <String, String>{};
+      for (final entry in _compatHeaderControllers) {
+        final k = entry.key.text.trim();
+        final v = entry.value.text.trim();
+        if (k.isNotEmpty && v.isNotEmpty) {
+          headers[k] = v;
+        }
+      }
+      final models = await _apiService.discoverCompatibleModels(
+        providerBaseUrl: _compatBaseUrlController.text.trim().isNotEmpty ? _compatBaseUrlController.text.trim() : null,
+        apiKey: _compatKeyController.text.trim().isNotEmpty ? _compatKeyController.text.trim() : null,
+        customHeaders: headers.isNotEmpty ? headers : null,
+      );
+      setState(() {
+        _discoveredCompatModels = models;
+        if (models.isNotEmpty) {
+          _compatManualModel = false;
+          if (!_discoveredCompatModels.contains(_compatModelController.text.trim())) {
+            _compatModelController.text = models.first;
+          }
+        }
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Trovati ${models.length} modelli disponibili dal gateway.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Errore scoperta modelli: ${e.toString().replaceAll("Exception: ", "")}'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDiscoveringModels = false;
+        });
+      }
+    }
   }
 
   Future<void> _saveAIConfig() async {
@@ -1710,7 +1766,7 @@ TONO E FORMATTAZIONE:
                     enabled: !ApiService.isViewer,
                     decoration: const InputDecoration(
                       labelText: 'Base URL',
-                      hintText: 'https://ia.ghome.it/v1',
+                      hintText: 'https://api.openai.com/v1 o endpoint gateway',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.link),
                     ),
@@ -1738,17 +1794,66 @@ TONO E FORMATTAZIONE:
             ),
             const SizedBox(height: 16),
             Row(
+              crossAxisAlignment: CrossAlignment.start,
               children: [
                 Expanded(
                   flex: 1,
-                  child: TextField(
-                    controller: _compatModelController,
-                    enabled: !ApiService.isViewer,
-                    decoration: const InputDecoration(
-                      labelText: 'Model ID (es. cx/gpt-5.6-sol-high)',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.psychology),
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAlignment.start,
+                    children: [
+                      if (_discoveredCompatModels.isNotEmpty && !_compatManualModel) ...[
+                        DropdownButtonFormField<String>(
+                          value: _discoveredCompatModels.contains(_compatModelController.text.trim())
+                              ? _compatModelController.text.trim()
+                              : null,
+                          decoration: const InputDecoration(
+                            labelText: 'Seleziona Modello',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.psychology),
+                          ),
+                          items: [
+                            ..._discoveredCompatModels.map((m) => DropdownMenuItem(value: m, child: Text(m))),
+                            const DropdownMenuItem(value: '__custom__', child: Text('Altro / Inserisci manualmente...')),
+                          ],
+                          onChanged: ApiService.isViewer ? null : (val) {
+                            if (val == '__custom__') {
+                              setState(() => _compatManualModel = true);
+                            } else if (val != null) {
+                              setState(() => _compatModelController.text = val);
+                            }
+                          },
+                        ),
+                      ] else ...[
+                        TextField(
+                          controller: _compatModelController,
+                          enabled: !ApiService.isViewer,
+                          decoration: InputDecoration(
+                            labelText: 'Model ID',
+                            hintText: 'es. gpt-4o, llama3, qwen-2.5',
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.psychology),
+                            suffixIcon: _discoveredCompatModels.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.list),
+                                    tooltip: 'Torna alla lista modelli rilevati',
+                                    onPressed: () => setState(() => _compatManualModel = false),
+                                  )
+                                : null,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 6),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: OutlinedButton.icon(
+                          onPressed: _isDiscoveringModels || ApiService.isViewer ? null : _discoverModels,
+                          icon: _isDiscoveringModels
+                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                              : const Icon(Icons.explore, size: 16),
+                          label: Text(_isDiscoveringModels ? 'Ricerca modelli in corso...' : 'Cerca Modelli (GET /models)'),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 12),
