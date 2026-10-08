@@ -19,7 +19,7 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(
     title="Autify API",
     description="API per la piattaforma Multi-Frontend (Admin/Client) Autify di Valutazione Multidimensionale.",
-    version="3.2.0",
+    version="4.0.0",
     lifespan=lifespan,
 )
 

@@ -1,5 +1,25 @@
 # Changelog
 
+## [4.0.0] - 2026-10-08
+
+### Added
+- **Sottosistema IA Multi-Provider Backend (AI-02)**: nuova architettura modulare per l'orchestrazione dell'Intelligenza Artificiale gestita interamente a livello backend (`app/ai/`). Supporto unificato tramite Adapter Pattern per Google Gemini, OpenAI (con rilevamento automatico del supporto temperatura e gestione del parametro reasoning effort per modelli o1/o3/o4) e provider OpenAI-Compatible (es. vLLM, Ollama, LocalAI, Azure).
+- **Cifratura At-Rest dei Segreti IA**: tutte le API key e gli header di autenticazione sensibili sono cifrati su database con Fernet AES-128-CBC / HMAC-SHA256 con prefisso identificativo `enc:v1:`, derivando le chiavi crittografiche da `AI_SETTINGS_ENCRYPTION_KEY` o `JWT_SECRET_KEY`.
+- **Protezione SSRF per Provider Custom**: validazione rigorosa per URL di backend OpenAI-Compatible, con blocco predefinito degli indirizzi IP privati (RFC 1918), loopback (127.0.0.0/8) e link-local, con supporto a whitelist esplicite per reti interne sicure.
+- **Proxy Endpoint IA Centralizzati**: introdotti endpoint dedicati con autenticazione JWT:
+  - `GET /api/admin/settings/ai`: consultazione dello stato di configurazione con chiavi mascherate (`{configured: bool, hint: str}`) per impedire la fuga di credenziali verso il frontend.
+  - `PATCH /api/admin/settings/ai`: aggiornamento sicuro della configurazione IA e cifratura automatica delle credenziali fornite.
+  - `POST /api/admin/ai/test-connection`: verifica in tempo reale della connettività verso il provider selezionato.
+  - `POST /api/admin/ai/analyze`: proxy protetto per l'elaborazione, arricchimento e salvataggio delle relazioni educative IA.
+- **Interfaccia Admin Rinnovata**:
+  - Sezione Impostazioni IA arricchita con selettore dinamico del provider, test di connettività in tempo reale e configurazione sicura.
+  - Cruscotto multidimensionale arricchito con badge dinamico che identifica il motore IA attivo e lo stato di disponibilità.
+
+### Changed
+- **Rimozione Esposizione Chiavi Client-Side**: la chiamata diretta del browser a Google Gemini è stata completamente rimossa. `GeminiService` nel frontend opera come thin facade delegando ogni chiamata all'API gateway del backend, azzerando i rischi di esfiltrazione delle chiavi API.
+- **Uniformazione Lessico Psico-Educativo**: bonificata l'intera terminologia residua per garantire aderenza rigorosa al dominio educativo (sostituito vocabolario medico-clinico con "relazione educativa", "profilo di funzionamento").
+
+
 ## [3.2.5] - 2026-10-07
 
 ### Changed

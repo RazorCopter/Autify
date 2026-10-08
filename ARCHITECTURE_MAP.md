@@ -1,8 +1,8 @@
 # 🏗️ MAPPA TECNICO-FUNZIONALE: Autify
 
-Single Source of Truth (SSOT) del Progetto — v3.2.0
+Single Source of Truth (SSOT) del Progetto — v4.0.0
 
-> **Distribuzione v3.2.0:** questo repository distribuisce esclusivamente lo stack on-premise cliente (`autify-admin`, `autify-api`, `autify-db`). Il server centrale licenze è mantenuto e distribuito separatamente da `https://github.com/RazorCopter/Autify-LICENSE`; il backend cliente lo raggiunge in HTTPS tramite `LICENSE_SERVER_URL`.
+> **Distribuzione v4.0.0:** questo repository distribuisce esclusivamente lo stack on-premise cliente (`autify-admin`, `autify-api`, `autify-db`). Il server centrale licenze è mantenuto e distribuito separatamente da `https://github.com/RazorCopter/Autify-LICENSE`; il backend cliente lo raggiunge in HTTPS tramite `LICENSE_SERVER_URL`.
 
 > [!CAUTION]
 > **REGOLE DI INGAGGIO E PROTOCOLLO OPERATIVO PER L'AGENTE IA**
