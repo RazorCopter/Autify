@@ -1794,12 +1794,12 @@ TONO E FORMATTAZIONE:
             ),
             const SizedBox(height: 16),
             Row(
-              crossAxisAlignment: CrossAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   flex: 1,
                   child: Column(
-                    crossAxisAlignment: CrossAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (_discoveredCompatModels.isNotEmpty && !_compatManualModel) ...[
                         DropdownButtonFormField<String>(

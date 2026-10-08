@@ -43,4 +43,5 @@ flutter-sdk/
 
 # Antigravity CLI
 .antigravitycli/
+.roo/
 
