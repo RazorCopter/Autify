@@ -171,6 +171,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ? 'Notifiche, $_unreadNotifications non lette'
         : 'Notifiche';
 
+    const bellColorDesktop = Color(0xFFD97706);
+    final bellColor = inHeader ? bellColorDesktop : AppTheme.textPrimary;
+    final borderRadius = BorderRadius.circular(inHeader ? 14 : 12);
+
     final bellButton = Semantics(
       button: true,
       label: semanticLabel,
@@ -182,11 +186,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
           child: Material(
             color: Colors.transparent,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: borderRadius,
             ),
             child: InkWell(
               onTap: _showNotifications,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: borderRadius,
+              hoverColor: bellColor.withValues(alpha: 0.08),
+              splashColor: bellColor.withValues(alpha: 0.16),
+              highlightColor: bellColor.withValues(alpha: 0.10),
               child: Center(
                 child: Badge(
                   isLabelVisible: _unreadNotifications > 0,
@@ -204,10 +211,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   label: Text(
                     _unreadNotifications > 99 ? '99+' : '$_unreadNotifications',
                   ),
-                  child: const Icon(
-                    Icons.notifications_outlined,
+                  child: Icon(
+                    inHeader
+                        ? Icons.notifications_rounded
+                        : Icons.notifications_outlined,
                     size: 22,
-                    color: AppTheme.textPrimary,
+                    color: bellColor,
                   ),
                 ),
               ),
