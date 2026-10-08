@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.0.2] - 2026-10-08
+
+### Fixed
+- **Icona Notifiche Web (Tree-Shaking e Rendering)**: risolto il problema di mancata visualizzazione della campanella di notifica nella barra superiore desktop e mobile su build Web di produzione; garantita l'inclusione esplicita dei glifi BMP (`Icons.notifications` / `Icons.notifications_none`) contro il tree-shaker di Flutter Web e ottimizzato il layout del badge numerico non lette.
+
+### Changed
+- **Allineamento Versioni**: aggiornato il numero di release a 4.0.2 attraverso l'intero stack (backend FastAPI, frontend Flutter, metadati, configurazione Docker Compose e documentazione di architettura).
+
 ## [4.0.1] - 2026-10-08
 
 ### Changed

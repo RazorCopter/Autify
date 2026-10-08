@@ -71,6 +71,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   void initState() {
     super.initState();
+    assert(_preservedBellIcons.isNotEmpty);
     _checkLicense();
     _pollNotifications();
     _notificationTimer = Timer.periodic(
@@ -166,6 +167,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
+  // Assicura che i glifi delle icone notifica non vengano rimossi dal tree-shaking web
+  static const List<IconData> _preservedBellIcons = [
+    Icons.notifications,
+    Icons.notifications_none,
+    Icons.notifications_active,
+    Icons.notifications_outlined,
+    Icons.notifications_rounded,
+  ];
+
   Widget _notificationBell({bool inHeader = false}) {
     final semanticLabel = _unreadNotifications > 0
         ? 'Notifiche, $_unreadNotifications non lette'
@@ -175,52 +185,84 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final bellColor = inHeader ? bellColorDesktop : AppTheme.textPrimary;
     final borderRadius = BorderRadius.circular(inHeader ? 14 : 12);
 
+    final bellContent = SizedBox(
+      width: 40,
+      height: 40,
+      child: Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Icon(
+                _unreadNotifications > 0
+                    ? Icons.notifications
+                    : Icons.notifications_none,
+                size: 22,
+                color: bellColor,
+              ),
+              if (_unreadNotifications > 0)
+                Positioned(
+                  top: -5,
+                  right: -7,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 4, vertical: 1.5),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.errorColor,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 3,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      _unreadNotifications > 99
+                          ? '99+'
+                          : '$_unreadNotifications',
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        height: 1.0,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+
     final bellButton = Semantics(
       button: true,
       label: semanticLabel,
       child: Tooltip(
         message: semanticLabel,
-        child: SizedBox(
-          width: 40,
-          height: 40,
-          child: Material(
-            color: Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: borderRadius,
-            ),
-            child: InkWell(
-              onTap: _showNotifications,
-              borderRadius: borderRadius,
-              hoverColor: bellColor.withValues(alpha: 0.08),
-              splashColor: bellColor.withValues(alpha: 0.16),
-              highlightColor: bellColor.withValues(alpha: 0.10),
-              child: Center(
-                child: Badge(
-                  isLabelVisible: _unreadNotifications > 0,
-                  backgroundColor: AppTheme.errorColor,
-                  textColor: Colors.white,
-                  textStyle: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    height: 1.0,
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  alignment: AlignmentDirectional.topEnd,
-                  offset: const Offset(7, -5),
-                  label: Text(
-                    _unreadNotifications > 99 ? '99+' : '$_unreadNotifications',
-                  ),
-                  child: Icon(
-                    inHeader
-                        ? Icons.notifications_rounded
-                        : Icons.notifications_outlined,
-                    size: 22,
-                    color: bellColor,
-                  ),
-                ),
-              ),
-            ),
+        child: Material(
+          color: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: borderRadius,
+          ),
+          child: InkWell(
+            onTap: _showNotifications,
+            borderRadius: borderRadius,
+            hoverColor: bellColor.withValues(alpha: 0.08),
+            splashColor: bellColor.withValues(alpha: 0.16),
+            highlightColor: bellColor.withValues(alpha: 0.10),
+            child: bellContent,
           ),
         ),
       ),
@@ -230,6 +272,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       return Container(
         height: 40,
         width: 40,
+        clipBehavior: Clip.none,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
