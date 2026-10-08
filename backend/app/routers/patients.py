@@ -40,6 +40,29 @@ client_router = APIRouter(dependencies=[Depends(verify_auth)])
 # ADMIN ROUTER (/api/admin)
 # ==========================================
 
+
+def _build_patient_search_condition(search: str) -> dict:
+    """Crea una ricerca multi-parola sicura sui campi nome e cognome.
+
+    Ogni parola deve comparire in almeno uno dei due campi, così query come
+    "Mario Ro" trovano anche un utente con nome "Mario" e cognome "Rossi".
+    """
+    terms = [term for term in search.split() if term]
+    token_conditions = [
+        {
+            "$or": [
+                {"nome": {"$regex": re.escape(term), "$options": "i"}},
+                {"cognome": {"$regex": re.escape(term), "$options": "i"}},
+            ]
+        }
+        for term in terms
+    ]
+
+    if len(token_conditions) == 1:
+        return token_conditions[0]
+    return {"$and": token_conditions}
+
+
 @admin_router.get("/patients", response_model=PaginatedPatients, tags=["Admin - Patients"])
 async def get_patients(
     page: int = Query(default=1, ge=1, description="Numero di pagina (1-based)"),
@@ -60,8 +83,7 @@ async def get_patients(
     # status == "all" → nessun filtro
 
     if search and search.strip():
-        regex = {"$regex": search.strip(), "$options": "i"}
-        query["$or"] = [{"nome": regex}, {"cognome": regex}]
+        query.update(_build_patient_search_condition(search))
 
     # ── Filtri semantici server-side ────────────────────────────────────────
     if filter in ("scaduti", "in_scadenza", "incompleti", "mai_valutati"):
