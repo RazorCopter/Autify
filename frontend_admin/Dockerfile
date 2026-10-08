@@ -1,5 +1,5 @@
 # Stage 1: Build the Flutter web app
-FROM ghcr.io/cirruslabs/flutter:stable AS build
+FROM ghcr.io/cirruslabs/flutter:3.19.6 AS build
 WORKDIR /app
 ARG CACHE_BUST=1
 RUN echo "Cache bust: $CACHE_BUST"

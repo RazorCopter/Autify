@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.0.1] - 2026-10-08
+
+### Changed
+- **Ambiente di Build Web Frontend**: fissato il container builder Docker all'immagine deterministica `ghcr.io/cirruslabs/flutter:3.19.6` per garantire riproducibilità della build di produzione.
+- **Formattazione e Asset Web**: normalizzata la struttura di `index.html` e consolidati i metadati per il caricamento PWA/web.
+- **Allineamento Versioni**: aggiornato il numero di release a 4.0.1 attraverso l'intero stack (backend FastAPI, frontend Flutter, metadati e configurazione Docker Compose).
+
 ## [4.0.0] - 2026-10-08
 
 ### Added
