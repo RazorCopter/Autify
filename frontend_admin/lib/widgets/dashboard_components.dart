@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../theme/premium_dashboard_assets.dart';
+
+export '../theme/premium_dashboard_assets.dart';
+
 /// Token visivi locali della Dashboard 4.0.
 ///
 /// Sono intenzionalmente indipendenti dal tema globale: la dashboard mantiene
@@ -36,34 +40,54 @@ abstract final class DashboardTokens {
 }
 
 class DashboardAuroraBackground extends StatelessWidget {
-  const DashboardAuroraBackground({super.key});
+  final bool useAsset;
+
+  const DashboardAuroraBackground({
+    super.key,
+    this.useAsset = true,
+  });
 
   @override
   Widget build(BuildContext context) {
     return IgnorePointer(
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          color: DashboardTokens.canvas,
-          gradient: RadialGradient(
-            center: Alignment(-0.75, -0.85),
-            radius: 1.35,
-            colors: [
-              Color(0x6677E4F2),
-              Color(0x339370FF),
-              Color(0x00F5F7FF),
-            ],
-            stops: [0, 0.46, 1],
-          ),
-        ),
-        child: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment(0.95, -0.55),
-              radius: 1.15,
-              colors: [Color(0x55C5BED8), Color(0x00F5F7FF)],
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              color: DashboardTokens.canvas,
+              gradient: RadialGradient(
+                center: Alignment(-0.75, -0.85),
+                radius: 1.35,
+                colors: [
+                  Color(0x6677E4F2),
+                  Color(0x339370FF),
+                  Color(0x00F5F7FF),
+                ],
+                stops: [0, 0.46, 1],
+              ),
+            ),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(0.95, -0.55),
+                  radius: 1.15,
+                  colors: [Color(0x55C5BED8), Color(0x00F5F7FF)],
+                ),
+              ),
             ),
           ),
-        ),
+          if (useAsset)
+            Positioned.fill(
+              child: Image.asset(
+                PremiumDashboardAssets.mainCanvasBackground,
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+                errorBuilder: (context, error, stackTrace) =>
+                    const SizedBox.shrink(),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -74,6 +98,13 @@ class DashboardSurfaceCard extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final Color? borderColor;
   final String? semanticLabel;
+  final String? assetBackground;
+  final BoxFit assetFit;
+  final AlignmentGeometry assetAlignment;
+  final double borderRadius;
+  final Color? backgroundColor;
+  final Color? overlayColor;
+  final List<BoxShadow>? boxShadow;
 
   const DashboardSurfaceCard({
     super.key,
@@ -81,19 +112,63 @@ class DashboardSurfaceCard extends StatelessWidget {
     this.padding = const EdgeInsets.all(20),
     this.borderColor,
     this.semanticLabel,
+    this.assetBackground,
+    this.assetFit = BoxFit.cover,
+    this.assetAlignment = Alignment.center,
+    this.borderRadius = DashboardTokens.radius,
+    this.backgroundColor,
+    this.overlayColor,
+    this.boxShadow,
   });
 
   @override
   Widget build(BuildContext context) {
-    final content = Container(
+    final effectiveBackground = backgroundColor ?? DashboardTokens.surface;
+    final effectiveBorder = borderColor ?? DashboardTokens.border;
+    final effectiveShadow = boxShadow ?? DashboardTokens.shadow;
+
+    Widget cardBody = Padding(
       padding: padding,
-      decoration: BoxDecoration(
-        color: DashboardTokens.surface,
-        borderRadius: BorderRadius.circular(DashboardTokens.radius),
-        border: Border.all(color: borderColor ?? DashboardTokens.border),
-        boxShadow: DashboardTokens.shadow,
-      ),
       child: child,
+    );
+
+    if (assetBackground != null && assetBackground!.isNotEmpty) {
+      cardBody = Stack(
+        fit: StackFit.passthrough,
+        children: [
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(borderRadius - 1),
+              child: Image.asset(
+                assetBackground!,
+                fit: assetFit,
+                alignment: assetAlignment,
+                errorBuilder: (context, error, stackTrace) =>
+                    const SizedBox.shrink(),
+              ),
+            ),
+          ),
+          if (overlayColor != null)
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(borderRadius - 1),
+                child: ColoredBox(color: overlayColor!),
+              ),
+            ),
+          cardBody,
+        ],
+      );
+    }
+
+    final content = Container(
+      decoration: BoxDecoration(
+        color: effectiveBackground,
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(color: effectiveBorder),
+        boxShadow: effectiveShadow,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: cardBody,
     );
 
     if (semanticLabel == null) return content;
@@ -160,6 +235,7 @@ class DashboardKpiData {
   final Color accent;
   final VoidCallback? onTap;
   final String? tooltip;
+  final String? assetBackground;
 
   const DashboardKpiData({
     required this.label,
@@ -169,6 +245,7 @@ class DashboardKpiData {
     required this.accent,
     this.onTap,
     this.tooltip,
+    this.assetBackground,
   });
 }
 
@@ -275,6 +352,17 @@ class _DashboardKpiCardState extends State<DashboardKpiCard> {
                   onTap: data.onTap,
                   child: Stack(
                     children: [
+                      if (data.assetBackground != null &&
+                          data.assetBackground!.isNotEmpty)
+                        Positioned.fill(
+                          child: Image.asset(
+                            data.assetBackground!,
+                            fit: BoxFit.cover,
+                            alignment: Alignment.center,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const SizedBox.shrink(),
+                          ),
+                        ),
                       Positioned(
                         left: 0,
                         top: 0,
@@ -480,3 +568,160 @@ class DashboardEmptyState extends StatelessWidget {
     );
   }
 }
+
+
+/// Wrapper modulare per la barra laterale di navigazione della Dashboard 4.0,
+/// integrata con lo sfondo illustrato ad alta risoluzione [PremiumDashboardAssets.sidebarBackground].
+class PremiumSidebar extends StatelessWidget {
+  final Widget child;
+  final bool expanded;
+  final double width;
+  final EdgeInsetsGeometry margin;
+
+  const PremiumSidebar({
+    super.key,
+    required this.child,
+    this.expanded = true,
+    this.width = 214,
+    this.margin = const EdgeInsets.fromLTRB(12, 12, 0, 12),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      width: width,
+      margin: margin,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF356DFF).withValues(alpha: 0.10),
+            blurRadius: 32,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              PremiumDashboardAssets.sidebarBackground,
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+              errorBuilder: (context, error, stackTrace) =>
+                  const SizedBox.shrink(),
+            ),
+          ),
+          SafeArea(child: child),
+        ],
+      ),
+    );
+  }
+}
+
+/// Contenitore modulare per la barra di riepilogo conformità con asset
+/// [PremiumDashboardAssets.statusSummaryBarBackground].
+class PremiumSummaryBar extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final String? semanticLabel;
+
+  const PremiumSummaryBar({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(20),
+    this.semanticLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DashboardSurfaceCard(
+      assetBackground: PremiumDashboardAssets.statusSummaryBarBackground,
+      padding: padding,
+      semanticLabel: semanticLabel,
+      child: child,
+    );
+  }
+}
+
+/// Contenitore modulare per la card di copertura documentale con asset
+/// [PremiumDashboardAssets.documentCoverageCardBackground].
+class PremiumCoverageCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final String? semanticLabel;
+
+  const PremiumCoverageCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(20),
+    this.semanticLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DashboardSurfaceCard(
+      assetBackground: PremiumDashboardAssets.documentCoverageCardBackground,
+      padding: padding,
+      semanticLabel: semanticLabel,
+      child: child,
+    );
+  }
+}
+
+/// Contenitore modulare per l'Alert Center con asset
+/// [PremiumDashboardAssets.urgentAlertCenterCardBackground].
+class PremiumAlertCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final String? semanticLabel;
+
+  const PremiumAlertCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(20),
+    this.semanticLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DashboardSurfaceCard(
+      assetBackground: PremiumDashboardAssets.urgentAlertCenterCardBackground,
+      padding: padding,
+      semanticLabel: semanticLabel,
+      child: child,
+    );
+  }
+}
+
+/// Contenitore modulare per il profilo socio-demografico con asset
+/// [PremiumDashboardAssets.socioDemographicCardBackground].
+class PremiumSocioDemoCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final String? semanticLabel;
+
+  const PremiumSocioDemoCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(20),
+    this.semanticLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DashboardSurfaceCard(
+      assetBackground: PremiumDashboardAssets.socioDemographicCardBackground,
+      padding: padding,
+      semanticLabel: semanticLabel,
+      child: child,
+    );
+  }
+}
+

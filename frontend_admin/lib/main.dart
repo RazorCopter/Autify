@@ -13,6 +13,7 @@ import 'screens/anagrafica_screen.dart';
 import 'screens/selection_screen.dart';
 import 'screens/audit_log_screen.dart';
 import 'screens/dashboard_screen.dart';
+import 'widgets/dashboard_components.dart';
 import 'widgets/connection_status_indicator.dart';
 import 'screens/login_screen.dart';
 import 'screens/license_screen.dart';
@@ -734,25 +735,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Widget _buildPremiumDashboardSidebar() {
     final expanded = _dashboardSidebarExpanded;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
+    return PremiumSidebar(
+      expanded: expanded,
       width: expanded ? 214 : 82,
-      margin: const EdgeInsets.fromLTRB(12, 12, 0, 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.88),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF356DFF).withValues(alpha: 0.10),
-            blurRadius: 32,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Column(
+      child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 10, 6, 4),
@@ -832,7 +818,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
           ],
         ),
-      ),
     );
   }
 

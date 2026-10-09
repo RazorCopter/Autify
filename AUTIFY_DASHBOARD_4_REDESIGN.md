@@ -40,6 +40,21 @@ Il logout e la gestione HTTP 401 rimuovono esclusivamente le chiavi di autentica
 - grafici socio-demografici;
 - sidebar premium espansa/compatta, limitata alla Dashboard 4.0.
 
+
+### Asset Glassmorphic Premium (Dashboard 4.0)
+
+I 9 asset grafici ad alta risoluzione in `frontend_admin/assets/images/` sono centralizzati in `PremiumDashboardAssets` (`frontend_admin/lib/theme/premium_dashboard_assets.dart`) e integrati con superfici modulari scalabili (`BoxFit.cover`, bordi curvi anti-aliased e fallback protetti):
+
+1. `01_sidebar_background.png`: barra laterale desktop (`PremiumSidebar`);
+2. `02_main_canvas_background.png`: sfondo canvas operativo (`DashboardAuroraBackground`);
+3. `03_card_active_users.png`: KPI Utenze Attive (`DashboardKpiCard`);
+4. `04_card_active_evaluations.png`: KPI Valutazioni Attive (`DashboardKpiCard`);
+5. `05_card_missing_scales.png`: KPI Scale Mancanti (`DashboardKpiCard`);
+6. `06_status_summary_bar.png`: barra stato e conformità (`PremiumSummaryBar`);
+7. `07_card_document_coverage.png`: card copertura documentale (`PremiumCoverageCard`);
+8. `08_card_urgent_alert_center.png`: card centro alert prioritari (`PremiumAlertCard`);
+9. `09_card_socio_demographic.png`: card profilo socio-demografico (`PremiumSocioDemoCard`).
+
 ## Design tokens
 
 I token sono isolati in `frontend_admin/lib/widgets/dashboard_components.dart` e non modificano il tema globale della dashboard classica.

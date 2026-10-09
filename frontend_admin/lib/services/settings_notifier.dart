@@ -9,6 +9,9 @@ class SettingsNotifier extends ChangeNotifier {
   bool get initialized => _initialized;
   bool get dashboardV4Enabled => _settings.dashboardV4Enabled;
 
+  /// Alias semantico per l'abilitazione della nuova interfaccia e degli asset premium.
+  bool get enablePremiumDashboardUI => _settings.dashboardV4Enabled;
+
   SettingsNotifier() {
     _loadSettings();
   }
@@ -54,4 +57,8 @@ class SettingsNotifier extends ChangeNotifier {
       rethrow;
     }
   }
+
+  /// Alias semantico per il toggle della UI e degli asset premium.
+  Future<void> setEnablePremiumDashboardUI(bool enabled) =>
+      setDashboardV4Enabled(enabled);
 }

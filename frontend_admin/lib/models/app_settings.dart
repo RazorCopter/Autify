@@ -9,6 +9,10 @@ class AppSettings {
   int alertThresholdDays;
   bool dashboardV4Enabled;
 
+  /// Alias semantico per l'abilitazione della nuova interfaccia e degli asset premium.
+  bool get enablePremiumDashboardUI => dashboardV4Enabled;
+  set enablePremiumDashboardUI(bool value) => dashboardV4Enabled = value;
+
   AppSettings({
     this.validityMonthsSanMartin = 12,
     this.validityMonthsPOS = 6,

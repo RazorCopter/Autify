@@ -40,4 +40,18 @@ void main() {
     final persisted = await AppSettings.load();
     expect(persisted.dashboardV4Enabled, isTrue);
   });
+
+  test('alias enablePremiumDashboardUI rispecchia dashboardV4Enabled', () async {
+    final notifier = SettingsNotifier();
+    await waitUntilInitialized(notifier);
+    expect(notifier.enablePremiumDashboardUI, isFalse);
+
+    await notifier.setEnablePremiumDashboardUI(true);
+    expect(notifier.enablePremiumDashboardUI, isTrue);
+    expect(notifier.dashboardV4Enabled, isTrue);
+
+    final persisted = await AppSettings.load();
+    expect(persisted.enablePremiumDashboardUI, isTrue);
+  });
+
 }

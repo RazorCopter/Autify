@@ -246,4 +246,55 @@ void main() {
     expect(second.top, greaterThan(first.bottom));
     expectNoLayoutErrors(tester);
   });
+
+  testWidgets('integrazione asset grafici Dashboard 4.0 su canvas e card',
+      (tester) async {
+    await pumpDashboard(tester, size: const Size(1440, 1000));
+
+    bool hasAssetImage(String assetName) {
+      return find.byWidgetPredicate((widget) {
+        if (widget is Image && widget.image is AssetImage) {
+          return (widget.image as AssetImage).assetName == assetName;
+        }
+        return false;
+      }).evaluate().isNotEmpty;
+    }
+
+    expect(hasAssetImage(PremiumDashboardAssets.mainCanvasBackground), isTrue);
+    expect(hasAssetImage(PremiumDashboardAssets.activeUsersCardBackground), isTrue);
+    expect(hasAssetImage(PremiumDashboardAssets.activeEvaluationsCardBackground), isTrue);
+    expect(hasAssetImage(PremiumDashboardAssets.missingScalesCardBackground), isTrue);
+    expect(hasAssetImage(PremiumDashboardAssets.statusSummaryBarBackground), isTrue);
+    expect(hasAssetImage(PremiumDashboardAssets.documentCoverageCardBackground), isTrue);
+    expect(hasAssetImage(PremiumDashboardAssets.urgentAlertCenterCardBackground), isTrue);
+    expect(hasAssetImage(PremiumDashboardAssets.socioDemographicCardBackground), isTrue);
+    expectNoLayoutErrors(tester);
+  });
+
+  testWidgets('PremiumSidebar renderizza lo sfondo illustrato 01_sidebar_background',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: PremiumSidebar(
+            child: Text('Sidebar Test'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final hasSidebarAsset = find.byWidgetPredicate((widget) {
+      if (widget is Image && widget.image is AssetImage) {
+        return (widget.image as AssetImage).assetName ==
+            PremiumDashboardAssets.sidebarBackground;
+      }
+      return false;
+    }).evaluate().isNotEmpty;
+
+    expect(hasSidebarAsset, isTrue);
+    expect(find.text('Sidebar Test'), findsOneWidget);
+    expectNoLayoutErrors(tester);
+  });
+
 }

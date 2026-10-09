@@ -288,6 +288,7 @@ class _DashboardContent extends StatelessWidget {
             total == 0 ? 'Nessuna utenza censita' : 'su $total censite',
         icon: Icons.people_alt_outlined,
         accent: DashboardTokens.primary,
+        assetBackground: PremiumDashboardAssets.activeUsersCardBackground,
         onTap: () => onNavigate(2),
         tooltip: 'Apri l’anagrafica utenti',
       ),
@@ -298,6 +299,7 @@ class _DashboardContent extends StatelessWidget {
             '${_formatNumber(coveragePercent)}% della documentazione in validità',
         icon: Icons.fact_check_outlined,
         accent: DashboardTokens.indigo,
+        assetBackground: PremiumDashboardAssets.activeEvaluationsCardBackground,
         onTap: () => onNavigate(2),
         tooltip: 'Apri l’anagrafica per consultare le valutazioni',
       ),
@@ -307,6 +309,7 @@ class _DashboardContent extends StatelessWidget {
         supportingText: 'Scale scadute o mai compilate',
         icon: Icons.warning_amber_rounded,
         accent: DashboardTokens.danger,
+        assetBackground: PremiumDashboardAssets.missingScalesCardBackground,
         onTap: () => onNavigate(2, semanticFilter: 'incompleti'),
         tooltip: 'Apri le utenze con documentazione incompleta',
       ),
@@ -445,7 +448,7 @@ class _ComplianceStrip extends StatelessWidget {
         'mai_valutati'
       ),
     ];
-    return DashboardSurfaceCard(
+    return PremiumSummaryBar(
       semanticLabel: 'Stato e conformità documentale',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -570,7 +573,7 @@ class _CoverageCard extends StatelessWidget {
     final missingPercent =
         total == 0 ? 0.0 : (missing / total * 100).toDouble();
 
-    return DashboardSurfaceCard(
+    return PremiumCoverageCard(
       semanticLabel:
           'Copertura documentale: ${_formatNumber(percent)} percento, $valid valide e $missing mancanti',
       child: Column(
@@ -770,7 +773,7 @@ class _AlertCenterCard extends StatelessWidget {
         _asInt(alertStats['totale_mai_valutati']) +
         _asInt(alertStats['totale_incompleti']);
 
-    return DashboardSurfaceCard(
+    return PremiumAlertCard(
       semanticLabel: 'Centro alert: $totalActions azioni rilevate',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1081,7 +1084,7 @@ class _DemographicsCard extends StatelessWidget {
       (current, entry) => current > entry.value ? current : entry.value,
     );
 
-    return DashboardSurfaceCard(
+    return PremiumSocioDemoCard(
       semanticLabel: 'Profilo demografico',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
