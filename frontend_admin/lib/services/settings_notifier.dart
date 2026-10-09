@@ -7,6 +7,7 @@ class SettingsNotifier extends ChangeNotifier {
 
   AppSettings get settings => _settings;
   bool get initialized => _initialized;
+  bool get dashboardV4Enabled => _settings.dashboardV4Enabled;
 
   SettingsNotifier() {
     _loadSettings();
@@ -38,5 +39,19 @@ class SettingsNotifier extends ChangeNotifier {
     }
     await _settings.save();
     notifyListeners();
+  }
+
+  Future<void> setDashboardV4Enabled(bool enabled) async {
+    if (_settings.dashboardV4Enabled == enabled) return;
+    final previous = _settings.dashboardV4Enabled;
+    _settings.dashboardV4Enabled = enabled;
+    notifyListeners();
+    try {
+      await _settings.save();
+    } catch (_) {
+      _settings.dashboardV4Enabled = previous;
+      notifyListeners();
+      rethrow;
+    }
   }
 }

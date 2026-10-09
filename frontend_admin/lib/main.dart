@@ -19,6 +19,14 @@ import 'screens/license_screen.dart';
 import 'services/api_service.dart';
 import 'theme/app_theme.dart';
 
+void _clearAuthenticationStorage() {
+  html.window.localStorage.remove('jwt_token');
+  html.window.localStorage.remove('auth_role');
+  html.window.localStorage.remove('auth_username');
+  html.window.localStorage.remove('ai_enabled');
+  html.window.sessionStorage.clear();
+}
+
 void main() {
   runApp(
     ChangeNotifierProvider(
@@ -148,6 +156,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int _unreadNotifications = 0;
   List<Map<String, dynamic>> _notifications = [];
   Timer? _notificationTimer;
+  bool _dashboardSidebarExpanded = true;
 
   @override
   void initState() {
@@ -390,8 +399,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   void _performLogout() {
     try {
-      html.window.localStorage.clear();
-      html.window.sessionStorage.clear();
+      _clearAuthenticationStorage();
     } catch (_) {}
 
     try {
@@ -412,7 +420,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
           });
         }
         sessionStorage.clear();
-        localStorage.clear();
+        localStorage.removeItem('jwt_token');
+        localStorage.removeItem('auth_role');
+        localStorage.removeItem('auth_username');
+        localStorage.removeItem('ai_enabled');
         setTimeout(function() {
           window.location.href = window.location.pathname + "?v=" + new Date().getTime();
         }, 150);
@@ -511,10 +522,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   // ─── DESKTOP LAYOUT (sidebar + contenuto) ──────────────────────────────────
   Widget _buildDesktopBody() {
+    final settings = context.watch<SettingsNotifier>();
+    final usePremiumShell = _selectedIndex == 0 &&
+        settings.initialized &&
+        settings.dashboardV4Enabled;
     return Row(
       children: [
-        // Sidebar
-        _buildSidebar(),
+        if (usePremiumShell)
+          _buildPremiumDashboardSidebar()
+        else
+          _buildSidebar(),
         // Contenuto principale
         Expanded(
           child: Stack(
@@ -713,6 +730,156 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
       ),
     );
+  }
+
+  Widget _buildPremiumDashboardSidebar() {
+    final expanded = _dashboardSidebarExpanded;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      width: expanded ? 214 : 82,
+      margin: const EdgeInsets.fromLTRB(12, 12, 0, 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF356DFF).withValues(alpha: 0.10),
+            blurRadius: 32,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 10, 6, 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Image.asset(
+                      'assets/images/logo_autify_int.png',
+                      height: 62,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  if (expanded)
+                    IconButton(
+                      tooltip: 'Compatta barra laterale',
+                      onPressed: () => setState(
+                        () => _dashboardSidebarExpanded = false,
+                      ),
+                      icon: const Icon(Icons.chevron_left_rounded),
+                    ),
+                ],
+              ),
+            ),
+            if (!expanded)
+              IconButton(
+                tooltip: 'Espandi barra laterale',
+                onPressed: () => setState(
+                  () => _dashboardSidebarExpanded = true,
+                ),
+                icon: const Icon(Icons.chevron_right_rounded),
+              ),
+            const SizedBox(height: 6),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                itemCount: _navItems.length,
+                itemBuilder: (context, index) =>
+                    _buildPremiumNavigationItem(index, expanded),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  if (expanded)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF356DFF).withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.support_agent_rounded,
+                              color: Color(0xFF356DFF)),
+                          SizedBox(width: 9),
+                          Expanded(
+                            child: Text('Supporto',
+                                style: TextStyle(fontWeight: FontWeight.w700)),
+                          ),
+                          Icon(Icons.arrow_forward_rounded, size: 16),
+                        ],
+                      ),
+                    ),
+                  if (expanded) const SizedBox(height: 10),
+                  if (expanded) _buildRoleBadge(),
+                  const SizedBox(height: 8),
+                  IconButton(
+                    tooltip: 'Esci',
+                    onPressed: _performLogout,
+                    icon: const Icon(Icons.logout_rounded,
+                        color: AppTheme.errorColor),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPremiumNavigationItem(int index, bool expanded) {
+    final item = _navItems[index];
+    final selected = _selectedIndex == index;
+    final color = selected ? Colors.white : const Color(0xFF64748B);
+    final tile = InkWell(
+      onTap: () => setState(() => _selectedIndex = index),
+      borderRadius: BorderRadius.circular(14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: EdgeInsets.symmetric(
+          horizontal: expanded ? 13 : 0,
+          vertical: 11,
+        ),
+        decoration: BoxDecoration(
+          gradient: selected
+              ? const LinearGradient(
+                  colors: [Color(0xFF635BFF), Color(0xFF356DFF)],
+                )
+              : null,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          mainAxisAlignment:
+              expanded ? MainAxisAlignment.start : MainAxisAlignment.center,
+          children: [
+            Icon(selected ? item.active : item.icon, color: color, size: 22),
+            if (expanded) ...[
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  item.label,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+    return expanded ? tile : Tooltip(message: item.label, child: tile);
   }
 
   // ─── DESKTOP SIDEBAR (invariata) ───────────────────────────────────────────

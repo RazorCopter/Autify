@@ -20,7 +20,10 @@ class _Http {
 
   void _handleUnauthorized() {
     try {
-      html.window.localStorage.clear();
+      html.window.localStorage.remove('jwt_token');
+      html.window.localStorage.remove('auth_role');
+      html.window.localStorage.remove('auth_username');
+      html.window.localStorage.remove('ai_enabled');
       html.window.sessionStorage.clear();
       final reloadUrl = (html.window.location.pathname ?? '/') +
           "?v=${DateTime.now().millisecondsSinceEpoch}";

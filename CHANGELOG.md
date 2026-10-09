@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **Dashboard 4.0 Redesign con Feature Toggle**: introdotta la nuova esperienza dashboard Autify 4.0 attivabile da Impostazioni con persistenza locale (`autify_dashboard_v4_enabled`) e fallback trasparente alla dashboard classica.
+- **Metriche e Grafici Documentali**: 3 KPI card autentiche (utenze attive, valutazioni attive, scale mancanti), donut chart per la copertura documentale, compliance strip interattiva e pannelli demografici.
+- **Alert Center e Navigazione Semantica**: centro alert con scrolling confinato e reindirizzamento coerente ai filtri semantici dell'anagrafica (`scaduti`, `mai_valutati`).
+- **Disaccoppiamento e Testabilità**: disaccoppiamento di `DashboardV4Screen` dalle dipendenze web dirette tramite iniezione di `statsLoader`, con 10 widget/unit test passanti su VM Flutter.
+
 ## [4.0.2] - 2026-10-08
 
 ### Fixed

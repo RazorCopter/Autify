@@ -1102,6 +1102,80 @@ TONO E FORMATTAZIONE:
 
 
 
+          Consumer<SettingsNotifier>(
+            builder: (context, notifier, child) {
+              return _buildPremiumExpansionTile(
+                context: context,
+                title: 'Esperienza Autify',
+                subtitle: 'Scegli l’interfaccia della dashboard',
+                icon: Icons.auto_awesome_rounded,
+                iconColor: const Color(0xFF635BFF),
+                initiallyExpanded: true,
+                children: [
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: Row(
+                      children: [
+                        const Flexible(
+                          child: Text(
+                            'Nuova interfaccia Autify 4.0',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF635BFF)
+                                .withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: const Text(
+                            'NOVITÀ',
+                            style: TextStyle(
+                              color: Color(0xFF5145CD),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    subtitle: const Padding(
+                      padding: EdgeInsets.only(top: 6),
+                      child: Text(
+                        'Attiva la nuova esperienza grafica con dashboard moderna, grafici interattivi ed effetti visivi avanzati.',
+                      ),
+                    ),
+                    value: notifier.dashboardV4Enabled,
+                    activeThumbColor: const Color(0xFF635BFF),
+                    onChanged: notifier.initialized
+                        ? (enabled) async {
+                            try {
+                              await notifier.setDashboardV4Enabled(enabled);
+                            } catch (_) {
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Impossibile salvare la preferenza. La selezione precedente è stata ripristinata.',
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        : null,
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+
+
           // 4. Parametri di Validità Scale
           Consumer<SettingsNotifier>(
             builder: (context, notifier, child) {

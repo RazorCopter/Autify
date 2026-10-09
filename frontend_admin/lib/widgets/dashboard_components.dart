@@ -5,15 +5,20 @@ import 'package:flutter/material.dart';
 /// Sono intenzionalmente indipendenti dal tema globale: la dashboard mantiene
 /// una gerarchia sobria senza modificare l'aspetto delle altre aree dell'app.
 abstract final class DashboardTokens {
-  static const Color canvas = Color(0xFFF6F8FB);
-  static const Color surface = Color(0xFFFFFFFF);
+  static const Color canvas = Color(0xFFF5F7FF);
+  static const Color surface = Color(0xEFFFFFFF);
   static const Color text = Color(0xFF172033);
   static const Color textMuted = Color(0xFF667085);
-  static const Color border = Color(0xFFE4E9F1);
-  static const Color primary = Color(0xFF2563EB);
-  static const Color success = Color(0xFF16856A);
-  static const Color warning = Color(0xFFB7600A);
-  static const Color danger = Color(0xFFC43D4B);
+  static const Color border = Color(0x99DCE5F5);
+  static const Color deepNavy = Color(0xFF101B3C);
+  static const Color midnightBlue = Color(0xFF142653);
+  static const Color primary = Color(0xFF356DFF);
+  static const Color indigo = Color(0xFF635BFF);
+  static const Color auroraViolet = Color(0xFF9370FF);
+  static const Color iceCyan = Color(0xFF77E4F2);
+  static const Color success = Color(0xFF20B67A);
+  static const Color warning = Color(0xFFF5A623);
+  static const Color danger = Color(0xFFF05262);
   static const Color purple = Color(0xFF7456B8);
 
   static const double radius = 18;
@@ -28,6 +33,40 @@ abstract final class DashboardTokens {
       offset: Offset(0, 6),
     ),
   ];
+}
+
+class DashboardAuroraBackground extends StatelessWidget {
+  const DashboardAuroraBackground({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          color: DashboardTokens.canvas,
+          gradient: RadialGradient(
+            center: Alignment(-0.75, -0.85),
+            radius: 1.35,
+            colors: [
+              Color(0x6677E4F2),
+              Color(0x339370FF),
+              Color(0x00F5F7FF),
+            ],
+            stops: [0, 0.46, 1],
+          ),
+        ),
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment(0.95, -0.55),
+              radius: 1.15,
+              colors: [Color(0x55C5BED8), Color(0x00F5F7FF)],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class DashboardSurfaceCard extends StatelessWidget {
@@ -144,7 +183,7 @@ class DashboardKpiGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final columns = width >= 1200 ? 4 : 2;
+        final columns = width >= 1100 ? 3 : (width >= 600 ? 2 : 1);
         const gap = DashboardTokens.gap;
         final itemWidth = (width - gap * (columns - 1)) / columns;
         final compact = width < 600;

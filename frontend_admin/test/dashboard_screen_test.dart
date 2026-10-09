@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:frontend_admin/screens/dashboard_screen.dart';
+import 'package:frontend_admin/screens/dashboard_v4_screen.dart';
 import 'package:frontend_admin/widgets/dashboard_components.dart';
 
 void main() {
@@ -81,7 +81,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: ThemeData(useMaterial3: true),
-        home: DashboardScreen(
+        home: DashboardV4Screen(
           usernameOverride: 'Mario',
           statsLoader: () async => stats,
           onNavigate: (_, {searchFilter, semanticFilter}) {},
@@ -100,13 +100,16 @@ void main() {
     expect(exceptions, isEmpty);
   }
 
-  testWidgets('a 320px usa KPI 2x2 e non genera overflow', (tester) async {
+  testWidgets('a 320px impila le tre KPI e non genera overflow',
+      (tester) async {
     await pumpDashboard(tester, size: const Size(320, 900));
 
     expect(find.byKey(const ValueKey('dashboard-content')), findsOneWidget);
     expect(find.byKey(const ValueKey('dashboard-kpi-card-0')), findsOneWidget);
-    expect(find.byKey(const ValueKey('dashboard-kpi-card-3')), findsOneWidget);
-    expect(find.text('N/D'), findsOneWidget);
+    expect(find.byKey(const ValueKey('dashboard-kpi-card-2')), findsOneWidget);
+    expect(find.text('VALUTAZIONI ATTIVE'), findsOneWidget);
+    expect(find.text('SCALE MANCANTI'), findsOneWidget);
+    expect(find.text('N/D'), findsNothing);
 
     final first = tester.getRect(
       find.byKey(const ValueKey('dashboard-kpi-slot-0')),
@@ -117,9 +120,9 @@ void main() {
     final third = tester.getRect(
       find.byKey(const ValueKey('dashboard-kpi-slot-2')),
     );
-    expect(second.top, closeTo(first.top, 0.1));
-    expect(third.top, greaterThan(first.bottom));
-    expect(first.width, lessThan(150));
+    expect(second.top, greaterThan(first.bottom));
+    expect(third.top, greaterThan(second.bottom));
+    expect(first.width, greaterThan(250));
     expectNoLayoutErrors(tester);
   });
 
@@ -138,23 +141,23 @@ void main() {
     );
     expect(second.top, closeTo(first.top, 0.1));
     expect(third.top, greaterThan(first.bottom));
-    expect(find.text('Andamento somministrazioni'), findsOneWidget);
+    expect(find.text('Copertura Documentale'), findsOneWidget);
     expectNoLayoutErrors(tester);
   });
 
-  testWidgets('a 1440px dispone i quattro KPI sulla stessa riga',
-      (tester) async {
+  testWidgets('a 1440px dispone le tre KPI sulla stessa riga', (tester) async {
     await pumpDashboard(tester, size: const Size(1440, 1000));
 
     final tops = List.generate(
-      4,
+      3,
       (index) =>
           tester.getRect(find.byKey(ValueKey('dashboard-kpi-slot-$index'))).top,
     );
     for (final top in tops.skip(1)) {
       expect(top, closeTo(tops.first, 0.1));
     }
-    expect(find.text('Centro alert'), findsOneWidget);
+    expect(
+        find.text('Alert Center — Azioni Richieste Urgenti'), findsOneWidget);
     expectNoLayoutErrors(tester);
   });
 
@@ -164,7 +167,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: DashboardScreen(
+        home: DashboardV4Screen(
           statsLoader: () async => null,
           onNavigate: (_, {searchFilter, semanticFilter}) {},
         ),
@@ -177,8 +180,37 @@ void main() {
     expectNoLayoutErrors(tester);
   });
 
-  testWidgets('griglia KPI pura rispetta il target 2x2 a 320px',
+  testWidgets('la dashboard usa terminologia educativa e non medica',
       (tester) async {
+    await pumpDashboard(tester, size: const Size(1440, 1000));
+    expect(find.textContaining('somministrazione'), findsNothing);
+    expect(find.textContaining('clinica'), findsNothing);
+    expect(find.text('Copertura Documentale'), findsOneWidget);
+    expect(find.text('Valutazioni scadute'), findsOneWidget);
+  });
+
+  testWidgets('un alert apre un filtro semantico supportato', (tester) async {
+    String? selectedFilter;
+    await tester.binding.setSurfaceSize(const Size(1440, 1000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: DashboardV4Screen(
+          statsLoader: () async => stats,
+          onNavigate: (_, {searchFilter, semanticFilter}) {
+            selectedFilter = semanticFilter;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Ada Rossi'));
+    await tester.tap(find.text('Ada Rossi'));
+    await tester.pump();
+    expect(selectedFilter, 'scaduti');
+  });
+
+  testWidgets('griglia KPI pura impila le card a 320px', (tester) async {
     await tester.binding.setSurfaceSize(const Size(320, 500));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -210,8 +242,8 @@ void main() {
     final second = tester.getRect(
       find.byKey(const ValueKey('dashboard-kpi-slot-1')),
     );
-    expect(first.left, lessThan(second.left));
-    expect(first.top, closeTo(second.top, 0.1));
+    expect(first.left, closeTo(second.left, 0.1));
+    expect(second.top, greaterThan(first.bottom));
     expectNoLayoutErrors(tester);
   });
 }
