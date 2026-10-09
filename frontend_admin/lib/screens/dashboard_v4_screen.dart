@@ -383,20 +383,17 @@ class _DashboardContent extends StatelessWidget {
         LayoutBuilder(
           builder: (context, constraints) {
             final twoColumns = constraints.maxWidth >= 600;
-            final distribution = _DistributionCard(
-              distributions: _listValue(stats['distribuzione_scale']),
-              totalPatients: total,
-            );
-            final demographics = _DemographicsCard(
-              demographics: _mapValue(stats['demographics']),
-            );
-
             if (!twoColumns) {
               return Column(
                 children: [
-                  distribution,
+                  _DistributionCard(
+                    distributions: _listValue(stats['distribuzione_scale']),
+                    totalPatients: total,
+                  ),
                   const SizedBox(height: DashboardTokens.gap),
-                  demographics,
+                  _DemographicsCard(
+                    demographics: _mapValue(stats['demographics']),
+                  ),
                 ],
               );
             }
@@ -404,9 +401,20 @@ class _DashboardContent extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(child: distribution),
+                  Expanded(
+                    child: _DistributionCard(
+                      distributions: _listValue(stats['distribuzione_scale']),
+                      totalPatients: total,
+                      fillHeight: true,
+                    ),
+                  ),
                   const SizedBox(width: DashboardTokens.gap),
-                  Expanded(child: demographics),
+                  Expanded(
+                    child: _DemographicsCard(
+                      demographics: _mapValue(stats['demographics']),
+                      fillHeight: true,
+                    ),
+                  ),
                 ],
               ),
             );
@@ -603,7 +611,7 @@ class _CoverageCard extends StatelessWidget {
     final missingPercent =
         total == 0 ? 0.0 : (missing / total * 100).toDouble();
     final compact = width < 560;
-    final chartSize = (width * 0.38).clamp(180.0, 240.0).toDouble();
+    final chartSize = (width * 0.36).clamp(180.0, 220.0).toDouble();
     final chart = _chart(
       compact: compact,
       chartSize: chartSize,
@@ -628,17 +636,13 @@ class _CoverageCard extends StatelessWidget {
     );
     final details = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: fill
-          ? [
-              Expanded(child: validMetric),
-              const SizedBox(height: 12),
-              Expanded(child: missingMetric),
-            ]
-          : [
-              validMetric,
-              const SizedBox(height: 12),
-              missingMetric,
-            ],
+      mainAxisAlignment:
+          fill ? MainAxisAlignment.center : MainAxisAlignment.start,
+      children: [
+        validMetric,
+        const SizedBox(height: 12),
+        missingMetric,
+      ],
     );
     if (compact) {
       return Column(children: [chart, const SizedBox(height: 14), details]);
@@ -788,6 +792,7 @@ class _CoverageMetric extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label,
@@ -1034,9 +1039,14 @@ class _DistributionCard extends StatelessWidget {
   final List<dynamic> distributions;
   final int totalPatients;
 
+  /// Quando la card condivide l'altezza della riga, le barre si
+  /// distribuiscono nello spazio disponibile invece di lasciare un vuoto.
+  final bool fillHeight;
+
   const _DistributionCard({
     required this.distributions,
     required this.totalPatients,
+    this.fillHeight = false,
   });
 
   @override
@@ -1064,13 +1074,49 @@ class _DistributionCard extends StatelessWidget {
               message: 'La copertura per strumento comparirà qui.',
             )
           else
-            for (var index = 0; index < sorted.length; index++) ...[
-              _DistributionBar(item: sorted[index]),
-              if (index != sorted.length - 1) const SizedBox(height: 17),
-            ],
+            _DashboardBarList(
+              fillHeight: fillHeight,
+              spacing: 17,
+              children: [
+                for (final item in sorted) _DistributionBar(item: item),
+              ],
+            ),
         ],
       ),
     );
+  }
+}
+
+/// Impila un elenco di barre con spaziatura fissa. Quando la card e'
+/// stirata per pareggiare l'altezza della riga, lo spazio in eccesso viene
+/// ripartito tra le barre invece di accumularsi in fondo alla card.
+class _DashboardBarList extends StatelessWidget {
+  final List<Widget> children;
+  final double spacing;
+  final bool fillHeight;
+
+  const _DashboardBarList({
+    required this.children,
+    required this.spacing,
+    required this.fillHeight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <Widget>[];
+    for (var index = 0; index < children.length; index++) {
+      rows.add(children[index]);
+      if (index != children.length - 1) {
+        rows.add(SizedBox(height: spacing));
+      }
+    }
+    final column = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisAlignment:
+          fillHeight ? MainAxisAlignment.spaceBetween : MainAxisAlignment.start,
+      children: rows,
+    );
+    return fillHeight ? Expanded(child: column) : column;
   }
 }
 
@@ -1137,7 +1183,13 @@ class _DistributionBar extends StatelessWidget {
 class _DemographicsCard extends StatelessWidget {
   final Map<String, dynamic> demographics;
 
-  const _DemographicsCard({required this.demographics});
+  /// Vedi [_DistributionCard.fillHeight].
+  final bool fillHeight;
+
+  const _DemographicsCard({
+    required this.demographics,
+    this.fillHeight = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1197,10 +1249,14 @@ class _DemographicsCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 22),
-            for (var index = 0; index < ageEntries.length; index++) ...[
-              _AgeBar(entry: ageEntries[index], maxValue: maxAge),
-              if (index != ageEntries.length - 1) const SizedBox(height: 11),
-            ],
+            _DashboardBarList(
+              fillHeight: fillHeight,
+              spacing: 11,
+              children: [
+                for (final entry in ageEntries)
+                  _AgeBar(entry: entry, maxValue: maxAge),
+              ],
+            ),
           ],
         ],
       ),
