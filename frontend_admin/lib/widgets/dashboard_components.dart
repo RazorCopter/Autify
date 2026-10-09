@@ -10,11 +10,11 @@ export '../theme/premium_dashboard_assets.dart';
 /// Sono intenzionalmente indipendenti dal tema globale: la dashboard mantiene
 /// una gerarchia sobria senza modificare l'aspetto delle altre aree dell'app.
 abstract final class DashboardTokens {
-  static const Color canvas = Color(0xFFF5F7FF);
+  static const Color canvas = Color(0xFFF7F9FC);
   static const Color surface = Color(0xEFFFFFFF);
   static const Color text = Color(0xFF172033);
   static const Color textMuted = Color(0xFF667085);
-  static const Color border = Color(0x99DCE5F5);
+  static const Color border = Color(0xB3E0E6EF);
   static const Color deepNavy = Color(0xFF101B3C);
   static const Color midnightBlue = Color(0xFF142653);
   static const Color primary = Color(0xFF356DFF);
@@ -25,6 +25,7 @@ abstract final class DashboardTokens {
   static const Color warning = Color(0xFFF5A623);
   static const Color danger = Color(0xFFF05262);
   static const Color purple = Color(0xFF7456B8);
+  static const Color slate = Color(0xFF42536E);
 
   static const double radius = 18;
   static const double compactRadius = 12;
@@ -40,66 +41,33 @@ abstract final class DashboardTokens {
   ];
 }
 
+/// Sfondo del canvas operativo: una velatura verticale fredda con una sola
+/// ombreggiatura d'angolo. Nessuna illustrazione: il tono deve restare
+/// professionale e non entrare in competizione con i dati.
 class DashboardAuroraBackground extends StatelessWidget {
-  final bool useAsset;
-  final double assetOpacity;
-
-  const DashboardAuroraBackground({
-    super.key,
-    this.useAsset = true,
-    this.assetOpacity = PremiumDashboardAssets.defaultOpacity,
-  });
+  const DashboardAuroraBackground({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Quando l'asset illustrato e' attivo i due gradienti restano appena
-          // accennati: sommati a piena intensita' saturavano il canvas.
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: DashboardTokens.canvas,
-              gradient: RadialGradient(
-                center: const Alignment(-0.75, -0.85),
-                radius: 1.35,
-                colors: [
-                  Color(useAsset ? 0x1F77E4F2 : 0x6677E4F2),
-                  Color(useAsset ? 0x149370FF : 0x339370FF),
-                  const Color(0x00F5F7FF),
-                ],
-                stops: const [0, 0.46, 1],
-              ),
-            ),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(0.95, -0.55),
-                  radius: 1.15,
-                  colors: [
-                    Color(useAsset ? 0x18C5BED8 : 0x55C5BED8),
-                    const Color(0x00F5F7FF),
-                  ],
-                ),
-              ),
+    return const IgnorePointer(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFFBFCFE), Color(0xFFEEF1F6)],
+          ),
+        ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment(0.9, -0.95),
+              radius: 1.1,
+              colors: [Color(0x0F42536E), Color(0x0042536E)],
             ),
           ),
-          if (useAsset)
-            Positioned.fill(
-              child: Opacity(
-                opacity: assetOpacity,
-                child: Image.asset(
-                  PremiumDashboardAssets.mainCanvasBackground,
-                  fit: BoxFit.cover,
-                  alignment: Alignment.topCenter,
-                  filterQuality: FilterQuality.medium,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const SizedBox.shrink(),
-                ),
-              ),
-            ),
-        ],
+          child: SizedBox.expand(),
+        ),
       ),
     );
   }
@@ -182,74 +150,74 @@ abstract final class DashboardDecor {
     DashboardDecorBlob(
       center: Alignment(-0.85, -0.6),
       radius: 0.5,
-      color: DashboardTokens.primary,
-      opacity: 0.09,
+      color: DashboardTokens.slate,
+      opacity: 0.045,
     ),
     DashboardDecorBlob(
       center: Alignment(0.9, 1.1),
       radius: 0.55,
-      color: DashboardTokens.purple,
-      opacity: 0.08,
+      color: DashboardTokens.slate,
+      opacity: 0.035,
     ),
   ];
 
   static const List<DashboardDecorBlob> coverage = [
     DashboardDecorBlob(
-      center: Alignment(-0.75, 0.75),
-      radius: 0.46,
-      color: DashboardTokens.primary,
-      opacity: 0.14,
+      center: Alignment(-0.75, 0.8),
+      radius: 0.5,
+      color: DashboardTokens.slate,
+      opacity: 0.055,
     ),
     DashboardDecorBlob(
-      center: Alignment(0.95, -0.85),
-      radius: 0.38,
-      color: DashboardTokens.purple,
-      opacity: 0.12,
+      center: Alignment(1.0, -0.9),
+      radius: 0.4,
+      color: DashboardTokens.primary,
+      opacity: 0.035,
     ),
   ];
 
   static const List<DashboardDecorBlob> alerts = [
     DashboardDecorBlob(
-      center: Alignment(1.0, -0.9),
-      radius: 0.44,
+      center: Alignment(1.0, -0.95),
+      radius: 0.45,
       color: DashboardTokens.danger,
-      opacity: 0.11,
+      opacity: 0.035,
     ),
     DashboardDecorBlob(
-      center: Alignment(-0.9, 1.0),
-      radius: 0.4,
-      color: DashboardTokens.warning,
-      opacity: 0.08,
+      center: Alignment(-0.95, 1.0),
+      radius: 0.42,
+      color: DashboardTokens.slate,
+      opacity: 0.045,
     ),
   ];
 
   static const List<DashboardDecorBlob> socioDemographic = [
     DashboardDecorBlob(
-      center: Alignment(1.05, 0.6),
-      radius: 0.48,
-      color: DashboardTokens.primary,
-      opacity: 0.13,
+      center: Alignment(1.05, 0.7),
+      radius: 0.5,
+      color: DashboardTokens.slate,
+      opacity: 0.05,
     ),
     DashboardDecorBlob(
-      center: Alignment(-0.8, -0.9),
-      radius: 0.36,
-      color: DashboardTokens.purple,
-      opacity: 0.1,
+      center: Alignment(-0.9, -0.95),
+      radius: 0.38,
+      color: DashboardTokens.primary,
+      opacity: 0.03,
     ),
   ];
 
   static const List<DashboardDecorBlob> distribution = [
     DashboardDecorBlob(
-      center: Alignment(-1.0, -0.85),
-      radius: 0.42,
-      color: DashboardTokens.indigo,
-      opacity: 0.1,
+      center: Alignment(-1.0, -0.9),
+      radius: 0.45,
+      color: DashboardTokens.slate,
+      opacity: 0.05,
     ),
     DashboardDecorBlob(
       center: Alignment(1.0, 1.0),
       radius: 0.45,
       color: DashboardTokens.primary,
-      opacity: 0.09,
+      opacity: 0.03,
     ),
   ];
 }
@@ -545,23 +513,18 @@ class _DashboardKpiCardState extends State<DashboardKpiCard> {
                   onTap: data.onTap,
                   child: Stack(
                     children: [
-                      if (data.assetBackground != null &&
-                          data.assetBackground!.isNotEmpty)
-                        Positioned.fill(
-                          child: Opacity(
-                            opacity: data.assetOpacity ??
-                                PremiumDashboardAssets.defaultOpacity,
-                            child: Image.asset(
-                              data.assetBackground!,
-                              fit: data.assetFit ?? BoxFit.cover,
-                              alignment:
-                                  data.assetAlignment ?? Alignment.centerRight,
-                              filterQuality: FilterQuality.medium,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const SizedBox.shrink(),
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: DashboardDecorPainter([
+                            DashboardDecorBlob(
+                              center: const Alignment(1.0, 0.9),
+                              radius: 0.7,
+                              color: data.accent,
+                              opacity: _highlighted ? 0.09 : 0.055,
                             ),
-                          ),
+                          ]),
                         ),
+                      ),
                       Positioned(
                         left: 0,
                         top: 0,

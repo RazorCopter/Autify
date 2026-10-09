@@ -247,7 +247,7 @@ void main() {
     expectNoLayoutErrors(tester);
   });
 
-  testWidgets('integrazione asset grafici Dashboard 4.0 su canvas e card',
+  testWidgets('la Dashboard 4.0 non usa piu sfondi PNG illustrati',
       (tester) async {
     await pumpDashboard(tester, size: const Size(1440, 1000));
 
@@ -263,16 +263,17 @@ void main() {
           .isNotEmpty;
     }
 
-    expect(hasAssetImage(PremiumDashboardAssets.mainCanvasBackground), isTrue);
-    expect(hasAssetImage(PremiumDashboardAssets.activeUsersCardBackground),
-        isTrue);
-    expect(
-        hasAssetImage(PremiumDashboardAssets.activeEvaluationsCardBackground),
-        isTrue);
-    expect(hasAssetImage(PremiumDashboardAssets.missingScalesCardBackground),
-        isTrue);
+    // Canvas, KPI e card non devono piu' montare illustrazioni a onde:
+    // l'aspetto deve restare sobrio e professionale.
+    for (final asset in PremiumDashboardAssets.allAssets) {
+      expect(
+        hasAssetImage(asset),
+        isFalse,
+        reason: 'lo sfondo illustrato $asset non va piu usato',
+      );
+    }
 
-    // Le card interne usano la decorazione dipinta, non piu' un PNG.
+    // Al loro posto c'e' la decorazione dipinta.
     bool hasDecor(List<DashboardDecorBlob> preset) {
       return find
           .byWidgetPredicate((widget) =>
@@ -378,17 +379,27 @@ void main() {
     expectNoLayoutErrors(tester);
   });
 
-  testWidgets('gli sfondi grafici restano al 50% di opacita', (tester) async {
-    expect(PremiumDashboardAssets.defaultOpacity, 0.50);
-
+  testWidgets('le decorazioni restano a intensita da velatura', (tester) async {
     await pumpDashboard(tester, size: const Size(1440, 1000));
 
-    final halfOpacityLayers = find
-        .byWidgetPredicate(
-          (widget) => widget is Opacity && widget.opacity == 0.50,
-        )
+    final painted = find
+        .byWidgetPredicate((widget) =>
+            widget is CustomPaint && widget.painter is DashboardDecorPainter)
         .evaluate();
-    expect(halfOpacityLayers, isNotEmpty);
+    expect(painted, isNotEmpty);
+
+    for (final element in painted) {
+      final painter =
+          (element.widget as CustomPaint).painter as DashboardDecorPainter;
+      for (final blob in painter.blobs) {
+        // Oltre questa soglia la decorazione inizia a competere con i dati.
+        expect(
+          blob.opacity,
+          lessThanOrEqualTo(0.1),
+          reason: 'macchia troppo intensa: ${blob.color}',
+        );
+      }
+    }
     expectNoLayoutErrors(tester);
   });
 }
