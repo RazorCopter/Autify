@@ -528,6 +528,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         settings.initialized &&
         settings.dashboardV4Enabled;
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (usePremiumShell)
           _buildPremiumDashboardSidebar()

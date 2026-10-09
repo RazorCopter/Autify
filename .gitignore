@@ -45,3 +45,5 @@ flutter-sdk/
 .antigravitycli/
 .roo/
 
+# Image backups
+frontend_admin/assets/images_raw_backup/
