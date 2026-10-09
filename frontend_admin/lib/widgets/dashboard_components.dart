@@ -41,42 +41,70 @@ abstract final class DashboardTokens {
   ];
 }
 
-/// Reticolo tecnico molto tenue: da' materia al canvas senza introdurre
-/// illustrazioni. E' l'unica texture dello sfondo.
-class DashboardCanvasGridPainter extends CustomPainter {
-  /// Passo del reticolo in pixel logici.
-  final double pitch;
-  final Color lineColor;
+/// Vignettatura morbida sui bordi del canvas: concentra l'attenzione al
+/// centro e da' profondita' fotografica senza introdurre alcun motivo.
+class DashboardVignettePainter extends CustomPainter {
+  final Color color;
+  final double opacity;
 
-  const DashboardCanvasGridPainter({
-    this.pitch = 38,
-    this.lineColor = DashboardTokens.slate,
+  const DashboardVignettePainter({
+    this.color = DashboardTokens.slate,
+    this.opacity = 0.1,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (size.isEmpty || pitch <= 0) return;
-    final paint = Paint()
-      ..color = lineColor.withValues(alpha: 0.055)
-      ..strokeWidth = 1;
-    for (var x = pitch; x < size.width; x += pitch) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (var y = pitch; y < size.height; y += pitch) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
+    if (size.isEmpty) return;
+    final rect = Offset.zero & size;
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = RadialGradient(
+          center: Alignment.center,
+          radius: 0.95,
+          colors: [
+            color.withValues(alpha: 0),
+            color.withValues(alpha: 0),
+            color.withValues(alpha: opacity),
+          ],
+          stops: const [0, 0.62, 1],
+        ).createShader(rect),
+    );
   }
 
   @override
-  bool shouldRepaint(DashboardCanvasGridPainter oldDelegate) =>
-      oldDelegate.pitch != pitch || oldDelegate.lineColor != lineColor;
+  bool shouldRepaint(DashboardVignettePainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.opacity != opacity;
 }
 
-/// Sfondo del canvas operativo: velatura verticale fredda, ombreggiature
-/// d'angolo e reticolo tecnico. Nessuna illustrazione, ma tono sufficiente a
-/// staccare le superfici bianche delle card.
+/// Sfondo del canvas operativo: base neutra fredda, mesh gradient astratto a
+/// grande scala e vignettatura. Nessun motivo ripetuto e nessuna
+/// illustrazione: le velature sono ampie e a basso contrasto, cosi' lo sfondo
+/// da' profondita' senza entrare in competizione con i dati.
 class DashboardAuroraBackground extends StatelessWidget {
   const DashboardAuroraBackground({super.key});
+
+  /// Velature del mesh: poche, molto ampie e fuori centro.
+  static const List<DashboardDecorBlob> mesh = [
+    DashboardDecorBlob(
+      center: Alignment(-0.85, -0.95),
+      radius: 0.85,
+      color: DashboardTokens.primary,
+      opacity: 0.13,
+    ),
+    DashboardDecorBlob(
+      center: Alignment(1.0, -0.55),
+      radius: 0.7,
+      color: DashboardTokens.indigo,
+      opacity: 0.1,
+    ),
+    DashboardDecorBlob(
+      center: Alignment(0.35, 1.05),
+      radius: 0.8,
+      color: DashboardTokens.slate,
+      opacity: 0.12,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -86,29 +114,14 @@ class DashboardAuroraBackground extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFF2F5FA), Color(0xFFE4EAF3)],
+            colors: [Color(0xFFF4F6FA), Color(0xFFE8EDF4)],
           ),
         ),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment(0.95, -0.9),
-              radius: 1.2,
-              colors: [Color(0x2642536E), Color(0x0042536E)],
-            ),
-          ),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment(-0.9, 1.0),
-                radius: 1.0,
-                colors: [Color(0x1C356DFF), Color(0x00356DFF)],
-              ),
-            ),
-            child: CustomPaint(
-              painter: DashboardCanvasGridPainter(),
-              child: SizedBox.expand(),
-            ),
+        child: CustomPaint(
+          painter: DashboardDecorPainter(mesh),
+          child: CustomPaint(
+            painter: DashboardVignettePainter(),
+            child: SizedBox.expand(),
           ),
         ),
       ),
