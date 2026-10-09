@@ -271,15 +271,23 @@ void main() {
         isTrue);
     expect(hasAssetImage(PremiumDashboardAssets.missingScalesCardBackground),
         isTrue);
-    expect(hasAssetImage(PremiumDashboardAssets.statusSummaryBarBackground),
-        isTrue);
-    expect(hasAssetImage(PremiumDashboardAssets.documentCoverageCardBackground),
-        isTrue);
-    expect(
-        hasAssetImage(PremiumDashboardAssets.urgentAlertCenterCardBackground),
-        isTrue);
-    expect(hasAssetImage(PremiumDashboardAssets.socioDemographicCardBackground),
-        isTrue);
+
+    // Le card interne usano la decorazione dipinta, non piu' un PNG.
+    bool hasDecor(List<DashboardDecorBlob> preset) {
+      return find
+          .byWidgetPredicate((widget) =>
+              widget is CustomPaint &&
+              widget.painter is DashboardDecorPainter &&
+              (widget.painter as DashboardDecorPainter).blobs == preset)
+          .evaluate()
+          .isNotEmpty;
+    }
+
+    expect(hasDecor(DashboardDecor.summaryBar), isTrue);
+    expect(hasDecor(DashboardDecor.coverage), isTrue);
+    expect(hasDecor(DashboardDecor.alerts), isTrue);
+    expect(hasDecor(DashboardDecor.socioDemographic), isTrue);
+    expect(hasDecor(DashboardDecor.distribution), isTrue);
     expectNoLayoutErrors(tester);
   });
 
@@ -337,6 +345,36 @@ void main() {
     expect(distribution.top, closeTo(demographics.top, 0.5));
 
     expect(coverage.width, greaterThan(alerts.width));
+    expectNoLayoutErrors(tester);
+  });
+
+  testWidgets('la decorazione dipinta segue la dimensione della card',
+      (tester) async {
+    Size decorSize(WidgetTester tester) => tester.getSize(
+          find
+              .byWidgetPredicate((widget) =>
+                  widget is CustomPaint &&
+                  widget.painter is DashboardDecorPainter &&
+                  (widget.painter as DashboardDecorPainter).blobs ==
+                      DashboardDecor.coverage)
+              .first,
+        );
+
+    await pumpDashboard(tester, size: const Size(1440, 1000));
+    final wide = decorSize(tester);
+    final wideCard = tester.getSize(find
+        .ancestor(
+          of: find.text('Copertura Documentale'),
+          matching: find.byType(DashboardSurfaceCard),
+        )
+        .first);
+
+    await pumpDashboard(tester, size: const Size(760, 1400));
+    final narrow = decorSize(tester);
+
+    expect(wide.width, greaterThan(narrow.width));
+    // La decorazione copre la card intera, bordo escluso.
+    expect(wide.width, closeTo(wideCard.width - 2, 1.5));
     expectNoLayoutErrors(tester);
   });
 

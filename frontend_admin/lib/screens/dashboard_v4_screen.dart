@@ -594,7 +594,7 @@ class _CoverageCard extends StatelessWidget {
     this.contentWidth,
   });
 
-  Widget _body(double width) {
+  Widget _body(double width, {bool fill = false}) {
     final valid = _asInt(coverage['coperti_count']);
     final missing = _asInt(coverage['scaduti_count']);
     final percent =
@@ -603,7 +603,7 @@ class _CoverageCard extends StatelessWidget {
     final missingPercent =
         total == 0 ? 0.0 : (missing / total * 100).toDouble();
     final compact = width < 560;
-    final chartSize = (width * 0.34).clamp(170.0, 210.0).toDouble();
+    final chartSize = (width * 0.38).clamp(180.0, 240.0).toDouble();
     final chart = _chart(
       compact: compact,
       chartSize: chartSize,
@@ -612,30 +612,40 @@ class _CoverageCard extends StatelessWidget {
       missing: missing,
       total: total,
     );
+    final validMetric = _CoverageMetric(
+      label: 'Valide',
+      value: valid,
+      percent: percent,
+      color: DashboardTokens.success,
+      icon: Icons.verified_rounded,
+    );
+    final missingMetric = _CoverageMetric(
+      label: 'Mancanti',
+      value: missing,
+      percent: missingPercent,
+      color: DashboardTokens.danger,
+      icon: Icons.error_outline_rounded,
+    );
     final details = Column(
-      children: [
-        _CoverageMetric(
-          label: 'Valide',
-          value: valid,
-          percent: percent,
-          color: DashboardTokens.success,
-          icon: Icons.verified_rounded,
-        ),
-        const SizedBox(height: 12),
-        _CoverageMetric(
-          label: 'Mancanti',
-          value: missing,
-          percent: missingPercent,
-          color: DashboardTokens.danger,
-          icon: Icons.error_outline_rounded,
-        ),
-      ],
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: fill
+          ? [
+              Expanded(child: validMetric),
+              const SizedBox(height: 12),
+              Expanded(child: missingMetric),
+            ]
+          : [
+              validMetric,
+              const SizedBox(height: 12),
+              missingMetric,
+            ],
     );
     if (compact) {
       return Column(children: [chart, const SizedBox(height: 14), details]);
     }
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment:
+          fill ? CrossAxisAlignment.stretch : CrossAxisAlignment.center,
       children: [
         Expanded(child: Center(child: chart)),
         const SizedBox(width: 18),
@@ -724,7 +734,7 @@ class _CoverageCard extends StatelessWidget {
     final percent =
         _asDouble(coverage['coperti_percentuale']).clamp(0.0, 100.0).toDouble();
     final body = contentWidth != null
-        ? _body(contentWidth!)
+        ? _body(contentWidth!, fill: fillHeight)
         : LayoutBuilder(
             builder: (context, constraints) => _body(constraints.maxWidth),
           );
@@ -740,7 +750,7 @@ class _CoverageCard extends StatelessWidget {
             subtitle: 'Rapporto tra scale valide e mancanti',
           ),
           const SizedBox(height: 18),
-          if (fillHeight) Expanded(child: Center(child: body)) else body,
+          if (fillHeight) Expanded(child: body) else body,
         ],
       ),
     );
@@ -943,27 +953,27 @@ class _AlertRow extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 68),
+          constraints: const BoxConstraints(minHeight: 54),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
+            padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 2),
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 30,
+                  height: 30,
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(11),
+                    borderRadius: BorderRadius.circular(9),
                   ),
                   child: Icon(
                     overdue
                         ? Icons.priority_high_rounded
                         : Icons.schedule_rounded,
                     color: color,
-                    size: 20,
+                    size: 17,
                   ),
                 ),
-                const SizedBox(width: 11),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1036,6 +1046,7 @@ class _DistributionCard extends StatelessWidget {
           _asDouble(b['percentuale']).compareTo(_asDouble(a['percentuale'])));
 
     return DashboardSurfaceCard(
+      decor: DashboardDecor.distribution,
       semanticLabel: 'Distribuzione delle scale',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

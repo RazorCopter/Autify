@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/premium_dashboard_assets.dart';
@@ -104,12 +105,165 @@ class DashboardAuroraBackground extends StatelessWidget {
   }
 }
 
+/// Macchia luminosa morbida, definita in coordinate frazionarie e dipinta a
+/// runtime: a differenza di un PNG ritagliato a dimensione fissa si adatta a
+/// qualunque larghezza e altezza della card senza ritagli ne' deformazioni.
+class DashboardDecorBlob {
+  /// Posizione del centro, espressa come allineamento sulla card.
+  final Alignment center;
+
+  /// Raggio come frazione del lato maggiore della card.
+  final double radius;
+
+  final Color color;
+
+  /// Intensita' al centro della macchia; sfuma a zero sul bordo.
+  final double opacity;
+
+  const DashboardDecorBlob({
+    required this.center,
+    required this.radius,
+    required this.color,
+    this.opacity = 0.16,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      other is DashboardDecorBlob &&
+      other.center == center &&
+      other.radius == radius &&
+      other.color == color &&
+      other.opacity == opacity;
+
+  @override
+  int get hashCode => Object.hash(center, radius, color, opacity);
+}
+
+/// Dipinge l'insieme di macchie che fa da sfondo decorativo a una card.
+class DashboardDecorPainter extends CustomPainter {
+  final List<DashboardDecorBlob> blobs;
+
+  const DashboardDecorPainter(this.blobs);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final side = size.longestSide;
+    for (final blob in blobs) {
+      final radius = blob.radius * side;
+      if (radius <= 0) continue;
+      final rect = Rect.fromCircle(
+        center: blob.center.alongSize(size),
+        radius: radius,
+      );
+      canvas.drawRect(
+        rect,
+        Paint()
+          ..shader = RadialGradient(
+            colors: [
+              blob.color.withValues(alpha: blob.opacity),
+              blob.color.withValues(alpha: 0),
+            ],
+          ).createShader(rect),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(DashboardDecorPainter oldDelegate) =>
+      !listEquals(oldDelegate.blobs, blobs);
+}
+
+/// Palette decorative delle card della Dashboard 4.0. Hanno sostituito i PNG
+/// di sfondo ritagliati, che su card di proporzioni variabili venivano
+/// ritagliati in modo imprevedibile.
+abstract final class DashboardDecor {
+  static const List<DashboardDecorBlob> summaryBar = [
+    DashboardDecorBlob(
+      center: Alignment(-0.85, -0.6),
+      radius: 0.5,
+      color: DashboardTokens.primary,
+      opacity: 0.09,
+    ),
+    DashboardDecorBlob(
+      center: Alignment(0.9, 1.1),
+      radius: 0.55,
+      color: DashboardTokens.purple,
+      opacity: 0.08,
+    ),
+  ];
+
+  static const List<DashboardDecorBlob> coverage = [
+    DashboardDecorBlob(
+      center: Alignment(-0.75, 0.75),
+      radius: 0.46,
+      color: DashboardTokens.primary,
+      opacity: 0.14,
+    ),
+    DashboardDecorBlob(
+      center: Alignment(0.95, -0.85),
+      radius: 0.38,
+      color: DashboardTokens.purple,
+      opacity: 0.12,
+    ),
+  ];
+
+  static const List<DashboardDecorBlob> alerts = [
+    DashboardDecorBlob(
+      center: Alignment(1.0, -0.9),
+      radius: 0.44,
+      color: DashboardTokens.danger,
+      opacity: 0.11,
+    ),
+    DashboardDecorBlob(
+      center: Alignment(-0.9, 1.0),
+      radius: 0.4,
+      color: DashboardTokens.warning,
+      opacity: 0.08,
+    ),
+  ];
+
+  static const List<DashboardDecorBlob> socioDemographic = [
+    DashboardDecorBlob(
+      center: Alignment(1.05, 0.6),
+      radius: 0.48,
+      color: DashboardTokens.primary,
+      opacity: 0.13,
+    ),
+    DashboardDecorBlob(
+      center: Alignment(-0.8, -0.9),
+      radius: 0.36,
+      color: DashboardTokens.purple,
+      opacity: 0.1,
+    ),
+  ];
+
+  static const List<DashboardDecorBlob> distribution = [
+    DashboardDecorBlob(
+      center: Alignment(-1.0, -0.85),
+      radius: 0.42,
+      color: DashboardTokens.indigo,
+      opacity: 0.1,
+    ),
+    DashboardDecorBlob(
+      center: Alignment(1.0, 1.0),
+      radius: 0.45,
+      color: DashboardTokens.primary,
+      opacity: 0.09,
+    ),
+  ];
+}
+
 class DashboardSurfaceCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final Color? borderColor;
   final String? semanticLabel;
   final String? assetBackground;
+
+  /// Decorazione dipinta alternativa all'asset PNG: responsive per
+  /// costruzione, si ridisegna a ogni cambio di dimensione della card.
+  final List<DashboardDecorBlob>? decor;
   final BoxFit assetFit;
   final AlignmentGeometry assetAlignment;
   final double borderRadius;
@@ -125,6 +279,7 @@ class DashboardSurfaceCard extends StatelessWidget {
     this.borderColor,
     this.semanticLabel,
     this.assetBackground,
+    this.decor,
     this.assetFit = BoxFit.cover,
     this.assetAlignment = Alignment.center,
     this.borderRadius = DashboardTokens.radius,
@@ -144,6 +299,21 @@ class DashboardSurfaceCard extends StatelessWidget {
       padding: padding,
       child: child,
     );
+
+    if (decor != null && decor!.isNotEmpty) {
+      cardBody = Stack(
+        fit: StackFit.passthrough,
+        children: [
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(borderRadius - 1),
+              child: CustomPaint(painter: DashboardDecorPainter(decor!)),
+            ),
+          ),
+          cardBody,
+        ],
+      );
+    }
 
     if (assetBackground != null && assetBackground!.isNotEmpty) {
       cardBody = Stack(
@@ -687,27 +857,18 @@ class PremiumSummaryBar extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final String? semanticLabel;
-  final double opacity;
-  final BoxFit fit;
-  final AlignmentGeometry alignment;
 
   const PremiumSummaryBar({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     this.semanticLabel,
-    this.opacity = PremiumDashboardAssets.defaultOpacity,
-    this.fit = BoxFit.cover,
-    this.alignment = Alignment.center,
   });
 
   @override
   Widget build(BuildContext context) {
     return DashboardSurfaceCard(
-      assetBackground: PremiumDashboardAssets.statusSummaryBarBackground,
-      assetOpacity: opacity,
-      assetFit: fit,
-      assetAlignment: alignment,
+      decor: DashboardDecor.summaryBar,
       padding: padding,
       semanticLabel: semanticLabel,
       child: child,
@@ -721,27 +882,18 @@ class PremiumCoverageCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final String? semanticLabel;
-  final double opacity;
-  final BoxFit fit;
-  final AlignmentGeometry alignment;
 
   const PremiumCoverageCard({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(20),
     this.semanticLabel,
-    this.opacity = PremiumDashboardAssets.defaultOpacity,
-    this.fit = BoxFit.fitWidth,
-    this.alignment = Alignment.bottomLeft,
   });
 
   @override
   Widget build(BuildContext context) {
     return DashboardSurfaceCard(
-      assetBackground: PremiumDashboardAssets.documentCoverageCardBackground,
-      assetOpacity: opacity,
-      assetFit: fit,
-      assetAlignment: alignment,
+      decor: DashboardDecor.coverage,
       padding: padding,
       semanticLabel: semanticLabel,
       child: child,
@@ -755,27 +907,18 @@ class PremiumAlertCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final String? semanticLabel;
-  final double opacity;
-  final BoxFit fit;
-  final AlignmentGeometry alignment;
 
   const PremiumAlertCard({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(20),
     this.semanticLabel,
-    this.opacity = PremiumDashboardAssets.defaultOpacity,
-    this.fit = BoxFit.fitWidth,
-    this.alignment = Alignment.topCenter,
   });
 
   @override
   Widget build(BuildContext context) {
     return DashboardSurfaceCard(
-      assetBackground: PremiumDashboardAssets.urgentAlertCenterCardBackground,
-      assetOpacity: opacity,
-      assetFit: fit,
-      assetAlignment: alignment,
+      decor: DashboardDecor.alerts,
       padding: padding,
       semanticLabel: semanticLabel,
       child: child,
@@ -789,27 +932,18 @@ class PremiumSocioDemoCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final String? semanticLabel;
-  final double opacity;
-  final BoxFit fit;
-  final AlignmentGeometry alignment;
 
   const PremiumSocioDemoCard({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(20),
     this.semanticLabel,
-    this.opacity = PremiumDashboardAssets.defaultOpacity,
-    this.fit = BoxFit.fitWidth,
-    this.alignment = Alignment.bottomRight,
   });
 
   @override
   Widget build(BuildContext context) {
     return DashboardSurfaceCard(
-      assetBackground: PremiumDashboardAssets.socioDemographicCardBackground,
-      assetOpacity: opacity,
-      assetFit: fit,
-      assetAlignment: alignment,
+      decor: DashboardDecor.socioDemographic,
       padding: padding,
       semanticLabel: semanticLabel,
       child: child,
