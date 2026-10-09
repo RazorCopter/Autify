@@ -34,16 +34,47 @@ abstract final class DashboardTokens {
 
   static const List<BoxShadow> shadow = [
     BoxShadow(
-      color: Color(0x0A14213D),
-      blurRadius: 18,
-      offset: Offset(0, 6),
+      color: Color(0x1214213D),
+      blurRadius: 22,
+      offset: Offset(0, 8),
     ),
   ];
 }
 
-/// Sfondo del canvas operativo: una velatura verticale fredda con una sola
-/// ombreggiatura d'angolo. Nessuna illustrazione: il tono deve restare
-/// professionale e non entrare in competizione con i dati.
+/// Reticolo tecnico molto tenue: da' materia al canvas senza introdurre
+/// illustrazioni. E' l'unica texture dello sfondo.
+class DashboardCanvasGridPainter extends CustomPainter {
+  /// Passo del reticolo in pixel logici.
+  final double pitch;
+  final Color lineColor;
+
+  const DashboardCanvasGridPainter({
+    this.pitch = 38,
+    this.lineColor = DashboardTokens.slate,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty || pitch <= 0) return;
+    final paint = Paint()
+      ..color = lineColor.withValues(alpha: 0.055)
+      ..strokeWidth = 1;
+    for (var x = pitch; x < size.width; x += pitch) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (var y = pitch; y < size.height; y += pitch) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(DashboardCanvasGridPainter oldDelegate) =>
+      oldDelegate.pitch != pitch || oldDelegate.lineColor != lineColor;
+}
+
+/// Sfondo del canvas operativo: velatura verticale fredda, ombreggiature
+/// d'angolo e reticolo tecnico. Nessuna illustrazione, ma tono sufficiente a
+/// staccare le superfici bianche delle card.
 class DashboardAuroraBackground extends StatelessWidget {
   const DashboardAuroraBackground({super.key});
 
@@ -53,20 +84,32 @@ class DashboardAuroraBackground extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFFBFCFE), Color(0xFFEEF1F6)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFF2F5FA), Color(0xFFE4EAF3)],
           ),
         ),
         child: DecoratedBox(
           decoration: BoxDecoration(
             gradient: RadialGradient(
-              center: Alignment(0.9, -0.95),
-              radius: 1.1,
-              colors: [Color(0x0F42536E), Color(0x0042536E)],
+              center: Alignment(0.95, -0.9),
+              radius: 1.2,
+              colors: [Color(0x2642536E), Color(0x0042536E)],
             ),
           ),
-          child: SizedBox.expand(),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment(-0.9, 1.0),
+                radius: 1.0,
+                colors: [Color(0x1C356DFF), Color(0x00356DFF)],
+              ),
+            ),
+            child: CustomPaint(
+              painter: DashboardCanvasGridPainter(),
+              child: SizedBox.expand(),
+            ),
+          ),
         ),
       ),
     );
@@ -148,76 +191,76 @@ class DashboardDecorPainter extends CustomPainter {
 abstract final class DashboardDecor {
   static const List<DashboardDecorBlob> summaryBar = [
     DashboardDecorBlob(
-      center: Alignment(-0.85, -0.6),
-      radius: 0.5,
-      color: DashboardTokens.slate,
-      opacity: 0.045,
+      center: Alignment(-0.95, -0.7),
+      radius: 0.6,
+      color: DashboardTokens.primary,
+      opacity: 0.1,
     ),
     DashboardDecorBlob(
-      center: Alignment(0.9, 1.1),
-      radius: 0.55,
+      center: Alignment(0.95, 1.2),
+      radius: 0.6,
       color: DashboardTokens.slate,
-      opacity: 0.035,
+      opacity: 0.09,
     ),
   ];
 
   static const List<DashboardDecorBlob> coverage = [
     DashboardDecorBlob(
-      center: Alignment(-0.75, 0.8),
-      radius: 0.5,
-      color: DashboardTokens.slate,
-      opacity: 0.055,
+      center: Alignment(-0.85, 0.95),
+      radius: 0.6,
+      color: DashboardTokens.primary,
+      opacity: 0.13,
     ),
     DashboardDecorBlob(
-      center: Alignment(1.0, -0.9),
-      radius: 0.4,
-      color: DashboardTokens.primary,
-      opacity: 0.035,
+      center: Alignment(1.05, -0.95),
+      radius: 0.5,
+      color: DashboardTokens.slate,
+      opacity: 0.11,
     ),
   ];
 
   static const List<DashboardDecorBlob> alerts = [
     DashboardDecorBlob(
-      center: Alignment(1.0, -0.95),
-      radius: 0.45,
+      center: Alignment(1.05, -1.0),
+      radius: 0.55,
       color: DashboardTokens.danger,
-      opacity: 0.035,
+      opacity: 0.1,
     ),
     DashboardDecorBlob(
-      center: Alignment(-0.95, 1.0),
-      radius: 0.42,
+      center: Alignment(-1.0, 1.05),
+      radius: 0.5,
       color: DashboardTokens.slate,
-      opacity: 0.045,
+      opacity: 0.11,
     ),
   ];
 
   static const List<DashboardDecorBlob> socioDemographic = [
     DashboardDecorBlob(
-      center: Alignment(1.05, 0.7),
-      radius: 0.5,
-      color: DashboardTokens.slate,
-      opacity: 0.05,
+      center: Alignment(1.1, 0.85),
+      radius: 0.6,
+      color: DashboardTokens.primary,
+      opacity: 0.12,
     ),
     DashboardDecorBlob(
-      center: Alignment(-0.9, -0.95),
-      radius: 0.38,
-      color: DashboardTokens.primary,
-      opacity: 0.03,
+      center: Alignment(-0.95, -1.0),
+      radius: 0.48,
+      color: DashboardTokens.slate,
+      opacity: 0.1,
     ),
   ];
 
   static const List<DashboardDecorBlob> distribution = [
     DashboardDecorBlob(
-      center: Alignment(-1.0, -0.9),
-      radius: 0.45,
+      center: Alignment(-1.05, -0.95),
+      radius: 0.55,
       color: DashboardTokens.slate,
-      opacity: 0.05,
+      opacity: 0.11,
     ),
     DashboardDecorBlob(
-      center: Alignment(1.0, 1.0),
-      radius: 0.45,
+      center: Alignment(1.05, 1.05),
+      radius: 0.55,
       color: DashboardTokens.primary,
-      opacity: 0.03,
+      opacity: 0.11,
     ),
   ];
 }
@@ -317,7 +360,16 @@ class DashboardSurfaceCard extends StatelessWidget {
 
     final content = Container(
       decoration: BoxDecoration(
-        color: effectiveBackground,
+        color: backgroundColor == null ? null : effectiveBackground,
+        // Senza un colore esplicito la superficie usa una sfumatura appena
+        // percepibile: evita l'effetto "bianco piatto" delle card.
+        gradient: backgroundColor == null
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFFFFFFF), Color(0xFFF6F8FC)],
+              )
+            : null,
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(color: effectiveBorder),
         boxShadow: effectiveShadow,
@@ -520,7 +572,7 @@ class _DashboardKpiCardState extends State<DashboardKpiCard> {
                               center: const Alignment(1.0, 0.9),
                               radius: 0.7,
                               color: data.accent,
-                              opacity: _highlighted ? 0.09 : 0.055,
+                              opacity: _highlighted ? 0.18 : 0.13,
                             ),
                           ]),
                         ),

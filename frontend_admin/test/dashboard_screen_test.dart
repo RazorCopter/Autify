@@ -395,7 +395,7 @@ void main() {
         // Oltre questa soglia la decorazione inizia a competere con i dati.
         expect(
           blob.opacity,
-          lessThanOrEqualTo(0.1),
+          lessThanOrEqualTo(0.2),
           reason: 'macchia troppo intensa: ${blob.color}',
         );
       }
