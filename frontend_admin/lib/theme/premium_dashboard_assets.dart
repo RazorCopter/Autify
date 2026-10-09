@@ -4,6 +4,12 @@ abstract final class PremiumDashboardAssets {
   /// Trasparenza predefinita del 50% per gli sfondi grafici glassmorphic.
   static const double defaultOpacity = 0.50;
 
+  /// Sfondo astratto del canvas operativo: composizione di lastre
+  /// traslucide con grana fine, generata per la Dashboard 4.0. Sostituisce
+  /// l'illustrazione a onde di [mainCanvasBackground].
+  static const String canvasAbstractBackground =
+      'assets/images/10_canvas_abstract.jpg';
+
   /// Sfondo della barra laterale di navigazione principale.
   static const String sidebarBackground =
       'assets/images/01_sidebar_background.png';

@@ -41,70 +41,13 @@ abstract final class DashboardTokens {
   ];
 }
 
-/// Vignettatura morbida sui bordi del canvas: concentra l'attenzione al
-/// centro e da' profondita' fotografica senza introdurre alcun motivo.
-class DashboardVignettePainter extends CustomPainter {
-  final Color color;
-  final double opacity;
-
-  const DashboardVignettePainter({
-    this.color = DashboardTokens.slate,
-    this.opacity = 0.1,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (size.isEmpty) return;
-    final rect = Offset.zero & size;
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = RadialGradient(
-          center: Alignment.center,
-          radius: 0.95,
-          colors: [
-            color.withValues(alpha: 0),
-            color.withValues(alpha: 0),
-            color.withValues(alpha: opacity),
-          ],
-          stops: const [0, 0.62, 1],
-        ).createShader(rect),
-    );
-  }
-
-  @override
-  bool shouldRepaint(DashboardVignettePainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.opacity != opacity;
-}
-
-/// Sfondo del canvas operativo: base neutra fredda, mesh gradient astratto a
-/// grande scala e vignettatura. Nessun motivo ripetuto e nessuna
-/// illustrazione: le velature sono ampie e a basso contrasto, cosi' lo sfondo
-/// da' profondita' senza entrare in competizione con i dati.
+/// Sfondo del canvas operativo: l'immagine astratta
+/// [PremiumDashboardAssets.canvasAbstractBackground], una composizione di
+/// lastre traslucide con grana fine. Viene adattata con [BoxFit.cover], e
+/// non avendo alcun soggetto riconoscibile sopporta qualunque ritaglio; la
+/// base colorata sotto copre l'eventuale mancata decodifica.
 class DashboardAuroraBackground extends StatelessWidget {
   const DashboardAuroraBackground({super.key});
-
-  /// Velature del mesh: poche, molto ampie e fuori centro.
-  static const List<DashboardDecorBlob> mesh = [
-    DashboardDecorBlob(
-      center: Alignment(-0.85, -0.95),
-      radius: 0.85,
-      color: DashboardTokens.primary,
-      opacity: 0.13,
-    ),
-    DashboardDecorBlob(
-      center: Alignment(1.0, -0.55),
-      radius: 0.7,
-      color: DashboardTokens.indigo,
-      opacity: 0.1,
-    ),
-    DashboardDecorBlob(
-      center: Alignment(0.35, 1.05),
-      radius: 0.8,
-      color: DashboardTokens.slate,
-      opacity: 0.12,
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -114,19 +57,28 @@ class DashboardAuroraBackground extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFF4F6FA), Color(0xFFE8EDF4)],
+            colors: [Color(0xFFF4F7FC), Color(0xFFE9EEF7)],
           ),
         ),
-        child: CustomPaint(
-          painter: DashboardDecorPainter(mesh),
-          child: CustomPaint(
-            painter: DashboardVignettePainter(),
-            child: SizedBox.expand(),
+        child: SizedBox.expand(
+          child: Image(
+            image: AssetImage(PremiumDashboardAssets.canvasAbstractBackground),
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+            filterQuality: FilterQuality.medium,
+            errorBuilder: _onAssetError,
           ),
         ),
       ),
     );
   }
+
+  static Widget _onAssetError(
+    BuildContext context,
+    Object error,
+    StackTrace? stackTrace,
+  ) =>
+      const SizedBox.shrink();
 }
 
 /// Macchia luminosa morbida, definita in coordinate frazionarie e dipinta a

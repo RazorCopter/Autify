@@ -273,7 +273,13 @@ void main() {
       );
     }
 
-    // Al loro posto c'e' la decorazione dipinta.
+    // Il canvas monta la nuova immagine astratta.
+    expect(
+      hasAssetImage(PremiumDashboardAssets.canvasAbstractBackground),
+      isTrue,
+    );
+
+    // Le card usano la decorazione dipinta.
     bool hasDecor(List<DashboardDecorBlob> preset) {
       return find
           .byWidgetPredicate((widget) =>
