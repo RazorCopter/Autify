@@ -332,24 +332,41 @@ class _DashboardContent extends StatelessWidget {
         LayoutBuilder(
           builder: (context, constraints) {
             final desktop = constraints.maxWidth >= 1200;
-            final tablet = constraints.maxWidth >= 600;
-            final trendCard = _CoverageCard(
+            final trendCard = _CoverageCard(coverage: coverage);
+            // Larghezza interna della colonna Copertura (3/5 della riga,
+            // meno padding e bordo della card): serve a evitare un
+            // LayoutBuilder annidato dentro IntrinsicHeight.
+            final trendContentWidth =
+                ((constraints.maxWidth - DashboardTokens.gap) * 3 / 5 - 42)
+                    .clamp(200.0, 1200.0)
+                    .toDouble();
+            final desktopTrendCard = _CoverageCard(
               coverage: coverage,
+              fillHeight: true,
+              contentWidth: trendContentWidth,
             );
             final alertCard = _AlertCenterCard(
               alerts: _listValue(stats['ultimi_alert']),
               alertStats: alerts,
               onNavigate: onNavigate,
             );
+            final desktopAlertCard = _AlertCenterCard(
+              alerts: _listValue(stats['ultimi_alert']),
+              alertStats: alerts,
+              onNavigate: onNavigate,
+              fillHeight: true,
+            );
 
             if (desktop) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(flex: 2, child: trendCard),
-                  const SizedBox(width: DashboardTokens.gap),
-                  Expanded(child: alertCard),
-                ],
+              return IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(flex: 3, child: desktopTrendCard),
+                    const SizedBox(width: DashboardTokens.gap),
+                    Expanded(flex: 2, child: desktopAlertCard),
+                  ],
+                ),
               );
             }
 
@@ -358,7 +375,6 @@ class _DashboardContent extends StatelessWidget {
                 trendCard,
                 const SizedBox(height: DashboardTokens.gap),
                 alertCard,
-                if (tablet) const SizedBox.shrink(),
               ],
             );
           },
@@ -384,13 +400,15 @@ class _DashboardContent extends StatelessWidget {
                 ],
               );
             }
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: distribution),
-                const SizedBox(width: DashboardTokens.gap),
-                Expanded(child: demographics),
-              ],
+            return IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: distribution),
+                  const SizedBox(width: DashboardTokens.gap),
+                  Expanded(child: demographics),
+                ],
+              ),
             );
           },
         ),
@@ -561,10 +579,22 @@ class _ComplianceItem extends StatelessWidget {
 class _CoverageCard extends StatelessWidget {
   final Map<String, dynamic> coverage;
 
-  const _CoverageCard({required this.coverage});
+  /// Quando la card condivide l'altezza della riga, il grafico viene centrato
+  /// nello spazio disponibile invece di restare incollato in alto.
+  final bool fillHeight;
 
-  @override
-  Widget build(BuildContext context) {
+  /// Larghezza utile interna della card, nota al genitore nel layout
+  /// desktop. Quando e' valorizzata evita un [LayoutBuilder] annidato, che
+  /// [IntrinsicHeight] non sarebbe in grado di misurare.
+  final double? contentWidth;
+
+  const _CoverageCard({
+    required this.coverage,
+    this.fillHeight = false,
+    this.contentWidth,
+  });
+
+  Widget _body(double width) {
     final valid = _asInt(coverage['coperti_count']);
     final missing = _asInt(coverage['scaduti_count']);
     final percent =
@@ -572,6 +602,132 @@ class _CoverageCard extends StatelessWidget {
     final total = valid + missing;
     final missingPercent =
         total == 0 ? 0.0 : (missing / total * 100).toDouble();
+    final compact = width < 560;
+    final chartSize = (width * 0.34).clamp(170.0, 210.0).toDouble();
+    final chart = _chart(
+      compact: compact,
+      chartSize: chartSize,
+      percent: percent,
+      valid: valid,
+      missing: missing,
+      total: total,
+    );
+    final details = Column(
+      children: [
+        _CoverageMetric(
+          label: 'Valide',
+          value: valid,
+          percent: percent,
+          color: DashboardTokens.success,
+          icon: Icons.verified_rounded,
+        ),
+        const SizedBox(height: 12),
+        _CoverageMetric(
+          label: 'Mancanti',
+          value: missing,
+          percent: missingPercent,
+          color: DashboardTokens.danger,
+          icon: Icons.error_outline_rounded,
+        ),
+      ],
+    );
+    if (compact) {
+      return Column(children: [chart, const SizedBox(height: 14), details]);
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(child: Center(child: chart)),
+        const SizedBox(width: 18),
+        Expanded(child: details),
+      ],
+    );
+  }
+
+  Widget _chart({
+    required bool compact,
+    required double chartSize,
+    required double percent,
+    required int valid,
+    required int missing,
+    required int total,
+  }) {
+    final size = compact ? 190.0 : chartSize;
+    final sliceRadius = compact ? 22.0 : chartSize * 0.115;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          PieChart(
+            PieChartData(
+              startDegreeOffset: -90,
+              centerSpaceRadius: compact ? 58 : chartSize * 0.31,
+              sectionsSpace: 3,
+              sections: total == 0
+                  ? [
+                      PieChartSectionData(
+                        value: 1,
+                        color: DashboardTokens.border,
+                        radius: sliceRadius,
+                        showTitle: false,
+                      ),
+                    ]
+                  : [
+                      PieChartSectionData(
+                        value: valid.toDouble(),
+                        color: DashboardTokens.success,
+                        radius: sliceRadius,
+                        showTitle: false,
+                      ),
+                      PieChartSectionData(
+                        value: missing.toDouble(),
+                        color: DashboardTokens.danger,
+                        radius: sliceRadius,
+                        showTitle: false,
+                      ),
+                    ],
+            ),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${_formatNumber(percent)}%',
+                style: const TextStyle(
+                  color: DashboardTokens.deepNavy,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const Text(
+                'COPERTURA',
+                style: TextStyle(
+                  color: DashboardTokens.textMuted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.7,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final valid = _asInt(coverage['coperti_count']);
+    final missing = _asInt(coverage['scaduti_count']);
+    final percent =
+        _asDouble(coverage['coperti_percentuale']).clamp(0.0, 100.0).toDouble();
+    final body = contentWidth != null
+        ? _body(contentWidth!)
+        : LayoutBuilder(
+            builder: (context, constraints) => _body(constraints.maxWidth),
+          );
 
     return PremiumCoverageCard(
       semanticLabel:
@@ -584,102 +740,7 @@ class _CoverageCard extends StatelessWidget {
             subtitle: 'Rapporto tra scale valide e mancanti',
           ),
           const SizedBox(height: 18),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 560;
-              final chart = SizedBox(
-                width: compact ? 190 : 230,
-                height: compact ? 190 : 230,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    PieChart(
-                      PieChartData(
-                        startDegreeOffset: -90,
-                        centerSpaceRadius: compact ? 58 : 72,
-                        sectionsSpace: 3,
-                        sections: total == 0
-                            ? [
-                                PieChartSectionData(
-                                  value: 1,
-                                  color: DashboardTokens.border,
-                                  radius: compact ? 22 : 27,
-                                  showTitle: false,
-                                ),
-                              ]
-                            : [
-                                PieChartSectionData(
-                                  value: valid.toDouble(),
-                                  color: DashboardTokens.success,
-                                  radius: compact ? 22 : 27,
-                                  showTitle: false,
-                                ),
-                                PieChartSectionData(
-                                  value: missing.toDouble(),
-                                  color: DashboardTokens.danger,
-                                  radius: compact ? 22 : 27,
-                                  showTitle: false,
-                                ),
-                              ],
-                      ),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '${_formatNumber(percent)}%',
-                          style: const TextStyle(
-                            color: DashboardTokens.deepNavy,
-                            fontSize: 28,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const Text(
-                          'COPERTURA',
-                          style: TextStyle(
-                            color: DashboardTokens.textMuted,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.7,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-              final details = Column(
-                children: [
-                  _CoverageMetric(
-                    label: 'Valide',
-                    value: valid,
-                    percent: percent,
-                    color: DashboardTokens.success,
-                    icon: Icons.verified_rounded,
-                  ),
-                  const SizedBox(height: 12),
-                  _CoverageMetric(
-                    label: 'Mancanti',
-                    value: missing,
-                    percent: missingPercent,
-                    color: DashboardTokens.danger,
-                    icon: Icons.error_outline_rounded,
-                  ),
-                ],
-              );
-              if (compact) {
-                return Column(
-                    children: [chart, const SizedBox(height: 14), details]);
-              }
-              return Row(
-                children: [
-                  Expanded(child: Center(child: chart)),
-                  const SizedBox(width: 18),
-                  Expanded(child: details),
-                ],
-              );
-            },
-          ),
+          if (fillHeight) Expanded(child: Center(child: body)) else body,
         ],
       ),
     );
@@ -746,10 +807,15 @@ class _AlertCenterCard extends StatelessWidget {
   final Map<String, dynamic> alertStats;
   final DashboardNavigationCallback onNavigate;
 
+  /// Quando la card condivide l'altezza della riga, il pulsante di azione
+  /// resta ancorato in basso invece di lasciare un vuoto sotto di se.
+  final bool fillHeight;
+
   const _AlertCenterCard({
     required this.alerts,
     required this.alertStats,
     required this.onNavigate,
+    this.fillHeight = false,
   });
 
   int _priority(dynamic raw) {
@@ -799,29 +865,25 @@ class _AlertCenterCard extends StatelessWidget {
               message: 'Le utenze risultano coperte e monitorate.',
             )
           else
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 360),
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: visible.length,
-                separatorBuilder: (_, __) =>
-                    const Divider(height: 1, color: DashboardTokens.border),
-                itemBuilder: (context, index) => _AlertRow(
-                  alert: _mapValue(visible[index]),
-                  onTap: () {
-                    final item = _mapValue(visible[index]);
-                    final surname = item['paziente_cognome']?.toString().trim();
-                    onNavigate(
-                      2,
-                      searchFilter:
-                          surname == null || surname.isEmpty ? null : surname,
-                      semanticFilter:
-                          _semanticFilterForAlert(item['stato']?.toString()),
-                    );
-                  },
-                ),
+            for (var index = 0; index < visible.length; index++) ...[
+              if (index != 0)
+                const Divider(height: 1, color: DashboardTokens.border),
+              _AlertRow(
+                alert: _mapValue(visible[index]),
+                onTap: () {
+                  final item = _mapValue(visible[index]);
+                  final surname = item['paziente_cognome']?.toString().trim();
+                  onNavigate(
+                    2,
+                    searchFilter:
+                        surname == null || surname.isEmpty ? null : surname,
+                    semanticFilter:
+                        _semanticFilterForAlert(item['stato']?.toString()),
+                  );
+                },
               ),
-            ),
+            ],
+          if (fillHeight) const Spacer(),
           if (totalActions > 0) ...[
             const SizedBox(height: 14),
             SizedBox(
@@ -1287,14 +1349,18 @@ class _KpiSkeletonGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 1200 ? 4 : 2;
+        final columns = constraints.maxWidth >= 1100
+            ? 3
+            : constraints.maxWidth >= 600
+                ? 2
+                : 1;
         const gap = DashboardTokens.gap;
         final width = (constraints.maxWidth - gap * (columns - 1)) / columns;
         return Wrap(
           spacing: gap,
           runSpacing: gap,
           children: List.generate(
-            4,
+            3,
             (_) => SizedBox(
               width: width,
               child: const _SkeletonBox(height: 162),

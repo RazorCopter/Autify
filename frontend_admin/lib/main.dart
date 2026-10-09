@@ -740,85 +740,83 @@ class _AdminDashboardState extends State<AdminDashboard> {
       expanded: expanded,
       width: expanded ? 214 : 82,
       child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 10, 6, 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Image.asset(
-                      'assets/images/logo_autify_int.png',
-                      height: 62,
-                      fit: BoxFit.contain,
-                    ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 10, 6, 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Image.asset(
+                    'assets/images/logo_autify_int.png',
+                    height: 62,
+                    fit: BoxFit.contain,
                   ),
-                  if (expanded)
-                    IconButton(
-                      tooltip: 'Compatta barra laterale',
-                      onPressed: () => setState(
-                        () => _dashboardSidebarExpanded = false,
-                      ),
-                      icon: const Icon(Icons.chevron_left_rounded),
-                    ),
-                ],
-              ),
-            ),
-            if (!expanded)
-              IconButton(
-                tooltip: 'Espandi barra laterale',
-                onPressed: () => setState(
-                  () => _dashboardSidebarExpanded = true,
                 ),
-                icon: const Icon(Icons.chevron_right_rounded),
-              ),
-            const SizedBox(height: 6),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                itemCount: _navItems.length,
-                itemBuilder: (context, index) =>
-                    _buildPremiumNavigationItem(index, expanded),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  if (expanded)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF356DFF).withValues(alpha: 0.07),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.support_agent_rounded,
-                              color: Color(0xFF356DFF)),
-                          SizedBox(width: 9),
-                          Expanded(
-                            child: Text('Supporto',
-                                style: TextStyle(fontWeight: FontWeight.w700)),
-                          ),
-                          Icon(Icons.arrow_forward_rounded, size: 16),
-                        ],
-                      ),
-                    ),
-                  if (expanded) const SizedBox(height: 10),
-                  if (expanded) _buildRoleBadge(),
-                  const SizedBox(height: 8),
-                  IconButton(
-                    tooltip: 'Esci',
-                    onPressed: _performLogout,
-                    icon: const Icon(Icons.logout_rounded,
-                        color: AppTheme.errorColor),
+                IconButton(
+                  tooltip: expanded
+                      ? 'Compatta barra laterale'
+                      : 'Espandi barra laterale',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => setState(
+                    () => _dashboardSidebarExpanded = !expanded,
                   ),
-                ],
-              ),
+                  icon: Icon(
+                    expanded
+                        ? Icons.chevron_left_rounded
+                        : Icons.chevron_right_rounded,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 6),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              itemCount: _navItems.length,
+              itemBuilder: (context, index) =>
+                  _buildPremiumNavigationItem(index, expanded),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                if (expanded)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF356DFF).withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.support_agent_rounded,
+                            color: Color(0xFF356DFF)),
+                        SizedBox(width: 9),
+                        Expanded(
+                          child: Text('Supporto',
+                              style: TextStyle(fontWeight: FontWeight.w700)),
+                        ),
+                        Icon(Icons.arrow_forward_rounded, size: 16),
+                      ],
+                    ),
+                  ),
+                if (expanded) const SizedBox(height: 10),
+                if (expanded) _buildRoleBadge(),
+                const SizedBox(height: 8),
+                IconButton(
+                  tooltip: 'Esci',
+                  onPressed: _performLogout,
+                  icon: const Icon(Icons.logout_rounded,
+                      color: AppTheme.errorColor),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

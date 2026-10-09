@@ -252,26 +252,39 @@ void main() {
     await pumpDashboard(tester, size: const Size(1440, 1000));
 
     bool hasAssetImage(String assetName) {
-      return find.byWidgetPredicate((widget) {
-        if (widget is Image && widget.image is AssetImage) {
-          return (widget.image as AssetImage).assetName == assetName;
-        }
-        return false;
-      }).evaluate().isNotEmpty;
+      return find
+          .byWidgetPredicate((widget) {
+            if (widget is Image && widget.image is AssetImage) {
+              return (widget.image as AssetImage).assetName == assetName;
+            }
+            return false;
+          })
+          .evaluate()
+          .isNotEmpty;
     }
 
     expect(hasAssetImage(PremiumDashboardAssets.mainCanvasBackground), isTrue);
-    expect(hasAssetImage(PremiumDashboardAssets.activeUsersCardBackground), isTrue);
-    expect(hasAssetImage(PremiumDashboardAssets.activeEvaluationsCardBackground), isTrue);
-    expect(hasAssetImage(PremiumDashboardAssets.missingScalesCardBackground), isTrue);
-    expect(hasAssetImage(PremiumDashboardAssets.statusSummaryBarBackground), isTrue);
-    expect(hasAssetImage(PremiumDashboardAssets.documentCoverageCardBackground), isTrue);
-    expect(hasAssetImage(PremiumDashboardAssets.urgentAlertCenterCardBackground), isTrue);
-    expect(hasAssetImage(PremiumDashboardAssets.socioDemographicCardBackground), isTrue);
+    expect(hasAssetImage(PremiumDashboardAssets.activeUsersCardBackground),
+        isTrue);
+    expect(
+        hasAssetImage(PremiumDashboardAssets.activeEvaluationsCardBackground),
+        isTrue);
+    expect(hasAssetImage(PremiumDashboardAssets.missingScalesCardBackground),
+        isTrue);
+    expect(hasAssetImage(PremiumDashboardAssets.statusSummaryBarBackground),
+        isTrue);
+    expect(hasAssetImage(PremiumDashboardAssets.documentCoverageCardBackground),
+        isTrue);
+    expect(
+        hasAssetImage(PremiumDashboardAssets.urgentAlertCenterCardBackground),
+        isTrue);
+    expect(hasAssetImage(PremiumDashboardAssets.socioDemographicCardBackground),
+        isTrue);
     expectNoLayoutErrors(tester);
   });
 
-  testWidgets('PremiumSidebar renderizza lo sfondo illustrato 01_sidebar_background',
+  testWidgets(
+      'PremiumSidebar renderizza lo sfondo illustrato 01_sidebar_background',
       (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
@@ -284,17 +297,60 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final hasSidebarAsset = find.byWidgetPredicate((widget) {
-      if (widget is Image && widget.image is AssetImage) {
-        return (widget.image as AssetImage).assetName ==
-            PremiumDashboardAssets.sidebarBackground;
-      }
-      return false;
-    }).evaluate().isNotEmpty;
+    final hasSidebarAsset = find
+        .byWidgetPredicate((widget) {
+          if (widget is Image && widget.image is AssetImage) {
+            return (widget.image as AssetImage).assetName ==
+                PremiumDashboardAssets.sidebarBackground;
+          }
+          return false;
+        })
+        .evaluate()
+        .isNotEmpty;
 
     expect(hasSidebarAsset, isTrue);
     expect(find.text('Sidebar Test'), findsOneWidget);
     expectNoLayoutErrors(tester);
   });
 
+  testWidgets('a 1440px le card affiancate condividono la stessa altezza',
+      (tester) async {
+    await pumpDashboard(tester, size: const Size(1440, 1000));
+
+    Rect cardRect(String title) => tester.getRect(
+          find
+              .ancestor(
+                of: find.text(title),
+                matching: find.byType(DashboardSurfaceCard),
+              )
+              .first,
+        );
+
+    final coverage = cardRect('Copertura Documentale');
+    final alerts = cardRect('Alert Center — Azioni Richieste Urgenti');
+    expect(coverage.height, closeTo(alerts.height, 0.5));
+    expect(coverage.top, closeTo(alerts.top, 0.5));
+
+    final distribution = cardRect('Distribuzione Documentazione');
+    final demographics = cardRect('Dati Socio-Demografici');
+    expect(distribution.height, closeTo(demographics.height, 0.5));
+    expect(distribution.top, closeTo(demographics.top, 0.5));
+
+    expect(coverage.width, greaterThan(alerts.width));
+    expectNoLayoutErrors(tester);
+  });
+
+  testWidgets('gli sfondi grafici restano al 50% di opacita', (tester) async {
+    expect(PremiumDashboardAssets.defaultOpacity, 0.50);
+
+    await pumpDashboard(tester, size: const Size(1440, 1000));
+
+    final halfOpacityLayers = find
+        .byWidgetPredicate(
+          (widget) => widget is Opacity && widget.opacity == 0.50,
+        )
+        .evaluate();
+    expect(halfOpacityLayers, isNotEmpty);
+    expectNoLayoutErrors(tester);
+  });
 }

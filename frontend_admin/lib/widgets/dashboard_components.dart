@@ -55,26 +55,31 @@ class DashboardAuroraBackground extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const DecoratedBox(
+          // Quando l'asset illustrato e' attivo i due gradienti restano appena
+          // accennati: sommati a piena intensita' saturavano il canvas.
+          DecoratedBox(
             decoration: BoxDecoration(
               color: DashboardTokens.canvas,
               gradient: RadialGradient(
-                center: Alignment(-0.75, -0.85),
+                center: const Alignment(-0.75, -0.85),
                 radius: 1.35,
                 colors: [
-                  Color(0x6677E4F2),
-                  Color(0x339370FF),
-                  Color(0x00F5F7FF),
+                  Color(useAsset ? 0x1F77E4F2 : 0x6677E4F2),
+                  Color(useAsset ? 0x149370FF : 0x339370FF),
+                  const Color(0x00F5F7FF),
                 ],
-                stops: [0, 0.46, 1],
+                stops: const [0, 0.46, 1],
               ),
             ),
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: RadialGradient(
-                  center: Alignment(0.95, -0.55),
+                  center: const Alignment(0.95, -0.55),
                   radius: 1.15,
-                  colors: [Color(0x55C5BED8), Color(0x00F5F7FF)],
+                  colors: [
+                    Color(useAsset ? 0x18C5BED8 : 0x55C5BED8),
+                    const Color(0x00F5F7FF),
+                  ],
                 ),
               ),
             ),
@@ -640,11 +645,32 @@ class PremiumSidebar extends StatelessWidget {
               opacity: assetOpacity,
               child: Image.asset(
                 PremiumDashboardAssets.sidebarBackground,
-                fit: BoxFit.cover,
-                alignment: Alignment.topCenter,
+                // L'asset e' un pannello completo di sidebar: con cover il suo
+                // bordo dipinto cadeva a metà card, lasciando il footer fuori
+                // dalla superficie illustrata.
+                fit: BoxFit.fill,
                 filterQuality: FilterQuality.medium,
                 errorBuilder: (context, error, stackTrace) =>
                     const SizedBox.shrink(),
+              ),
+            ),
+          ),
+          // Velo bianco sulla fascia superiore: il logo cade sulla zona piu'
+          // carica dell'illustrazione ancorata in alto.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: expanded ? 96 : 120,
+            child: const IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xF2FFFFFF), Color(0x00FFFFFF)],
+                  ),
+                ),
               ),
             ),
           ),
@@ -668,7 +694,7 @@ class PremiumSummaryBar extends StatelessWidget {
   const PremiumSummaryBar({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(20),
+    this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     this.semanticLabel,
     this.opacity = PremiumDashboardAssets.defaultOpacity,
     this.fit = BoxFit.cover,
@@ -705,8 +731,8 @@ class PremiumCoverageCard extends StatelessWidget {
     this.padding = const EdgeInsets.all(20),
     this.semanticLabel,
     this.opacity = PremiumDashboardAssets.defaultOpacity,
-    this.fit = BoxFit.cover,
-    this.alignment = Alignment.centerLeft,
+    this.fit = BoxFit.fitWidth,
+    this.alignment = Alignment.bottomLeft,
   });
 
   @override
@@ -739,7 +765,7 @@ class PremiumAlertCard extends StatelessWidget {
     this.padding = const EdgeInsets.all(20),
     this.semanticLabel,
     this.opacity = PremiumDashboardAssets.defaultOpacity,
-    this.fit = BoxFit.cover,
+    this.fit = BoxFit.fitWidth,
     this.alignment = Alignment.topCenter,
   });
 
@@ -773,8 +799,8 @@ class PremiumSocioDemoCard extends StatelessWidget {
     this.padding = const EdgeInsets.all(20),
     this.semanticLabel,
     this.opacity = PremiumDashboardAssets.defaultOpacity,
-    this.fit = BoxFit.cover,
-    this.alignment = Alignment.centerRight,
+    this.fit = BoxFit.fitWidth,
+    this.alignment = Alignment.bottomRight,
   });
 
   @override
