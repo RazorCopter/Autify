@@ -5,6 +5,7 @@ MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
 
 client = AsyncIOMotorClient(
     MONGODB_URL,
+    tz_aware=True,
     maxPoolSize=20,
     minPoolSize=2,
     serverSelectionTimeoutMS=5000,
@@ -24,3 +25,9 @@ ai_jobs_collection = database.get_collection("ai_jobs")
 notifications_collection = database.get_collection("notifications")
 audit_logs_collection = database.get_collection("audit_logs")
 licenses_collection = database.get_collection("licenses")
+
+# Registro unico del contratto backup. Aggiungere qui ogni nuova collection.
+BACKUP_COLLECTIONS = (
+    "patients", "evaluations", "scales", "users", "settings",
+    "ai_analyses", "ai_jobs", "notifications", "audit_logs", "licenses",
+)

@@ -50,6 +50,16 @@ class MockCursor:
             return self.data[:length]
         return self.data
 
+    def __aiter__(self):
+        self._iter_data = iter(list(self.data))
+        return self
+
+    async def __anext__(self):
+        try:
+            return next(self._iter_data)
+        except StopIteration:
+            raise StopAsyncIteration
+
 
 class MockCollection:
     """Mock class for Motor's AsyncIOMotorCollection."""
@@ -60,39 +70,40 @@ class MockCollection:
         self.replaced_docs = []
         self.deleted_filters = []
 
+    def _matches(self, doc, query):
+        if not query:
+            return True
+        for k, v in query.items():
+            if k == "$or":
+                if not any(self._matches(doc, cond) for cond in v):
+                    return False
+                continue
+            val = doc.get(k)
+            if isinstance(v, dict):
+                for op, expected in v.items():
+                    if op == "$in" and val not in expected:
+                        return False
+                    elif op == "$gt" and not (val is not None and val > expected):
+                        return False
+                    elif op == "$lte" and not (val is not None and val <= expected):
+                        return False
+                    elif op == "$ne" and val == expected:
+                        return False
+            elif val != v:
+                return False
+        return True
+
     def find(self, filter_query, *args, **kwargs):
-        filtered = []
-        for doc in self.documents:
-            match = True
-            for k, v in filter_query.items():
-                if isinstance(v, dict) and "$in" in v:
-                    if doc.get(k) not in v["$in"]:
-                        match = False
-                        break
-                elif doc.get(k) != v:
-                    match = False
-                    break
-            if match:
-                # Return a deep-like copy to prevent in-place modification bugs
-                filtered.append(dict(doc))
+        filtered = [doc for doc in self.documents if self._matches(doc, filter_query)]
         return MockCursor(filtered)
 
     async def find_one(self, filter_query, *args, **kwargs):
         for doc in self.documents:
-            match = True
-            for k, v in filter_query.items():
-                if isinstance(v, dict) and "$in" in v:
-                    if doc.get(k) not in v["$in"]:
-                        match = False
-                        break
-                elif doc.get(k) != v:
-                    match = False
-                    break
-            if match:
-                return dict(doc)
+            if self._matches(doc, filter_query):
+                return doc
         return None
 
-    async def insert_one(self, document):
+    async def insert_one(self, document, *args, **kwargs):
         # Simulate generating id if missing
         if "id" not in document:
             document["id"] = "pat_mock_gen"
@@ -124,7 +135,7 @@ class MockCollection:
             modified_count = 1
         return ReplaceOneResult()
 
-    async def delete_many(self, filter_query):
+    async def delete_many(self, filter_query, *args, **kwargs):
         self.deleted_filters.append(filter_query)
         initial_len = len(self.documents)
         self.documents = [
@@ -136,39 +147,26 @@ class MockCollection:
             deleted_count = initial_len - len(self.documents)
         return DeleteResult()
 
-    async def count_documents(self, filter_query=None):
+    async def count_documents(self, filter_query=None, *args, **kwargs):
         if filter_query is None or filter_query == {}:
             return len(self.documents)
-        count = 0
-        for doc in self.documents:
-            match = True
-            for k, v in filter_query.items():
-                if doc.get(k) != v:
-                    match = False
-                    break
-            if match:
-                count += 1
-        return count
+        return len(self.find(filter_query).data)
 
     async def find_one_and_update(self, filter_query, update_query, **kwargs):
         matched = await self.find_one(filter_query)
         if not matched:
             return None
         await self.update_one(filter_query, update_query)
-        return await self.find_one({"id": matched.get("id")})
+        key = "username" if "username" in matched else "id"
+        return await self.find_one({key: matched.get(key)})
 
-    async def update_one(self, filter_query, update_query):
+    async def update_one(self, filter_query, update_query, **kwargs):
         set_fields = update_query.get("$set", {})
         inc_fields = update_query.get("$inc", {})
         unset_fields = update_query.get("$unset", {})
         matched = False
         for doc in self.documents:
-            match = True
-            for k, v in filter_query.items():
-                if doc.get(k) != v:
-                    match = False
-                    break
-            if match:
+            if self._matches(doc, filter_query):
                 for field, val in set_fields.items():
                     doc[field] = val
                 for field, val in inc_fields.items():
@@ -182,15 +180,10 @@ class MockCollection:
             modified_count = 1 if matched else 0
         return UpdateOneResult()
 
-    async def delete_one(self, filter_query):
+    async def delete_one(self, filter_query, *args, **kwargs):
         matched = False
         for idx, doc in enumerate(self.documents):
-            match = True
-            for k, v in filter_query.items():
-                if doc.get(k) != v:
-                    match = False
-                    break
-            if match:
+            if self._matches(doc, filter_query):
                 del self.documents[idx]
                 matched = True
                 break
@@ -227,6 +220,9 @@ class MockCollection:
                 self.matched_count = m_count
                 self.modified_count = mod_count
         return UpdateManyResult(matched_count, modified_count)
+
+    async def create_index(self, *args, **kwargs):
+        return "mock_index"
 
 
 

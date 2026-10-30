@@ -1,3 +1,5 @@
+from ..pdf_service import render_pdf
+from ..audit import record
 import logging
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Header, Depends, Request, Query
 from slowapi import Limiter
@@ -24,6 +26,10 @@ import asyncio
 from pathlib import Path
 from .. import auth as auth_module
 from . import _invalidate_dashboard_cache
+from ..evaluation_contract import resolve_scale, require_answers, scale_snapshot, incomplete_analysis
+from ..transactions import atomic, touch_patient
+from ..database import database
+from pymongo.errors import DuplicateKeyError
 
 from ._helpers import (
     verify_auth,
@@ -48,136 +54,25 @@ client_router = APIRouter(dependencies=[Depends(verify_auth)])
 async def get_evaluations(id_patient: str):
     """Storico completo per un utente, per fini analitici."""
     cursor = evaluations_collection.find({"id_paziente": id_patient})
-    evaluations = await cursor.to_list(length=1000)
+    evaluations = await cursor.to_list(length=None)
+    from ..expiry import utc_date
+    for ev in evaluations:
+        date = utc_date(ev.get("data_compilazione"))
+        if date is None:
+            raise HTTPException(409, "Storico con data non valida: correggere il documento legacy")
+        ev["data_compilazione"] = date
+    evaluations.sort(key=lambda ev: (ev["data_compilazione"], str(ev.get("_id", ""))), reverse=True)
     return evaluations
 
-async def _import_sis_scale(scala_data: dict, scale_id: str, nome: str, descrizione: str) -> dict:
-    """
-    Importa una scala SIS con la sua struttura specializzata.
 
-    La scala SIS ha un formato diverso dalle scale standard (POS, San Martín):
-    - Usa 'sottoscale' invece di 'domini'
-    - Ogni item ha risposta tridimensionale (F, D, T) invece di opzioni multiple
-    - Include sezioni supplementari (protezione, medica, comportamentale)
-    - Include tabelle di conversione specifiche
-    """
-    info = scala_data.get("info", {})
-    if info:
-        scale_id = info.get("id", scale_id)
-        nome = info.get("nome", nome)
-        descrizione = info.get("sottotitolo", descrizione)
-
-    sezioni: list[Section] = []
-
-    # Sottoscale A-F → sezioni con domande (senza opzioni, dato che la risposta è F/D/T)
-    for sottoscala in scala_data.get("sottoscale", []):
-        codice = sottoscala.get("codice", "")
-        nome_sez = sottoscala.get("nome", codice)
-        domande: list[Question] = []
-        for d in sottoscala.get("domande", []):
-            domande.append(Question(
-                id_domanda=d.get("id", f"q_{uuid.uuid4().hex[:8]}"),
-                codice=d.get("id"),
-                testo_domanda=d.get("testo", ""),
-                note=d.get("note"),
-                opzioni=[],
-            ))
-        sezioni.append(Section(
-            codice_sezione=codice,
-            titolo_sezione=nome_sez,
-            descrizione_sezione=None,
-            domande=domande,
-        ))
-
-    # Sezione 2: Protezione e tutela
-    sez2 = scala_data.get("sezione_2_protezione_tutela", {})
-    if sez2 and sez2.get("item"):
-        domande_sez2: list[Question] = []
-        for item in sez2["item"]:
-            domande_sez2.append(Question(
-                id_domanda=item.get("id", f"q_{uuid.uuid4().hex[:8]}"),
-                codice=item.get("id"),
-                testo_domanda=item.get("testo", ""),
-                opzioni=[],
-            ))
-        sezioni.append(Section(
-            codice_sezione="SEZ2",
-            titolo_sezione=sez2.get("titolo", "Scala supplementare di protezione e tutela legale"),
-            descrizione_sezione=sez2.get("note"),
-            domande=domande_sez2,
-        ))
-
-    # Sezione 3 Medica
-    sez3m = scala_data.get("sezione_3_medica", {})
-    if sez3m and sez3m.get("item"):
-        domande_med: list[Question] = []
-        for item in sez3m["item"]:
-            domande_med.append(Question(
-                id_domanda=item.get("id", f"q_{uuid.uuid4().hex[:8]}"),
-                codice=item.get("id"),
-                testo_domanda=item.get("testo", ""),
-                opzioni=[
-                    Option(punteggio=0, testo_risposta="Assente"),
-                    Option(punteggio=1, testo_risposta="Parziale"),
-                    Option(punteggio=2, testo_risposta="Estensivo"),
-                ],
-            ))
-        sezioni.append(Section(
-            codice_sezione="SEZ3M",
-            titolo_sezione=sez3m.get("titolo", "Bisogni di sostegno non ordinari di tipo medico"),
-            descrizione_sezione=sez3m.get("note"),
-            domande=domande_med,
-        ))
-
-    # Sezione 3 Comportamentale
-    sez3c = scala_data.get("sezione_3_comportamentale", {})
-    if sez3c and sez3c.get("item"):
-        domande_comp: list[Question] = []
-        for item in sez3c["item"]:
-            domande_comp.append(Question(
-                id_domanda=item.get("id", f"q_{uuid.uuid4().hex[:8]}"),
-                codice=item.get("id"),
-                testo_domanda=item.get("testo", ""),
-                opzioni=[
-                    Option(punteggio=0, testo_risposta="Assente"),
-                    Option(punteggio=1, testo_risposta="Parziale"),
-                    Option(punteggio=2, testo_risposta="Estensivo"),
-                ],
-            ))
-        sezioni.append(Section(
-            codice_sezione="SEZ3C",
-            titolo_sezione=sez3c.get("titolo", "Bisogni di sostegno non ordinari di tipo comportamentale"),
-            descrizione_sezione=sez3c.get("note"),
-            domande=domande_comp,
-        ))
-
-    if not sezioni:
-        raise HTTPException(status_code=422, detail="Il JSON SIS non contiene sottoscale o sezioni")
-
-    scale = Scale(id=scale_id, nome=nome, descrizione=descrizione, sezioni=sezioni)
-    scale_dict = scale.model_dump()
-
-    # Preserva TUTTI i metadati extra del JSON SIS per il motore di calcolo
-    extra_metadata = {
-        key: value
-        for key, value in scala_data.items()
-        if key not in {"id", "nome", "descrizione", "domini"}
-    }
-    scale_dict.update(extra_metadata)
-    scale_dict["tipo_scala"] = "sis"
-
-    await scales_collection.replace_one({"id": scale_id}, scale_dict, upsert=True)
-
-    total_questions = sum(len(s.domande) for s in sezioni)
-    return {
-        "message": "Scala SIS importata con successo",
-        "id": scale_id,
-        "nome": nome,
-        "sezioni": len(sezioni),
-        "domande_totali": total_questions,
-        "tipo": "SIS (Supports Intensity Scale)",
-    }
-
+@admin_router.get("/patients/{patient_id}/evaluation-scales", response_model=List[Scale], tags=["Admin - Evaluations"])
+async def historical_scales(patient_id: str):
+    current = await scales_collection.find({}).to_list(length=None)
+    result = {s["id"]: s for s in current}
+    async for ev in evaluations_collection.find({"id_paziente": patient_id}).sort("data_compilazione", -1):
+        if ev["id_scala"] not in result:
+            result[ev["id_scala"]] = await resolve_scale(ev)
+    return list(result.values())
 
 @admin_router.get("/evaluations/{evaluation_id}/pdf", tags=["Admin - Evaluations"])
 async def download_evaluation_pdf(
@@ -192,9 +87,7 @@ async def download_evaluation_pdf(
         )
 
     patient_doc = await patients_collection.find_one({"id": eval_doc["id_paziente"]})
-    scale_doc = _hydrate_scale_doc(
-        await scales_collection.find_one({"id": eval_doc["id_scala"]})
-    )
+    scale_doc = await resolve_scale(eval_doc)
 
     analysis = compute_psychometric_analysis(
         risposte=eval_doc.get("risposte", []),
@@ -204,9 +97,9 @@ async def download_evaluation_pdf(
     domain_map = build_domain_map(scale_doc or {})
     if not domain_map:
         domain_map = DOMINI_POS
-    domains = compute_direct_scores(eval_doc.get("risposte", []), domain_map, scale_doc)
+    domains = [] if analysis.get("validation_message") else compute_direct_scores(eval_doc.get("risposte", []), domain_map, scale_doc)
 
-    pdf_bytes = await asyncio.to_thread(
+    pdf_bytes = await render_pdf(
         generate_evaluation_pdf,
         eval_doc,
         patient_doc or {},
@@ -223,7 +116,8 @@ async def download_evaluation_pdf(
     )
 @admin_router.post("/evaluations/ai-analysis-pdf", tags=["Admin - Evaluations"])
 async def download_ai_analysis_pdf(request: AiPdfRequest):
-    pdf_bytes = await asyncio.to_thread(generate_ai_analysis_pdf, request.patient, request.report)
+    pdf_bytes = await render_pdf(generate_ai_analysis_pdf, request.patient,
+                                       "BOZZA - testo fornito dal client, provenienza non attestata\n\n" + request.report)
     filename = f"analisi_ai_{request.patient.get('cognome', 'paziente')}.pdf"
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
@@ -241,9 +135,7 @@ async def get_evaluation_analysis(evaluation_id: str):
             status_code=404,
             detail=f"Valutazione non trovata per id '{evaluation_id}'",
         )
-    scale_doc = _hydrate_scale_doc(
-        await scales_collection.find_one({"id": eval_doc["id_scala"]})
-    )
+    scale_doc = await resolve_scale(eval_doc)
     if not scale_doc:
         raise HTTPException(status_code=404, detail="Scala associata non trovata")
 
@@ -265,22 +157,25 @@ async def get_aggregated_evaluation(patient_id: str, scale_id: str):
     cursor = evaluations_collection.find(
         {"id_paziente": patient_id, "id_scala": scale_id}
     ).sort("data_compilazione", -1)
-    eval_docs = await cursor.to_list(length=1000)
+    eval_docs = await cursor.to_list(length=None)
     if not eval_docs:
         raise HTTPException(status_code=404, detail="Nessuna valutazione trovata")
 
-    # Carica tutte le scale usate in una sola query invece di N find_one (P-03)
-    scale_ids_needed = list({e["id_scala"] for e in eval_docs if e.get("id_scala")})
-    raw_scales = await scales_collection.find({"id": {"$in": scale_ids_needed}}).to_list(length=None)
-    _scale_cache: dict = {s["id"]: _hydrate_scale_doc(s) for s in raw_scales if s.get("id")}
-
+    from ..expiry import utc_date
+    for ev in eval_docs:
+        date = utc_date(ev.get("data_compilazione"))
+        if date is None:
+            raise HTTPException(409, "Storico con data non valida: correggere il documento legacy")
+        ev["data_compilazione"] = date
+    eval_docs.sort(key=lambda ev: (ev["data_compilazione"], str(ev.get("_id", ""))), reverse=True)
     history = []
     for eval_doc in eval_docs:
-        scale_doc = _scale_cache.get(eval_doc.get("id_scala"))
+        scale_doc = await resolve_scale(eval_doc)
         domain_map = build_domain_map(scale_doc or {})
         if not domain_map:
             domain_map = DOMINI_POS
-        domains = compute_direct_scores(eval_doc.get("risposte", []), domain_map, scale_doc=scale_doc)
+        invalid = incomplete_analysis(eval_doc.get("risposte", []), scale_doc)
+        domains = [] if invalid else compute_direct_scores(eval_doc.get("risposte", []), domain_map, scale_doc=scale_doc)
         history.append(
             AggregatedEvaluation(
                 id_valutazione=_extract_evaluation_identifier(eval_doc),
@@ -295,6 +190,7 @@ async def get_aggregated_evaluation(patient_id: str, scale_id: str):
                 nome_operatore=eval_doc["nome_operatore"],
                 nome_intervistato=eval_doc.get("nome_intervistato"),
                 demographics=eval_doc.get("demographics"),
+                snapshot_scala=scale_doc,
                 domini=domains,
                 risposte=eval_doc.get("risposte", []),
             )
@@ -305,13 +201,14 @@ async def get_aggregated_evaluation(patient_id: str, scale_id: str):
 @admin_router.put("/evaluations/{evaluation_id}",
                   response_model=AggregatedEvaluation,
                   tags=["Admin - Evaluations"])
-async def update_evaluation(evaluation_id: str, payload: EvaluationUpdateRequest):
+async def update_evaluation(evaluation_id: str, payload: EvaluationUpdateRequest, auth: dict = Depends(verify_auth)):
     """Modifica inline punteggi/note di una valutazione, restituisce i dati riaggregati."""
     existing = await _find_evaluation_document(evaluation_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Valutazione non trovata")
 
-    new_risposte = [r.model_dump() for r in payload.risposte]
+    scale_doc = await resolve_scale(existing)
+    new_risposte = require_answers([r.model_dump() for r in payload.risposte], scale_doc)
     update_data = {"risposte": new_risposte}
     if payload.nome_operatore is not None:
         update_data["nome_operatore"] = payload.nome_operatore
@@ -323,14 +220,18 @@ async def update_evaluation(evaluation_id: str, payload: EvaluationUpdateRequest
         update_data["demographics"] = payload.demographics
         existing["demographics"] = payload.demographics
         
-    await evaluations_collection.update_one(
-        _build_evaluation_selector(existing),
-        {"$set": update_data}
-    )
+    async def persist_update(session):
+        await touch_patient(existing["id_paziente"], session)
+        result = await database.evaluations.update_one(
+            _build_evaluation_selector(existing), {"$set": update_data}, session=session)
+        if not result.matched_count:
+            raise HTTPException(409, "Valutazione eliminata durante la modifica")
+        await record("MODIFICA_VALUTAZIONE", auth["username"], "Risposte e metadati aggiornati", evaluation_id,
+                     session=session, target_version=scale_doc.get("snapshot_hash"))
+    await atomic(persist_update)
+    _invalidate_dashboard_cache()
     existing["risposte"] = new_risposte
-    scale_doc = _hydrate_scale_doc(
-        await scales_collection.find_one({"id": existing["id_scala"]})
-    )
+
     domain_map = build_domain_map(scale_doc or {})
     if not domain_map:
         domain_map = DOMINI_POS
@@ -344,12 +245,13 @@ async def update_evaluation(evaluation_id: str, payload: EvaluationUpdateRequest
         nome_operatore=existing["nome_operatore"],
         nome_intervistato=existing.get("nome_intervistato"),
         demographics=existing.get("demographics"),
+        snapshot_scala=scale_doc,
         domini=domains,
         risposte=new_risposte,
     )
 
 @admin_router.delete("/evaluations/{evaluation_id}", tags=["Admin - Evaluations"])
-async def delete_evaluation(evaluation_id: str):
+async def delete_evaluation(evaluation_id: str, auth: dict = Depends(verify_auth)):
     """Elimina definitivamente una singola valutazione dal database."""
     eval_doc = await _find_evaluation_document(evaluation_id)
     if not eval_doc:
@@ -357,13 +259,15 @@ async def delete_evaluation(evaluation_id: str):
 
     patient_id = eval_doc.get("id_paziente")
     selector = _build_evaluation_selector(eval_doc)
-    result = await evaluations_collection.delete_one(selector)
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Errore nell'eliminazione della valutazione")
+    async def remove(session):
+        await touch_patient(patient_id, session)
+        result = await database.evaluations.delete_one(selector, session=session)
+        if result.deleted_count != 1:
+            raise HTTPException(409, "Valutazione gia eliminata o modificata")
+        await record("CANCELLAZIONE_VALUTAZIONE", auth["username"], "Valutazione eliminata; provenienza delle relazioni conservata", evaluation_id, session=session)
+    await atomic(remove)
     _invalidate_dashboard_cache()
-
-    if patient_id:
-        await _update_patient_scale_dates(patient_id)
+    # C6 reads source evaluations; denormalized dates are only a compatibility cache.
 
     return {"status": "success", "message": "Valutazione eliminata con successo"}
 
@@ -394,84 +298,38 @@ async def create_evaluation(request: Request, evaluation: Evaluation, auth_conte
             detail=f"Scala con ID '{id_scala}' non trovata"
         )
 
-    # 3. Validazione risposte e punteggi rispetto alla definizione della scala (SCORE-01, Task 10.1)
-    valid_question_ids = set()
-    allowed_scores_by_question = {}
-    for section in scale_doc.get("sezioni", []):
-        for q in section.get("domande", []):
-            qid = q.get("id_domanda")
-            qcode = q.get("codice")
-            options = q.get("opzioni", [])
-            allowed_scores = {opt["punteggio"] for opt in options if "punteggio" in opt}
-            if qid:
-                valid_question_ids.add(qid)
-                if allowed_scores:
-                    allowed_scores_by_question[qid] = allowed_scores
-            if qcode:
-                valid_question_ids.add(qcode)
-                if allowed_scores:
-                    allowed_scores_by_question[qcode] = allowed_scores
-
-    if valid_question_ids and evaluation.risposte:
-        for ans in evaluation.risposte:
-            if ans.codice_domanda not in valid_question_ids:
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail=f"La domanda '{ans.codice_domanda}' non appartiene alla scala '{id_scala}'"
-                )
-
-            # Validazione punteggio SIS tridimensionale
-            if isinstance(ans.punteggio, dict):
-                for dim in ("F", "D", "T"):
-                    val = ans.punteggio.get(dim)
-                    if val is None or not isinstance(val, int) or val < 0 or val > 4:
-                        raise HTTPException(
-                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                            detail=f"Punteggio SIS non valido per dimensione {dim} nella domanda '{ans.codice_domanda}': atteso intero 0-4"
-                        )
-            elif isinstance(ans.punteggio, int):
-                allowed = allowed_scores_by_question.get(ans.codice_domanda)
-                if allowed and ans.punteggio not in allowed:
-                    raise HTTPException(
-                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                        detail=f"Punteggio {ans.punteggio} non valido per la domanda '{ans.codice_domanda}'. Punteggi ammessi: {sorted(allowed)}"
-                    )
-
     eval_dict = evaluation.model_dump()
     if not eval_dict.get("data_compilazione"):
         eval_dict["data_compilazione"] = datetime.now(timezone.utc)
     # Imposta l'operatore autenticato dal token JWT
     operatore_autenticato = auth_context.get("username") or "Operatore Sconosciuto"
     eval_dict["nome_operatore"] = operatore_autenticato
+    submitted_answers = list(eval_dict["risposte"])
     
-    # DATA-02: Snapshot Scala
-    scale_snapshot = dict(scale_doc)
-    scale_snapshot.pop("_id", None)
-    eval_dict["snapshot_scala"] = scale_snapshot
+    async def persist(session):
+        await touch_patient(id_paziente, session, active=True, expected_id=patient_doc["_id"])
+        current_scale = await database.scales.find_one({"id": id_scala}, session=session)
+        if not current_scale:
+            raise HTTPException(409, "Protocollo non disponibile")
+        await database.scales.update_one({"_id": current_scale["_id"]}, {"$inc": {"write_revision": 1}}, session=session)
+        eval_dict["snapshot_scala"] = scale_snapshot(current_scale)
+        eval_dict["risposte"] = require_answers(submitted_answers, current_scale)
+        result = await database.evaluations.insert_one(dict(eval_dict), session=session)
+        await record("COMPILAZIONE_SCALA", operatore_autenticato, "Valutazione completa acquisita con snapshot", eval_dict["id_valutazione"],
+                     session=session, target_version=eval_dict["snapshot_scala"].get("snapshot_hash"))
+        return result
+    try:
+        await atomic(persist)
+    except DuplicateKeyError as exc:
+        raise HTTPException(409, "Identificativo valutazione gia presente") from exc
     evaluation = Evaluation(**eval_dict)
-    result = await evaluations_collection.insert_one(eval_dict)
-
-    if not result.inserted_id:
-        raise HTTPException(status_code=500, detail="Errore nel salvataggio della valutazione")
     _invalidate_dashboard_cache()
 
     # Mantiene aggiornati i campi ultimo_*_compilato sul paziente (FUN-01, Task 8.2)
-    await _update_patient_scale_dates(id_paziente)
-        
-    # Salva il log di audit con l'operatore autenticato
-    operatore = operatore_autenticato
-    utente_info = ""
-    cognome = patient_doc.get("cognome", "")
-    nome = patient_doc.get("nome", "")
-    if cognome or nome:
-        utente_info = f" per {cognome} {nome}"
-                
-    await log_audit(
-        "COMPILAZIONE_SCALA", 
-        operatore, 
-        f"{operatore} ha compilato la Scala {id_scala}{utente_info}".strip(), 
-        id_paziente
-    )
+    try:
+        await _update_patient_scale_dates(id_paziente)
+    except Exception:
+        _logger.warning("Cache date non aggiornata dopo salvataggio; proiezione C6 usa le valutazioni sorgente")
         
     return evaluation
 

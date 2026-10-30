@@ -20,6 +20,8 @@ def main():
         sys.exit(1)
         
     print(f"Aggiorno il progetto alla versione: {new_version}")
+    with open(os.path.join(root_dir, "backend", "app", "version.py"), "w", encoding="utf-8") as f:
+        f.write(f'# Generated from root VERSION by bump_version.py.\nAPP_VERSION = "{new_version}"\n')
 
     # 1. Update backend/app/main.py
     backend_main = os.path.join(root_dir, "backend", "app", "main.py")

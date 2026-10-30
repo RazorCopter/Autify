@@ -15,6 +15,7 @@ class PatientModel {
   String? ultimoSabsCompilato;
   String? ultimoOsoCompilato;
   String? ultimaAnalisiIa;
+  Map<String, dynamic> statoScale;
 
   PatientModel({
     required this.id,
@@ -33,6 +34,7 @@ class PatientModel {
     this.ultimoSabsCompilato,
     this.ultimoOsoCompilato,
     this.ultimaAnalisiIa,
+    this.statoScale = const {},
   });
 
   factory PatientModel.fromJson(Map<String, dynamic> json) {
@@ -53,6 +55,7 @@ class PatientModel {
       ultimoSabsCompilato: json['ultimo_sabs_compilato'],
       ultimoOsoCompilato: json['ultimo_oso_compilato'],
       ultimaAnalisiIa: json['ultima_analisi_ia'],
+      statoScale: Map<String, dynamic>.from(json['stato_scale'] ?? {}),
     );
   }
 

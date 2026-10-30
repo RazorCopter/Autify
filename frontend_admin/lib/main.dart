@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:html' as html;
-import 'dart:js' as js;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'utils/web_compat.dart';
 import 'package:provider/provider.dart';
 import 'app_version.dart';
 import 'utils/responsive_helper.dart';
@@ -20,14 +20,19 @@ import 'services/api_service.dart';
 import 'theme/app_theme.dart';
 
 void _clearAuthenticationStorage() {
-  html.window.localStorage.remove('jwt_token');
-  html.window.localStorage.remove('auth_role');
-  html.window.localStorage.remove('auth_username');
-  html.window.localStorage.remove('ai_enabled');
-  html.window.sessionStorage.clear();
+  WebCompat.localStorageRemove('jwt_token');
+  WebCompat.localStorageRemove('auth_role');
+  WebCompat.localStorageRemove('auth_username');
+  WebCompat.localStorageRemove('ai_enabled');
+  WebCompat.localStorageRemove('must_change_password');
+  WebCompat.sessionStorageClear();
 }
 
+final _auditMessenger = GlobalKey<ScaffoldMessengerState>();
+
 void main() {
+  // Remove persistent tokens from pre-C7 clients. Require a fresh login in this tab.
+  WebCompat.localStorageRemove('jwt_token');
   runApp(
     ChangeNotifierProvider(
       create: (_) => SettingsNotifier(),
@@ -44,11 +49,13 @@ class AdminApp extends StatelessWidget {
     // Verifica se l'utente è già autenticato (JWT token presente)
     bool isAuthenticated = false;
     try {
-      final token = html.window.localStorage['jwt_token'];
-      isAuthenticated = token != null && token.isNotEmpty;
+      final token = WebCompat.sessionStorageGet('jwt_token');
+      isAuthenticated = token != null && token.isNotEmpty &&
+          WebCompat.localStorageGet('must_change_password') != 'true';
     } catch (_) {}
 
     return MaterialApp(
+      scaffoldMessengerKey: _auditMessenger,
       title: 'Autify Admin v$kFrontendVersion',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
@@ -402,43 +409,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
     } catch (_) {}
 
     try {
-      js.context.callMethod('eval', [
-        '''
-        if ('caches' in window) {
-          caches.keys().then(function(names) {
-            for (let name of names) {
-              caches.delete(name);
-            }
-          });
-        }
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.getRegistrations().then(function(registrations) {
-            for (let registration of registrations) {
-              registration.unregister();
-            }
-          });
-        }
-        sessionStorage.clear();
-        localStorage.removeItem('jwt_token');
-        localStorage.removeItem('auth_role');
-        localStorage.removeItem('auth_username');
-        localStorage.removeItem('ai_enabled');
-        setTimeout(function() {
-          window.location.href = window.location.pathname + "?v=" + new Date().getTime();
-        }, 150);
-        '''
-      ]);
+      final path = WebCompat.getCurrentPath();
+      WebCompat.reloadWindow('$path?v=${DateTime.now().millisecondsSinceEpoch}');
     } catch (_) {
-      try {
-        html.window.location.href =
-            '/?v=\${DateTime.now().millisecondsSinceEpoch}';
-      } catch (_) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-          (route) => false,
-        );
-      }
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (route) => false,
+      );
     }
   }
 
@@ -474,6 +452,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
         isViewer: ApiService.isViewer,
         initialConnectionError: _licenseCheckUnavailable,
         onActivated: _checkLicense,
+        onExportBackup: ApiService.isAdmin ? () async {
+          final bytes = await const ApiService().exportDatabase();
+          if (bytes == null) throw Exception('Backup non disponibile');
+          WebCompat.downloadFile(bytes, 'autify-recovery.enc');
+        } : null,
       );
     }
     final isMobile = ResponsiveHelper.isMobile(context);
@@ -803,7 +786,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget _buildRoleBadge() {
     String role = 'viewer';
     try {
-      role = html.window.localStorage['auth_role'] ?? 'viewer';
+      role = WebCompat.localStorageGet('auth_role') ?? 'viewer';
     } catch (_) {}
 
     final isAdmin = role == 'admin';
@@ -932,7 +915,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
             initialSemanticFilter: _patientSemanticFilter,
           ),
         3 => const ProtocolsScreen(key: ValueKey(3)),
-        4 => const AuditLogScreen(key: ValueKey(4)),
+        4 => ApiService.isAdmin
+            ? const AuditLogScreen(key: ValueKey(4))
+            : const Center(child: Text('Registro riservato agli amministratori')),
         5 => const SettingsScreen(key: ValueKey(5)),
         _ => _buildPlaceholder(),
       },

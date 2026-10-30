@@ -26,15 +26,25 @@ async def verify_auth(request: Request) -> dict:
     """Dependency: verifica JWT o header legacy e restituisce {username, role, ai_enabled}."""
     auth_context = await auth_module.verify_auth(request)
 
+    # These handlers always restrict updates to the authenticated owner.
+    own_notification_read = request.method == "POST" and (
+        request.url.path == "/api/admin/notifications/read-all"
+        or (request.url.path.startswith("/api/admin/notifications/")
+            and request.url.path.endswith("/read")
+            and len(request.url.path.split("/")) == 6)
+    )
+
     # Blocca le modifiche di stato per il ruolo Viewer
     if (
         auth_context["role"] == "viewer"
         and request.method not in ("GET", "HEAD")
+        and not own_notification_read
         and request.url.path
         not in (
             "/api/admin/evaluations/ai-analysis-pdf",
             "/api/admin/ai/analyze",
             "/api/admin/auth/login",
+            "/api/admin/auth/change-password",
         )
     ):
         raise HTTPException(
@@ -48,18 +58,8 @@ async def verify_auth(request: Request) -> dict:
 async def log_audit(
     azione: str, operatore: str, dettagli: str, target_id: Optional[str] = None
 ):
-    try:
-        entry = AuditLogCreate(
-            azione=azione,
-            operatore=operatore,
-            dettagli=dettagli,
-            target_id=target_id,
-        )
-        log_entry = entry.model_dump()
-        log_entry["timestamp"] = datetime.now(timezone.utc)
-        await audit_logs_collection.insert_one(log_entry)
-    except Exception as e:
-        _logger.error(f"Errore nel salvataggio dell'audit log: {e}")
+    from ..audit import post_commit
+    return await post_commit(azione, operatore, dettagli, target_id)
 
 
 def _classify_scale(scale_name: str, scale_id: str) -> str:
@@ -94,73 +94,14 @@ def _classify_scale(scale_name: str, scale_id: str) -> str:
 
 
 async def _update_patient_scale_dates(patient_id: str):
-    """
-    Mantiene sincronizzati i campi ultimo_*_compilato nel documento del paziente
-    in base alle valutazioni effettivamente presenti nel database (FUN-01, Task 8.2).
-    """
-    if not patient_id:
+    from ..expiry import project, KINDS
+    patient = await patients_collection.find_one({"id": patient_id})
+    if not patient:
         return
-
-    evals = await evaluations_collection.find({"id_paziente": patient_id}).to_list(
-        length=1000
-    )
-    scales_list = await scales_collection.find({}).to_list(length=100)
-    scale_map: dict = {}
-    for s in scales_list:
-        nome_lower = s.get("nome", "").lower()
-        if s.get("id"):
-            scale_map[s["id"]] = nome_lower
-        mongo_id = s.get("_id")
-        if mongo_id:
-            scale_map[str(mongo_id)] = nome_lower
-
-    dates = {
-        "ultimo_pos_compilato": None,
-        "ultimo_san_martin_compilato": None,
-        "ultimo_sis_compilato": None,
-        "ultimo_ogva_compilato": None,
-        "ultimo_sabs_compilato": None,
-        "ultimo_oso_compilato": None,
-    }
-
-    def _eval_date(ev):
-        d = ev.get("data_compilazione")
-        if not d:
-            return datetime.min.replace(tzinfo=timezone.utc)
-        if isinstance(d, str):
-            try:
-                return datetime.fromisoformat(d)
-            except Exception:
-                return datetime.min.replace(tzinfo=timezone.utc)
-        return d
-
-    sorted_evals = sorted(evals, key=_eval_date, reverse=True)
-
-    field_map = {
-        "pos": "ultimo_pos_compilato",
-        "san_martin": "ultimo_san_martin_compilato",
-        "sis": "ultimo_sis_compilato",
-        "ogva": "ultimo_ogva_compilato",
-        "sabs": "ultimo_sabs_compilato",
-        "oso": "ultimo_oso_compilato",
-    }
-
-    for ev in sorted_evals:
-        scale_id = ev.get("id_scala")
-        scale_id_str = str(scale_id) if scale_id else ""
-        scale_name = scale_map.get(
-            scale_id, scale_map.get(scale_id_str, "")
-        ).lower()
-        stype = _classify_scale(scale_name, scale_id_str)
-        if stype in field_map and dates[field_map[stype]] is None:
-            dv = ev.get("data_compilazione")
-            dates[field_map[stype]] = (
-                dv.isoformat()
-                if isinstance(dv, datetime)
-                else (str(dv) if dv else None)
-            )
-
-    await patients_collection.update_one({"id": patient_id}, {"$set": dates})
+    await project([patient])
+    # Compatibility cache only: filters/KPI always recompute from source evaluations.
+    dates = {f"ultimo_{kind}_compilato": patient[f"ultimo_{kind}_compilato"] for kind in KINDS}
+    await patients_collection.update_one({"_id": patient["_id"]}, {"$set": dates})
 
 
 async def _find_evaluation_document(evaluation_id: str):

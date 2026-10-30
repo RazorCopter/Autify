@@ -25,7 +25,6 @@ class GeminiService {
       notes: notes,
       attachment: attachment,
       historyToInclude: historyToInclude,
-      analyses: analyses,
     );
   }
 }

@@ -272,8 +272,8 @@ class _DashboardContent extends StatelessWidget {
     final total = _intValue('totale_utenze');
     final active = _intValue('totale_utenze_attive');
     final coverage = _mapValue(stats['copertura_scale']);
-    final activeEvaluations = _asInt(coverage['coperti_count']);
-    final missingScales = _asInt(coverage['scaduti_count']);
+    final activeEvaluations = _intValue('utenze_coperte');
+    final missingScales = _intValue('utenze_da_completare');
     final coveragePercent = _asDouble(coverage['coperti_percentuale']);
     final alerts = _mapValue(stats['alert_stats']);
     final overdue = _asInt(alerts['totale_scaduti']);
@@ -292,22 +292,21 @@ class _DashboardContent extends StatelessWidget {
         tooltip: 'Apri l’anagrafica utenti',
       ),
       DashboardKpiData(
-        label: 'VALUTAZIONI ATTIVE',
+        label: 'UTENZE COPERTE',
         value: '$activeEvaluations',
-        supportingText:
-            '${_formatNumber(coveragePercent)}% della documentazione in validità',
+        supportingText: 'Tutte le scale richieste in validita',
         icon: Icons.fact_check_outlined,
         accent: DashboardTokens.indigo,
-        onTap: () => onNavigate(2),
+        onTap: () => onNavigate(2, semanticFilter: 'coperti'),
         tooltip: 'Apri l’anagrafica per consultare le valutazioni',
       ),
       DashboardKpiData(
-        label: 'SCALE MANCANTI',
+        label: 'UTENZE DA COMPLETARE',
         value: '$missingScales',
-        supportingText: 'Scale scadute o mai compilate',
+        supportingText: 'Almeno una scala richiesta non valida',
         icon: Icons.warning_amber_rounded,
         accent: DashboardTokens.danger,
-        onTap: () => onNavigate(2, semanticFilter: 'incompleti'),
+        onTap: () => onNavigate(2, semanticFilter: 'da_completare'),
         tooltip: 'Apri le utenze con documentazione incompleta',
       ),
     ];
@@ -443,7 +442,7 @@ class _ComplianceStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       (
-        'Valutazioni scadute',
+        'Utenti con scale scadute',
         overdue,
         Icons.schedule_rounded,
         DashboardTokens.danger,
@@ -748,7 +747,7 @@ class _CoverageCard extends StatelessWidget {
         children: [
           const DashboardSectionHeader(
             title: 'Copertura Documentale',
-            subtitle: 'Rapporto tra scale valide e mancanti',
+            subtitle: 'Coppie utente attivo / scala richiesta',
           ),
           const SizedBox(height: 18),
           if (fillHeight) Expanded(child: body) else body,

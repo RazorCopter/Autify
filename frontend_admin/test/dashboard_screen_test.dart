@@ -107,8 +107,8 @@ void main() {
     expect(find.byKey(const ValueKey('dashboard-content')), findsOneWidget);
     expect(find.byKey(const ValueKey('dashboard-kpi-card-0')), findsOneWidget);
     expect(find.byKey(const ValueKey('dashboard-kpi-card-2')), findsOneWidget);
-    expect(find.text('VALUTAZIONI ATTIVE'), findsOneWidget);
-    expect(find.text('SCALE MANCANTI'), findsOneWidget);
+    expect(find.text('UTENZE ATTIVE'), findsOneWidget);
+    expect(find.text('UTENZE DA COMPLETARE'), findsOneWidget);
     expect(find.text('N/D'), findsNothing);
 
     final first = tester.getRect(
@@ -186,7 +186,7 @@ void main() {
     expect(find.textContaining('somministrazione'), findsNothing);
     expect(find.textContaining('clinica'), findsNothing);
     expect(find.text('Copertura Documentale'), findsOneWidget);
-    expect(find.text('Valutazioni scadute'), findsOneWidget);
+    expect(find.text('Utenti con scale scadute'), findsOneWidget);
   });
 
   testWidgets('un alert apre un filtro semantico supportato', (tester) async {

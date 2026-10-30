@@ -1,66 +1,89 @@
+"""Versioned AI credentials: dedicated active key, explicit read keyring, no write fallback."""
 import base64
 import hashlib
+import json
 import os
 from typing import Optional
 from cryptography.fernet import Fernet, InvalidToken
 
-_CIPHER_PREFIX = "enc:v1:"
+_CIPHER_PREFIX = "enc:v2:"
 
-def _get_fernet_key() -> bytes:
-    """
-    Recupera o deriva una chiave a 32 byte urlsafe base64 per Fernet.
-    Utilizza prima AI_SETTINGS_ENCRYPTION_KEY; in alternativa deriva stabilmente
-    una chiave a 32 byte a partire da JWT_SECRET_KEY.
-    """
-    raw_env_key = os.environ.get("AI_SETTINGS_ENCRYPTION_KEY")
-    if raw_env_key:
-        try:
-            # Verifica se è già un urlsafe base64 valido a 32 byte
-            decoded = base64.urlsafe_b64decode(raw_env_key)
-            if len(decoded) == 32:
-                return raw_env_key.encode("utf-8")
-        except Exception:
-            pass
-        # Se presente come stringa arbitraria, deriviamo SHA-256
-        derived = hashlib.sha256(raw_env_key.encode("utf-8")).digest()
-        return base64.urlsafe_b64encode(derived)
+class SecretConfigurationError(RuntimeError):
+    pass
 
-    # Fallback con JWT_SECRET_KEY o seed deterministico
-    jwt_secret = os.environ.get("JWT_SECRET_KEY", "autify-default-secret-seed-ai-crypto-key")
-    derived = hashlib.sha256(f"autify-ai-salt:{jwt_secret}".encode("utf-8")).digest()
-    return base64.urlsafe_b64encode(derived)
+class SecretDecryptionError(ValueError):
+    pass
 
-def get_fernet() -> Fernet:
-    return Fernet(_get_fernet_key())
+
+def _derive(raw):
+    try:
+        if len(base64.urlsafe_b64decode(raw)) == 32:
+            return raw.encode()
+    except Exception:
+        pass
+    return base64.urlsafe_b64encode(hashlib.sha256(raw.encode()).digest())
+
+
+def _active():
+    raw = os.getenv("AI_SETTINGS_ENCRYPTION_KEY", "").strip()
+    if len(raw) < 32:
+        raise SecretConfigurationError("Configurare AI_SETTINGS_ENCRYPTION_KEY dedicata di almeno 32 caratteri")
+    key = _derive(raw)
+    return hashlib.sha256(key).hexdigest()[:16], Fernet(key)
+
+
+def _previous(name):
+    try:
+        values = json.loads(os.getenv(name, "[]"))
+        if not isinstance(values, list) or any(not isinstance(v, str) or not v.strip() for v in values):
+            raise ValueError()
+        return values
+    except (ValueError, TypeError) as exc:
+        raise SecretConfigurationError(f"{name} deve essere un array JSON di chiavi") from exc
+
+
+def get_fernet():
+    return _active()[1]
+
 
 def encrypt_secret(secret: Optional[str]) -> Optional[str]:
-    """Cifra un segreto (API key o header) restituendo una stringa con prefisso enc:v1:."""
     if not secret or not secret.strip():
         return None
-    secret_str = secret.strip()
-    # Se è già cifrato con il nostro prefisso, non cifriamo due volte
-    if secret_str.startswith(_CIPHER_PREFIX):
-        return secret_str
-    fernet = get_fernet()
-    encrypted_bytes = fernet.encrypt(secret_str.encode("utf-8"))
-    return f"{_CIPHER_PREFIX}{encrypted_bytes.decode('utf-8')}"
+    raw = secret.strip()
+    if raw.startswith("enc:"):
+        decrypt_secret(raw)  # Never accept unreadable opaque ciphertext supplied by a client.
+        return raw
+    ident, cipher = _active()
+    return f"enc:v2:{ident}:{cipher.encrypt(raw.encode()).decode()}"
+
 
 def decrypt_secret(encrypted_text: Optional[str]) -> Optional[str]:
-    """Decifra un segreto. Se non è cifrato (legacy o plain in dev), lo restituisce tal quale."""
     if not encrypted_text or not encrypted_text.strip():
         return None
     raw = encrypted_text.strip()
-    if not raw.startswith(_CIPHER_PREFIX):
-        # Valore legacy in chiaro
-        return raw
-    token = raw[len(_CIPHER_PREFIX):]
-    fernet = get_fernet()
-    try:
-        decrypted_bytes = fernet.decrypt(token.encode("utf-8"))
-        return decrypted_bytes.decode("utf-8")
-    except (InvalidToken, Exception):
-        # In caso di chiave cambiata o token non valido
-        return None
+    if not raw.startswith("enc:"):
+        return raw  # Read legacy plaintext only; callers migrate to the dedicated key.
+    active_raw = os.getenv("AI_SETTINGS_ENCRYPTION_KEY", "").strip()
+    keys = ([active_raw] if active_raw else []) + _previous("AI_SETTINGS_PREVIOUS_KEYS")
+    if raw.startswith("enc:v2:"):
+        parts = raw.split(":", 3)
+        if len(parts) != 4:
+            raise SecretDecryptionError("Credenziale IA cifrata non valida")
+        ident, token = parts[2:]
+        candidates = [Fernet(_derive(key)) for key in keys if hashlib.sha256(_derive(key)).hexdigest()[:16] == ident]
+    elif raw.startswith("enc:v1:"):
+        token = raw[7:]
+        candidates = [Fernet(_derive(key)) for key in keys]
+        jwt_keys = ([os.getenv("JWT_SECRET_KEY")] if os.getenv("JWT_SECRET_KEY") else []) + _previous("AI_SETTINGS_LEGACY_JWT_KEYS")
+        candidates += [Fernet(base64.urlsafe_b64encode(hashlib.sha256(f"autify-ai-salt:{key}".encode()).digest())) for key in jwt_keys]
+    else:
+        raise SecretDecryptionError("Versione credenziale IA non supportata")
+    for cipher in candidates:
+        try:
+            return cipher.decrypt(token.encode()).decode()
+        except (InvalidToken, UnicodeError):
+            continue
+    raise SecretDecryptionError("Credenziale IA non leggibile: recuperare la chiave originale, senza sovrascrivere le impostazioni")
 
 def mask_secret(secret: Optional[str]) -> Optional[str]:
     """
@@ -84,7 +107,7 @@ def is_masked_or_empty(val: Optional[str], stored_decrypted: Optional[str] = Non
     if not val or not str(val).strip():
         return True
     v = str(val).strip()
-    if v in ("***", "enc:v1:", "***-HIDDEN"):
+    if v.startswith("enc:") or v in ("***", "***-HIDDEN"):
         return True
     if "..." in v:
         return True

@@ -2,9 +2,17 @@
 
 Piano riscritto integralmente il 12 settembre 2026 sulla base dell’assessment del commit `cad2ca2714796d3199152e1d5a49c143df9d8fbc`. Il riferimento centrale è [ARCHITECTURE_MAP.md](ARCHITECTURE_MAP.md).
 
-**Stato: nessun fix applicato da questo assessment.** Le modifiche richieste sono documentali; tutti gli interventi sotto sono aperti. Questo piano sostituisce le precedenti checklist e i loro indicatori di completamento. La storia rimane in Git.
+**Stato storico dell'assessment del 12 settembre:** nessun fix applicato in quella fase. Le schede sotto descrivono quello snapshot; la storia rimane in Git.
+
+**Aggiornamento 29 ottobre 2026, C1 / DATA-01 / ASTRA-02 e ASTRA-03:** fix locali implementati per transazioni restore, snapshot export, dieci collection, codec BSON, cifratura dedicata, validazione e manutenzione. Verifica finale rinviata su richiesta utente: DATA-01 resta da validare prima della chiusura. Consultare `file.md`, `audit_astra.md` e `BACKUP_OPERATIONS.md`; nessuna distribuzione effettuata.
 
 ## Criteri e limiti
+
+**C5, 30 ottobre 2026:** ASTRA-07/15 implementati in4.0.6: fonti canoniche, minimizzazione/hash, configurazione effettiva, bozza/revisione e PDF server. Verifica rinviata, casi C5 in test.md. Nessuna attestazione di anonimizzazione o conformità legale.
+
+**Aggiornamento C3/C4, 30 ottobre 2026:** ASTRA-01/04/05/09/11 implementati localmente in4.0.5, ancora da verificare. Snapshot storico, validazione comune, importer SIS, coda con lease e cancellazione/pubblicazione transazionali; casi C3/C4 in test.md. Non chiudere i rilievi come validati sulla base della sola revisione del codice.
+
+**Aggiornamento C2 del 30 ottobre 2026:** ASTRA-10/08 implementati localmente: bootstrap esplicito, cambio password personale imposto dal server, sessioni revocate, capabilities IA viewer e lettura notifiche proprie. Stato: da verificare, non chiuso come validato. I casi C1/C2 sono centralizzati in `test.md`; riferimenti operativi in `AUTH_OPERATIONS.md` e `file.md`.
 
 - **P0:** chiudere prima di un’ulteriore esposizione dell’app agli utenti: autorizzazioni e accesso ai segreti.
 - **P1:** correggere prima di considerare affidabili ripristino, indicatori, calcoli e relazioni; oppure prima del prossimo rilascio, secondo l’area.
@@ -21,7 +29,7 @@ Piano riscritto integralmente il 12 settembre 2026 sulla base dell’assessment 
 | [SEC-02](#sec-02) | P0 | Backup completo accessibile al viewer | Aperto |
 | [SEC-03](#sec-03) | P1 | Revoca sessioni e variazioni dei privilegi non effettive fino a scadenza JWT | Aperto |
 | [SEC-04](#sec-04) | P1 | Bootstrap e gestione delle credenziali | Aperto |
-| [DATA-01](#data-01) | P1 | Ripristino distruttivo, parziale e non fedele ai tipi originali | Aperto |
+| [DATA-01](#data-01) | P1 | Ripristino distruttivo, parziale e non fedele ai tipi originali | Fix C1 implementati, verifica rinviata |
 | [DATA-02](#data-02) | P1 | Identità modificabili e storico non ancorato alla versione della scala | Aperto |
 | [FUN-01](#fun-01) | P1 | Filtri semantici basati su date non mantenute e ricerca sovrascritta | Aperto |
 | [FUN-02](#fun-02) | P1 | Tre definizioni incompatibili di validità e scadenza | Aperto |
@@ -405,3 +413,18 @@ Il piano precedente non va interpretato come interamente ancora aperto. Nello sn
 ## Protocollo di chiusura
 
 Per chiudere un intervento: indicare commit, data, test/evidenza e limiti residui; aggiornare prima la mappa centrale quando cambiano contratti, ruoli, dati o flussi. Spuntare la voce solo dopo verifica. Non segnare come risolte anomalie normative sulla base di un’ipotesi del modello. Non modificare la versione applicativa per il solo aggiornamento di questo assessment.
+
+
+## C6 - aggiornamento locale4.0.7 (2026-10-30)
+
+Implementata policy unica scadenze e stati, UI da server, conteggi/navigazione coerenti, UTC/calendario e rimozione tagli nei percorsi C6.28 casi differiti, nessun test/analyzer/build. Consultare EXPIRY_OPERATIONS.md e file.md checkpoint10 per perimetro, default da confermare con struttura e limiti residui: nessuna migrazione massiva, letture proporzionali ai dati, storici completi non paginati. ASTRA-12 non dichiarato globalmente chiuso sui registri esterni a questo intervento.
+
+
+## C7 - aggiornamento locale4.0.8 (2026-10-30)
+
+ASTRA-14/17/22: fix CORS, trasporto SSRF e CSV applicati, da collaudare. ASTRA-16: chiavi IA versionate e separate, sessioni/password, container/rete/header applicati. Mongo autenticato predisposto in overlay e script operatore, nessuna attivazione o modifica al volume: rilievo parzialmente aperto operativamente. Residui sessione ancora accessibile a JavaScript, CSP di base e TLS DB espliciti.36 casi differiti, totale180 C1-C7; nessun test/analyzer/build/provider/deploy. SECURITY_OPERATIONS.md e file.md checkpoint12 per ripresa, migrazione e limiti.
+
+
+## C8 - aggiornamento locale4.0.9 (2026-10-30)
+
+ASTRA-13/18/19/20 implementati nel perimetro RELEASE_OPERATIONS.md: audit transazionale e segnalazione postcommit, PDF escape/figure/render limitato e storico, licenze singleton/CAS/forzatura admin/recupero backup, readiness e manifest/pipeline manuale.40 casi differiti C8, totale220, nessun test/render/install/build/CI/deploy. C8 non chiuso per collaudo: fixture legacy, visivoPDF/carico, suite browser, installazione lock e pipeline/rollback da verificare. Lifetime offline e protocollo centrale mantenuti; C7Mongoauth operativo resta aperto. Ripresa file.md checkpoint15.

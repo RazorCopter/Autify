@@ -1,3 +1,6 @@
+from ..audit import record
+from ..transactions import atomic
+from ..database import database
 import logging
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Header, Depends, Request, Query
 from slowapi import Limiter
@@ -69,198 +72,43 @@ async def get_patients(
     page_size: int = Query(default=50, ge=1, le=200, description="Elementi per pagina"),
     search: Optional[str] = Query(default=None, description="Ricerca su nome e cognome"),
     status: Optional[str] = Query(default="active", pattern="^(active|archived|all)$", description="Filtro stato utente"),
-    filter: Optional[str] = Query(default=None, pattern="^(scaduti|in_scadenza|incompleti|mai_valutati)$", description="Filtro semantico sullo stato delle scale"),
-    validity_pos: int = Query(default=12, ge=1, description="Mesi di validità POS/generica"),
-    validity_sm: int = Query(default=12, ge=1, description="Mesi di validità San Martín"),
-    validity_sis: int = Query(default=36, ge=1, description="Mesi di validità SIS"),
+    filter: Optional[str] = Query(default=None, pattern="^(scaduti|in_scadenza|incompleti|mai_valutati|coperti|da_completare)$", description="Filtro semantico sullo stato delle scale"),
+    validity_pos: int = Query(default=12, ge=1, deprecated=True, description="Compatibilita: ignorato; policy server. Mesi di validità POS/generica"),
+    validity_sm: int = Query(default=12, ge=1, deprecated=True, description="Compatibilita: ignorato; policy server. Mesi di validità San Martín"),
+    validity_sis: int = Query(default=36, ge=1, deprecated=True, description="Compatibilita: ignorato; policy server. Mesi di validità SIS"),
 ):
-    # Costruzione query filtro stato attivo/archiviato
-    query: dict = {}
+    from ..expiry import project, utc_date
+    query = {}
     if status == "active":
-        query["attivo"] = True
+        query["attivo"] = {"$ne": False}
     elif status == "archived":
         query["attivo"] = False
-    # status == "all" → nessun filtro
-
     if search and search.strip():
         query.update(_build_patient_search_condition(search))
-
-    # ── Filtri semantici server-side ────────────────────────────────────────
-    if filter in ("scaduti", "in_scadenza", "incompleti", "mai_valutati"):
-        now = datetime.now(timezone.utc)
-
-        # Recupero parametri server-side se presenti
-        settings_doc = await settings_collection.find_one({"id": "global_settings"})
-        if settings_doc and "scale_validity_months" in settings_doc:
-            val_map = settings_doc["scale_validity_months"]
-            validity_pos = val_map.get("pos", validity_pos)
-            validity_sm = val_map.get("san_martin", validity_sm)
-            validity_sis = val_map.get("sis", validity_sis)
-
-        # Calcola le soglie di scadenza per ciascun tipo di scala
-        def _cutoff(months: int) -> datetime:
-            return now - timedelta(days=months * 30)
-
-        cutoff_pos = _cutoff(validity_pos)
-        cutoff_sm = _cutoff(validity_sm)
-        cutoff_sis = _cutoff(validity_sis)
-
-        # Campi data delle scale nel documento paziente
-        SCALE_FIELDS = [
-            ("ultimo_pos_compilato", cutoff_pos),
-            ("ultimo_san_martin_compilato", cutoff_sm),
-            ("ultimo_sis_compilato", cutoff_sis),
-            ("ultimo_ogva_compilato", cutoff_pos),
-            ("ultimo_sabs_compilato", cutoff_pos),
-            ("ultimo_oso_compilato", cutoff_pos),
-        ]
-
-        filter_condition = None
-
-        if filter == "mai_valutati":
-            # Tutte le date di scala sono null o mancanti
-            filter_condition = {
-                "$and": [
-                    {"$or": [{f: None}, {f: {"$exists": False}}, {f: ""}]}
-                    for f, _ in SCALE_FIELDS
-                ]
-            }
-
-        elif filter == "incompleti":
-            # Almeno una data di scala è null o mancante
-            filter_condition = {
-                "$or": [
-                    {"$or": [{f: None}, {f: {"$exists": False}}, {f: ""}]}
-                    for f, _ in SCALE_FIELDS
-                ]
-            }
-
-        elif filter == "scaduti":
-            # Almeno una scala presente è scaduta (data < cutoff)
-            scaduti_conditions = []
-            for field, cutoff in SCALE_FIELDS:
-                # Il campo esiste, non è null, ed è precedente alla soglia
-                scaduti_conditions.append({
-                    field: {
-                        "$nin": [None, ""],
-                        "$lt": cutoff.isoformat()
-                    }
-                })
-            filter_condition = {"$or": scaduti_conditions}
-
-        elif filter == "in_scadenza":
-            # Almeno una scala presente è in scadenza (cutoff <= data < cutoff + 30gg warning)
-            warning_days = 30
-            in_scadenza_conditions = []
-            for field, cutoff in SCALE_FIELDS:
-                warning_cutoff = cutoff + timedelta(days=warning_days)
-                in_scadenza_conditions.append({
-                    "$and": [
-                        {field: {"$ne": None}},
-                        {field: {"$ne": ""}},
-                        {field: {"$gte": cutoff.isoformat()}},
-                        {field: {"$lt": warning_cutoff.isoformat()}},
-                    ]
-                })
-            filter_condition = {"$or": in_scadenza_conditions}
-
-        if filter_condition:
-            if "$and" in query:
-                query["$and"].append(filter_condition)
-            elif query:
-                # Trasforma i vincoli esistenti (es. search/status) e la condizione filtro in un unico $and
-                existing_parts = []
-                for k, v in list(query.items()):
-                    existing_parts.append({k: v})
-                existing_parts.append(filter_condition)
-                query.clear()
-                query["$and"] = existing_parts
-            else:
-                query.update(filter_condition)
-
-    total = await patients_collection.count_documents(query)
-    skip = (page - 1) * page_size
-    patients = await patients_collection.find(query).skip(skip).limit(page_size).to_list(length=page_size)
-
-    # Recupera le scale per mappare l'ID al nome (1 query)
-    scales_list = await scales_collection.find({}).to_list(length=100)
-    scale_map = {}
-    for s in scales_list:
-        nome_lower = s["nome"].lower()
-        scale_map[s["id"]] = nome_lower
-        mongo_id = s.get("_id")
-        if mongo_id:
-            scale_map[str(mongo_id)] = nome_lower
-
-    # Raccoglie gli ID dei pazienti della pagina corrente per le query bulk mirate
-    pat_ids = [p["id"] for p in patients if p.get("id")]
-
-    # Carica le valutazioni solo per i pazienti della pagina corrente
-    all_evals = await evaluations_collection.find(
-        {"id_paziente": {"$in": pat_ids}}
-    ).sort("data_compilazione", -1).to_list(length=10000)
-    evals_by_patient: dict = {}
-    for ev in all_evals:
-        pid = ev.get("id_paziente")
-        if pid:
-            evals_by_patient.setdefault(pid, []).append(ev)
-
-    # Carica le ultime analisi IA solo per i pazienti della pagina corrente
-    all_analyses = await ai_analyses_collection.find(
-        {"id_paziente": {"$in": pat_ids}}
-    ).sort("timestamp", -1).to_list(length=2000)
-    latest_ia_by_patient: dict = {}
-    for an in all_analyses:
-        pid = an.get("id_paziente")
-        if pid and pid not in latest_ia_by_patient:
-            latest_ia_by_patient[pid] = an
-
-    # Arricchisce ciascun utente con le date delle ultime scale compilate
-    for pat in patients:
-        pat_id = pat["id"]
-        pat_dict = pat if isinstance(pat, dict) else pat.__dict__
-
-        pat_dict["ultimo_pos_compilato"] = None
-        pat_dict["ultimo_san_martin_compilato"] = None
-        pat_dict["ultimo_sis_compilato"] = None
-        pat_dict["ultimo_ogva_compilato"] = None
-        pat_dict["ultimo_sabs_compilato"] = None
-        pat_dict["ultimo_oso_compilato"] = None
-        pat_dict["ultima_analisi_ia"] = None
-
-        latest_ai = latest_ia_by_patient.get(pat_id)
-        if latest_ai and latest_ai.get("timestamp"):
-            ts = latest_ai["timestamp"]
-            pat_dict["ultima_analisi_ia"] = ts.isoformat() if isinstance(ts, datetime) else str(ts)
-
-        for ev in evals_by_patient.get(pat_id, []):
-            scale_id = ev.get("id_scala")
-            scale_id_str = str(scale_id) if scale_id else ""
-            scale_name = scale_map.get(scale_id, scale_map.get(scale_id_str, "")).lower()
-
-            data_val = ev.get("data_compilazione")
-            data_str = data_val.isoformat() if isinstance(data_val, datetime) else (str(data_val) if data_val else None)
-
-            scale_type = _classify_scale(scale_name, scale_id_str)
-            field_map = {
-                "pos": "ultimo_pos_compilato",
-                "san_martin": "ultimo_san_martin_compilato",
-                "sis": "ultimo_sis_compilato",
-                "ogva": "ultimo_ogva_compilato",
-                "sabs": "ultimo_sabs_compilato",
-                "oso": "ultimo_oso_compilato",
-            }
-            if scale_type in field_map and not pat_dict.get(field_map[scale_type]):
-                pat_dict[field_map[scale_type]] = data_str
-
-            if (pat_dict.get("ultimo_pos_compilato") and
-                    pat_dict.get("ultimo_san_martin_compilato") and
-                    pat_dict.get("ultimo_sis_compilato") and
-                    pat_dict.get("ultimo_ogva_compilato") and
-                    pat_dict.get("ultimo_sabs_compilato") and
-                    pat_dict.get("ultimo_oso_compilato")):
-                break
-
+    # Stable pagination after semantic filtering; no truncated candidate set.
+    cursor = patients_collection.find(query).sort([("cognome", 1), ("nome", 1), ("id", 1), ("_id", 1)])
+    if filter:
+        patients = await cursor.to_list(length=None)
+        await project(patients)
+        states = ({"coperti", "in_scadenza"} if filter == "coperti" else
+                  {"mai_valutati", "incompleti", "scaduti"} if filter == "da_completare" else {filter})
+        patients = [p for p in patients if p["stato_valutazioni"] in states]
+        total = len(patients)
+        patients = patients[(page - 1) * page_size:page * page_size]
+    else:
+        total = await patients_collection.count_documents(query)
+        patients = await cursor.skip((page - 1) * page_size).limit(page_size).to_list(length=page_size)
+        await project(patients)
+    ids = [p["id"] for p in patients]
+    latest = {}
+    async for analysis in ai_analyses_collection.find({"id_paziente": {"$in": ids}}, {"id_paziente": 1, "timestamp": 1}):
+        date = utc_date(analysis.get("timestamp"))
+        pid = analysis["id_paziente"]
+        if date and (pid not in latest or date > latest[pid]):
+            latest[pid] = date
+    for patient in patients:
+        date = latest.get(patient["id"])
+        patient["ultima_analisi_ia"] = date.isoformat() if date else None
     return PaginatedPatients(items=patients, total=total, page=page, page_size=page_size)
 
 @admin_router.post("/patients", response_model=Patient, status_code=status.HTTP_201_CREATED, tags=["Admin - Patients"])
@@ -274,15 +122,11 @@ async def create_patient(patient: Patient, auth_context: dict = Depends(verify_a
         existing = await patients_collection.find_one({"id": patient.id})
         if existing:
             raise HTTPException(status_code=400, detail="Utente con questo ID già esistente")
-    await patients_collection.insert_one(patient_dict)
+    async def persist(session):
+        await database.patients.insert_one(patient_dict, session=session)
+        await record("CREAZIONE_UTENTE", auth_context["username"], "Creata anagrafica", patient.id, session=session)
+    await atomic(persist)
     _invalidate_dashboard_cache()
-
-    await log_audit(
-        "CREAZIONE_UTENTE",
-        auth_context["username"],
-        f"Creato nuovo utente: {patient.nome} {patient.cognome}",
-        patient.id
-    )
 
     return patient
 
@@ -291,18 +135,14 @@ async def update_patient(id: str, patient: Patient, auth_context: dict = Depends
     if patient.id != id:
         raise HTTPException(status_code=400, detail="L'ID nel corpo della richiesta non coincide con l'ID nel path")
     patient_dict = patient.model_dump()
-    result = await patients_collection.replace_one({"id": id}, patient_dict)
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Utente non trovato")
-        
-    await log_audit(
-        "MODIFICA_UTENTE", 
-        auth_context["username"], 
-        f"Aggiornata anagrafica utente: {patient.nome} {patient.cognome}", 
-        id
-    )
+    async def persist(session):
+        result = await database.patients.update_one({"id": id}, {"$set": patient_dict, "$inc": {"write_revision": 1}}, session=session)
+        if result.matched_count == 0:
+            raise HTTPException(404, "Utente non trovato")
+        await record("MODIFICA_UTENTE", auth_context["username"], "Aggiornata anagrafica", id, session=session)
+    await atomic(persist)
     _invalidate_dashboard_cache()
-        
+
     return patient
 
 @admin_router.delete("/patients/{id}", tags=["Admin - Patients"])
@@ -315,22 +155,16 @@ async def delete_patient(id: str, auth_context: dict = Depends(verify_auth)):
         if cognome or nome:
             utente_nome = f" {cognome} {nome}"
             
-    # Elimina a cascata tutte le valutazioni e le analisi IA associate all'utente prima di rimuoverlo
-    await evaluations_collection.delete_many({"id_paziente": id})
-    await ai_analyses_collection.delete_many({"id_paziente": id})
-    
-    result = await patients_collection.delete_one({"id": id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Utente non trovato")
+    async def remove(session):
+        result = await database.patients.delete_one({"id": id}, session=session)
+        if result.deleted_count == 0:
+            raise HTTPException(404, "Utente non trovato")
+        for collection in ("evaluations", "ai_analyses", "ai_jobs", "notifications"):
+            await database[collection].delete_many({"id_paziente": id}, session=session)
+        await record("CANCELLAZIONE_UTENTE", auth_context["username"], "Eliminata anagrafica e dati collegati inclusi job e notifiche", id, session=session)
+    await atomic(remove)
     _invalidate_dashboard_cache()
 
-    await log_audit(
-        "CANCELLAZIONE_UTENTE", 
-        auth_context["username"], 
-        f"Eliminato utente{utente_nome}, relative valutazioni e analisi IA".strip(), 
-        id
-    )
-        
     return {"message": "Utente, relative valutazioni e analisi IA eliminati con successo"}
 
 @client_router.get("/patients", response_model=List[Patient], tags=["Client - Patients"])
@@ -338,6 +172,6 @@ async def delete_patient(id: str, auth_context: dict = Depends(verify_auth)):
 async def get_client_patients(request: Request):
     """Recupero pazienti per la selezione prima del wizard"""
     cursor = patients_collection.find({})
-    patients = await cursor.to_list(length=1000)
+    patients = await cursor.to_list(length=None)
     # The frontend only needs id, nome, cognome. Patient model has them.
     return patients

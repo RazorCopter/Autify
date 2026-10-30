@@ -8,6 +8,83 @@
 - **Alert Center e Navigazione Semantica**: centro alert con scrolling confinato e reindirizzamento coerente ai filtri semantici dell'anagrafica (`scaduti`, `mai_valutati`).
 - **Disaccoppiamento e Testabilità**: disaccoppiamento di `DashboardV4Screen` dalle dipendenze web dirette tramite iniezione di `statsLoader`, con 10 widget/unit test passanti su VM Flutter.
 
+## [4.0.9] - 2026-10-30
+
+### Fixed
+- C8: eventi audit con versione/correlazione e transazioni sulle mutazioni principali; segnale esplicito sui guasti post-azione, registro riservato agli admin.
+- PDF: escape testo libero, figure isolate e rendering limitato; protocollo storico unica fonte, senza overwrite POS bundled.
+- Licenze: forza remoto admin, singleton/CAS/singleflight per processo, backup recuperabile a licenza scaduta; rilascio senza rinnovo trial originario.
+
+### Build and documentation
+- Readiness DB/replica writable, immagini fissate per digest, manifest backend con hash, Flutterlock enforce e CI soltanto manuale. Override per immagini verificate e procedura rollback.
+-40 casi C8 differiti, totale220; RELEASE_OPERATIONS.md e checkpoint15 file.md. Nessun test/render/installazione/build/CI/deploy eseguito; compatibilita e rilascio ancora da verificare.
+
+## [4.0.8] - 2026-10-30
+
+### Security
+- C7: CORS PATCH; CSV admin con protezione formule, no-store e date C6.
+- Chiavi IA dedicate enc:v2, keyring legacy e rewrap admin con CAS; errori espliciti senza sostituzione impostazioni. Restore C1 valida tutti i formati cifrati.
+- Endpoint IA fail-closed con connessione a IP validato, Host/SNI e TLS verificato; policy HTTPS/LAN esplicita e proxy ambiente disabilitati.
+- Nuove password/reset12 caratteri, JWT60min configurabile e token browser limitato alla sessione della scheda. Backend nonroot/read-only, rete DB interna, header Nginx/API.
+- Preparati overlay Mongo autenticato e provisioning senza reset; attivazione sul volume esistente ancora da pianificare e verificare. Residui sessione JavaScript/CSP e TLS documentati.
+
+### Documentation
+- SECURITY_OPERATIONS.md, checkpoint12 file.md,36 casi C7 differiti (totale180). Nessun test/analyzer/build/provider/deploy o migrazione DB eseguito; C7 non dichiarato chiuso operativamente.
+
+## [4.0.7] - 2026-10-30
+
+### Fixed
+- C6: scadenze, completezza e filtri centralizzati sul server; calendario Europe/Rome, fine mese e policy comune modificabile dagli amministratori.
+- KPI utenti e copertura delle scale distinti; navigazione ai relativi insiemi, totale compilazioni effettive, badge da stati server.
+- Date UTC e compatibilita legacy in lettura, ordinamento stabile, rimozione dei tagli silenziosi nei percorsi coinvolti. Migrazione massiva e ottimizzazione grandi archivi non eseguite.
+
+### Documentation
+-28 casi C6 differiti in test.md (totale144). Procedure EXPIRY_OPERATIONS.md, checkpoint10 in file.md. Nessun test/analyzer/build o deploy in questa fase.
+
+## [4.0.6] - 2026-10-30
+
+### Fixed
+- **C5 / ASTRA-07:** contesto IA costruito dal server da ID e snapshot, appartenenza verificata, analisi distinta per valutazione; rimossi dati/analisi client e fallback per scala dal payload.
+- **C5 / ASTRA-15:** minimizzazione campi strutturati, zero distinto da assenza, conferma invio testi/allegati e separazione dati/istruzioni. Provenienza/hash e configurazione effettiva del worker persistiti senza credenziali.
+- Relazioni nuove in bozza; approvazione admin con hash, revisore e audit; solo testi approvati riutilizzabili. PDF salvati da documento server, legacy/manuali senza provenienza inventata.
+- Pulizia input transitori dei job terminali estesa a bootstrap e restore. Backup conserva hash/fonti storiche anche dopo eliminazione valutazione.
+
+### Documentation
+- Aggiunti24 casi C5 in test.md, totale116; procedure in AI_PROVENANCE_OPERATIONS.md. Nessuna esecuzione di test, analisi statiche o build in questa fase; nessun deploy.
+
+## [4.0.5] - 2026-10-30
+
+### Fixed
+- **C3 / ASTRA-01/04/05:** importer SIS condiviso, validatore unico create/update con completezza e tipi rigorosi, unicità ID valutazione; snapshot usato da PDF/analisi/aggregati/editor. Storico legacy congelato con provenienza dichiarata, senza inventare la versione originale. Indici soppressi per valutazioni incomplete.
+- **Interfaccia storico:** protocolli eliminati consultabili dal profilo, domande/opzioni dello snapshot selezionato, conteggi compositi0..N e filtro dei dati ausiliari del wizard.
+- **C4 / ASTRA-09/11:** coda IA persistita con polling, claim/lease, limiti globali e recovery senza replay di chiamate incerte; pubblicazione atomica di relazione/stato/notifica/audit. Delete anagrafica coordinato con job e altre scritture figlie.
+
+### Changed
+- Replica set necessario anche per le nuove operazioni transazionali C3/C4. Indici univoci richiedono riparazione esplicita di eventuali duplicati legacy; nessuna cancellazione automatica.
+- `test.md` include20 casi C3 e22 C4 differiti. Procedure e limiti in `EVALUATIONS_JOBS_OPERATIONS.md`. Nessun test, analyzer, build o deploy eseguito per questi fix.
+
+## [4.0.4] - 2026-10-30
+
+### Fixed
+- **C2 / ASTRA-10:** eliminato fallback bootstrap admin/admin; password iniziale esplicita, obbligo cambio applicato alle API e percorso personale con conferma/password corrente. Cambio atomico con controllo concorrenza, revoca sessioni e ritorno al login.
+- **Sessioni:** claim JWT essenziali obbligatori, ruolo e abilitazione IA ricavati dal database; account bootstrap storico ancora insicuro marcato al login/avvio, anche dopo restore.
+- **C2 / ASTRA-08:** viewer non reinvia prompt di sistema; nuova API capabilities minima, impostazioni IA riservate admin. Lettura notifiche proprie consentita tramite eccezioni RBAC circoscritte.
+
+### Documentation
+- `test.md` centralizza 29 casi C1 e 21 casi C2, tutti da verificare sulla revisione finale. `AUTH_OPERATIONS.md` descrive bootstrap, sessioni e matrice permessi. Test, analisi statiche e build rinviati; nessun deploy.
+
+## [4.0.3] - 2026-10-29
+
+### Fixed
+- **C1, backup e ripristino:** sostituzione atomica delle dieci collection tramite transazione MongoDB, incluse collection vuote, job IA, notifiche ed evento audit; validazione preventiva di tipi, date, riferimenti, credenziali e identità licenza.
+- **Fedeltà e compatibilità:** formato BSON Extended JSON v2, lettura degli archivi legacy completi, limiti coerenti di 64 MiB, cifratura AES-GCM con chiave dedicata e keyring per rotazione.
+- **Recupero e interfaccia:** manutenzione obbligatoria per restore, revoca sessioni, interruzione esplicita dei job ripristinati, conferma UI ed errori/timeout con esito da verificare.
+
+### Changed
+- Compose predisposto per replica set singolo; variabili e procedura di migrazione in `BACKUP_OPERATIONS.md`. Nessun aggiornamento automatico dell'installazione cliente effettuato.
+- Versione backend disponibile anche nel modulo generato `app/version.py`.
+- **Stato:** implementazione locale; test finali rinviati su richiesta utente. Le verifiche intermedie in `file.md` non certificano la revisione finale.
+
 ## [4.0.2] - 2026-10-08
 
 ### Fixed

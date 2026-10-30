@@ -4,24 +4,46 @@ services:
     build:
       context: ./backend
       args:
-        - CACHE_BUST=4.0.2
+        - CACHE_BUST=4.0.9
     pull_policy: build
     environment:
-      - MONGODB_URL=mongodb://autify-db:27017
+      - MONGODB_URL=${MONGODB_URL:-mongodb://autify-db:27017/?replicaSet=autify-rs}
+      - BACKUP_ENCRYPTION_KEY=${BACKUP_ENCRYPTION_KEY:-}
+      - BACKUP_PREVIOUS_KEYS=${BACKUP_PREVIOUS_KEYS:-[]}
+      - LEGACY_BACKUP_JWT_SECRETS=${LEGACY_BACKUP_JWT_SECRETS:-[]}
+      - BACKUP_MAINTENANCE_MODE=${BACKUP_MAINTENANCE_MODE:-false}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - TZ=Europe/Rome
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_EXPIRY_MINUTES=${JWT_EXPIRY_MINUTES:-60}
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://tiglio.autify.it,http://localhost:8090,http://localhost:8000}
+      - INITIAL_ADMIN_PASSWORD=${INITIAL_ADMIN_PASSWORD:-}
       - LICENSE_SERVER_URL=${LICENSE_SERVER_URL}
       - LICENSE_SHARED_SECRET=${LICENSE_SHARED_SECRET}
       - LICENSE_CACHE_HOURS=${LICENSE_CACHE_HOURS:-24}
       - LICENSE_OFFLINE_GRACE_HOURS=${LICENSE_OFFLINE_GRACE_HOURS:-72}
       - LICENSE_SERVER_TIMEOUT_SECONDS=${LICENSE_SERVER_TIMEOUT_SECONDS:-8}
       - AI_SETTINGS_ENCRYPTION_KEY=${AI_SETTINGS_ENCRYPTION_KEY:-}
+      - AI_SETTINGS_PREVIOUS_KEYS=${AI_SETTINGS_PREVIOUS_KEYS:-[]}
+      - AI_SETTINGS_LEGACY_JWT_KEYS=${AI_SETTINGS_LEGACY_JWT_KEYS:-[]}
+      - ALLOW_INSECURE_LOCAL_AI_HTTP=${ALLOW_INSECURE_LOCAL_AI_HTTP:-false}
       - ALLOW_PRIVATE_AI_ENDPOINTS=${ALLOW_PRIVATE_AI_ENDPOINTS:-false}
       - ALLOWED_AI_HOSTS=${ALLOWED_AI_HOSTS:-}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=8).read()"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [default, data]
     depends_on:
       autify-db:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
   # FRONTEND ADMIN (porta 8090)
@@ -29,20 +51,39 @@ services:
     build:
       context: ./frontend_admin
       args:
-        - CACHE_BUST=4.0.2
+        - CACHE_BUST=4.0.9
     pull_policy: build
     ports:
       - "8090:80"
     depends_on:
-      - autify-api
+      autify-api:
+        condition: service_healthy
     restart: unless-stopped
 
   # DATABASE
   autify-db:
-    image: mongo:8.0.4
+    networks: [data]
+    image: mongo:8.0.4@sha256:aaad67f2dca93148e5343c03210bcfc89a0107516a4756bfa018acd6579e5b18
+    command: ["mongod", "--replSet", "autify-rs", "--bind_ip_all"]
     restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - "try { rs.status(); } catch (e) { if (e.code === 94) { rs.initiate({_id:'autify-rs',members:[{_id:0,host:'autify-db:27017'}]}); } else { throw e; } } if (!db.hello().isWritablePrimary) { quit(1); }"
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 10s
     volumes:
       - autify_data:/data/db
 
 volumes:
   autify_data:
+
+networks:
+  default:
+  data:
+    internal: true

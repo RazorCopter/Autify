@@ -47,3 +47,6 @@ flutter-sdk/
 
 # Image backups
 frontend_admin/assets/images_raw_backup/
+
+# Runtime deployment secrets (C7)
+/secrets/

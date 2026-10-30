@@ -1,13 +1,10 @@
 ﻿import 'dart:async';
-import 'dart:html' as html;
 import 'dart:convert';
+import '../utils/web_compat.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../models/patient_model.dart';
 import '../models/scale_model.dart';
 import '../services/api_service.dart';
-import '../services/settings_notifier.dart';
-import '../services/validity_calculator.dart';
 import '../utils/responsive_helper.dart';
 import '../theme/app_theme.dart';
 import 'multidimensional_dashboard_screen.dart';
@@ -98,9 +95,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
         final dataUrl = 'data:text/csv;base64,$base64Data';
         final now = DateTime.now();
         final filename = 'autify_utenti_${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}.csv';
-        html.AnchorElement(href: dataUrl)
-          ..setAttribute('download', filename)
-          ..click();
+        WebCompat.downloadDataUrl(dataUrl, filename);
       }
     } catch (e) {
       debugPrint('Export error: $e');
@@ -405,11 +400,14 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
       ),
     );
     } finally {
-      nomeController.dispose();
-      cognomeController.dispose();
-      pesoController.dispose();
-      dataNascitaController.dispose();
-      noteController.dispose();
+      // Evita il dispose sincrono immediato per consentire il completamento delle animazioni di chiusura
+      Future.delayed(const Duration(milliseconds: 350), () {
+        nomeController.dispose();
+        cognomeController.dispose();
+        pesoController.dispose();
+        dataNascitaController.dispose();
+        noteController.dispose();
+      });
     }
   }
 
@@ -541,8 +539,6 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Listen to SettingsNotifier to reactively rebuild when validity settings change
-    context.watch<SettingsNotifier>();
 
     return Stack(
       children: [
@@ -606,7 +602,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                       listWidget = GridView.builder(
                         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                           maxCrossAxisExtent: ResponsiveHelper.isTablet(context) ? 260 : 280,
-                          mainAxisExtent: 165,
+                          mainAxisExtent: 195,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                         ),
@@ -758,25 +754,16 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
                         children: [
-                          _buildScaleIndicator(patient.ultimoOgvaCompilato, "OGVA"),
-                          const SizedBox(width: 4),
-                          _buildScaleIndicator(patient.ultimoSabsCompilato, "SABS"),
-                          const SizedBox(width: 4),
-                          _buildScaleIndicator(patient.ultimoOsoCompilato, "OSO"),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildScaleIndicator(patient.ultimoPosCompilato, "POS"),
-                          const SizedBox(width: 4),
-                          _buildScaleIndicator(patient.ultimoSanMartinCompilato, "SanMartín"),
-                          const SizedBox(width: 4),
-                          _buildScaleIndicator(patient.ultimoSisCompilato, "SIS"),
+                          _buildScaleIndicator(patient, "OGVA"),
+                          _buildScaleIndicator(patient, "SABS"),
+                          _buildScaleIndicator(patient, "OSO"),
+                          _buildScaleIndicator(patient, "POS"),
+                          _buildScaleIndicator(patient, "SanMartín"),
+                          _buildScaleIndicator(patient, "SIS"),
                         ],
                       ),
                     ],
@@ -851,55 +838,28 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
     );
   }
 
-  Widget _buildScaleIndicator(String? dateStr, String scaleName) {
-    Color badgeColor = Colors.grey.shade100;
-    Color textColor = Colors.grey.shade400;
-    String status = "Non compilata";
-    String formattedDate = "";
-
-    if (dateStr != null && dateStr.isNotEmpty) {
-      try {
-        final date = DateTime.parse(dateStr);
-        formattedDate = "${date.day}/${date.month}/${date.year}";
-
-        final currentSettings = context.read<SettingsNotifier>().settings;
-        final statusEnum = ValidityCalculator.getStatus(
-          completionDate: date,
-          scaleType: scaleName,
-          currentSettings: currentSettings,
-        );
-
-        final color = ValidityCalculator.getColor(
-          completionDate: date,
-          scaleType: scaleName,
-          currentSettings: currentSettings,
-        );
-
-        badgeColor = color.withValues(alpha: 0.12);
-        textColor = color;
-
-        final isSM = scaleName.toLowerCase().contains('martin') || scaleName.toLowerCase().contains('san');
-        final isSIS = scaleName.toLowerCase().contains('sis');
-        final months = isSM 
-            ? currentSettings.validityMonthsSanMartin 
-            : (isSIS ? currentSettings.validityMonthsSIS : currentSettings.validityMonthsPOS);
-
-        switch (statusEnum) {
-          case EvaluationStatus.expired:
-            status = "Scaduta (compilata il $formattedDate - validità: $months mesi)";
-            break;
-          case EvaluationStatus.expiring:
-            status = "Prossima alla scadenza (compilata il $formattedDate - validità: $months mesi)";
-            break;
-          case EvaluationStatus.valid:
-            status = "Attiva (compilata il $formattedDate - validità: $months mesi)";
-            break;
-        }
-      } catch (_) {
-        badgeColor = Colors.grey.shade100;
-        textColor = Colors.grey.shade400;
-      }
-    }
+  Widget _buildScaleIndicator(PatientModel patient, String scaleName) {
+    final kind = scaleName.toLowerCase().contains('san') ? 'san_martin' : scaleName.toLowerCase();
+    final data = patient.statoScale[kind] as Map?;
+    final state = data?['stato'];
+    final Color textColor = switch (state) {
+      'valida' => const Color(0xFF10B981),
+      'in_scadenza' => const Color(0xFFF97316),
+      'scaduta' => const Color(0xFFEF4444),
+      'incompleta' => Colors.purple,
+      _ => Colors.grey,
+    };
+    final badgeColor = textColor.withValues(alpha: 0.12);
+    final label = switch (state) {
+      'valida' => 'Attiva',
+      'in_scadenza' => 'In scadenza',
+      'scaduta' => 'Scaduta',
+      'incompleta' => 'Incompleta o data non valida',
+      'mancante' => 'Non compilata',
+      _ => 'Stato server non disponibile',
+    };
+    final due = data?['scadenza'];
+    final status = due == null ? label : '$label - scadenza $due (Europe/Rome)';
 
     return Tooltip(
       message: "$scaleName: $status",
@@ -1069,9 +1029,9 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                         spacing: 6,
                         runSpacing: 6,
                         children: [
-                          _buildScaleIndicator(p.ultimoOgvaCompilato, "OGVA"),
-                          _buildScaleIndicator(p.ultimoSabsCompilato, "SABS"),
-                          _buildScaleIndicator(p.ultimoOsoCompilato, "OSO"),
+                          _buildScaleIndicator(p, "OGVA"),
+                          _buildScaleIndicator(p, "SABS"),
+                          _buildScaleIndicator(p, "OSO"),
                         ],
                       ),
                       const SizedBox(height: 6),
@@ -1079,9 +1039,9 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                         spacing: 6,
                         runSpacing: 6,
                         children: [
-                          _buildScaleIndicator(p.ultimoPosCompilato, "POS"),
-                          _buildScaleIndicator(p.ultimoSanMartinCompilato, "SanMartín"),
-                          _buildScaleIndicator(p.ultimoSisCompilato, "SIS"),
+                          _buildScaleIndicator(p, "POS"),
+                          _buildScaleIndicator(p, "SanMartín"),
+                          _buildScaleIndicator(p, "SIS"),
                           _buildIaIndicator(p),
                         ],
                       ),
@@ -1173,22 +1133,22 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              _buildScaleIndicator(p.ultimoOgvaCompilato, "OGVA"),
+                              _buildScaleIndicator(p, "OGVA"),
                               const SizedBox(width: 4),
-                              _buildScaleIndicator(p.ultimoSabsCompilato, "SABS"),
+                              _buildScaleIndicator(p, "SABS"),
                               const SizedBox(width: 4),
-                              _buildScaleIndicator(p.ultimoOsoCompilato, "OSO"),
+                              _buildScaleIndicator(p, "OSO"),
                             ],
                           ),
                           const SizedBox(height: 4),
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              _buildScaleIndicator(p.ultimoPosCompilato, "POS"),
+                              _buildScaleIndicator(p, "POS"),
                               const SizedBox(width: 4),
-                              _buildScaleIndicator(p.ultimoSanMartinCompilato, "SanMartín"),
+                              _buildScaleIndicator(p, "SanMartín"),
                               const SizedBox(width: 4),
-                              _buildScaleIndicator(p.ultimoSisCompilato, "SIS"),
+                              _buildScaleIndicator(p, "SIS"),
                               const SizedBox(width: 4),
                               _buildIaIndicator(p),
                             ],
@@ -1342,7 +1302,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: _isExporting ? null : _exportCsv,
+              onPressed: !ApiService.isAdmin || _isExporting ? null : _exportCsv,
               icon: _isExporting ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.download),
               label: Text(_isExporting ? 'Esportazione...' : 'Esporta (CSV)'),
             ),
@@ -1373,7 +1333,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
           ),
         ),
         OutlinedButton.icon(
-          onPressed: _isExporting ? null : _exportCsv,
+          onPressed: !ApiService.isAdmin || _isExporting ? null : _exportCsv,
           icon: _isExporting ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.download),
           label: Text(_isExporting ? 'Esportazione...' : 'Esporta (CSV)'),
         ),
@@ -1519,7 +1479,7 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
           children: [
             Expanded(child: searchField),
             const SizedBox(width: 16),
-            filters,
+            Expanded(child: filters),
           ],
         ),
         const SizedBox(height: 10),
@@ -1532,6 +1492,8 @@ class _AnagraficaScreenState extends State<AnagraficaScreen> {
     const chips = [
       ('scaduti', 'Scaduti', Icons.warning_amber_rounded, Color(0xFFD32F2F)),
       ('in_scadenza', 'In scadenza', Icons.schedule_rounded, Color(0xFFF57C00)),
+      ('coperti', 'Coperti', Icons.check_circle_outline, Color(0xFF00897B)),
+      ('da_completare', 'Da completare', Icons.warning_amber, Color(0xFFB71C1C)),
       ('incompleti', 'Incompleti', Icons.incomplete_circle_rounded, Color(0xFF1565C0)),
       ('mai_valutati', 'Mai valutati', Icons.person_search_rounded, Color(0xFF6A1B9A)),
     ];

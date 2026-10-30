@@ -379,7 +379,8 @@ class _WizardScreenState extends State<WizardScreen>
 
     setState(() => _isLoading = true);
 
-    final answersList = _answers.entries.map((e) {
+    final questionKeys = _questions.map((item) => item.domanda.codice ?? item.domanda.idDomanda).toSet();
+    final answersList = _answers.entries.where((e) => questionKeys.contains(e.key)).map((e) {
       return AnswerModel(
         codiceDomanda: e.key,
         punteggio: e.value,
@@ -1147,7 +1148,15 @@ class _WizardScreenState extends State<WizardScreen>
     final List<String> checkedStates = List<String>.from(_answers[_currentKey + '_checklist'] ?? []);
 
     return Column(
-      children: sottodomande.asMap().entries.map((entry) {
+      children: [
+        TextButton(
+          onPressed: () => setState(() {
+            _answers[_currentKey + '_checklist'] = <String>[];
+            _answers[_currentKey] = 0;
+          }),
+          child: const Text('Nessuna voce selezionata (0)'),
+        ),
+        ...sottodomande.asMap().entries.map((entry) {
         final subq = entry.value;
         final testo = subq['testo'] ?? '';
         final isChecked = checkedStates.contains(testo);
@@ -1220,6 +1229,7 @@ class _WizardScreenState extends State<WizardScreen>
           ),
         );
       }).toList(),
+      ],
     );
   }
 

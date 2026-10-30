@@ -88,7 +88,7 @@ class GeminiAdapter(BaseAIAdapter):
             payload["generationConfig"] = gen_config
 
         async def _do_req():
-            async with httpx.AsyncClient(timeout=float(self.network.timeout_seconds), follow_redirects=False) as client:
+            async with httpx.AsyncClient(timeout=float(self.network.timeout_seconds), follow_redirects=False, trust_env=False) as client:
                 res = await client.post(url, json=payload)
                 if res.status_code != 200:
                     err = self._parse_gemini_error(res.status_code, res.text)
@@ -121,7 +121,7 @@ class GeminiAdapter(BaseAIAdapter):
         }
         start = time.perf_counter()
         try:
-            async with httpx.AsyncClient(timeout=float(min(15, self.network.timeout_seconds)), follow_redirects=False) as client:
+            async with httpx.AsyncClient(timeout=float(min(15, self.network.timeout_seconds)), follow_redirects=False, trust_env=False) as client:
                 res = await client.post(url, json=payload)
                 lat = round((time.perf_counter() - start) * 1000, 2)
                 if res.status_code == 200:

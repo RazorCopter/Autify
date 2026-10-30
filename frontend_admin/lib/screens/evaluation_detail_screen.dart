@@ -1,6 +1,5 @@
-﻿// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
-import 'dart:convert';
+﻿import 'dart:convert';
+import '../utils/web_compat.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -72,18 +71,18 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
 
   bool get _isSanMartinScale {
     final normalizedName =
-        _normalizeScaleIdentifier(_analysis?.scalaNome ?? widget.scale.nome);
+        _normalizeScaleIdentifier(_analysis?.scalaNome ?? _historicalScale.nome);
     final normalizedId =
-        _normalizeScaleIdentifier(_analysis?.idScala ?? widget.scale.id);
+        _normalizeScaleIdentifier(_analysis?.idScala ?? _historicalScale.id);
     return normalizedName.contains('sanmartin') ||
         normalizedId.contains('sanmartin');
   }
 
   bool get _isSisScale {
     final normalizedName =
-        _normalizeScaleIdentifier(_analysis?.scalaNome ?? widget.scale.nome);
+        _normalizeScaleIdentifier(_analysis?.scalaNome ?? _historicalScale.nome);
     final normalizedId =
-        _normalizeScaleIdentifier(_analysis?.idScala ?? widget.scale.id);
+        _normalizeScaleIdentifier(_analysis?.idScala ?? _historicalScale.id);
     return normalizedName.contains('sis') ||
         normalizedId.contains('sis') ||
         normalizedName.contains('supportsintensity') ||
@@ -92,9 +91,9 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
 
   bool get _isBehaviorScale {
     final normalizedName =
-        _normalizeScaleIdentifier(_analysis?.scalaNome ?? widget.scale.nome);
+        _normalizeScaleIdentifier(_analysis?.scalaNome ?? _historicalScale.nome);
     final normalizedId =
-        _normalizeScaleIdentifier(_analysis?.idScala ?? widget.scale.id);
+        _normalizeScaleIdentifier(_analysis?.idScala ?? _historicalScale.id);
     return normalizedId.contains('sabs') ||
         normalizedId.contains('behavior') ||
         normalizedId.contains('comportament') ||
@@ -140,11 +139,14 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     super.dispose();
   }
 
+  ScaleModel get _historicalScale => _eval?.snapshotScala == null
+      ? widget.scale : ScaleModel.fromJson(_eval!.snapshotScala!);
+
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     final history = await _api.getAggregatedEvaluationHistory(
       widget.patient.id,
-      widget.scale.id,
+      _historicalScale.id,
     );
     if (history.isNotEmpty && mounted) {
       setState(() {
@@ -207,7 +209,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     setState(() => _isLoadingAnalysis = true);
     try {
       print('DEBUG AUTANALYSIS - loadAnalysis start: evaluation=${_eval!.idValutazione}');
-      print('DEBUG AUTANALYSIS - scale widget name: ${widget.scale.nome}');
+      print('DEBUG AUTANALYSIS - scale widget name: ${_historicalScale.nome}');
 
       final analysis = await _api.getEvaluationAnalysis(_eval!.idValutazione);
 
@@ -215,7 +217,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
       if (analysis != null) {
         print('DEBUG AUTANALYSIS - scalaNome: ${analysis.scalaNome}');
         print('DEBUG AUTANALYSIS - scalaNome normalized: ${_normalizeScaleIdentifier(analysis.scalaNome)}');
-        print('DEBUG AUTANALYSIS - widget scale normalized: ${_normalizeScaleIdentifier(widget.scale.nome)}');
+        print('DEBUG AUTANALYSIS - widget scale normalized: ${_normalizeScaleIdentifier(_historicalScale.nome)}');
         print('DEBUG AUTANALYSIS - indiceQv: ${analysis.indiceQv}');
         print('DEBUG AUTANALYSIS - percentile: ${analysis.percentile}');
         print('DEBUG AUTANALYSIS - fasciaQv: ${analysis.fasciaQv}');
@@ -293,10 +295,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
     if (bytes != null) {
       final b64 = base64Encode(bytes);
       final dataUrl = 'data:application/pdf;base64,$b64';
-      html.AnchorElement(href: dataUrl)
-        ..setAttribute(
-            'download', 'valutazione_${widget.patient.cognome}.pdf')
-        ..click();
+      WebCompat.downloadDataUrl(dataUrl, 'valutazione_${widget.patient.cognome}.pdf');
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Errore nella generazione del PDF')),
@@ -460,7 +459,8 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
             ),
           ),
           Text(
-            widget.scale.nome,
+            _historicalScale.nome + (_eval?.snapshotScala?['snapshot_provenance'] == 'legacy_current_not_original'
+                ? ' (protocollo legacy ricostruito)' : ''),
             style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
           ),
         ],
@@ -551,7 +551,10 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
                 _buildDemographicsCard(),
               ],
               const SizedBox(height: 20),
-              if (isSis && _analysis != null) ...[
+              if (_analysis?.validationMessage != null) ...[
+                // The domain card below explains why indices/alerts are withheld.
+                const SizedBox.shrink(),
+              ] else if (isSis && _analysis != null) ...[
                 _buildSisDashboard(),
                 const SizedBox(height: 20),
               ] else ...[
@@ -575,7 +578,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
   }
 
   String _getQuestionText(String questionId) {
-    for (final sec in widget.scale.sezioni) {
+    for (final sec in _historicalScale.sezioni) {
       for (final q in sec.domande) {
         final qCode = q.codice ?? q.idDomanda;
         if (qCode.toUpperCase() == questionId.toUpperCase()) {
@@ -1191,7 +1194,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
           runSpacing: 12,
           children: [
             _metaItem('Utente', '${widget.patient.nome} ${widget.patient.cognome}'),
-            _metaItem('Scala', widget.scale.nome),
+            _metaItem('Scala', _historicalScale.nome),
             _metaItem('Data', _formatEvaluationDate(e.dataCompilazione)),
             _metaItem('Anno', e.anno.toString()),
             
@@ -1797,6 +1800,13 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
 
   // ─── Tabella riepilogo domini ───────────────────────────────────────────────
   Widget _buildDomainTable() {
+    if (_analysis?.validationMessage != null) {
+      return Card(child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Text('Valutazione incompleta o non valida: indici non calcolati. '
+            '${_analysis!.validationMessage}'),
+      ));
+    }
     if (_isLoadingAnalysis) {
       return const Card(
         child: Padding(
@@ -2463,7 +2473,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
   }
 
   Question? _findQuestion(String codiceDomanda) {
-    for (final section in widget.scale.sezioni) {
+    for (final section in _historicalScale.sezioni) {
       for (final question in section.domande) {
         if (question.codice == codiceDomanda) {
           return question;
@@ -2475,7 +2485,7 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
 
   /// Restituisce la sezione a cui appartiene la domanda con il dato codice.
   Section? _findSectionForQuestion(String codiceDomanda) {
-    for (final section in widget.scale.sezioni) {
+    for (final section in _historicalScale.sezioni) {
       for (final question in section.domande) {
         if (question.codice == codiceDomanda) {
           return section;
@@ -2487,6 +2497,9 @@ class _EvaluationDetailScreenState extends State<EvaluationDetailScreen> {
 
   List<int> _getAvailableScores(String codiceDomanda) {
     final question = _findQuestion(codiceDomanda);
+    if (question?.tipo == 'composito' && question?.sottodomande != null) {
+      return List<int>.generate(question!.sottodomande!.length + 1, (i) => i);
+    }
     final scores = question?.opzioni.map((option) => option.punteggio).toSet().toList() ?? <int>[];
     scores.sort();
     return scores.isNotEmpty ? scores : <int>[1, 2, 3];

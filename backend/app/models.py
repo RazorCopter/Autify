@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, StrictInt
 from typing import Any, List, Optional, Union
 from datetime import datetime, timezone
 import uuid
@@ -8,7 +8,7 @@ import uuid
 class UserCreate(BaseModel):
     """Payload per la creazione di un nuovo operatore."""
     username: str = Field(..., min_length=3, max_length=50, description="Nome utente (min 3 caratteri, nessuno spazio)")
-    password: str = Field(..., min_length=4, max_length=128)
+    password: str = Field(..., min_length=12, max_length=128)
     confirm_password: str
     role: str = Field(default="viewer", pattern="^(admin|viewer)$")
     ai_enabled: bool = False
@@ -23,7 +23,7 @@ class UserCreate(BaseModel):
     @field_validator("password")
     @classmethod
     def password_max_72_bytes(cls, v: str) -> str:
-        if len(v.encode("utf-8")) > 72:
+        if not v.strip() or len(v.encode("utf-8")) > 72:
             raise ValueError("La password non può superare 72 byte (limite bcrypt)")
         return v
 
@@ -37,7 +37,7 @@ class UserCreate(BaseModel):
 
 class UserUpdate(BaseModel):
     """Payload per la modifica di un operatore esistente."""
-    password: Optional[str] = Field(None, min_length=4, max_length=128)
+    password: Optional[str] = Field(None, min_length=12, max_length=128)
     confirm_password: Optional[str] = None
     role: Optional[str] = Field(None, pattern="^(admin|viewer)$")
     ai_enabled: Optional[bool] = None
@@ -45,7 +45,7 @@ class UserUpdate(BaseModel):
     @field_validator("password")
     @classmethod
     def password_max_72_bytes(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and len(v.encode("utf-8")) > 72:
+        if v is not None and (not v.strip() or len(v.encode("utf-8")) > 72):
             raise ValueError("La password non può superare 72 byte (limite bcrypt)")
         return v
 
@@ -87,6 +87,9 @@ class Patient(BaseModel):
     ultimo_sabs_compilato: Optional[str] = None
     ultimo_oso_compilato: Optional[str] = None
     ultima_analisi_ia: Optional[str] = None
+    stato_valutazioni: Optional[str] = None
+    stato_scale: dict = Field(default_factory=dict)
+    scadenze_calcolate_al: Optional[str] = None
 
 
 class PaginatedPatients(BaseModel):
@@ -107,6 +110,26 @@ class AppSettings(BaseModel):
     gemini_prompt: Optional[str] = None
     viewer_ai_enabled: Optional[bool] = False
     scale_validity_months: dict = Field(default_factory=lambda: {"pos": 12, "san_martin": 12, "sis": 36, "ogva": 12, "sabs": 12, "oso": 12})
+    required_scale_types: List[str] = Field(default_factory=lambda: ["pos", "san_martin", "sis"])
+    expiry_warning_days: int = Field(default=30, ge=0, le=365)
+
+    @field_validator("scale_validity_months")
+    @classmethod
+    def validate_expiry_months(cls, value):
+        from .expiry import policy_from
+        try:
+            return policy_from({"scale_validity_months": value})["scale_validity_months"]
+        except Exception as exc:
+            raise ValueError("Mesi di validita non validi") from exc
+
+    @field_validator("required_scale_types")
+    @classmethod
+    def validate_required_scales(cls, value):
+        from .expiry import KINDS
+        if not value or len(set(value)) != len(value) or any(k not in KINDS for k in value):
+            raise ValueError("Scale richieste non valide")
+        return value
+
     ai: Optional[dict] = None
 
     def to_ai_stored(self) -> Any:
@@ -189,7 +212,7 @@ class Answer(BaseModel):
     - Per SIS (sezione 3 medica/comportamentale): punteggio è un int (0, 1 o 2)
     """
     codice_domanda: str
-    punteggio: Union[int, dict] = 0
+    punteggio: Union[StrictInt, dict]
     nota: Optional[str] = None
 
 class Evaluation(BaseModel):
@@ -198,6 +221,11 @@ class Evaluation(BaseModel):
     anno: int
     id_scala: str
     data_compilazione: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    @field_validator("data_compilazione")
+    @classmethod
+    def normalize_completion_date(cls, value):
+        return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
+
     nome_operatore: Optional[str] = ""
     nome_intervistato: Optional[str] = None
     demographics: Optional[dict] = None
@@ -224,6 +252,7 @@ class DomainScore(BaseModel):
     num_domande: int
 
 class AggregatedEvaluation(BaseModel):
+    snapshot_scala: Optional[dict] = None
     id_valutazione: str
     id_paziente: str
     id_scala: str
@@ -250,6 +279,13 @@ class AiAnalysis(BaseModel):
     report: str
     notes: Optional[str] = None
     evaluations_used: List[str] = []
+    provenance: Optional[dict] = None
+    execution: Optional[dict] = None
+    review_status: str = "legacy_unreviewed"
+    reviewed_by: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
+    reviewed_report_hash: Optional[str] = None
+    report_hash: Optional[str] = None
 
 class AiAnalysisCreate(BaseModel):
     report: str
@@ -264,7 +300,7 @@ class AiAnalysisRequest(BaseModel):
 
 class AiPdfRequest(BaseModel):
     patient: dict
-    report: str
+    report: str = Field(max_length=1_000_000)
 
 # --- MODELLI AUDIT LOG (Tracciabilità) ---
 
@@ -275,6 +311,10 @@ class AuditLogCreate(BaseModel):
     dettagli: Optional[str] = None
 
 class AuditLogResponse(BaseModel):
+    event_id: Optional[str] = None
+    app_version: Optional[str] = None
+    correlation_id: Optional[str] = None
+    target_version: Optional[str] = None
     id: str = Field(alias="_id", default="")
     timestamp: datetime
     azione: str

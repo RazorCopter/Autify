@@ -11,7 +11,8 @@ from typing import List, Dict, Optional
 
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from .pdf_service import serialized_pdf, xml_text
 import numpy as np
 
 from reportlab.lib.pagesizes import A4
@@ -83,9 +84,9 @@ def _make_letterhead(styles) -> Table:
     org_name  = os.getenv("ORG_NAME",    "FONDAZIONE IL TIGLIO ONLUS")
     org_piva  = os.getenv("ORG_PIVA",    "02095510182")
     org_cf    = os.getenv("ORG_CODFISC", "96046680185")
-    foundation_text = f"""<b>{org_name}</b><br/>
-P. IVA: {org_piva}<br/>
-Cod. Fisc: {org_cf}"""
+    foundation_text = f"""<b>{xml_text(org_name)}</b><br/>
+P. IVA: {xml_text(org_piva)}<br/>
+Cod. Fisc: {xml_text(org_cf)}"""
     
     right_elem = Paragraph(
         foundation_text, 
@@ -133,7 +134,8 @@ def _make_radar_chart(
     patient_vals = patient_values + patient_values[:1]
     mean_vals = [mean_ref] * (n + 1)
 
-    fig, ax = plt.subplots(figsize=(7.5, 7.5), subplot_kw=dict(polar=True), dpi=150)
+    fig = Figure(figsize=(7.5, 7.5), dpi=150)
+    ax = fig.subplots(subplot_kw=dict(polar=True))
     fig.patch.set_facecolor('#FFFFFF')
     ax.set_facecolor('#F8FAFC')
 
@@ -252,10 +254,10 @@ def _make_radar_chart(
         pad=22
     )
 
-    plt.tight_layout()
+    fig.tight_layout()
     buf = io.BytesIO()
-    plt.savefig(buf, format='png', bbox_inches='tight', facecolor='#FFFFFF', dpi=150)
-    plt.close(fig)
+    fig.savefig(buf, format='png', bbox_inches='tight', facecolor='#FFFFFF', dpi=150)
+    fig.clear()
     buf.seek(0)
     return buf
 
@@ -274,7 +276,8 @@ def _make_qol_visual_chart(domains: List[dict]) -> io.BytesIO:
     for label in labels:
         wrapped_labels.append(_wrap_label(label, max_chars=12))
 
-    fig, ax = plt.subplots(figsize=(10, 5.8), dpi=150)
+    fig = Figure(figsize=(10, 5.8), dpi=150)
+    ax = fig.subplots()
     fig.patch.set_facecolor('#F8FBFF')
     ax.set_facecolor('#F8FBFF')
 
@@ -339,10 +342,10 @@ def _make_qol_visual_chart(domains: List[dict]) -> io.BytesIO:
     ax.set_title('Tabella Visiva Qualità della Vita', fontsize=12,
                  fontweight='bold', color='#2D3748', pad=16)
 
-    plt.tight_layout()
+    fig.tight_layout()
     buf = io.BytesIO()
-    plt.savefig(buf, format='png', bbox_inches='tight', facecolor='#F8FBFF', dpi=150)
-    plt.close(fig)
+    fig.savefig(buf, format='png', bbox_inches='tight', facecolor='#F8FBFF', dpi=150)
+    fig.clear()
     buf.seek(0)
     return buf
 
@@ -391,7 +394,8 @@ def _make_bar_chart(domains: List[dict], score_min: int = 0, score_max: int = 18
         '#FB923C',  # Orange
     ]
 
-    fig, ax = plt.subplots(figsize=(max(9.0, n * 1.15), 5.5), dpi=150)
+    fig = Figure(figsize=(max(9.0, n * 1.15), 5.5), dpi=150)
+    ax = fig.subplots()
     fig.patch.set_facecolor('#FFFFFF')
     ax.set_facecolor('#FFFFFF')
 
@@ -465,10 +469,10 @@ def _make_bar_chart(domains: List[dict], score_min: int = 0, score_max: int = 18
     ax.set_title(f'Diagramma Domini scala {scale_name}', fontsize=12,
                  fontweight='bold', color='#0F172A', pad=16)
 
-    plt.tight_layout()
+    fig.tight_layout()
     buf = io.BytesIO()
-    plt.savefig(buf, format='png', bbox_inches='tight', facecolor='#FFFFFF', dpi=150)
-    plt.close(fig)
+    fig.savefig(buf, format='png', bbox_inches='tight', facecolor='#FFFFFF', dpi=150)
+    fig.clear()
     buf.seek(0)
     return buf
 
@@ -522,9 +526,9 @@ def _make_label_value_paragraph(
     styles,
     value_fallback: str = "—",
 ) -> Paragraph:
-    safe_value = _safe_text(value, value_fallback)
+    safe_value = xml_text(_safe_text(value, value_fallback))
     return Paragraph(
-        f"<b>{label}</b> {safe_value}",
+        f"<b>{xml_text(label)}</b> {safe_value}",
         ParagraphStyle(
             f"{label}_cell",
             parent=styles["BodyText"],
@@ -752,7 +756,7 @@ def _make_qv_summary_table(analysis: dict, styles) -> Table:
         [
             summary_title,
             Paragraph(
-                f"<b>Indice QV</b><br/><font size='18'>{_safe_text(analysis.get('indice_qv'))}</font>",
+                f"<b>Indice QV</b><br/><font size='18'>{xml_text(_safe_text(analysis.get('indice_qv')))}</font>",
                 ParagraphStyle(
                     "QvMetricValue",
                     parent=styles["BodyText"],
@@ -764,7 +768,7 @@ def _make_qv_summary_table(analysis: dict, styles) -> Table:
                 ),
             ),
             Paragraph(
-                f"<b>Percentile</b><br/><font size='18'>{_safe_text(analysis.get('percentile'))}</font>",
+                f"<b>Percentile</b><br/><font size='18'>{xml_text(_safe_text(analysis.get('percentile')))}</font>",
                 ParagraphStyle(
                     "QvPercentileValue",
                     parent=styles["BodyText"],
@@ -778,7 +782,7 @@ def _make_qv_summary_table(analysis: dict, styles) -> Table:
         ],
         [
             Paragraph(
-                f"Somma punteggi standard: <b>{_safe_text(analysis.get('somma_punteggi_standard'))}</b>",
+                f"Somma punteggi standard: <b>{xml_text(_safe_text(analysis.get('somma_punteggi_standard')))}</b>",
                 ParagraphStyle(
                     "QvSecondaryMetric",
                     parent=styles["BodyText"],
@@ -789,7 +793,7 @@ def _make_qv_summary_table(analysis: dict, styles) -> Table:
                 ),
             ),
             Paragraph(
-                f"Fascia: <font color='{fascia_color}'><b>{fascia_value}</b></font>",
+                f"Fascia: <font color='{fascia_color}'><b>{xml_text(fascia_value)}</b></font>",
                 ParagraphStyle(
                     "QvFasciaMetric",
                     parent=styles["BodyText"],
@@ -905,7 +909,7 @@ def _make_sis_summary_table(analysis: dict, styles) -> Table:
         [
             summary_title,
             Paragraph(
-                f"<b>Indice SIS</b><br/><font size='18'>{_safe_text(analysis.get('indice_sis'))}</font>",
+                f"<b>Indice SIS</b><br/><font size='18'>{xml_text(_safe_text(analysis.get('indice_sis')))}</font>",
                 ParagraphStyle(
                     "SisMetricValue",
                     parent=styles["BodyText"],
@@ -917,7 +921,7 @@ def _make_sis_summary_table(analysis: dict, styles) -> Table:
                 ),
             ),
             Paragraph(
-                f"<b>Percentile</b><br/><font size='18'>{_safe_text(analysis.get('percentile'))}</font>",
+                f"<b>Percentile</b><br/><font size='18'>{xml_text(_safe_text(analysis.get('percentile')))}</font>",
                 ParagraphStyle(
                     "SisPercentileValue",
                     parent=styles["BodyText"],
@@ -931,7 +935,7 @@ def _make_sis_summary_table(analysis: dict, styles) -> Table:
         ],
         [
             Paragraph(
-                f"Somma punteggi standard: <b>{_safe_text(analysis.get('somma_punteggi_standard'))}</b>",
+                f"Somma punteggi standard: <b>{xml_text(_safe_text(analysis.get('somma_punteggi_standard')))}</b>",
                 ParagraphStyle(
                     "SisSecondaryMetric",
                     parent=styles["BodyText"],
@@ -942,7 +946,7 @@ def _make_sis_summary_table(analysis: dict, styles) -> Table:
                 ),
             ),
             Paragraph(
-                f"Intensità: <font color='#FFFFFF'><b>{classif_val}</b></font>",
+                f"Intensità: <font color='#FFFFFF'><b>{xml_text(classif_val)}</b></font>",
                 ParagraphStyle(
                     "SisFasciaMetric",
                     parent=styles["BodyText"],
@@ -1043,7 +1047,8 @@ def _make_sis_bar_chart(domains: List[dict], score_min: int = 0, score_max: int 
         '#4DB6AC',
     ]
 
-    fig, ax = plt.subplots(figsize=(max(9.0, n * 1.3), 5.5), dpi=150)
+    fig = Figure(figsize=(max(9.0, n * 1.3), 5.5), dpi=150)
+    ax = fig.subplots()
     fig.patch.set_facecolor('#FFFFFF')
     ax.set_facecolor('#FFFFFF')
 
@@ -1100,10 +1105,10 @@ def _make_sis_bar_chart(domains: List[dict], score_min: int = 0, score_max: int 
     ax.set_title('Diagramma Punteggi Standard Sottoscale SIS', fontsize=12,
                  fontweight='bold', color='#0F172A', pad=16)
 
-    plt.tight_layout()
+    fig.tight_layout()
     buf = io.BytesIO()
-    plt.savefig(buf, format='png', bbox_inches='tight', facecolor='#FFFFFF', dpi=150)
-    plt.close(fig)
+    fig.savefig(buf, format='png', bbox_inches='tight', facecolor='#FFFFFF', dpi=150)
+    fig.clear()
     buf.seek(0)
     return buf
 
@@ -1118,6 +1123,7 @@ def _get_rome_now() -> datetime:
 
 # ─── Generazione PDF completo ────────────────────────────────────────────────
 
+@serialized_pdf
 def generate_evaluation_pdf(
     evaluation: dict,
     patient: dict,
@@ -1137,6 +1143,11 @@ def generate_evaluation_pdf(
 
     styles = getSampleStyleSheet()
     story = []
+
+    if scale.get("snapshot_provenance") == "legacy_current_not_original":
+        story.append(Paragraph("Protocollo storico ricostruito dalla scala disponibile: versione originale non attestata.", styles["Normal"]))
+    if analysis and analysis.get("validation_message"):
+        story.append(Paragraph("Valutazione incompleta o non valida: indici standardizzati non calcolati.", styles["Normal"]))
 
     # ── Stili personalizzati ────────────────────────────────────────────────
     title_style = ParagraphStyle(
@@ -1186,7 +1197,7 @@ def generate_evaluation_pdf(
     elif is_sis:
         story.append(Paragraph("SUPPORTS INTENSITY SCALE (SIS)", title_style))
     else:
-        story.append(Paragraph(scala_nome.upper(), title_style))
+        story.append(Paragraph(xml_text(scala_nome.upper()), title_style))
     
     story.append(HRFlowable(width="100%", thickness=1, color=BORDER, spaceBefore=4, spaceAfter=10))
 
@@ -1198,7 +1209,7 @@ def generate_evaluation_pdf(
         if scale_meta:
             story.append(Paragraph("Scala San Martín", section_header))
             for line in scale_meta:
-                story.append(Paragraph(line, ParagraphStyle(
+                story.append(Paragraph(xml_text(line), ParagraphStyle(
                     'ScaleMeta', parent=styles['Normal'],
                     fontSize=8, textColor=MID_GREY, fontName='Helvetica',
                     spaceAfter=1,
@@ -1246,21 +1257,21 @@ def generate_evaluation_pdf(
     story.append(Spacer(1, 0.2 * cm))
 
     # ── Riepilogo QV o SIS (solo San Martín o SIS) ───────────────────────────────────
-    if is_sanmartin and analysis is not None:
+    if is_sanmartin and analysis is not None and not analysis.get("validation_message"):
         story.append(_make_qv_summary_table(analysis, styles))
         story.append(Spacer(1, 0.25 * cm))
-    elif is_sis and analysis is not None:
+    elif is_sis and analysis is not None and not analysis.get("validation_message"):
         story.append(_make_sis_summary_table(analysis, styles))
         story.append(Spacer(1, 0.25 * cm))
 
     # ── Grafico ─────────────────────────────────────────────────────────────
     story.append(Paragraph("Profilo dei Punteggi", section_header))
 
-    if is_sanmartin and analysis is not None:
+    if is_sanmartin and analysis is not None and not analysis.get("validation_message"):
         chart_domains = analysis.get("domini", [])
         chart_buf = _make_radar_chart(chart_domains)
         chart_img = RLImage(chart_buf, width=10.2 * cm, height=10.2 * cm)
-    elif is_sis and analysis is not None:
+    elif is_sis and analysis is not None and not analysis.get("validation_message"):
         chart_domains = analysis.get("domini", [])
         chart_buf = _make_sis_bar_chart(chart_domains)
         chart_img = RLImage(chart_buf, width=17 * cm, height=10.5 * cm)
@@ -1273,7 +1284,7 @@ def generate_evaluation_pdf(
     story.append(Spacer(1, 0.2 * cm))
 
     # ── Legenda fasce ───────────────────────────────────────────────────────
-    if (is_sanmartin or is_sis) and analysis is not None:
+    if (is_sanmartin or is_sis) and analysis is not None and not analysis.get("validation_message"):
         story.append(Paragraph("Fasce Interpretative (Punteggi Standard)",
                                ParagraphStyle('LegendTitle', parent=styles['Normal'],
                                               fontSize=9, textColor=MID_GREY,
@@ -1315,7 +1326,7 @@ def generate_evaluation_pdf(
     # ── Tabella riepilogo domìni ─────────────────────────────────────────────
     story.append(PageBreak())
     
-    if is_sanmartin and analysis is not None:
+    if is_sanmartin and analysis is not None and not analysis.get("validation_message"):
         story.append(Paragraph("Tabella Visiva Qualità della Vita", section_header))
         qol_buf = _make_qol_visual_chart(chart_domains)
         qol_img = RLImage(qol_buf, width=17.4 * cm, height=10.1 * cm)
@@ -1324,7 +1335,7 @@ def generate_evaluation_pdf(
         
         story.append(Paragraph("Riepilogo per Dominio", section_header))
         domain_table = _make_san_martin_domain_table(analysis)
-    elif is_sis and analysis is not None:
+    elif is_sis and analysis is not None and not analysis.get("validation_message"):
         story.append(Paragraph("Riepilogo per Sottoscala SIS", section_header))
         domain_table = _make_sis_domain_table(analysis)
     else:
@@ -1356,8 +1367,8 @@ def generate_evaluation_pdf(
         domain_headers = ["Cod.", "Dominio", "Punteggio Totale", "N° Domande"]
         domain_rows = [
             [
-                Paragraph(d["codice"], cell_style_bold),
-                Paragraph(d["etichetta"], cell_style),
+                Paragraph(xml_text(d["codice"]), cell_style_bold),
+                Paragraph(xml_text(d["etichetta"]), cell_style),
                 Paragraph(str(d["punteggio_totale"]), cell_style_center),
                 Paragraph(str(d["num_domande"]), cell_style_center)
             ]
@@ -1375,7 +1386,7 @@ def generate_evaluation_pdf(
     story.append(Spacer(1, 0.5 * cm))
 
     # ── Sezione 2 e Sezione 3 per SIS (Dati Clinici Aggiuntivi) ───────────────
-    if is_sis and analysis is not None:
+    if is_sis and analysis is not None and not analysis.get("validation_message"):
         story.append(PageBreak())
         
         # --- SEZIONE 2: ATTIVITÀ DI TUTELA E RAPPRESENTANZA ---
@@ -1402,9 +1413,9 @@ def generate_evaluation_pdf(
                 desc = p_texts.get(item_id, f"Attività di tutela {item_id}")
                 top4_rows.append([
                     Paragraph(f"<b>{rank}°</b>", ParagraphStyle('RankStyle', parent=styles['Normal'], fontSize=9, alignment=TA_CENTER)),
-                    Paragraph(f"<b>{item_id}</b>", ParagraphStyle('ItemIdStyle', parent=styles['Normal'], fontSize=9, alignment=TA_CENTER)),
-                    Paragraph(desc, ParagraphStyle('ItemDescStyle', parent=styles['Normal'], fontSize=9)),
-                    Paragraph(f"Punteggio: <b>{score}</b>", ParagraphStyle('ScoreStyle', parent=styles['Normal'], fontSize=9, alignment=TA_CENTER))
+                    Paragraph(f"<b>{xml_text(item_id)}</b>", ParagraphStyle('ItemIdStyle', parent=styles['Normal'], fontSize=9, alignment=TA_CENTER)),
+                    Paragraph(xml_text(desc), ParagraphStyle('ItemDescStyle', parent=styles['Normal'], fontSize=9)),
+                    Paragraph(f"Punteggio: <b>{xml_text(score)}</b>", ParagraphStyle('ScoreStyle', parent=styles['Normal'], fontSize=9, alignment=TA_CENTER))
                 ])
             t2 = Table(top4_rows, colWidths=[1.5*cm, 1.8*cm, 10.1*cm, 4*cm])
             t2.setStyle(TableStyle([
@@ -1439,10 +1450,10 @@ def generate_evaluation_pdf(
                 Paragraph("<b>Ambito</b>", ParagraphStyle('S3Head', parent=styles['Normal'], fontSize=9, fontName='Helvetica-Bold')),
                 Paragraph("<b>Sostegni Parziali (1)</b>", ParagraphStyle('S3Head', parent=styles['Normal'], fontSize=9, fontName='Helvetica-Bold', alignment=TA_CENTER)),
                 Paragraph("<b>Sostegni Estensivi (2)</b>", ParagraphStyle('S3Head', parent=styles['Normal'], fontSize=9, fontName='Helvetica-Bold', alignment=TA_CENTER)),
-                Paragraph("<b>Alert Clinico</b>", ParagraphStyle('S3Head', parent=styles['Normal'], fontSize=9, fontName='Helvetica-Bold', alignment=TA_CENTER))
+                Paragraph("<b>Indicazione di sostegno</b>", ParagraphStyle('S3Head', parent=styles['Normal'], fontSize=9, fontName='Helvetica-Bold', alignment=TA_CENTER))
             ],
             [
-                Paragraph("<b>3A: Bisogni Medici Eccezionali</b>", ParagraphStyle('S3Body', parent=styles['Normal'], fontSize=9)),
+                Paragraph("<b>3A: Bisogni Eccezionali di Sostegno</b>", ParagraphStyle('S3Body', parent=styles['Normal'], fontSize=9)),
                 Paragraph(str(det_med.get("count_parziale", 0)), ParagraphStyle('S3BodyC', parent=styles['Normal'], fontSize=9, alignment=TA_CENTER)),
                 Paragraph(str(det_med.get("count_estensivo", 0)), ParagraphStyle('S3BodyC', parent=styles['Normal'], fontSize=9, alignment=TA_CENTER)),
                 Paragraph("ATTIVO (Soglia superata)" if med_alert else "REGOLARE", alert_style if med_alert else no_alert_style)
@@ -1489,34 +1500,8 @@ def generate_evaluation_pdf(
                         }
                     }
 
-    # Carica la scala POS predefinita per arricchire con domande e opzioni parlanti reali
-    import json
-    import os
-    pos_json_path = os.path.join(os.path.dirname(__file__), "Scala_POS.json")
-    if os.path.exists(pos_json_path):
-        try:
-            with open(pos_json_path, "r", encoding="utf-8") as f:
-                pos_data = json.load(f)
-                scala_obj = pos_data.get("scala", {})
-                domini_list = scala_obj.get("domini", [])
-                for d in domini_list:
-                    for q in d.get("domande", []):
-                        q_code = q.get("codice")
-                        q_id = q.get("id_domanda")
-                        opts = q.get("opzioni") or []
-                        q_info = {
-                            "testo": q.get("testo") or q.get("testo_domanda") or "",
-                            "opzioni": {
-                                str(opt.get("punteggio")): opt.get("testo_risposta") or opt.get("etichetta") or opt.get("descrizione") or ""
-                                for opt in opts
-                            }
-                        }
-                        if q_code:
-                            questions_map[q_code] = q_info
-                        if q_id:
-                            questions_map[q_id] = q_info
-        except Exception as e:
-            print(f"Errore caricamento Scala_POS.json in pdf_generator: {e}")
+    # Snapshot/current resolved protocol is the only source of question text.
+    # Never overwrite historical items with the bundled POS file.
 
     if questions_map:
         resp_headers = ["Codice", "Domanda", "Risposta", "Nota"]
@@ -1549,10 +1534,10 @@ def generate_evaluation_pdf(
                     risposta_display = str(punteggio)
 
             resp_rows.append([
-                Paragraph(q_code, cell_style_bold),
-                Paragraph(q_text, cell_style),
-                Paragraph(risposta_display, cell_style),
-                Paragraph(nota, cell_style)
+                Paragraph(xml_text(q_code), cell_style_bold),
+                Paragraph(xml_text(q_text), cell_style),
+                Paragraph(xml_text(risposta_display), cell_style),
+                Paragraph(xml_text(nota), cell_style)
             ])
             
         # Total printable width is 17.4 * cm
@@ -1677,6 +1662,7 @@ def _parse_markdown_to_flowables(text: str, styles) -> list:
         i += 1
     return flowables
 
+@serialized_pdf
 def generate_ai_analysis_pdf(patient: dict, report: str) -> bytes:
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -1695,9 +1681,9 @@ def generate_ai_analysis_pdf(patient: dict, report: str) -> bytes:
     
     story.append(Paragraph("Analisi Multidimensionale AI", custom_title_style))
     
-    nome = patient.get("nome", "").replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-    cognome = patient.get("cognome", "").replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-    cf = patient.get("codiceFiscale", "N/D").replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+    nome = xml_text(patient.get("nome"))
+    cognome = xml_text(patient.get("cognome"))
+    cf = xml_text(patient.get("codiceFiscale") or "N/D")
     story.append(Paragraph(f"<b>Utente:</b> {nome} {cognome} ({cf})", patient_info_style))
     data_str = _get_rome_now().strftime("%d/%m/%Y %H:%M")
     story.append(Paragraph(f"<b>Data Generazione:</b> {data_str}", patient_info_style))

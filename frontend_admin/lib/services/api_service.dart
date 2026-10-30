@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'dart:html' as html;
 import 'package:flutter/foundation.dart';
+import '../utils/web_compat.dart';
 import 'package:http/http.dart' as raw_http;
 import 'package:file_picker/file_picker.dart';
 import '../config.dart' show kApiBaseUrl, kApiClientBaseUrl;
@@ -18,16 +18,33 @@ class _Http {
   // Client HTTP con timeout esteso per operazioni AI lunghe
   static final _client = raw_http.Client();
 
+  bool _passwordChangeRequired(raw_http.Response response) {
+    if (response.statusCode != 403) return false;
+    try {
+      final detail = jsonDecode(response.body)['detail'];
+      return detail is Map && detail['code'] == 'password_change_required';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _handleAudit(raw_http.Response response) {
+    if (response.headers['x-audit-status'] == 'degraded') {
+      WebCompat.dispatchCustomEvent('autify-audit-warning', detail: response.headers['x-correlation-id'] ?? '');
+    }
+  }
+
   void _handleUnauthorized() {
     try {
-      html.window.localStorage.remove('jwt_token');
-      html.window.localStorage.remove('auth_role');
-      html.window.localStorage.remove('auth_username');
-      html.window.localStorage.remove('ai_enabled');
-      html.window.sessionStorage.clear();
-      final reloadUrl = (html.window.location.pathname ?? '/') +
+      WebCompat.localStorageRemove('jwt_token');
+      WebCompat.localStorageRemove('auth_role');
+      WebCompat.localStorageRemove('auth_username');
+      WebCompat.localStorageRemove('ai_enabled');
+      WebCompat.localStorageRemove('must_change_password');
+      WebCompat.sessionStorageClear();
+      final reloadUrl = WebCompat.getCurrentPath() +
           "?v=${DateTime.now().millisecondsSinceEpoch}";
-      html.window.location.href = reloadUrl;
+      WebCompat.reloadWindow(reloadUrl);
     } catch (_) {}
   }
 
@@ -44,9 +61,10 @@ class _Http {
         .then((streamedResponse) =>
             raw_http.Response.fromStream(streamedResponse));
 
-    if (response.statusCode == 401) {
+    if (response.statusCode == 401 || _passwordChangeRequired(response)) {
       _handleUnauthorized();
     }
+    _handleAudit(response);
     return response;
   }
 
@@ -69,9 +87,11 @@ class _Http {
     final response = await _client.send(request).timeout(timeout).then(
         (streamedResponse) => raw_http.Response.fromStream(streamedResponse));
 
-    if (response.statusCode == 401 && !url.path.contains('/auth/login')) {
+    if ((response.statusCode == 401 && !url.path.contains('/auth/login')) ||
+        _passwordChangeRequired(response)) {
       _handleUnauthorized();
     }
+    _handleAudit(response);
     return response;
   }
 
@@ -95,9 +115,10 @@ class _Http {
         .then((streamedResponse) =>
             raw_http.Response.fromStream(streamedResponse));
 
-    if (response.statusCode == 401) {
+    if (response.statusCode == 401 || _passwordChangeRequired(response)) {
       _handleUnauthorized();
     }
+    _handleAudit(response);
     return response;
   }
 
@@ -121,9 +142,10 @@ class _Http {
         .then((streamedResponse) =>
             raw_http.Response.fromStream(streamedResponse));
 
-    if (response.statusCode == 401) {
+    if (response.statusCode == 401 || _passwordChangeRequired(response)) {
       _handleUnauthorized();
     }
+    _handleAudit(response);
     return response;
   }
 
@@ -147,9 +169,10 @@ class _Http {
         .then((streamedResponse) =>
             raw_http.Response.fromStream(streamedResponse));
 
-    if (response.statusCode == 401) {
+    if (response.statusCode == 401 || _passwordChangeRequired(response)) {
       _handleUnauthorized();
     }
+    _handleAudit(response);
     return response;
   }
 }
@@ -161,7 +184,7 @@ class ApiService implements LicenseApi {
 
   static String get kAuthToken {
     try {
-      final stored = html.window.localStorage['jwt_token'];
+      final stored = WebCompat.sessionStorageGet('jwt_token');
       if (stored != null && stored.isNotEmpty) {
         return stored;
       }
@@ -171,33 +194,48 @@ class ApiService implements LicenseApi {
 
   static bool get isViewer {
     try {
-      return html.window.localStorage['auth_role'] == 'viewer';
+      return WebCompat.localStorageGet('auth_role') == 'viewer';
     } catch (_) {}
     return false;
   }
 
   static bool get isAdmin {
     try {
-      return html.window.localStorage['auth_role'] == 'admin';
+      return WebCompat.localStorageGet('auth_role') == 'admin';
     } catch (_) {}
     return false;
   }
 
   static bool get isAiEnabled {
     try {
-      return html.window.localStorage['ai_enabled'] == 'true';
+      return WebCompat.localStorageGet('ai_enabled') == 'true';
     } catch (_) {}
     return false;
   }
 
   static String get currentUsername {
     try {
-      return html.window.localStorage['auth_username'] ?? '';
+      return WebCompat.localStorageGet('auth_username') ?? '';
     } catch (_) {}
     return '';
   }
 
   static const String baseUrl = kApiBaseUrl;
+
+  static Future<Map<String, dynamic>> getExpiryPolicy() async {
+    final response = await http.get(Uri.parse('$baseUrl/expiry-policy'),
+        headers: {'Authorization': 'Bearer $kAuthToken'});
+    if (response.statusCode != 200) throw Exception('Impossibile leggere la policy server');
+    return Map<String, dynamic>.from(jsonDecode(response.body));
+  }
+
+  static Future<void> saveExpiryPolicy(Map<String, dynamic> policy) async {
+    final response = await http.post(Uri.parse('$baseUrl/expiry-policy'),
+        headers: {'Authorization': 'Bearer $kAuthToken', 'Content-Type': 'application/json'},
+        body: jsonEncode(policy));
+    if (response.statusCode != 200) throw Exception('Impossibile salvare la policy server');
+  }
+
 
   Future<LicenseStatus> getLicenseStatus({bool forceRemote = false}) async {
     final uri = Uri.parse('$baseUrl/license/status').replace(
@@ -326,13 +364,15 @@ class ApiService implements LicenseApi {
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        // Salva il JWT e i dati di sessione nel localStorage
+        // JWT limitato alla scheda; metadati UI nel localStorage (ruoli verificati dal server).
         try {
-          html.window.localStorage['jwt_token'] = data['token'] ?? '';
-          html.window.localStorage['auth_role'] = data['role'] ?? '';
-          html.window.localStorage['ai_enabled'] =
-              (data['ai_enabled'] ?? false).toString();
-          html.window.localStorage['auth_username'] = data['username'] ?? '';
+          WebCompat.sessionStorageSet('jwt_token', data['token'] ?? '');
+          WebCompat.localStorageSet('auth_role', data['role'] ?? '');
+          WebCompat.localStorageSet('ai_enabled',
+              (data['ai_enabled'] ?? false).toString());
+          WebCompat.localStorageSet('auth_username', data['username'] ?? '');
+          WebCompat.localStorageSet('must_change_password',
+              (data['must_change_password'] == true).toString());
         } catch (_) {}
         return data;
       }
@@ -343,21 +383,32 @@ class ApiService implements LicenseApi {
     }
   }
 
-  Future<List<AuditLog>> getAuditLogs() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/audit-logs'),
-        headers: {'Authorization': 'Bearer $kAuthToken'},
-      );
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.map((e) => AuditLog.fromJson(e)).toList();
-      }
-      return [];
-    } catch (e, s) {
-      debugPrint('[ApiService] $e | $s');
-      return [];
+  Future<void> changeOwnPassword(String currentPassword, String newPassword,
+      String confirmation) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/change-password'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $kAuthToken',
+      },
+      body: jsonEncode({
+        'current_password': currentPassword,
+        'new_password': newPassword,
+        'confirm_password': confirmation,
+      }),
+    );
+    if (response.statusCode != 200) {
+      throw Exception(_apiError(response));
     }
+    // No stale token is reused after the server revokes every session.
+    http._handleUnauthorized();
+  }
+
+  Future<List<AuditLog>> getAuditLogs() async {
+    final response = await http.get(Uri.parse('$baseUrl/audit-logs'), headers: {'Authorization': 'Bearer $kAuthToken'});
+    if (response.statusCode != 200) throw Exception('Registro non disponibile (${response.statusCode})');
+    final data = jsonDecode(response.body) as List;
+    return data.map((e) => AuditLog.fromJson(e)).toList();
   }
 
   // --- CRUD UTENZE ---
@@ -407,6 +458,11 @@ class ApiService implements LicenseApi {
         },
         body: jsonEncode(updateData),
       );
+      if (response.statusCode == 200 && username == currentUsername &&
+          (updateData.containsKey('password') || updateData.containsKey('role') ||
+           updateData.containsKey('ai_enabled'))) {
+        http._handleUnauthorized();
+      }
       return response.statusCode == 200;
     } catch (e, s) {
       debugPrint('[ApiService] $e | $s');
@@ -446,8 +502,8 @@ class ApiService implements LicenseApi {
         throw Exception("Impossibile leggere i bytes del file");
       }
 
-      final response = await request.send();
-      if (response.statusCode == 401) {
+      final response = await raw_http.Response.fromStream(await request.send());
+      if (response.statusCode == 401 || http._passwordChangeRequired(response)) {
         http._handleUnauthorized();
       }
       return response.statusCode == 200;
@@ -455,6 +511,17 @@ class ApiService implements LicenseApi {
       debugPrint('[ApiService] $e | $s');
       return false;
     }
+  }
+
+  Future<List<ScaleModel>> getHistoricalScales(String patientId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/patients/$patientId/evaluation-scales'),
+      headers: {'Authorization': 'Bearer $kAuthToken'},
+    );
+    if (response.statusCode != 200) throw Exception(_apiError(response));
+    return (jsonDecode(response.body) as List)
+        .map((item) => ScaleModel.fromJson(Map<String, dynamic>.from(item as Map)))
+        .toList();
   }
 
   Future<List<ScaleModel>> getScales() async {
@@ -578,7 +645,7 @@ class ApiService implements LicenseApi {
   Future<Map<String, dynamic>?> getAiSettings() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/settings/ai'),
+        Uri.parse(isAdmin ? '$baseUrl/settings/ai' : '$baseUrl/ai/capabilities'),
         headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       if (response.statusCode == 200) {
@@ -686,50 +753,8 @@ class ApiService implements LicenseApi {
     Map<String, dynamic>? attachment,
     List<Map<String, dynamic>>? historyToInclude,
     String? systemPrompt,
-    Map<String, PsychometricAnalysis?>? analyses,
+    bool externalContentConfirmed = false,
   }) async {
-    final List<Map<String, dynamic>> evalsJson = evaluations.map((e) {
-      final m = <String, dynamic>{
-        'id_valutazione': e.idValutazione,
-        'id_paziente': e.idPaziente,
-        'id_scala': e.idScala,
-        'anno': e.anno,
-        'data_compilazione': e.dataCompilazione,
-        'nome_operatore': e.nomeOperatore,
-        'domini': e.domini
-            .map((d) => {
-                  'codice': d.codice,
-                  'etichetta': d.etichetta,
-                  'punteggio': d.punteggio,
-                  'num_domande': d.numDomande,
-                })
-            .toList(),
-      };
-      final analysis = analyses?[e.idValutazione] ?? analyses?[e.idScala];
-      if (analysis != null) {
-        m['analysis'] = {
-          'somma_punteggi_standard': analysis.sommaPunteggiStandard,
-          'indice_qv': analysis.indiceQv,
-          'percentile': analysis.percentile,
-          'fascia_qv': analysis.fasciaQv,
-          'alert_medico': analysis.alertMedico,
-          'alert_comportamentale': analysis.alertComportamentale,
-          'sezione_2_top4': analysis.sezione2Top4,
-          'domini': analysis.domini
-              .map((da) => {
-                    'codice': da.codice,
-                    'etichetta': da.etichetta,
-                    'punteggio_diretto': da.punteggioDiretto,
-                    'punteggio_standard': da.punteggioStandard,
-                    'percentile': da.percentileDominio,
-                    'fascia': da.fascia,
-                  })
-              .toList(),
-        };
-      }
-      return m;
-    }).toList();
-
     Map<String, dynamic>? attachmentPayload;
     if (attachment != null && attachment['bytes'] != null) {
       final bytes = attachment['bytes'];
@@ -745,12 +770,12 @@ class ApiService implements LicenseApi {
 
     final payload = {
       'id_paziente': patient.id,
-      'patient': patient.toJson(),
-      'evaluations': evalsJson,
+      'evaluation_ids': evaluations.map((e) => e.idValutazione).toList(),
       'notes': notes,
-      'history_reports': historyToInclude,
+      'history_report_ids': (historyToInclude ?? []).map((r) => r['id']).toList(),
+      'external_content_confirmed': externalContentConfirmed,
       'attachment': attachmentPayload,
-      'system_prompt': systemPrompt,
+      if (isAdmin && systemPrompt != null) 'system_prompt': systemPrompt,
     };
 
     final response = await http.post(
@@ -774,6 +799,24 @@ class ApiService implements LicenseApi {
       }
     } catch (_) {}
     throw Exception(errorMsg);
+  }
+
+  Future<void> approveAiAnalysis(String id, String reportHash) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/patients/ai-analyses/$id/approve'),
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $kAuthToken'},
+      body: jsonEncode({'report_hash': reportHash}),
+    );
+    if (response.statusCode != 200) throw Exception(_apiError(response));
+  }
+
+  Future<List<int>?> downloadSavedAiAnalysisPdf(String id) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/patients/ai-analyses/$id/pdf'),
+      headers: {'Authorization': 'Bearer $kAuthToken'},
+    );
+    if (response.statusCode != 200) throw Exception(_apiError(response));
+    return response.bodyBytes;
   }
 
   Future<List<Map<String, dynamic>>> getAiJobs({int limit = 30}) async {
@@ -1012,47 +1055,50 @@ class ApiService implements LicenseApi {
     }
   }
 
-  Future<List<int>?> exportDatabase() async {
+  String _apiError(raw_http.Response response) {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/export-db'),
-        headers: {'Authorization': 'Bearer $kAuthToken'},
-      );
-      if (response.statusCode == 200) {
-        return response.bodyBytes;
-      }
-      return null;
-    } catch (e, s) {
-      debugPrint('[ApiService] $e | $s');
-      return null;
-    }
+      final detail = jsonDecode(response.body)['detail'];
+      if (detail is String) return detail;
+    } catch (_) {}
+    return 'Operazione non riuscita (HTTP ${response.statusCode}).';
+  }
+
+  Future<List<int>?> exportDatabase() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/export-db'),
+      headers: {'Authorization': 'Bearer $kAuthToken'},
+    );
+    if (response.statusCode != 200) throw Exception(_apiError(response));
+    return response.bodyBytes;
   }
 
   Future<bool> importDatabase(PlatformFile file) async {
-    try {
-      final request = raw_http.MultipartRequest(
-        'POST',
-        Uri.parse('$baseUrl/import-db'),
-      );
-      request.headers['Authorization'] = 'Bearer $kAuthToken';
-      if (file.bytes != null) {
-        request.files.add(raw_http.MultipartFile.fromBytes(
-          'file',
-          file.bytes!,
-          filename: file.name,
-        ));
-      } else {
-        throw Exception("Impossibile leggere i bytes del file");
-      }
-      final response = await request.send();
-      if (response.statusCode == 401) {
-        http._handleUnauthorized();
-      }
-      return response.statusCode == 200;
-    } catch (e, s) {
-      debugPrint('[ApiService] $e | $s');
-      return false;
+    if (file.size > 64 * 1024 * 1024) {
+      throw Exception('Il backup supera il limite di 64 MiB.');
     }
+    if (file.bytes == null) throw Exception('Impossibile leggere il file.');
+    final request =
+        raw_http.MultipartRequest('POST', Uri.parse('$baseUrl/import-db'));
+    request.headers['Authorization'] = 'Bearer $kAuthToken';
+    request.files.add(raw_http.MultipartFile.fromBytes('file', file.bytes!,
+        filename: file.name));
+    late final raw_http.Response response;
+    try {
+      response = await request.send()
+          .then(raw_http.Response.fromStream)
+          .timeout(const Duration(seconds: 180));
+    } catch (_) {
+      throw Exception('Connessione interrotta o tempo scaduto: esito del '
+          'ripristino da verificare nel registro audit. Non ripetere '
+          'automaticamente; mantenere la manutenzione attiva.');
+    }
+    if (response.statusCode == 401 || http._passwordChangeRequired(response)) {
+      http._handleUnauthorized();
+    }
+    if (response.statusCode != 200) throw Exception(_apiError(response));
+    // Restore invalidates all sessions; return to login using the existing handler.
+    http._handleUnauthorized();
+    return true;
   }
 
   // --- AI HISTORICAL ANALYSES ---
@@ -1143,7 +1189,7 @@ class ApiService implements LicenseApi {
         headers: {'Authorization': 'Bearer $kAuthToken'},
       );
       if (response.statusCode == 200) {
-        return ScaleModel.fromJson(jsonDecode(response.body));
+        return ScaleModel.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
       }
       return null;
     } catch (e, s) {

@@ -1,3 +1,4 @@
+from .evaluation_contract import incomplete_analysis, validate_answers
 """
 analytics.py — Motore di calcolo psicometrico per scale multidimensionali.
 
@@ -399,6 +400,10 @@ def compute_psychometric_analysis(
             "scala_nome": str,
         }
     """
+    invalid_result = incomplete_analysis(risposte, scale_doc)
+    if invalid_result is not None:
+        return invalid_result
+    risposte = validate_answers(risposte, scale_doc)
     domain_map = build_domain_map(scale_doc)
 
     # Dispatch SIS al motore di calcolo dedicato
@@ -918,6 +923,11 @@ def calcola_punteggi_sis(
         alert_medico, alert_comportamentale,
         dettaglio_medico, dettaglio_comportamentale, scala_nome.
     """
+    invalid_result = incomplete_analysis(risposte, scale_config)
+    if invalid_result is not None:
+        return invalid_result
+    risposte = validate_answers(risposte, scale_config)
+
     # --- Separazione risposte per sezione ---
     risposte_domini: Dict[str, List[dict]] = {
         d: [] for d in "ABCDEF"

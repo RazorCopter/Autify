@@ -91,6 +91,7 @@ class DomainAnalysis {
 }
 
 class PsychometricAnalysis {
+  final String? validationMessage;
   final String idValutazione;
   final String idPaziente;
   final String idScala;
@@ -105,6 +106,7 @@ class PsychometricAnalysis {
   final List<Map<String, dynamic>>? sezione2Top4;
 
   PsychometricAnalysis({
+    this.validationMessage,
     required this.idValutazione,
     required this.idPaziente,
     required this.idScala,
@@ -121,6 +123,7 @@ class PsychometricAnalysis {
 
   factory PsychometricAnalysis.fromJson(Map<String, dynamic> json) {
     return PsychometricAnalysis(
+      validationMessage: json['validation_message'] as String?,
       idValutazione: json['id_valutazione'] ?? '',
       idPaziente: json['id_paziente'] ?? '',
       idScala: json['id_scala'] ?? '',
@@ -143,6 +146,7 @@ class PsychometricAnalysis {
 }
 
 class AggregatedEvaluation {
+  final Map<String, dynamic>? snapshotScala;
   final String idValutazione;
   final String idPaziente;
   final String idScala;
@@ -155,6 +159,7 @@ class AggregatedEvaluation {
   final List<AnswerModel> risposte;
 
   AggregatedEvaluation({
+    this.snapshotScala,
     required this.idValutazione,
     required this.idPaziente,
     required this.idScala,
@@ -169,6 +174,7 @@ class AggregatedEvaluation {
 
   factory AggregatedEvaluation.fromJson(Map<String, dynamic> json) {
     return AggregatedEvaluation(
+      snapshotScala: json['snapshot_scala'] == null ? null : Map<String, dynamic>.from(json['snapshot_scala'] as Map),
       idValutazione: json['id_valutazione'] ?? '',
       idPaziente: json['id_paziente'] ?? '',
       idScala: json['id_scala'] ?? '',

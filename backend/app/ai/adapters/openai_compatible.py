@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Tuple
 import httpx
 from fastapi import HTTPException
 from ..models import AIAttachment, AIGenerationSettings, AINetworkSettings, AIProtocol
-from ..ssrf import validate_base_url, normalize_base_url
+from ..ssrf import normalize_base_url, ai_http_client
 from .base import BaseAIAdapter
 
 class OpenAICompatibleAdapter(BaseAIAdapter):
@@ -30,9 +30,9 @@ class OpenAICompatibleAdapter(BaseAIAdapter):
         headers = {"Content-Type": "application/json"}
         if self.custom_headers:
             for k, v in self.custom_headers.items():
-                if k.lower() not in ("content-length", "host", "connection", "transfer-encoding"):
+                if k.lower() not in ("content-length", "host", "connection", "transfer-encoding", "proxy-authorization", "proxy-connection", "upgrade", "te", "trailer"):
                     headers[k] = str(v)
-        if self.api_key and "Authorization" not in headers:
+        if self.api_key and not any(k.lower() == "authorization" for k in headers):
             headers["Authorization"] = f"Bearer {self.api_key}"
         return headers
 
@@ -64,7 +64,6 @@ class OpenAICompatibleAdapter(BaseAIAdapter):
         user_prompt: str,
         attachment: Optional[AIAttachment] = None,
     ) -> Tuple[str, dict]:
-        validate_base_url(self.base_url)
         url = self._build_endpoint()
         headers = self._build_headers()
 
@@ -126,7 +125,7 @@ class OpenAICompatibleAdapter(BaseAIAdapter):
                 payload["reasoning_effort"] = self.generation.reasoning_effort
 
         async def _do_req():
-            async with httpx.AsyncClient(timeout=float(self.network.timeout_seconds), follow_redirects=False) as client:
+            async with ai_http_client(timeout=float(self.network.timeout_seconds)) as client:
                 res = await client.post(url, headers=headers, json=payload)
                 if res.status_code != 200:
                     err = self._parse_compatible_error(res.status_code, res.text)
@@ -171,7 +170,6 @@ class OpenAICompatibleAdapter(BaseAIAdapter):
             raise HTTPException(status_code=502, detail=f"Risposta gateway malformata: {e}")
 
     async def test_connection(self) -> Tuple[bool, float, str]:
-        validate_base_url(self.base_url)
         url = self._build_endpoint()
         headers = self._build_headers()
         if self.protocol == "responses":
@@ -188,7 +186,7 @@ class OpenAICompatibleAdapter(BaseAIAdapter):
             }
         start = time.perf_counter()
         try:
-            async with httpx.AsyncClient(timeout=float(min(15, self.network.timeout_seconds)), follow_redirects=False) as client:
+            async with ai_http_client(timeout=float(min(15, self.network.timeout_seconds))) as client:
                 res = await client.post(url, headers=headers, json=payload)
                 lat = round((time.perf_counter() - start) * 1000, 2)
                 if res.status_code == 200:
@@ -199,12 +197,11 @@ class OpenAICompatibleAdapter(BaseAIAdapter):
             return False, lat, f"Errore di connessione al gateway: {str(e)}"
 
     async def fetch_available_models(self) -> List[str]:
-        validate_base_url(self.base_url)
         clean = self.base_url.rstrip("/")
         models_url = f"{clean}/models"
         headers = self._build_headers()
 
-        async with httpx.AsyncClient(timeout=float(min(15, self.network.timeout_seconds)), follow_redirects=False) as client:
+        async with ai_http_client(timeout=float(min(15, self.network.timeout_seconds))) as client:
             try:
                 res = await client.get(models_url, headers=headers)
                 if res.status_code == 404 and not clean.endswith("/v1"):

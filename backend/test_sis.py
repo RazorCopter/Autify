@@ -89,18 +89,22 @@ def test_calcola_punteggi_sis_completo():
         num = 9 if dom == "C" else 8
         for i in range(1, num + 1):
             risposte.append({"codice_domanda": f"{dom}{i}", "punteggio": {"F": 1, "D": 1, "T": 1}})
-    # Sezione 2
+    # Sezione 2 (8 item)
     for i in range(1, 9):
         risposte.append({"codice_domanda": f"P{i}", "punteggio": {"F": 2, "D": 1, "T": 1}})
-    # Sezione 3 medica
-    for i in range(1, 5):
-        risposte.append({"codice_domanda": f"M{i}", "punteggio": 0})
-    risposte.append({"codice_domanda": "M5", "punteggio": 2})
-    # Sezione 3 comportamentale
-    for i in range(1, 4):
-        risposte.append({"codice_domanda": f"BC{i}", "punteggio": 1})
+    # Sezione 3 medica (16 item)
+    for i in range(1, 17):
+        risposte.append({"codice_domanda": f"M{i}", "punteggio": 2 if i == 5 else 0})
+    # Sezione 3 comportamentale (13 item)
+    for i in range(1, 14):
+        risposte.append({"codice_domanda": f"BC{i}", "punteggio": 1 if i <= 3 else 0})
 
-    result = calcola_punteggi_sis(risposte, {"nome": "SIS Test"})
+    import json
+    with open("scale/Scala_SIS.json", "r", encoding="utf-8") as f:
+        sis_scale = json.load(f)["scala"]
+    result = calcola_punteggi_sis(risposte, sis_scale)
+    if not result.get("domini"):
+        print("DEBUG RESULT:", result)
 
     # Verifica dominio A: grezzo=48 → std=12, perc=75
     dom_a = result["domini"][0]

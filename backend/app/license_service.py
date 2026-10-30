@@ -1,3 +1,5 @@
+import asyncio
+import functools
 import base64
 import hashlib
 import json
@@ -11,14 +13,39 @@ from typing import Any
 
 import httpx
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.exceptions import InvalidTag
 from fastapi import HTTPException, status
 
 from .database import licenses_collection
+from pymongo.errors import DuplicateKeyError
 
 LICENSE_ID = "autify_license"
 TRIAL_DAYS = 15
 CACHE_HOURS = int(os.getenv("LICENSE_CACHE_HOURS", "24"))
 OFFLINE_GRACE_HOURS = int(os.getenv("LICENSE_OFFLINE_GRACE_HOURS", "72"))
+
+
+_license_lock = asyncio.Lock()
+_index_lock = asyncio.Lock()
+_index_ready = False
+
+
+def serialized_license(function):
+    @functools.wraps(function)
+    async def run(*args, **kwargs):
+        async with _license_lock:
+            return await function(*args, **kwargs)
+    return run
+
+
+async def _store_license(document, updates):
+    # A remote response must not overwrite a newer activation, release or validation.
+    selector = {"id": LICENSE_ID, "instance_id": document["instance_id"],
+                "license_token": document.get("license_token"), "status": document.get("status"),
+                "last_validated_at": document.get("last_validated_at")}
+    result = await licenses_collection.update_one(selector, {"$set": updates})
+    if result.matched_count != 1:
+        raise HTTPException(409, "Stato licenza cambiato durante la richiesta: rileggere. Un'operazione remota potrebbe essere gia avvenuta; non ripeterla automaticamente.")
 
 
 def utcnow() -> datetime:
@@ -88,6 +115,11 @@ def _serialize(document: dict, *, message: str | None = None) -> dict:
 
 
 async def ensure_trial_license() -> dict:
+    global _index_ready
+    async with _index_lock:
+        if not _index_ready:
+            await licenses_collection.create_index("id", unique=True, partialFilterExpression={"id": {"$type": "string"}}, name="license_id_unique")
+            _index_ready = True
     existing = await licenses_collection.find_one({"id": LICENSE_ID})
     if existing:
         return existing
@@ -107,7 +139,7 @@ async def ensure_trial_license() -> dict:
     }
     try:
         await licenses_collection.insert_one(document)
-    except Exception:
+    except DuplicateKeyError:
         # Gestisce in modo idempotente avvii concorrenti di più worker.
         existing = await licenses_collection.find_one({"id": LICENSE_ID})
         if existing:
@@ -126,7 +158,7 @@ async def _license_server_call(path: str, payload: dict[str, Any]) -> dict[str, 
         "request_nonce": secrets.token_urlsafe(24),
     }
     timeout = float(os.getenv("LICENSE_SERVER_TIMEOUT_SECONDS", "8"))
-    async with httpx.AsyncClient(timeout=timeout) as client:
+    async with httpx.AsyncClient(timeout=timeout, follow_redirects=False, trust_env=False) as client:
         response = await client.post(f"{url}{path}", json=_encrypt(body))
         response.raise_for_status()
         return _decrypt(response.json())
@@ -144,7 +176,7 @@ async def get_license_server_info() -> dict[str, Any]:
 
     timeout = float(os.getenv("LICENSE_SERVER_TIMEOUT_SECONDS", "8"))
     try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=False, trust_env=False) as client:
             response = await client.get(f"{url}/health")
             reachable = response.status_code == status.HTTP_200_OK
     except httpx.HTTPError:
@@ -157,6 +189,7 @@ async def get_license_server_info() -> dict[str, Any]:
     }
 
 
+@serialized_license
 async def activate_license(code: str) -> dict:
     document = await ensure_trial_license()
     result = await _license_server_call(
@@ -178,13 +211,23 @@ async def activate_license(code: str) -> dict:
         "permanently_activated": is_lifetime,
         "updated_at": now,
     }
-    await licenses_collection.update_one({"id": LICENSE_ID}, {"$set": updates})
+    await _store_license(document, updates)
     return _serialize({**document, **updates})
 
 
 async def get_license_status(force_remote: bool = False) -> dict:
+    requested_at = utcnow()
+    async with _license_lock:
+        return await _get_license_status(force_remote, requested_at)
+
+
+async def _get_license_status(force_remote=False, requested_at=None) -> dict:
     document = await ensure_trial_license()
     if document.get("plan") == "trial" or not document.get("license_token"):
+        return _serialize(document)
+
+    last_check = _parse_datetime(document.get("last_validated_at"))
+    if force_remote and requested_at and last_check and last_check >= requested_at:
         return _serialize(document)
 
     # Licenze lifetime già attivate: non ricontattare MAI il server
@@ -196,7 +239,7 @@ async def get_license_status(force_remote: bool = False) -> dict:
 
     now = utcnow()
     last_validated = _parse_datetime(document.get("last_validated_at"))
-    if not force_remote and last_validated and now - last_validated < timedelta(hours=CACHE_HOURS):
+    if not force_remote and last_validated and timedelta(0) <= now - last_validated < timedelta(hours=CACHE_HOURS):
         return _serialize(document)
     try:
         result = await _license_server_call(
@@ -215,19 +258,20 @@ async def get_license_status(force_remote: bool = False) -> dict:
             "offline": False,
             "updated_at": now,
         }
-        await licenses_collection.update_one({"id": LICENSE_ID}, {"$set": updates})
+        await _store_license(document, updates)
         return _serialize({**document, **updates})
-    except (httpx.HTTPError, RuntimeError, ValueError, KeyError, json.JSONDecodeError):
-        within_grace = last_validated is not None and now - last_validated <= timedelta(hours=OFFLINE_GRACE_HOURS)
+    except (httpx.HTTPError, RuntimeError, ValueError, KeyError, json.JSONDecodeError, InvalidTag):
+        within_grace = last_validated is not None and timedelta(0) <= now - last_validated <= timedelta(hours=OFFLINE_GRACE_HOURS)
         if within_grace:
             updates = {"offline": True, "updated_at": now}
-            await licenses_collection.update_one({"id": LICENSE_ID}, {"$set": updates})
+            await _store_license(document, updates)
             return _serialize({**document, **updates}, message="Server licenze non raggiungibile: cache offline attiva")
         updates = {"status": "validation_required", "offline": True, "updated_at": now}
-        await licenses_collection.update_one({"id": LICENSE_ID}, {"$set": updates})
+        await _store_license(document, updates)
         return _serialize({**document, **updates}, message="Impossibile validare la licenza: periodo offline scaduto")
 
 
+@serialized_license
 async def deactivate_license() -> dict:
     """Rilascia la licenza corrente, liberando il codice per un'altra installazione."""
     document = await licenses_collection.find_one({"id": LICENSE_ID})
@@ -244,18 +288,20 @@ async def deactivate_license() -> dict:
 
     # Reset locale: torna allo stato trial
     now = utcnow()
+    created_at = _parse_datetime(document.get("created_at"))
+    trial_end = created_at + timedelta(days=TRIAL_DAYS) if created_at else now
     reset = {
         "status": "trial",
         "plan": "trial",
         "license_token": None,
         "code_suffix": None,
         "permanently_activated": False,
-        "expires_at": now + timedelta(days=TRIAL_DAYS),
+        "expires_at": trial_end,
         "last_validated_at": None,
         "offline": False,
         "updated_at": now,
     }
-    await licenses_collection.update_one({"id": LICENSE_ID}, {"$set": reset})
+    await _store_license(document, reset)
     return _serialize({**document, **reset}, message="Licenza disattivata con successo. Il codice è ora riutilizzabile su un'altra installazione.")
 
 

@@ -41,381 +41,65 @@ client_router = APIRouter(dependencies=[Depends(verify_auth)])
 
 @admin_router.get("/dashboard-stats", tags=["Admin - Dashboard"])
 async def get_dashboard_stats():
-    """
-    Ritorna statistiche aggregate pre-calcolate per la Dashboard direzionale:
-    - Totale utenze attive
-    - Stato copertura (Coperti vs Scaduti/Da valutare) negli ultimi 6 mesi (180 giorni)
-    - Distribuzione valutazioni per tipo di scala
-    - Trend degli ultimi 6 mesi (valutazioni mensili per scala)
-    - Lista degli ultimi alert (max 5) di pazienti da rivalutare urgentemente
-    Risultato in cache per 5 minuti (P-01).
-    """
-    if _dashboard_cache["data"] is not None and (_time.time() - _dashboard_cache["ts"]) < _DASHBOARD_CACHE_TTL:
-        return _dashboard_cache["data"]
-
+    """Live statistics using the same projection as /patients (no stale status cache)."""
+    from ..expiry import project, utc_date, ROME
     try:
+        now = datetime.now(ROME)
         def parse_eval_date(ev_doc):
-            d = ev_doc.get("data_compilazione")
-            if not d:
-                return datetime.min.replace(tzinfo=timezone.utc)
-            if isinstance(d, str):
-                try:
-                    res = datetime.fromisoformat(d.replace('Z', '+00:00'))
-                except ValueError:
-                    m_ymd = re.match(r"^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})", d)
-                    if m_ymd:
-                        try:
-                            res = datetime(int(m_ymd.group(1)), int(m_ymd.group(2)), int(m_ymd.group(3)), tzinfo=timezone.utc)
-                        except ValueError:
-                            res = datetime.min.replace(tzinfo=timezone.utc)
-                    else:
-                        m_dmy = re.match(r"^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})", d)
-                        if m_dmy:
-                            try:
-                                res = datetime(int(m_dmy.group(3)), int(m_dmy.group(2)), int(m_dmy.group(1)), tzinfo=timezone.utc)
-                            except ValueError:
-                                res = datetime.min.replace(tzinfo=timezone.utc)
-                        else:
-                            res = datetime.min.replace(tzinfo=timezone.utc)
-            elif isinstance(d, datetime):
-                res = d
-            else:
-                res = datetime.min.replace(tzinfo=timezone.utc)
-            if res.tzinfo is None:
-                res = res.replace(tzinfo=timezone.utc)
-            return res
-
-        # 1. Recupero di tutti i pazienti e di tutte le scale per mappare i nomi
-        MAX_PATIENTS_LIMIT = 5000
-        MAX_EVALS_LIMIT = 10000
-
-        patients_cursor = patients_collection.find({})
-        patients = await patients_cursor.to_list(length=MAX_PATIENTS_LIMIT)
-        is_truncated = len(patients) >= MAX_PATIENTS_LIMIT
-        
-        active_patient_ids = set()
+            date = utc_date(ev_doc.get("data_compilazione"))
+            return date.astimezone(ROME) if date else datetime.min.replace(tzinfo=timezone.utc)
+        patients = await patients_collection.find({}).to_list(length=None)
         pazienti_attivi = [p for p in patients if p.get("attivo", True)]
-        for pat in pazienti_attivi:
-            p_id = pat.get("id")
-            if p_id:
-                active_patient_ids.add(str(p_id))
-            p_id2 = pat.get("_id")
-            if p_id2:
-                active_patient_ids.add(str(p_id2))
-        
-        scales_cursor = scales_collection.find({})
-        scales_list = await scales_cursor.to_list(length=100)
-        
-        scale_names = {}
-        for s in scales_list:
-            s_nome = s.get("nome") or "Scala senza nome"
-            s_id = s.get("id")
-            if s_id:
-                scale_names[str(s_id)] = s_nome
-            s_id2 = s.get("_id")
-            if s_id2:
-                scale_names[str(s_id2)] = s_nome
-                
-        # 2. Recupero di tutte le valutazioni
-        evaluations_cursor = evaluations_collection.find({})
-        evaluations = await evaluations_cursor.to_list(length=MAX_EVALS_LIMIT)
-        if len(evaluations) >= MAX_EVALS_LIMIT:
-            is_truncated = True
-        
-        now = datetime.now(timezone.utc)
-        
-        # 3. Raggruppamento valutazioni per utente (saltando orfane e normalizzando gli ID a stringa)
-        evals_by_patient = {}
-        for ev in evaluations:
-            pat_id = ev.get("id_paziente")
-            if not pat_id:
-                continue
-            pat_id_str = str(pat_id)
-            if pat_id_str not in active_patient_ids:
-                continue
-            if pat_id_str not in evals_by_patient:
-                evals_by_patient[pat_id_str] = []
-            evals_by_patient[pat_id_str].append(ev)
-            
-        # 4. Calcolo dello stato di copertura di ciascun utente (POS e San Martin valutati individualmente)
-        pos_attivi = 0
-        san_martin_attivi = 0
-        sis_attivi = 0
-        pos_scaduti = 0
-        san_martin_scaduti = 0
-        sis_scaduti = 0
+        policy = await project(pazienti_attivi, now)
+        active_patient_ids = {str(key) for p in pazienti_attivi for key in (p.get("id"), p.get("_id")) if key is not None}
+        scales_list = await scales_collection.find({}).to_list(length=None)
+        scale_names = {str(key): s.get("nome", "Scala senza nome") for s in scales_list for key in (s.get("id"), s.get("_id")) if key is not None}
+        evaluations = await evaluations_collection.find({}, {"id_paziente": 1, "id_scala": 1, "data_compilazione": 1}).to_list(length=None)
+        canonical_patients = {str(key): p["id"] for p in pazienti_attivi for key in (p.get("id"), p.get("_id")) if key is not None}
+        is_truncated = False
+        totals = {k: 0 for k in ("mai_valutati", "incompleti", "scaduti", "in_scadenza", "coperti")}
+        covered = {k: 0 for k in policy["scale_validity_months"]}
         alert_candidates = []
-        total_scaduti_global = 0
-        total_in_scadenza_global = 0
-        total_mai_valutati_global = 0
-        total_incompleti_global = 0
-        
-        # Inizializza i dati per il Forecast a 8 settimane (W1 - W8).
-        # "routine" non è calcolabile senza un modulo di pianificazione: impostato a 0.
-        forecast_dati = []
-        for w in range(1, 9):
-            forecast_dati.append({
-                "settimana": f"W{w}",
-                "routine": 0,
-                "criticita": 0
-            })
-        
+        forecast_dati = [{"settimana": f"W{w}", "routine": 0, "criticita": 0} for w in range(1, 9)]
         for pat in pazienti_attivi:
-            p_id = pat.get("id")
-            p_id2 = pat.get("_id")
-            
-            p_id_str = str(p_id) if p_id else None
-            p_id2_str = str(p_id2) if p_id2 else None
-            
-            pat_display_id = p_id_str or p_id2_str
-            if not pat_display_id:
-                continue
-                
-            # Recupera le valutazioni dell'utente provando entrambe le chiavi stringa
-            pat_evals = []
-            if p_id_str and p_id_str in evals_by_patient:
-                pat_evals = evals_by_patient[p_id_str]
-            elif p_id2_str and p_id2_str in evals_by_patient:
-                pat_evals = evals_by_patient[p_id2_str]
-            
-            # Dividi le valutazioni in POS, San Martín e SIS
-            pat_pos_evals = []
-            pat_sm_evals = []
-            pat_sis_evals = []
-            
-            for ev in pat_evals:
-                scale_id = ev.get("id_scala")
-                scale_id_str = str(scale_id) if scale_id else ""
-                scale_name = scale_names.get(scale_id_str) or scale_names.get(str(scale_id)) or scale_id_str or ""
-                scale_name = scale_name.lower()
-                scale_type = _classify_scale(scale_name, scale_id_str)
-                if scale_type == "pos":
-                    pat_pos_evals.append(ev)
-                elif scale_type == "san_martin":
-                    pat_sm_evals.append(ev)
-                elif scale_type == "sis":
-                    pat_sis_evals.append(ev)
-            
-            # --- Valuta POS ---
-            has_valid_pos = False
-            latest_pos_date = None
-            if pat_pos_evals:
-                sorted_pos = sorted(pat_pos_evals, key=parse_eval_date, reverse=True)
-                latest_pos = sorted_pos[0]
-                latest_pos_date = parse_eval_date(latest_pos)
-                days_since_pos = (now - latest_pos_date).days
-                if days_since_pos <= 180:
-                    has_valid_pos = True
-                    pos_attivi += 1
-                else:
-                    pos_scaduti += 1
-            else:
-                pos_scaduti += 1
-                
-            # --- Valuta San Martín ---
-            has_valid_sm = False
-            latest_sm_date = None
-            if pat_sm_evals:
-                sorted_sm = sorted(pat_sm_evals, key=parse_eval_date, reverse=True)
-                latest_sm = sorted_sm[0]
-                latest_sm_date = parse_eval_date(latest_sm)
-                days_since_sm = (now - latest_sm_date).days
-                if days_since_sm <= 180:
-                    has_valid_sm = True
-                    san_martin_attivi += 1
-                else:
-                    san_martin_scaduti += 1
-            else:
-                san_martin_scaduti += 1
-                
-            # --- Valuta SIS ---
-            has_valid_sis = False
-            latest_sis_date = None
-            if pat_sis_evals:
-                sorted_sis = sorted(pat_sis_evals, key=parse_eval_date, reverse=True)
-                latest_sis = sorted_sis[0]
-                latest_sis_date = parse_eval_date(latest_sis)
-                days_since_sis = (now - latest_sis_date).days
-                if days_since_sis <= 365:
-                    has_valid_sis = True
-                    sis_attivi += 1
-                else:
-                    sis_scaduti += 1
-            else:
-                sis_scaduti += 1
-                
-            # Generazione alert puntuali per singola scala (se non valida o in scadenza)
-            # POS
-            if not pat_pos_evals:
-                alert_candidates.append({
-                    "paziente_id": pat_display_id,
-                    "paziente_nome": pat.get("nome", ""),
-                    "paziente_cognome": pat.get("cognome", ""),
-                    "ultima_valutazione_data": None,
-                    "giorni_da_ultima_valutazione": 9999,
-                    "stato": "mai_valutato",
-                    "scala_nome": "POS"
-                })
-            else:
-                days_since_pos = (now - latest_pos_date).days
-                if days_since_pos > 180:
-                    alert_candidates.append({
-                        "paziente_id": pat_display_id,
-                        "paziente_nome": pat.get("nome", ""),
-                        "paziente_cognome": pat.get("cognome", ""),
-                        "ultima_valutazione_data": latest_pos_date.isoformat(),
-                        "giorni_da_ultima_valutazione": days_since_pos,
-                        "stato": "scaduto",
-                        "scala_nome": "POS"
-                    })
-                elif days_since_pos > 150:
-                    alert_candidates.append({
-                        "paziente_id": pat_display_id,
-                        "paziente_nome": pat.get("nome", ""),
-                        "paziente_cognome": pat.get("cognome", ""),
-                        "ultima_valutazione_data": latest_pos_date.isoformat(),
-                        "giorni_da_ultima_valutazione": days_since_pos,
-                        "stato": "in_scadenza",
-                        "scala_nome": "POS"
-                    })
-
-            # San Martín
-            if not pat_sm_evals:
-                alert_candidates.append({
-                    "paziente_id": pat_display_id,
-                    "paziente_nome": pat.get("nome", ""),
-                    "paziente_cognome": pat.get("cognome", ""),
-                    "ultima_valutazione_data": None,
-                    "giorni_da_ultima_valutazione": 9999,
-                    "stato": "mai_valutato",
-                    "scala_nome": "San Martín"
-                })
-            else:
-                days_since_sm = (now - latest_sm_date).days
-                if days_since_sm > 180:
-                    alert_candidates.append({
-                        "paziente_id": pat_display_id,
-                        "paziente_nome": pat.get("nome", ""),
-                        "paziente_cognome": pat.get("cognome", ""),
-                        "ultima_valutazione_data": latest_sm_date.isoformat(),
-                        "giorni_da_ultima_valutazione": days_since_sm,
-                        "stato": "scaduto",
-                        "scala_nome": "San Martín"
-                    })
-                elif days_since_sm > 150:
-                    alert_candidates.append({
-                        "paziente_id": pat_display_id,
-                        "paziente_nome": pat.get("nome", ""),
-                        "paziente_cognome": pat.get("cognome", ""),
-                        "ultima_valutazione_data": latest_sm_date.isoformat(),
-                        "giorni_da_ultima_valutazione": days_since_sm,
-                        "stato": "in_scadenza",
-                        "scala_nome": "San Martín"
-                    })
-
-            # SIS
-            if not pat_sis_evals:
-                alert_candidates.append({
-                    "paziente_id": pat_display_id,
-                    "paziente_nome": pat.get("nome", ""),
-                    "paziente_cognome": pat.get("cognome", ""),
-                    "ultima_valutazione_data": None,
-                    "giorni_da_ultima_valutazione": 9999,
-                    "stato": "mai_valutato",
-                    "scala_nome": "SIS"
-                })
-            else:
-                days_since_sis = (now - latest_sis_date).days
-                if days_since_sis > 365:
-                    alert_candidates.append({
-                        "paziente_id": pat_display_id,
-                        "paziente_nome": pat.get("nome", ""),
-                        "paziente_cognome": pat.get("cognome", ""),
-                        "ultima_valutazione_data": latest_sis_date.isoformat(),
-                        "giorni_da_ultima_valutazione": days_since_sis,
-                        "stato": "scaduto",
-                        "scala_nome": "SIS"
-                    })
-                elif days_since_sis > 335:
-                    alert_candidates.append({
-                        "paziente_id": pat_display_id,
-                        "paziente_nome": pat.get("nome", ""),
-                        "paziente_cognome": pat.get("cognome", ""),
-                        "ultima_valutazione_data": latest_sis_date.isoformat(),
-                        "giorni_da_ultima_valutazione": days_since_sis,
-                        "stato": "in_scadenza",
-                        "scala_nome": "SIS"
-                    })
-
-            # --- Calcolo Metriche Globali dell'Utente (AlertBar) ---
-            is_scaduta = False
-            is_in_scadenza = False
-            
-            if pat_pos_evals and latest_pos_date:
-                days_since_pos = (now - latest_pos_date).days
-                if days_since_pos > 180:
-                    is_scaduta = True
-                elif days_since_pos > 150:
-                    is_in_scadenza = True
-                    
-            if pat_sm_evals and latest_sm_date:
-                days_since_sm = (now - latest_sm_date).days
-                if days_since_sm > 180:
-                    is_scaduta = True
-                elif days_since_sm > 150:
-                    is_in_scadenza = True
-                    
-            if pat_sis_evals and latest_sis_date:
-                days_since_sis = (now - latest_sis_date).days
-                if days_since_sis > 365:
-                    is_scaduta = True
-                elif days_since_sis > 335:
-                    is_in_scadenza = True
-                    
-            if len(pat_evals) == 0:
-                total_mai_valutati_global += 1
-            else:
-                if not pat_pos_evals or not pat_sm_evals or not pat_sis_evals:
-                    total_incompleti_global += 1
-                elif is_scaduta:
-                    total_scaduti_global += 1
-                elif is_in_scadenza:
-                    total_in_scadenza_global += 1
-
-            # --- Calcolo Forecast a 8 settimane ---
-            # routine  = scala valida ma in scadenza entro 8 sett. (0 < days_left < 56)
-            # criticita = scala già scaduta (days_left <= 0) → sempre W0
-            for (pat_evals, latest_date, soglia) in [
-                (pat_pos_evals, latest_pos_date, 180),
-                (pat_sm_evals, latest_sm_date, 180),
-                (pat_sis_evals, latest_sis_date, 365),
-            ]:
-                if pat_evals and latest_date:
-                    exp = latest_date + timedelta(days=soglia)
-                    days_left = (exp - now).days
-                    if 0 < days_left < 56:
-                        w_idx = days_left // 7
-                        forecast_dati[w_idx]["routine"] += 1
-                    elif days_left <= 0:
+            totals[pat["stato_valutazioni"]] += 1
+            for kind, state in pat["stato_scale"].items():
+                if state["stato"] in ("valida", "in_scadenza"):
+                    covered[kind] += 1
+                if kind not in policy["required_scale_types"]:
+                    continue
+                days = state["giorni_residui"]
+                if days is not None:
+                    if days < 0:
                         forecast_dati[0]["criticita"] += 1
-
-        # Calcolo percentuale di copertura
+                    elif days < 56:
+                        forecast_dati[days // 7]["routine"] += 1
+                if state["stato"] != "valida":
+                    date = utc_date(state["data"])
+                    alert_candidates.append({
+                        "paziente_id": pat["id"], "paziente_nome": pat.get("nome", ""),
+                        "paziente_cognome": pat.get("cognome", ""),
+                        "ultima_valutazione_data": state["data"],
+                        "giorni_da_ultima_valutazione": (now - date).days if date else 9999,
+                        "stato": {"mai_valutati": "mai_valutato", "incompleti": "incompleto", "scaduti": "scaduto"}.get(pat["stato_valutazioni"], pat["stato_valutazioni"]),
+                        "stato_scala": state["stato"],
+                        "scala_nome": kind.upper().replace("_", " "),
+                    })
         totale_pazienti = len(patients)
         totale_pazienti_attivi = len(pazienti_attivi)
-        coperti_count = pos_attivi + san_martin_attivi + sis_attivi
-        scaduti_count = pos_scaduti + san_martin_scaduti + sis_scaduti
-        max_scale_teoriche = 3 * totale_pazienti_attivi
-        copertura_percentuale = (coperti_count / max_scale_teoriche * 100) if max_scale_teoriche > 0 else 0.0
-        
-        # 5. Ordina gli alert: prima chi non ne ha mai fatte o scadute da più tempo, poi in scadenza
-        alert_candidates.sort(
-            key=lambda x: (
-                0 if x.get("stato") in ("scaduto", "mai_valutato") else 1,
-                -x.get("giorni_da_ultima_valutazione", 0)
-            )
-        )
+        pos_attivi, san_martin_attivi, sis_attivi = (covered[k] for k in ("pos", "san_martin", "sis"))
+        pos_scaduti, san_martin_scaduti, sis_scaduti = (totale_pazienti_attivi - covered[k] for k in ("pos", "san_martin", "sis"))
+        coperti_count = sum(covered[k] for k in policy["required_scale_types"])
+        denominator = len(policy["required_scale_types"]) * totale_pazienti_attivi
+        scaduti_count = denominator - coperti_count
+        copertura_percentuale = 100 * coperti_count / denominator if denominator else 0
+        total_scaduti_global = totals["scaduti"]
+        total_in_scadenza_global = totals["in_scadenza"]
+        total_mai_valutati_global = totals["mai_valutati"]
+        total_incompleti_global = totals["incompleti"]
+        alert_candidates.sort(key=lambda a: (a["stato"] == "in_scadenza", -a["giorni_da_ultima_valutazione"], a["paziente_id"], a["scala_nome"]))
         ultimi_alert = alert_candidates[:10]
-        
+
         # 6. Distribuzione per tipo di scala (saltando orfane o non valide)
         distribuzione_raw = {}
         for ev in evaluations:
@@ -430,9 +114,9 @@ async def get_dashboard_stats():
                 scale_id_str = str(scale_id)
                 if scale_id_str not in distribuzione_raw:
                     distribuzione_raw[scale_id_str] = set()
-                distribuzione_raw[scale_id_str].add(pat_id_str)
+                distribuzione_raw[scale_id_str].add(canonical_patients[pat_id_str])
             
-        totale_valutazioni = sum(len(patients) for patients in distribuzione_raw.values())
+        totale_valutazioni = sum(1 for ev in evaluations if str(ev.get("id_paziente")) in active_patient_ids)
         distribuzione_scale = []
         for scale_id, patients_set in distribuzione_raw.items():
             count = len(patients_set)
@@ -441,7 +125,7 @@ async def get_dashboard_stats():
                 "scala_id": scale_id,
                 "scala_nome": scala_nome,
                 "count": count,
-                "percentuale": round((count / totale_pazienti * 100), 1) if totale_pazienti > 0 else 0.0
+                "percentuale": round((count / totale_pazienti_attivi * 100), 1) if totale_pazienti_attivi > 0 else 0.0
             })
             
         # 7. Trend degli ultimi 6 mesi (BarChart dati delle somministrazioni mensili)
@@ -533,6 +217,12 @@ async def get_dashboard_stats():
             demographics["fasce_eta"][eta_fascia] += 1
             
         result = {
+            "expiry_policy": policy,
+            "calculated_at": now.isoformat(),
+            "coverage_denominator": denominator,
+            "utenze_coperte": totals["coperti"] + totals["in_scadenza"],
+            "utenze_da_completare": totals["mai_valutati"] + totals["incompleti"] + totals["scaduti"],
+            "coverage_unit": "coppie utente attivo / scala richiesta",
             "totale_utenze": totale_pazienti,
             "totale_utenze_attive": totale_pazienti_attivi,
             "totale_valutazioni_eseguite": totale_valutazioni,
@@ -560,9 +250,9 @@ async def get_dashboard_stats():
             "demographics": demographics,
             "is_truncated": is_truncated,
         }
-        _dashboard_cache["data"] = result
-        _dashboard_cache["ts"] = _time.time()
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         _logger.exception("Errore durante il calcolo delle statistiche della dashboard: %s", e)
         raise HTTPException(

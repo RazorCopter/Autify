@@ -166,6 +166,8 @@ void main() {
 
   testWidgets('mostra pulsante di rilascio licenza se commerciale e apre dialog di conferma',
       (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     final api = _FakeApiService(status: _activeStatus);
 
     await tester.pumpWidget(_app(LicenseScreen(api: api)));

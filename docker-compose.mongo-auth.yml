@@ -1,0 +1,29 @@
+# Apply only after provisioning users on the existing replica set.
+# See SECURITY_OPERATIONS.md. This overlay does not initialize or erase volumes.
+services:
+  autify-api:
+    environment:
+      - MONGODB_URL=${MONGODB_URL:?Set the authenticated application URI before enabling Mongo authentication}
+  autify-db:
+    environment:
+      MONGO_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:?Set the recovery administrator username}
+      MONGO_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Set the recovery administrator password}
+    secrets:
+      - mongo_keyfile
+    command:
+      - bash
+      - -ec
+      - |
+        install -o mongodb -g mongodb -m 0400 /run/secrets/mongo_keyfile /tmp/autify-mongo-keyfile
+        exec gosu mongodb mongod --replSet autify-rs --bind_ip_all --keyFile /tmp/autify-mongo-keyfile
+    healthcheck:
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - "const a=db.getSiblingDB('admin'); if(!a.auth(process.env.MONGO_ROOT_USERNAME,process.env.MONGO_ROOT_PASSWORD)){quit(1);} if(!db.hello().isWritablePrimary){quit(1);}"
+
+secrets:
+  mongo_keyfile:
+    file: ${MONGO_KEYFILE_PATH:-./secrets/mongo-keyfile}

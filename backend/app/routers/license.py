@@ -19,6 +19,8 @@ class LicenseActivationRequest(BaseModel):
 
 @admin_router.get("/license/status", tags=["Admin - License"])
 async def license_status(force_remote: bool = False, auth: dict = Depends(verify_auth)):
+    if force_remote and auth.get("role") != "admin":
+        raise HTTPException(403, "La verifica remota forzata e riservata agli amministratori")
     return await get_license_status(force_remote=force_remote)
 
 

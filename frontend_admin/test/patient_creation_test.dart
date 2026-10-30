@@ -192,20 +192,26 @@ class MockHttpClientResponse extends Stream<List<int>> implements HttpClientResp
   static String _getMockResponseBody(String method, String path) {
     if (path.contains('/patients')) {
       if (method == 'GET') {
-        return jsonEncode([
-          {
-            'id': 'paziente-1',
-            'nome': 'Mario',
-            'cognome': 'Rossi',
-            'altezza': 175,
-            'peso': 70.5,
-            'data_nascita': '1990-05-15',
-            'sesso': 'M',
-            'note': 'Paziente di test',
-            'ultimo_pos_compilato': null,
-            'ultimo_san_martin_compilato': null
-          }
-        ]);
+        return jsonEncode({
+          'items': [
+            {
+              'id': 'paziente-1',
+              'nome': 'Mario',
+              'cognome': 'Rossi',
+              'altezza': 175,
+              'peso': 70.5,
+              'data_nascita': '1990-05-15',
+              'sesso': 'M',
+              'note': 'Paziente di test',
+              'ultimo_pos_compilato': null,
+              'ultimo_san_martin_compilato': null
+            }
+          ],
+          'total': 1,
+          'page': 1,
+          'size': 100,
+          'pages': 1,
+        });
       } else if (method == 'POST') {
         return jsonEncode({'status': 'created'});
       }
@@ -339,27 +345,33 @@ void main() {
         primaryColor: AppTheme.primaryColor,
       ),
       home: const Scaffold(
-        body: AnagraficaScreen(),
+        body: SizedBox(
+          width: 1280,
+          height: 900,
+          child: AnagraficaScreen(),
+        ),
       ),
     );
   }
 
   group('Flusso Creazione e Validazione Paziente - Widget Test', () {
     testWidgets('Validazione form fallisce con campi Nome e Cognome vuoti', (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1280, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle(); // Attende il caricamento iniziale dei pazienti dalle API mockate
 
       // Verifica che la lista mostri il paziente mockato
       expect(find.text('Mario Rossi'), findsOneWidget);
 
-      // Clicca sul pulsante "Aggiungi Paziente" per aprire il dialog
-      final addBtn = find.widgetWithText(FilledButton, 'Aggiungi Paziente');
+      // Clicca sul pulsante "Aggiungi Utente" per aprire il dialog
+      final addBtn = find.widgetWithText(FilledButton, 'Aggiungi Utente');
       expect(addBtn, findsOneWidget);
       await tester.tap(addBtn);
       await tester.pumpAndSettle(); // Attende l'apertura del Dialog
 
-      // Verifica che il dialog "Nuovo Paziente" sia aperto
-      expect(find.text('Nuovo Paziente'), findsOneWidget);
+      // Verifica che il dialog "Nuovo Utente" sia aperto
+      expect(find.text('Nuovo Utente'), findsOneWidget);
 
       // Clicca direttamente su "Salva" senza compilare nome e cognome
       final saveBtn = find.widgetWithText(FilledButton, 'Salva');
@@ -372,11 +384,13 @@ void main() {
     });
 
     testWidgets('Creazione paziente con successo inserendo dati validi', (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1280, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Clicca su "Aggiungi Paziente"
-      await tester.tap(find.widgetWithText(FilledButton, 'Aggiungi Paziente'));
+      // Clicca su "Aggiungi Utente"
+      await tester.tap(find.widgetWithText(FilledButton, 'Aggiungi Utente'));
       await tester.pumpAndSettle();
 
       // Compila Nome e Cognome (find.widgetWithText su TextFormField cerca il labelText attuale)

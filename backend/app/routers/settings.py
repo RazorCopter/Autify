@@ -1,3 +1,9 @@
+from ..audit import record
+from ..transactions import atomic
+from ..ai.ssrf import async_validate_base_url
+from ..ai.crypto import SecretConfigurationError, SecretDecryptionError
+from ..scale_import import _import_sis_scale
+from ..evaluation_contract import save_scale
 import logging
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Header, Depends, Request, Query
 from slowapi import Limiter
@@ -61,7 +67,14 @@ async def get_admin_scales():
     return scales
 
 @admin_router.post("/import-scale", tags=["Admin - Configuration"])
-async def import_scale(file: UploadFile = File(...)):
+async def import_scale(file: UploadFile = File(...), auth: dict = Depends(verify_auth)):
+    try:
+        return await _import_scale_document(file, actor=auth["username"])
+    except (ValueError, TypeError, KeyError, AttributeError) as exc:
+        raise HTTPException(422, "Struttura del protocollo non valida.") from exc
+
+
+async def _import_scale_document(file, *, actor=None):
     """
     Importa una scala multidimensionale da un file JSON strutturato.
 
@@ -104,8 +117,8 @@ async def import_scale(file: UploadFile = File(...)):
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         raise HTTPException(status_code=422, detail=f"JSON non valido: {exc}")
 
-    scala_data = data.get("scala")
-    if not scala_data:
+    scala_data = data.get("scala") if isinstance(data, dict) else None
+    if not isinstance(scala_data, dict) or not scala_data:
         raise HTTPException(status_code=422, detail="Campo 'scala' mancante nel JSON")
 
     # ── ID e metadati radice ──────────────────────────────────────────────
@@ -118,7 +131,7 @@ async def import_scale(file: UploadFile = File(...)):
     if (scala_data.get("sottoscale") or 
         scala_data.get("info", {}).get("id", "").lower().startswith("sis") or
         "sis" in scale_id.lower()):
-        return await _import_sis_scale(scala_data, scale_id, nome, descrizione)
+        return await _import_sis_scale(scala_data, scale_id, nome, descrizione, actor=actor)
 
     # ── Costruzione sezioni (scale standard: POS, San Martín) ─────────
     sezioni: list[Section] = []
@@ -179,13 +192,11 @@ async def import_scale(file: UploadFile = File(...)):
     extra_metadata = {
         key: value
         for key, value in scala_data.items()
-        if key not in {"id", "nome", "descrizione", "domini"}
+        if key not in {"id", "nome", "descrizione", "domini", "sezioni", "_id", "write_revision"}
     }
     scale_dict.update(extra_metadata)
 
-    await scales_collection.replace_one(
-        {"id": scale_id}, scale_dict, upsert=True
-    )
+    await save_scale(scale_id, scale_dict, actor=actor, action="IMPORT_SCALA")
 
     total_questions = sum(len(s.domande) for s in sezioni)
     return {
@@ -198,7 +209,7 @@ async def import_scale(file: UploadFile = File(...)):
 
 
 @admin_router.put("/scales/{id}", response_model=Scale, tags=["Admin - Configuration"])
-async def update_scale(id: str, scale: Scale):
+async def update_scale(id: str, scale: Scale, auth: dict = Depends(verify_auth)):
     if scale.id != id:
         raise HTTPException(status_code=400, detail="L'ID nel corpo della richiesta non coincide con l'ID nel path")
     scale_dict = scale.model_dump()
@@ -211,23 +222,26 @@ async def update_scale(id: str, scale: Scale):
             if key not in {"_id", "id", "nome", "descrizione", "sezioni"}
         }
         scale_dict.update(preserved_metadata)
-    result = await scales_collection.replace_one({"id": id}, scale_dict)
-    if result.matched_count == 0:
+    if not existing:
         raise HTTPException(status_code=404, detail="Protocollo non trovato")
+    await save_scale(id, scale_dict, actor=auth["username"])
     return scale
 
 @admin_router.delete("/scales/{id}", tags=["Admin - Configuration"])
-async def delete_scale(id: str):
-    result = await scales_collection.delete_one({"id": id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Protocollo non trovato")
+async def delete_scale(id: str, auth: dict = Depends(verify_auth)):
+    await save_scale(id, None, actor=auth["username"], action="CANCELLAZIONE_SCALA")
     return {"message": "Protocollo eliminato con successo"}
 
 
 @admin_router.post("/settings", tags=["Admin - Configuration"])
-async def update_settings(settings: AppSettings):
+async def update_settings(settings: AppSettings, auth: dict = Depends(verify_auth)):
     settings_dict = settings.model_dump()
     existing = await settings_collection.find_one({"id": settings.id})
+
+    if existing:
+        for key in ("scale_validity_months", "required_scale_types", "expiry_warning_days"):
+            if key not in settings.model_fields_set and key in existing:
+                settings_dict[key] = existing[key]
 
     # Preserva o inizializza il sotto-documento AI
     if existing and "ai" in existing and isinstance(existing["ai"], dict):
@@ -245,12 +259,11 @@ async def update_settings(settings: AppSettings):
     settings_dict.pop("gemini_api_key", None)
     settings_dict.pop("chatgpt_api_key", None)
 
-    await settings_collection.replace_one({"id": settings.id}, settings_dict, upsert=True)
-    # Assicura il purge a livello DB nel caso in cui fossero presenti campi residui
-    await settings_collection.update_one(
-        {"id": settings.id},
-        {"$unset": {"gemini_api_key": "", "chatgpt_api_key": ""}}
-    )
+    async def persist(session):
+        await settings_collection.update_one({"id": settings.id}, {"$set": settings_dict,
+            "$unset": {"gemini_api_key": "", "chatgpt_api_key": ""}}, upsert=True, session=session)
+        await record("MODIFICA_IMPOSTAZIONI", auth["username"], "Aggiornate impostazioni generali", settings.id, session=session)
+    await atomic(persist)
     return {"message": "Impostazioni salvate con successo"}
 
 @admin_router.get("/settings", response_model=AppSettings, tags=["Admin - Configuration"])
@@ -262,6 +275,8 @@ async def get_settings(auth: dict = Depends(verify_auth)):
         settings.gemini_api_key = None
         settings.chatgpt_api_key = None
         settings.ai = None
+        if auth.get("role") != "admin":
+            settings.gemini_prompt = None
         return settings
     return AppSettings()
 
@@ -329,22 +344,22 @@ async def get_or_migrate_ai_settings() -> AISettingsStored:
             needs_save = False
 
             # Migrazione at-rest per segreti preesistenti non ancora cifrati
-            if stored.gemini.api_key_encrypted and not stored.gemini.api_key_encrypted.startswith("enc:v1:"):
+            if stored.gemini.api_key_encrypted and not stored.gemini.api_key_encrypted.startswith("enc:"):
                 stored.gemini.api_key_encrypted = encrypt_secret(stored.gemini.api_key_encrypted)
                 needs_save = True
 
-            if stored.openai.api_key_encrypted and not stored.openai.api_key_encrypted.startswith("enc:v1:"):
+            if stored.openai.api_key_encrypted and not stored.openai.api_key_encrypted.startswith("enc:"):
                 stored.openai.api_key_encrypted = encrypt_secret(stored.openai.api_key_encrypted)
                 needs_save = True
 
-            if stored.openai_compatible.api_key_encrypted and not stored.openai_compatible.api_key_encrypted.startswith("enc:v1:"):
+            if stored.openai_compatible.api_key_encrypted and not stored.openai_compatible.api_key_encrypted.startswith("enc:"):
                 stored.openai_compatible.api_key_encrypted = encrypt_secret(stored.openai_compatible.api_key_encrypted)
                 needs_save = True
 
             if stored.openai_compatible.custom_headers:
                 migrated_headers = {}
                 for k, v in stored.openai_compatible.custom_headers.items():
-                    if v and not v.startswith("enc:v1:"):
+                    if v and not v.startswith("enc:"):
                         migrated_headers[k] = encrypt_secret(v)
                         needs_save = True
                     else:
@@ -352,31 +367,53 @@ async def get_or_migrate_ai_settings() -> AISettingsStored:
                 stored.openai_compatible.custom_headers = migrated_headers
 
             if needs_save:
-                await settings_collection.update_one(
-                    {"id": "global_settings"},
+                result = await settings_collection.update_one(
+                    {"_id": doc["_id"], "ai": doc["ai"]},
                     {"$set": {"ai": stored.model_dump()}}
                 )
+                if result.matched_count != 1:
+                    raise HTTPException(409, "Impostazioni modificate durante la migrazione: rileggere")
 
             if needs_purge:
                 await settings_collection.update_one({"id": "global_settings"}, {"$unset": unset_fields})
             return stored
+        except (SecretConfigurationError, SecretDecryptionError) as exc:
+            raise HTTPException(503, "Chiavi IA non disponibili: ripristinare il keyring senza sovrascrivere le impostazioni") from exc
         except Exception:
-            pass
+            raise HTTPException(409, "Impostazioni IA persistite non valide: necessaria correzione esplicita")
 
+    if doc.get("ai") is not None:
+        raise HTTPException(409, "Formato impostazioni IA non valido: nessuna sostituzione automatica")
     legacy = AppSettings(**doc)
     stored = legacy.to_ai_stored()
     update_doc = {"$set": {"ai": stored.model_dump()}}
     if needs_purge:
         update_doc["$unset"] = unset_fields
-    await settings_collection.update_one({"id": "global_settings"}, update_doc, upsert=True)
+    result = await settings_collection.update_one({**doc, "ai": None}, update_doc)
+    if result.matched_count != 1:
+        raise HTTPException(409, "Impostazioni modificate durante la migrazione: rileggere")
     return stored
 
 @admin_router.get("/settings/ai", response_model=AISettingsResponse, tags=["Admin - AI"])
 async def get_ai_settings_endpoint(auth: dict = Depends(verify_auth)):
-    if auth.get("role") != "admin" and not auth.get("ai_enabled", False):
+    if auth.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Accesso alle impostazioni IA non autorizzato")
     stored = await get_or_migrate_ai_settings()
     return stored_to_ai_response(stored)
+
+@admin_router.get("/ai/capabilities", tags=["Admin - AI"])
+async def get_ai_capabilities(auth: dict = Depends(verify_auth)):
+    """Only display metadata; no system prompt, URL, headers or key hints."""
+    stored = await get_or_migrate_ai_settings()
+    provider = stored.active_provider
+    config = getattr(stored, provider)
+    return {
+        "active_provider": provider,
+        "viewer_ai_enabled": stored.viewer_ai_enabled,
+        "can_analyze": auth.get("ai_enabled", False) and (
+            auth["role"] == "admin" or stored.viewer_ai_enabled),
+        provider: {"model": config.model},
+    }
 
 @admin_router.patch("/settings/ai", response_model=AISettingsResponse, tags=["Admin - AI"])
 async def patch_ai_settings_endpoint(patch: AISettingsPatch, auth: dict = Depends(verify_auth)):
@@ -420,7 +457,7 @@ async def patch_ai_settings_endpoint(patch: AISettingsPatch, auth: dict = Depend
 
     if patch.openai_compatible is not None:
         if patch.openai_compatible.base_url:
-            validate_base_url(patch.openai_compatible.base_url)
+            await async_validate_base_url(patch.openai_compatible.base_url)
             stored.openai_compatible.base_url = patch.openai_compatible.base_url
         if patch.openai_compatible.model:
             stored.openai_compatible.model = patch.openai_compatible.model
@@ -458,19 +495,57 @@ async def patch_ai_settings_endpoint(patch: AISettingsPatch, auth: dict = Depend
     existing.pop("gemini_api_key", None)
     existing.pop("chatgpt_api_key", None)
 
-    await settings_collection.replace_one({"id": "global_settings"}, existing, upsert=True)
-    await settings_collection.update_one(
-        {"id": "global_settings"},
-        {"$unset": {"gemini_api_key": "", "chatgpt_api_key": ""}}
-    )
-
-    operatore = auth.get("username", "operatore")
-    await log_audit(
-        "MODIFICA_IMPOSTAZIONI_IA",
-        operatore,
-        f"Aggiornate impostazioni AI (provider: {stored.active_provider}, viewer: {stored.viewer_ai_enabled})",
-        None,
-    )
+    async def persist(session):
+        fields = {k: existing[k] for k in ("ai", "ai_provider", "viewer_ai_enabled", "gemini_model", "gemini_prompt", "chatgpt_model")}
+        await settings_collection.update_one({"id": "global_settings"}, {"$set": fields,
+            "$unset": {"gemini_api_key": "", "chatgpt_api_key": ""}}, upsert=True, session=session)
+        await record("MODIFICA_IMPOSTAZIONI_IA", auth["username"], "Aggiornata configurazione IA senza valori segreti nel registro", "global_settings", session=session)
+    await atomic(persist)
 
     return stored_to_ai_response(stored)
 
+
+
+@admin_router.get("/expiry-policy", tags=["Admin - Configuration"])
+async def get_expiry_policy():
+    from ..expiry import load_policy
+    return await load_policy()
+
+
+@admin_router.post("/expiry-policy", tags=["Admin - Configuration"])
+async def update_expiry_policy(payload: dict, auth_context: dict = Depends(verify_auth)):
+    from ..expiry import policy_from
+    if auth_context.get("role") != "admin":
+        raise HTTPException(403, "Operazione riservata agli amministratori")
+    allowed = {"scale_validity_months", "required_scale_types", "expiry_warning_days"}
+    if set(payload) != allowed:
+        raise HTTPException(422, "Inviare la policy completa")
+    policy = policy_from(payload)
+    async def persist(session):
+        await settings_collection.update_one({"id": "global_settings"}, {"$set": {k: policy[k] for k in allowed}}, upsert=True, session=session)
+        await record("MODIFICA_POLICY_SCADENZE", auth_context["username"], "Aggiornata policy comune scadenze", "global_settings", session=session)
+    await atomic(persist)
+    return policy
+
+
+@admin_router.post("/settings/ai/rewrap-secrets", tags=["Admin - Configuration"])
+async def rewrap_ai_secrets(auth: dict = Depends(verify_auth)):
+    if auth.get("role") != "admin":
+        raise HTTPException(403, "Operazione riservata agli amministratori")
+    doc = await settings_collection.find_one({"id": "global_settings"})
+    if not doc or not isinstance(doc.get("ai"), dict):
+        raise HTTPException(409, "Prima normalizzare le impostazioni IA esistenti")
+    stored = AISettingsStored.model_validate(doc["ai"])
+    for provider in (stored.gemini, stored.openai, stored.openai_compatible):
+        if provider.api_key_encrypted:
+            provider.api_key_encrypted = encrypt_secret(decrypt_secret(provider.api_key_encrypted))
+    stored.openai_compatible.custom_headers = {
+        k: encrypt_secret(decrypt_secret(v)) or "" for k, v in stored.openai_compatible.custom_headers.items()
+    }
+    async def persist(session):
+        result = await settings_collection.update_one({"_id": doc["_id"], "ai": doc["ai"]}, {"$set": {"ai": stored.model_dump()}}, session=session)
+        if result.matched_count != 1:
+            raise HTTPException(409, "Configurazione modificata nel frattempo: rileggere e riprovare")
+        await record("ROTAZIONE_CHIAVI_IA", auth["username"], "Credenziali IA ricifrate con chiave attiva", "global_settings", session=session)
+    await atomic(persist)
+    return {"message": "Credenziali IA ricifrate. Conservare le vecchie chiavi per i backup precedenti."}

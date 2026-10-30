@@ -1,6 +1,6 @@
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+import '../widgets/expiry_policy_settings.dart';
 import 'dart:convert';
+import '../utils/web_compat.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
@@ -208,21 +208,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _isExporting = true;
       _dbStatus = 'Esportazione in corso...';
     });
-    final bytes = await _apiService.exportDatabase();
-    setState(() => _isExporting = false);
-    if (bytes != null) {
-      final b64 = base64Encode(bytes);
-      final dataUrl = 'data:application/octet-stream;base64,$b64';
-      final timestamp = DateTime.now()
-          .toIso8601String()
-          .replaceAll(RegExp(r'[:.]'), '-')
-          .substring(0, 19);
-      html.AnchorElement(href: dataUrl)
-        ..setAttribute('download', 'autify_backup_$timestamp.enc')
-        ..click();
-      setState(() => _dbStatus = 'Backup esportato con successo!');
-    } else {
-      setState(() => _dbStatus = 'Errore durante l\'esportazione.');
+    try {
+      final bytes = await _apiService.exportDatabase();
+      if (!mounted) return;
+      if (bytes != null) {
+        final b64 = base64Encode(bytes);
+        final dataUrl = 'data:application/octet-stream;base64,$b64';
+        final timestamp = DateTime.now()
+            .toIso8601String()
+            .replaceAll(RegExp(r'[:.]'), '-')
+            .substring(0, 19);
+        WebCompat.downloadDataUrl(dataUrl, 'autify_backup_$timestamp.enc');
+        setState(() => _dbStatus = 'Backup esportato con successo!');
+      }
+    } catch (error) {
+      if (mounted)
+        setState(
+            () => _dbStatus = error.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
     }
   }
 
@@ -233,23 +237,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
       withData: true,
     );
 
-    if (result != null) {
+    if (result != null && mounted) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Ripristina archivio'),
+          content: const Text(
+              'L’intero archivio sarà sostituito dal backup, comprese le collezioni vuote. Le sessioni termineranno. Assicurati di avere un backup recente prima di continuare.'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Annulla')),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Ripristina')),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
       setState(() {
         _isImporting = true;
         _dbStatus = 'Importazione in corso...';
       });
 
-      final success = await _apiService.importDatabase(result.files.single);
-
-      setState(() {
-        _isImporting = false;
-        if (success) {
-          _dbStatus = 'Database importato con successo!';
-        } else {
-          _dbStatus =
-              'Errore durante l\'importazione. Verifica il formato del file.';
-        }
-      });
+      try {
+        await _apiService.importDatabase(result.files.single);
+        if (mounted)
+          setState(() => _dbStatus =
+              'Ripristino completato. Effettua nuovamente il login.');
+      } catch (error) {
+        if (mounted)
+          setState(() =>
+              _dbStatus = error.toString().replaceFirst('Exception: ', ''));
+      } finally {
+        if (mounted) setState(() => _isImporting = false);
+      }
     }
   }
 
@@ -571,7 +593,7 @@ TONO E FORMATTAZIONE:
                             : 'Password *',
                         border: const OutlineInputBorder(),
                         prefixIcon: const Icon(Icons.lock_outline_rounded),
-                        helperText: 'Min 4 caratteri',
+                        helperText: 'Min 12 caratteri, max 72 byte',
                         suffixIcon: IconButton(
                           icon: Icon(obscurePwd
                               ? Icons.visibility
@@ -691,9 +713,9 @@ TONO E FORMATTAZIONE:
                       dialogError = 'Lo username non può contenere spazi');
                   return;
                 }
-                if (!isEditing && pwdCtrl.text.length < 4) {
+                if (!isEditing && pwdCtrl.text.length < 12) {
                   setDialogState(() =>
-                      dialogError = 'Password troppo corta (min 4 caratteri)');
+                      dialogError = 'Password troppo corta (min 12 caratteri)');
                   return;
                 }
                 if (pwdCtrl.text.isNotEmpty &&
@@ -1176,82 +1198,20 @@ TONO E FORMATTAZIONE:
           const SizedBox(height: 12),
 
 
-          // 4. Parametri di Validità Scale
-          Consumer<SettingsNotifier>(
-            builder: (context, notifier, child) {
-              final settings = notifier.settings;
-              return _buildPremiumExpansionTile(
-                context: context,
-                title: 'Parametri di Validità Scale',
-                subtitle:
-                    'Configura la validità temporale delle valutazioni e la soglia di preavviso',
-                icon: Icons.calendar_month_rounded,
-                iconColor: Colors.orange.shade700,
-                children: [
-                  _buildSliderRow(
-                    title: 'Validità Scala POS',
-                    value: settings.validityMonthsPOS.toDouble(),
-                    min: 1,
-                    max: 24,
-                    unit: 'mesi',
-                    icon: Icons.calendar_month,
-                    onChanged: (val) {
-                      notifier.updateSettings(validityMonthsPOS: val.toInt());
-                    },
-                  ),
-                  const Divider(height: 32, color: Color(0xFFE8EEF8)),
-                  _buildSliderRow(
-                    title: 'Validità Scala San Martín',
-                    value: settings.validityMonthsSanMartin.toDouble(),
-                    min: 1,
-                    max: 24,
-                    unit: 'mesi',
-                    icon: Icons.edit_calendar,
-                    onChanged: (val) {
-                      notifier.updateSettings(
-                          validityMonthsSanMartin: val.toInt());
-                    },
-                  ),
-                  const Divider(height: 32, color: Color(0xFFE8EEF8)),
-                  _buildSliderRow(
-                    title: 'Validità Scala SIS',
-                    value: settings.validityMonthsSIS.toDouble(),
-                    min: 1,
-                    max: 24,
-                    unit: 'mesi',
-                    icon: Icons.calendar_today_rounded,
-                    onChanged: (val) {
-                      notifier.updateSettings(validityMonthsSIS: val.toInt());
-                    },
-                  ),
-                  const Divider(height: 32, color: Color(0xFFE8EEF8)),
-                  _buildSliderRow(
-                    title: 'Preavviso Alert di Scadenza',
-                    value: settings.alertThresholdDays.toDouble(),
-                    min: 0,
-                    max: 60,
-                    unit: 'giorni',
-                    icon: Icons.notification_important,
-                    onChanged: (val) {
-                      notifier.updateSettings(alertThresholdDays: val.toInt());
-                    },
-                  ),
-                ],
-              );
-            },
-          ),
+          const ExpiryPolicySettings(),
+          const SizedBox(height: 12),
 
           // 5. Database
           _buildPremiumExpansionTile(
             context: context,
             title: 'Database',
             subtitle:
-                'Backup, esportazione e ripristino dell\'archivio clinico',
+                'Backup, esportazione e ripristino dell\'archivio educativo',
             icon: Icons.storage_rounded,
             iconColor: Colors.indigo.shade700,
             children: [
               const Text(
-                  'Esporta l\'intero database in un file di backup criptato (.enc). Per motivi di sicurezza, il file è cifrato con la chiave di questa installazione e potrà essere ripristinato solo su questa specifica istanza di Autify (o su una configurata con la medesima chiave segreta).'),
+                  'Il backup cifrato include l’intero archivio, i job IA e le notifiche (massimo 64 MiB). Conserva la chiave separatamente dal file. Il ripristino sostituisce anche le collezioni vuote, richiede la modalità manutenzione e termina tutte le sessioni. I lavori IA interrotti devono essere riavviati esplicitamente.'),
               const SizedBox(height: 20),
               Row(
                 children: [

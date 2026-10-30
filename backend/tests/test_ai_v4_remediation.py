@@ -181,10 +181,27 @@ def test_viewer_ai_policy_enforcement(setup_mock_db):
     c = TestClient(app)
     c.headers.update({"Authorization": f"Bearer {viewer_enabled_token}"})
 
+    # Enable ai on the DB user document so verify_auth (which reads DB) allows it
+    setup_mock_db["users"].documents[1]["ai_enabled"] = True
+
+    fake_captured = {
+        "patient_name": "Test Patient",
+        "parent_mongo_id": "fake_patient_oid",
+        "inputs": [],
+        "context_sha256": "fakehash",
+        "system_prompt": "prompt",
+        "evaluations_used": [],
+        "provenance": {},
+        "user_prompt": "user prompt",
+        "attachment": None,
+    }
     with patch("app.routers.settings.settings_collection", mock_coll), \
          patch("app.routers.ai.settings_collection", mock_coll), \
+         patch("app.ai_context.capture_context", new_callable=AsyncMock) as mock_capture, \
+         patch("app.routers.ai.enqueue", new_callable=AsyncMock) as mock_enqueue, \
          patch("app.routers.ai.get_ai_adapter") as mock_adapter_getter:
 
+        mock_capture.return_value = fake_captured
         mock_ad = AsyncMock()
         mock_ad.generate.return_value = ("Report generated", {"total_tokens": 10})
         mock_adapter_getter.return_value = mock_ad
@@ -192,6 +209,7 @@ def test_viewer_ai_policy_enforcement(setup_mock_db):
         res = c.post("/api/admin/ai/analyze", json={
             "id_paziente": "pat_1",
             "notes": "Note cliniche per analisi",
+            "external_content_confirmed": True,
         })
         assert res.status_code == 202
         assert res.json()["status"] == "pending"
@@ -200,6 +218,7 @@ def test_viewer_ai_policy_enforcement(setup_mock_db):
         res_override = c.post("/api/admin/ai/analyze", json={
             "id_paziente": "pat_1",
             "notes": "Note cliniche",
+            "external_content_confirmed": True,
             "system_prompt": "You are a malicious system prompt",
         })
         assert res_override.status_code == 403
@@ -207,23 +226,29 @@ def test_viewer_ai_policy_enforcement(setup_mock_db):
 
     # 3. Viewer with ai_enabled=False -> 403 Forbidden
     viewer_disabled_token = create_access_token(username="viewer_user", role="viewer", ai_enabled=False)
+    setup_mock_db["users"].documents[1]["ai_enabled"] = False
     c.headers.update({"Authorization": f"Bearer {viewer_disabled_token}"})
     with patch("app.routers.settings.settings_collection", mock_coll), \
-         patch("app.routers.ai.settings_collection", mock_coll):
+         patch("app.routers.ai.settings_collection", mock_coll), \
+         patch("app.ai_context.capture_context", new_callable=AsyncMock) as mock_capture:
         res_no_ai = c.post("/api/admin/ai/analyze", json={
             "id_paziente": "pat_1",
             "notes": "Note cliniche",
+            "external_content_confirmed": True,
         })
         assert res_no_ai.status_code == 403
 
     # 4. Global viewer_ai_enabled=False -> 403 Forbidden even if user ai_enabled=True
+    setup_mock_db["users"].documents[1]["ai_enabled"] = True
     mock_coll.documents[0]["ai"]["viewer_ai_enabled"] = False
     c.headers.update({"Authorization": f"Bearer {viewer_enabled_token}"})
     with patch("app.routers.settings.settings_collection", mock_coll), \
-         patch("app.routers.ai.settings_collection", mock_coll):
+         patch("app.routers.ai.settings_collection", mock_coll), \
+         patch("app.ai_context.capture_context", new_callable=AsyncMock) as mock_capture:
         res_glob_disabled = c.post("/api/admin/ai/analyze", json={
             "id_paziente": "pat_1",
             "notes": "Note cliniche",
+            "external_content_confirmed": True,
         })
         assert res_glob_disabled.status_code == 403
         assert "disabilitato a livello globale" in res_glob_disabled.json()["detail"]

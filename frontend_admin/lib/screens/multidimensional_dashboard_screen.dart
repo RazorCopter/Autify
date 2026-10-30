@@ -1,6 +1,5 @@
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
 import 'dart:convert';
+import '../utils/web_compat.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/patient_model.dart';
@@ -101,7 +100,7 @@ class _MultidimensionalDashboardScreenState
     final aiSettings = await _apiService.getAiSettings();
     if (aiSettings != null) {
       _viewerAiEnabled = (aiSettings['viewer_ai_enabled'] as bool?) ?? false;
-      _aiPrompt = aiSettings['system_prompt'] as String?;
+      _aiPrompt = ApiService.isAdmin ? aiSettings['system_prompt'] as String? : null;
       _activeAiProvider =
           (aiSettings['active_provider'] as String?) ?? 'gemini';
       final prov = aiSettings[_activeAiProvider] as Map<String, dynamic>?;
@@ -111,7 +110,15 @@ class _MultidimensionalDashboardScreenState
     }
 
     // 2. Carica scale disponibili
-    _availableScales = await _apiService.getScales();
+    try {
+      _availableScales = await _apiService.getHistoricalScales(widget.patient.id);
+    } catch (error) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
+      return;
+    }
 
     // 3. Carica ultima valutazione + analisi psicometrica per ogni scala
     for (final scale in _availableScales) {
@@ -261,6 +268,22 @@ class _MultidimensionalDashboardScreenState
               .toList()
           : <Map<String, dynamic>>[];
 
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Invio al provider IA'),
+          content: const Text('Saranno inviate le valutazioni selezionate, ricalcolate dal server. '
+              'Nome, data di nascita e note anagrafiche sono esclusi. Note aggiunte, '
+              'relazioni selezionate e allegati possono contenere dati identificativi: '
+              'conferma di averli revisionati e minimizzati. Il risultato sara una bozza.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annulla')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Conferma invio')),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+
       final job = await _apiService.analyzePatientData(
         patient: widget.patient,
         evaluations: evaluationsToInclude,
@@ -268,7 +291,7 @@ class _MultidimensionalDashboardScreenState
         attachment: attachmentMap,
         historyToInclude: historyToInclude,
         systemPrompt: _aiPrompt,
-        analyses: _analyses,
+        externalContentConfirmed: true,
       );
 
       _aiNotesController.clear();
@@ -284,6 +307,7 @@ class _MultidimensionalDashboardScreenState
       );
       Navigator.of(context).maybePop();
     } catch (e) {
+      if (!mounted) return;
       String cleanError = e.toString();
       if (cleanError.startsWith('Exception: ')) {
         cleanError = cleanError.substring(11);
@@ -298,7 +322,7 @@ class _MultidimensionalDashboardScreenState
         ),
       );
     } finally {
-      setState(() {
+      if (mounted) setState(() {
         _isAnalyzing = false;
       });
     }
@@ -467,9 +491,7 @@ class _MultidimensionalDashboardScreenState
       if (bytes != null) {
         final b64 = base64Encode(bytes);
         final dataUrl = 'data:application/pdf;base64,$b64';
-        html.AnchorElement(href: dataUrl)
-          ..setAttribute('download', 'analisi_ai_${widget.patient.cognome}.pdf')
-          ..click();
+        WebCompat.downloadDataUrl(dataUrl, 'analisi_ai_${widget.patient.cognome}.pdf');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Errore generazione PDF AI')));
@@ -3454,7 +3476,7 @@ class _MultidimensionalDashboardScreenState
                           activeColor: Colors.teal.shade700,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(4)),
-                          onChanged: (bool? val) {
+                          onChanged: analysis['review_status'] != 'approved' ? null : (bool? val) {
                             setState(() {
                               if (val == true) {
                                 _selectedAnalysesIdsForContext.add(id);
@@ -3470,7 +3492,7 @@ class _MultidimensionalDashboardScreenState
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Relazione del $formattedTimestamp',
+                                'Relazione del $formattedTimestamp - ${analysis['review_status'] == 'approved' ? 'Approvata' : 'Bozza da revisionare'}',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13,
@@ -3494,6 +3516,29 @@ class _MultidimensionalDashboardScreenState
                           ),
                         ),
                         const SizedBox(width: 8),
+                        if (ApiService.isAdmin && analysis['review_status'] != 'approved')
+                          IconButton(
+                            tooltip: 'Approva dopo revisione educativa',
+                            icon: const Icon(Icons.fact_check_outlined),
+                            onPressed: () async {
+                              final approved = await showDialog<bool>(context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('Conferma revisione'),
+                                  content: const Text('Confermi di aver letto e verificato questa relazione educativa?'),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annulla')),
+                                    FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Approva')),
+                                  ],
+                                ));
+                              if (approved != true || !mounted) return;
+                              try {
+                                await _apiService.approveAiAnalysis(id, analysis['report_hash'] as String);
+                                await _loadSavedAnalyses();
+                              } catch (error) {
+                                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+                              }
+                            },
+                          ),
                         IconButton(
                           tooltip: 'Leggi Relazione',
                           icon: Icon(Icons.chrome_reader_mode_outlined,
@@ -3504,24 +3549,18 @@ class _MultidimensionalDashboardScreenState
                               MaterialPageRoute(
                                 builder: (context) => DocumentReaderScreen(
                                   patient: widget.patient,
-                                  report: report,
+                                  report: '${analysis['review_status'] == 'approved' ? 'Relazione approvata' : 'BOZZA - da revisionare'}\n\n$report',
                                   onExportPdf: () async {
                                     if (_isExportingPdf) return;
                                     setState(() => _isExportingPdf = true);
                                     try {
                                       final bytes = await _apiService
-                                          .downloadAiAnalysisPdf(
-                                        widget.patient,
-                                        report,
-                                      );
+                                          .downloadSavedAiAnalysisPdf(id);
                                       if (bytes != null) {
                                         final b64 = base64Encode(bytes);
                                         final dataUrl =
                                             'data:application/pdf;base64,$b64';
-                                        html.AnchorElement(href: dataUrl)
-                                          ..setAttribute('download',
-                                              'analisi_ai_${widget.patient.cognome}_$formattedTimestamp.pdf')
-                                          ..click();
+                                        WebCompat.downloadDataUrl(dataUrl, 'analisi_ai_${widget.patient.cognome}_$formattedTimestamp.pdf');
                                       } else {
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(const SnackBar(

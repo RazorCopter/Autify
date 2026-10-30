@@ -278,10 +278,19 @@ class AIAnalyzeRequest(BaseModel):
     patient: Optional[dict] = None
     evaluations: Optional[List[dict]] = None
     evaluation_ids: Optional[List[str]] = None
+    history_report_ids: List[str] = Field(default_factory=list, max_length=50)
+    external_content_confirmed: bool = False
     history_reports: Optional[List[dict]] = None
     notes: Optional[str] = None
     attachment: Optional[AIAttachment] = None
     system_prompt: Optional[str] = None
+
+    @field_validator("evaluation_ids", "history_report_ids")
+    @classmethod
+    def validate_source_ids(cls, values):
+        if values is not None and (len(values) > 100 or len(values) != len(set(values)) or any(not v.strip() for v in values)):
+            raise ValueError("Identificativi vuoti/duplicati o limite superato.")
+        return values
 
     @field_validator("notes")
     @classmethod

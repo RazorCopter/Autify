@@ -162,6 +162,7 @@ class MockHttpClientResponse extends Stream<List<int>> implements HttpClientResp
   MockHttpClientResponse(this.method, this.path) : _body = _getMockResponseBody(method, path);
 
   static String _getMockResponseBody(String method, String path) {
+    print('DEBUG MOCK HTTP: method=$method path=$path');
     if (path.contains('/scales/scale-test-1')) {
       return jsonEncode({
         'id': 'scale-test-1',
@@ -296,7 +297,7 @@ class MockHttpHeaders implements HttpHeaders {
   @override
   set contentType(ContentType? _contentType) {}
   @override
-  ContentType? get contentType => null;
+  ContentType? get contentType => ContentType.parse('application/json; charset=utf-8');
   @override
   set contentLength(int _contentLength) {}
   @override
@@ -335,6 +336,8 @@ void main() {
 
   group('Flusso di Compilazione Valutazione Clinica (Wizard) - Widget Test', () {
     testWidgets('Flusso completo: dati preliminari, compilazione domande con validazione navigazione e salvataggio', (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1280, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle(); // Attende il caricamento iniziale dei dettagli della scala
 
@@ -362,8 +365,7 @@ void main() {
 
       // ─── FASE 2: DOMANDA 1 ───
       // Verifica che la prima domanda venga renderizzata correttamente
-      expect(find.text('IL SOGGETTO È IN GRADO DI MANGIARE AUTONOMAMENTE?'), findsOneWidget);
-      expect(find.text('AP1'), findsOneWidget); // Codice della domanda
+      expect(find.text('Il soggetto è in grado di mangiare autonomamente?'), findsOneWidget);
       expect(find.text('Valutare il comportamento nell\'ultimo mese.'), findsOneWidget); // Nota informativa della domanda
       expect(find.text('1 / 2'), findsOneWidget); // Contatore domande
 
@@ -396,8 +398,7 @@ void main() {
 
       // ─── FASE 3: DOMANDA 2 (ULTIMA DOMANDA) ───
       // Verifica il caricamento della seconda domanda
-      expect(find.text('IL SOGGETTO SI VESTE IN MODO AUTONOMO?'), findsOneWidget);
-      expect(find.text('AP2'), findsOneWidget);
+      expect(find.text('Il soggetto si veste in modo autonomo?'), findsOneWidget);
       expect(find.text('2 / 2'), findsOneWidget);
 
       // Trova il pulsante che ora dovrebbe mostrare "Salva Valutazione" al posto di "Avanti"

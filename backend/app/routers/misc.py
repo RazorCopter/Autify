@@ -55,9 +55,12 @@ async def get_scale_by_id(request: Request, scale_id: str):
     return scale
 
 @admin_router.get("/audit-logs", response_model=List[AuditLogResponse], tags=["Admin - Audit"])
-async def get_audit_logs(limit: int = 200):
+async def get_audit_logs(limit: int = Query(200, ge=1, le=1000), offset: int = Query(0, ge=0),
+                         auth: dict = Depends(verify_auth)):
+    if auth.get("role") != "admin":
+        raise HTTPException(403, "Registro audit riservato agli amministratori")
     """Recupera gli ultimi log di attività (tracciabilità educativa)"""
-    cursor = audit_logs_collection.find({}).sort("timestamp", -1)
+    cursor = audit_logs_collection.find({}).sort([("timestamp", -1), ("_id", -1)]).skip(offset)
     logs_raw = await cursor.to_list(length=limit)
     
     logs = []

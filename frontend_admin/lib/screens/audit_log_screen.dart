@@ -29,10 +29,12 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
         _error = '';
       });
       final logs = await _api.getAuditLogs();
+      if (!mounted) return;
       setState(() {
         _logs = logs;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = 'Errore nel caricamento del registro: $e';
       });
@@ -157,6 +159,10 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                                   title: Text(
                                     log.dettagli,
                                     style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                                  ),
+                                  trailing: log.correlationId == null ? null : Tooltip(
+                                    message: 'Versione: ${log.appVersion ?? "storica"} ? Correlazione: ${log.correlationId}',
+                                    child: const Icon(Icons.info_outline, size: 18),
                                   ),
                                   subtitle: Padding(
                                     padding: const EdgeInsets.only(top: 8.0),

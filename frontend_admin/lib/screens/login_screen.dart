@@ -109,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
       // Il localStorage viene aggiornato direttamente dentro ApiService.login()
       if (mounted) {
         if (result['must_change_password'] == true) {
-          _showChangePasswordDialog(result['username']);
+          _showChangePasswordDialog();
         } else {
           Navigator.pushAndRemoveUntil(
             context,
@@ -136,93 +136,75 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _showChangePasswordDialog(String username) async {
+  Future<void> _showChangePasswordDialog() async {
     final passwordController = TextEditingController();
+    final confirmationController = TextEditingController();
     bool isSaving = false;
     String? localError;
-
-    await showDialog(
+    await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Cambio Password Obbligatorio'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Per motivi di sicurezza, devi cambiare la password predefinita.'),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: passwordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Nuova Password',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  if (localError != null) ...[
-                    const SizedBox(height: 8),
-                    Text(localError!, style: const TextStyle(color: Colors.red)),
-                  ]
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: StatefulBuilder(builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text('Cambio password obbligatorio'),
+            content: SingleChildScrollView(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                const Text('Scegli una password diversa, di almeno 12 caratteri '
+                    'e massimo 72 byte. Dopo il salvataggio accedi di nuovo.'),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  enabled: !isSaving,
+                  decoration: const InputDecoration(labelText: 'Nuova password'),
+                ),
+                TextField(
+                  controller: confirmationController,
+                  obscureText: true,
+                  enabled: !isSaving,
+                  decoration: const InputDecoration(labelText: 'Conferma password'),
+                ),
+                if (localError != null) ...[
+                  const SizedBox(height: 8),
+                  Text(localError!, style: const TextStyle(color: Colors.red)),
                 ],
+              ]),
+            ),
+            actions: [
+              if (isSaving) const CircularProgressIndicator()
+              else ElevatedButton(
+                onPressed: () async {
+                  if (passwordController.text.length < 12 ||
+                      passwordController.text != confirmationController.text) {
+                    setDialogState(() => localError =
+                        'Servono almeno 12 caratteri e una conferma coincidente.');
+                    return;
+                  }
+                  setDialogState(() { isSaving = true; localError = null; });
+                  try {
+                    await _apiService.changeOwnPassword(_passwordController.text,
+                        passwordController.text, confirmationController.text);
+                    // The service clears the revoked token and reloads login.
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    setDialogState(() {
+                      isSaving = false;
+                      localError = e.toString();
+                    });
+                  }
+                },
+                child: const Text('Salva e torna al login'),
               ),
-              actions: [
-                if (isSaving)
-                  const CircularProgressIndicator()
-                else
-                  ElevatedButton(
-                    onPressed: () async {
-                      if (passwordController.text.trim().length < 4) {
-                        setDialogState(() => localError = 'La password deve avere almeno 4 caratteri.');
-                        return;
-                      }
-                      setDialogState(() {
-                        isSaving = true;
-                        localError = null;
-                      });
-                      try {
-                        final success = await _apiService.updateUser(username, {
-                          'password': passwordController.text,
-                        });
-                        if (success) {
-                          if (context.mounted) {
-                            Navigator.pop(context, true);
-                          }
-                        } else {
-                           setDialogState(() {
-                            isSaving = false;
-                            localError = 'Errore durante il salvataggio.';
-                          });
-                        }
-                      } catch (e) {
-                        setDialogState(() {
-                          isSaving = false;
-                          localError = 'Errore durante il salvataggio.';
-                        });
-                      }
-                    },
-                    child: const Text('Salva e Accedi'),
-                  ),
-              ],
-            );
-          },
-        );
-      },
-    ).then((changed) {
-      if (changed == true && mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const AdminDashboard()),
-          (route) => false,
-        );
-      } else {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    });
+            ],
+          );
+        }),
+      ),
+    );
+    passwordController.dispose();
+    confirmationController.dispose();
+    if (mounted) setState(() => _isLoading = false);
   }
 
   void _initPWA() {

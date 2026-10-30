@@ -389,9 +389,6 @@ class _LegacyDashboardScreenState extends State<LegacyDashboardScreen> {
     final coveredCount = coverage['coperti_count'] ?? 0;
     final expiredCount = coverage['scaduti_count'] ?? 0;
     final coveragePercent = (coverage['coperti_percentuale'] ?? 0.0).toDouble();
-    final posMancanti = coverage['pos_mancanti'] ?? 0;
-    final sanMartinMancanti = coverage['san_martin_mancanti'] ?? 0;
-    final sisMancanti = coverage['sis_mancanti'] ?? 0;
 
     final alertList = (_stats?['ultimi_alert'] as List<dynamic>?) ?? [];
     final distributions =
@@ -433,38 +430,23 @@ class _LegacyDashboardScreenState extends State<LegacyDashboardScreen> {
                     const SizedBox(width: 20),
                     Expanded(
                       child: _BentoKpiCard(
-                        title: 'VALUTAZIONI ATTIVE',
-                        value: coveredCount.toDouble(),
+                        title: 'UTENZE COPERTE',
+                        value: ((_stats?['utenze_coperte'] ?? 0) as num).toDouble(),
                         subtitle: 'Documentazione in corso di validità',
                         icon: Icons.verified_user_outlined,
                         themeColor: const Color(0xFF10B981),
-                        suffix: ' ($coveragePercent%)',
-                        onTap: () => widget.onNavigate(2),
+                        onTap: () => widget.onNavigate(2, semanticFilter: 'coperti'),
                       ),
                     ),
                     const SizedBox(width: 20),
                     Expanded(
                       child: _BentoKpiCard(
-                        title: 'SCALE MANCANTI',
-                        value: expiredCount.toDouble(),
-                        subtitle: 'Scale scadute o mai compilate',
+                        title: 'UTENZE DA COMPLETARE',
+                        value: ((_stats?['utenze_da_completare'] ?? 0) as num).toDouble(),
+                        subtitle: 'Almeno una scala richiesta non valida',
                         icon: Icons.warning_amber_rounded,
                         themeColor: const Color(0xFFEF4444),
-                        onTap: () => widget.onNavigate(2),
-                        breakdownPills: [
-                          _BreakdownPill(
-                              label: 'SIS',
-                              count: sisMancanti,
-                              color: const Color(0xFF00897B)),
-                          _BreakdownPill(
-                              label: 'POS',
-                              count: posMancanti,
-                              color: const Color(0xFF3B82F6)),
-                          _BreakdownPill(
-                              label: 'SM',
-                              count: sanMartinMancanti,
-                              color: const Color(0xFF6366F1)),
-                        ],
+                        onTap: () => widget.onNavigate(2, semanticFilter: 'da_completare'),
                       ),
                     ),
                   ],
@@ -483,36 +465,21 @@ class _LegacyDashboardScreenState extends State<LegacyDashboardScreen> {
                   ),
                   const SizedBox(height: 16),
                   _BentoKpiCard(
-                    title: 'VALUTAZIONI ATTIVE',
-                    value: coveredCount.toDouble(),
+                    title: 'UTENZE COPERTE',
+                    value: ((_stats?['utenze_coperte'] ?? 0) as num).toDouble(),
                     subtitle: 'Documentazione in corso di validità',
                     icon: Icons.verified_user_outlined,
                     themeColor: const Color(0xFF10B981),
-                    suffix: ' ($coveragePercent%)',
-                    onTap: () => widget.onNavigate(2),
+                    onTap: () => widget.onNavigate(2, semanticFilter: 'coperti'),
                   ),
                   const SizedBox(height: 16),
                   _BentoKpiCard(
-                    title: 'SCALE MANCANTI',
-                    value: expiredCount.toDouble(),
-                    subtitle: 'Scale scadute o mai compilate',
+                    title: 'UTENZE DA COMPLETARE',
+                    value: ((_stats?['utenze_da_completare'] ?? 0) as num).toDouble(),
+                    subtitle: 'Almeno una scala richiesta non valida',
                     icon: Icons.warning_amber_rounded,
                     themeColor: const Color(0xFFEF4444),
-                    onTap: () => widget.onNavigate(2),
-                    breakdownPills: [
-                      _BreakdownPill(
-                          label: 'SIS',
-                          count: sisMancanti,
-                          color: const Color(0xFF00897B)),
-                      _BreakdownPill(
-                          label: 'POS',
-                          count: posMancanti,
-                          color: const Color(0xFF3B82F6)),
-                      _BreakdownPill(
-                          label: 'SM',
-                          count: sanMartinMancanti,
-                          color: const Color(0xFF6366F1)),
-                    ],
+                    onTap: () => widget.onNavigate(2, semanticFilter: 'da_completare'),
                   ),
                 ],
               ),
@@ -802,7 +769,7 @@ class _LegacyDashboardScreenState extends State<LegacyDashboardScreen> {
             ),
             const SizedBox(height: 4),
             const Text(
-              'Rapporto scale valide / mancanti',
+              'Coppie utente attivo / scala richiesta',
               style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
             ),
             Expanded(

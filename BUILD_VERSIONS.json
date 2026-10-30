@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "python_version": "3.11.14",
+  "flutter_version": "3.41.9",
+  "images": {
+    "python": "python:3.11.14-slim-bookworm@sha256:65a93d69fa75478d554f4ad27c85c1e69fa184956261b4301ebaf6dbb0a3543d",
+    "flutter": "ghcr.io/cirruslabs/flutter:3.41.9@sha256:c6fed8fee02ca8fdb1b8dc128df99f6e29b7305847b80f4b0c1e3f638e7637a8",
+    "nginx": "nginx:1.28.0-alpine@sha256:30f1c0d78e0ad60901648be663a710bdadf19e4c10ac6782c235200619158284",
+    "mongo": "mongo:8.0.4@sha256:aaad67f2dca93148e5343c03210bcfc89a0107516a4756bfa018acd6579e5b18"
+  },
+  "verification": "metadata only; installation, tests and builds deferred"
+}

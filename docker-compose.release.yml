@@ -1,0 +1,9 @@
+# Image-only rollout override. Use with --no-build --pull never.
+# Load and verify the archived images first; see RELEASE_OPERATIONS.md.
+services:
+  autify-api:
+    image: ${AUTIFY_API_IMAGE:?Set the verified backend image tag}
+    pull_policy: never
+  autify-admin:
+    image: ${AUTIFY_ADMIN_IMAGE:?Set the verified frontend image tag}
+    pull_policy: never

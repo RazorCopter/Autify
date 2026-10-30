@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 
 class LicenseScreen extends StatefulWidget {
   final bool blocking;
+  final Future<void> Function()? onExportBackup;
   final bool initialConnectionError;
   final VoidCallback? onActivated;
   final LicenseApi api;
@@ -13,6 +14,7 @@ class LicenseScreen extends StatefulWidget {
   LicenseScreen({
     super.key,
     this.blocking = false,
+    this.onExportBackup,
     this.initialConnectionError = false,
     this.onActivated,
     this.isViewer = false,
@@ -29,6 +31,7 @@ class _LicenseScreenState extends State<LicenseScreen> {
   bool _loading = true;
   bool _activating = false;
   bool _deactivating = false;
+  bool _exporting = false;
   bool _connectionError = false;
   String? _error;
 
@@ -53,7 +56,7 @@ class _LicenseScreenState extends State<LicenseScreen> {
     });
     try {
       final results = await Future.wait([
-        widget.api.getLicenseStatus(forceRemote: force),
+        widget.api.getLicenseStatus(forceRemote: force && !widget.isViewer),
         widget.api.getLicenseServerInfo(),
       ]);
       if (mounted) {
@@ -174,6 +177,17 @@ class _LicenseScreenState extends State<LicenseScreen> {
     }
   }
 
+  Future<void> _exportBackup() async {
+    setState(() { _exporting = true; _error = null; });
+    try {
+      await widget.onExportBackup?.call();
+    } catch (e) {
+      if (mounted) setState(() { _error = '$e'; });
+    } finally {
+      if (mounted) setState(() { _exporting = false; });
+    }
+  }
+
   String _date(DateTime? value) {
     if (value == null) return 'Nessuna scadenza';
     final d = value.toLocal();
@@ -265,6 +279,15 @@ class _LicenseScreenState extends State<LicenseScreen> {
                                             style: const TextStyle(
                                                 color: Colors.redAccent,
                                                 fontWeight: FontWeight.w600))
+                                      ],
+                                      if (widget.onExportBackup != null) ...[
+                                        const SizedBox(height: 20),
+                                        const Text('Il recupero del backup resta disponibile agli amministratori anche con licenza scaduta.'),
+                                        OutlinedButton.icon(
+                                          onPressed: _exporting ? null : _exportBackup,
+                                          icon: const Icon(Icons.download),
+                                          label: Text(_exporting ? 'Preparazione backup...' : 'Scarica backup dati'),
+                                        ),
                                       ],
                                       if (widget.isViewer) ...[
                                         const SizedBox(height: 24),

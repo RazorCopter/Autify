@@ -1,5 +1,6 @@
 import os
-os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-unit-tests")
+os.environ["JWT_SECRET_KEY"] = "a-very-strong-test-secret-key-at-least-32-bytes"
+os.environ["AI_SETTINGS_ENCRYPTION_KEY"] = "a-very-strong-ai-settings-secret-key-at-least-32-chars!"
 
 import pytest
 from app.main import app
