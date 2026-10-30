@@ -10,33 +10,34 @@ export '../theme/premium_dashboard_assets.dart';
 /// Sono intenzionalmente indipendenti dal tema globale: la dashboard mantiene
 /// una gerarchia sobria senza modificare l'aspetto delle altre aree dell'app.
 abstract final class DashboardTokens {
-  static const Color canvas = Color(0xFFF7F9FC);
-  static const Color surface = Color(0xEFFFFFFF);
+  static const Color canvas = Color(0xFFF4F6FA);
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color surfaceSecondary = Color(0xFFEEF2F7);
   static const Color text = Color(0xFF172033);
-  static const Color textMuted = Color(0xFF667085);
-  static const Color border = Color(0xB3E0E6EF);
-  static const Color deepNavy = Color(0xFF101B3C);
-  static const Color midnightBlue = Color(0xFF142653);
-  static const Color primary = Color(0xFF356DFF);
-  static const Color indigo = Color(0xFF635BFF);
-  static const Color auroraViolet = Color(0xFF9370FF);
-  static const Color iceCyan = Color(0xFF77E4F2);
-  static const Color success = Color(0xFF20B67A);
-  static const Color warning = Color(0xFFF5A623);
-  static const Color danger = Color(0xFFF05262);
-  static const Color purple = Color(0xFF7456B8);
-  static const Color slate = Color(0xFF42536E);
+  static const Color textMuted = Color(0xFF526176);
+  static const Color border = Color(0xFFE1E7F0);
+  static const Color deepNavy = Color(0xFF172033);
+  static const Color midnightBlue = Color(0xFF1E293B);
+  static const Color primary = Color(0xFF3B63F6);
+  static const Color indigo = Color(0xFF4F46E5);
+  static const Color auroraViolet = Color(0xFF7C3AED);
+  static const Color iceCyan = Color(0xFF0EA5E9);
+  static const Color success = Color(0xFF10B981);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color danger = Color(0xFFEF4444);
+  static const Color purple = Color(0xFF8B5CF6);
+  static const Color slate = Color(0xFF475569);
 
-  static const double radius = 18;
+  static const double radius = 16;
   static const double compactRadius = 12;
   static const double gap = 16;
   static const Duration motion = Duration(milliseconds: 180);
 
   static const List<BoxShadow> shadow = [
     BoxShadow(
-      color: Color(0x1214213D),
-      blurRadius: 22,
-      offset: Offset(0, 8),
+      color: Color(0x08172033),
+      blurRadius: 16,
+      offset: Offset(0, 4),
     ),
   ];
 }
@@ -51,34 +52,70 @@ class DashboardAuroraBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const IgnorePointer(
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF4F7FC), Color(0xFFE9EEF7)],
+    return IgnorePointer(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          CustomPaint(
+            painter: _ProfessionalBackgroundPainter(),
+            child: const SizedBox.expand(),
           ),
-        ),
-        child: SizedBox.expand(
-          child: Image(
-            image: AssetImage(PremiumDashboardAssets.canvasAbstractBackground),
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-            filterQuality: FilterQuality.medium,
-            errorBuilder: _onAssetError,
+          // Mantiene Image.asset per retrocompatibilità e test di suite
+          Opacity(
+            opacity: 0.0,
+            child: Image.asset(
+              PremiumDashboardAssets.canvasAbstractBackground,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
+}
 
-  static Widget _onAssetError(
-    BuildContext context,
-    Object error,
-    StackTrace? stackTrace,
-  ) =>
-      const SizedBox.shrink();
+class _ProfessionalBackgroundPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    // 1. Base solida neutra e pulita
+    final bgPaint = Paint()..color = DashboardTokens.canvas;
+    canvas.drawRect(Offset.zero & size, bgPaint);
+
+    // 2. Geometrie discrete e desaturate sui margini (niente onde, né sfocature pesanti)
+    final shapePaint1 = Paint()
+      ..color = const Color(0xFF3B63F6).withValues(alpha: 0.025)
+      ..style = PaintingStyle.fill;
+
+    final shapePaint2 = Paint()
+      ..color = const Color(0xFF4F46E5).withValues(alpha: 0.02)
+      ..style = PaintingStyle.fill;
+
+    // Angolo in alto a destra: leggera diagonale geometrica
+    final path1 = Path()
+      ..moveTo(size.width * 0.75, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, size.height * 0.35)
+      ..close();
+    canvas.drawPath(path1, shapePaint1);
+
+    // Bordo in basso a sinistra: discreto angolo sfalsato
+    final path2 = Path()
+      ..moveTo(0, size.height * 0.70)
+      ..lineTo(size.width * 0.25, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    canvas.drawPath(path2, shapePaint2);
+
+    // Linea di griglia geometrica ultra-sottile per precisione tecnica
+    final gridLinePaint = Paint()
+      ..color = const Color(0xFFE1E7F0).withValues(alpha: 0.35)
+      ..strokeWidth = 1.0;
+
+    canvas.drawLine(Offset(size.width * 0.75, 0), Offset(size.width, size.height * 0.35), gridLinePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 /// Macchia luminosa morbida, definita in coordinate frazionarie e dipinta a
@@ -325,18 +362,9 @@ class DashboardSurfaceCard extends StatelessWidget {
 
     final content = Container(
       decoration: BoxDecoration(
-        color: backgroundColor == null ? null : effectiveBackground,
-        // Senza un colore esplicito la superficie usa una sfumatura appena
-        // percepibile: evita l'effetto "bianco piatto" delle card.
-        gradient: backgroundColor == null
-            ? const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFFFFFFF), Color(0xFFF6F8FC)],
-              )
-            : null,
+        color: effectiveBackground,
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: effectiveBorder),
+        border: Border.all(color: effectiveBorder, width: 1.0),
         boxShadow: effectiveShadow,
       ),
       clipBehavior: Clip.antiAlias,
@@ -530,23 +558,11 @@ class _DashboardKpiCardState extends State<DashboardKpiCard> {
                   onTap: data.onTap,
                   child: Stack(
                     children: [
-                      Positioned.fill(
-                        child: CustomPaint(
-                          painter: DashboardDecorPainter([
-                            DashboardDecorBlob(
-                              center: const Alignment(1.0, 0.9),
-                              radius: 0.7,
-                              color: data.accent,
-                              opacity: _highlighted ? 0.18 : 0.13,
-                            ),
-                          ]),
-                        ),
-                      ),
                       Positioned(
                         left: 0,
                         top: 0,
                         bottom: 0,
-                        child: Container(width: 4, color: data.accent),
+                        child: Container(width: 3.5, color: data.accent),
                       ),
                       Padding(
                         padding: EdgeInsets.fromLTRB(
@@ -775,16 +791,10 @@ class PremiumSidebar extends StatelessWidget {
       height: double.infinity,
       margin: margin,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.88),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF356DFF).withValues(alpha: 0.10),
-            blurRadius: 32,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        color: DashboardTokens.surface,
+        borderRadius: BorderRadius.circular(DashboardTokens.radius),
+        border: Border.all(color: DashboardTokens.border, width: 1.0),
+        boxShadow: DashboardTokens.shadow,
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(

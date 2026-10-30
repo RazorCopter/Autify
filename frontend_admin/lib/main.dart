@@ -155,6 +155,7 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0;
+  bool _sidebarExpanded = true;
   String? _patientSearchQuery;
   String? _patientSemanticFilter;
   bool _checkingLicense = true;
@@ -710,17 +711,60 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   // ─── DESKTOP SIDEBAR (invariata) ───────────────────────────────────────────
   Widget _buildSidebar() {
-    return Container(
-      width: 88,
-      color: AppTheme.surfaceColor,
+    final width = _sidebarExpanded ? 220.0 : 72.0;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      width: width,
+      decoration: const BoxDecoration(
+        color: AppTheme.surfaceColor,
+        border: Border(
+          right: BorderSide(color: Color(0xFFE1E7F0), width: 1.0),
+        ),
+      ),
       child: Column(
         children: [
-          const SizedBox(height: 24),
-          // Logo
-          _buildLogo(),
-          const SizedBox(height: 32),
-          const Divider(indent: 16, endIndent: 16, color: Color(0xFFE8EEF8)),
+          const SizedBox(height: 18),
+          // Header Sidebar con Logo e Toggle compatta/estesa
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: _sidebarExpanded ? 16 : 8),
+            child: Row(
+              mainAxisAlignment: _sidebarExpanded
+                  ? MainAxisAlignment.spaceBetween
+                  : MainAxisAlignment.center,
+              children: [
+                if (_sidebarExpanded)
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Image.asset(
+                        'assets/images/logo_autify_int.png',
+                        height: 40,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Icon(Icons.psychology,
+                            color: AppTheme.primaryColor, size: 28),
+                      ),
+                    ),
+                  ),
+                IconButton(
+                  icon: Icon(
+                    _sidebarExpanded
+                        ? Icons.keyboard_double_arrow_left_rounded
+                        : Icons.keyboard_double_arrow_right_rounded,
+                    size: 20,
+                    color: AppTheme.textSecondary,
+                  ),
+                  tooltip: _sidebarExpanded ? 'Comprimi barra' : 'Espandi barra',
+                  onPressed: () =>
+                      setState(() => _sidebarExpanded = !_sidebarExpanded),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
+          const Divider(indent: 12, endIndent: 12, color: Color(0xFFE8EEF8), height: 1),
+          const SizedBox(height: 12),
           // Voci menu
           Expanded(
             child: ListView.builder(
@@ -729,30 +773,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
               itemBuilder: (context, index) => _buildNavItem(index),
             ),
           ),
-          // Pulsante Logout
-          IconButton(
-            icon: const Icon(Icons.logout_rounded,
-                size: 20, color: AppTheme.errorColor),
-            tooltip: 'Esci',
-            onPressed: _performLogout,
-          ),
-          const SizedBox(height: 8),
+          const Divider(indent: 12, endIndent: 12, color: Color(0xFFE8EEF8), height: 1),
+          const SizedBox(height: 10),
           // Footer
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Column(
               children: [
                 _buildRoleBadge(),
                 const SizedBox(height: 8),
-                const ConnectionStatusIndicator(compact: true),
-                const SizedBox(height: 8),
+                ConnectionStatusIndicator(compact: !_sidebarExpanded),
+                const SizedBox(height: 6),
                 Text(
                   'v$kFrontendVersion',
                   style: TextStyle(
                       fontSize: 10,
                       color: AppTheme.textSecondary.withValues(alpha: 0.5)),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 InkWell(
                   onTap: () {
                     showDialog(
@@ -763,21 +801,31 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   borderRadius: BorderRadius.circular(4),
                   child: Padding(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     child: Text(
-                      'About',
+                      'About & Termini',
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
                         color: AppTheme.primaryColor.withValues(alpha: 0.8),
                       ),
                     ),
                   ),
                 ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: IconButton(
+                    icon: const Icon(Icons.logout_rounded,
+                        size: 20, color: AppTheme.errorColor),
+                    tooltip: 'Esci',
+                    onPressed: _performLogout,
+                  ),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
         ],
       ),
     );
@@ -841,51 +889,65 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final color =
         isSelected ? AppTheme.puzzleColorAt(index) : AppTheme.textSecondary;
 
-    return Tooltip(
-      message: item.label,
-      waitDuration: const Duration(milliseconds: 600),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-        child: InkWell(
-          onTap: () => setState(() => _selectedIndex = index),
-          borderRadius: BorderRadius.circular(16),
-          hoverColor: color.withValues(alpha: 0.08),
-          splashColor: color.withValues(alpha: 0.12),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Capsula attiva Material 3 per l'icona
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? color.withValues(alpha: 0.15)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(
-                    isSelected ? item.active : item.icon,
-                    color: color,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
+    if (!_sidebarExpanded) {
+      return Tooltip(
+        message: item.label,
+        waitDuration: const Duration(milliseconds: 300),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: InkWell(
+            onTap: () => setState(() => _selectedIndex = index),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              height: 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isSelected ? color.withValues(alpha: 0.12) : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                isSelected ? item.active : item.icon,
+                color: color,
+                size: 22,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: InkWell(
+        onTap: () => setState(() => _selectedIndex = index),
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          decoration: BoxDecoration(
+            color: isSelected ? color.withValues(alpha: 0.1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                isSelected ? item.active : item.icon,
+                color: color,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
                   item.label,
                   style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    color: isSelected
-                        ? AppTheme.textPrimary
-                        : AppTheme.textSecondary,
+                    fontSize: 13.5,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

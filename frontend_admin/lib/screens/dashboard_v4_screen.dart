@@ -354,15 +354,29 @@ class _DashboardContent extends StatelessWidget {
             );
 
             if (desktop) {
-              return IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(flex: 3, child: desktopTrendCard),
-                    const SizedBox(width: DashboardTokens.gap),
-                    Expanded(flex: 2, child: desktopAlertCard),
-                  ],
-                ),
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 7,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        trendCard,
+                        const SizedBox(height: DashboardTokens.gap),
+                        _DistributionCard(
+                          distributions: _listValue(stats['distribuzione_scale']),
+                          totalPatients: total,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: DashboardTokens.gap),
+                  Expanded(
+                    flex: 5,
+                    child: alertCard,
+                  ),
+                ],
               );
             }
 
@@ -371,50 +385,18 @@ class _DashboardContent extends StatelessWidget {
                 trendCard,
                 const SizedBox(height: DashboardTokens.gap),
                 alertCard,
+                const SizedBox(height: DashboardTokens.gap),
+                _DistributionCard(
+                  distributions: _listValue(stats['distribuzione_scale']),
+                  totalPatients: total,
+                ),
               ],
             );
           },
         ),
         const SizedBox(height: DashboardTokens.gap),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final twoColumns = constraints.maxWidth >= 600;
-            if (!twoColumns) {
-              return Column(
-                children: [
-                  _DistributionCard(
-                    distributions: _listValue(stats['distribuzione_scale']),
-                    totalPatients: total,
-                  ),
-                  const SizedBox(height: DashboardTokens.gap),
-                  _DemographicsCard(
-                    demographics: _mapValue(stats['demographics']),
-                  ),
-                ],
-              );
-            }
-            return IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: _DistributionCard(
-                      distributions: _listValue(stats['distribuzione_scale']),
-                      totalPatients: total,
-                      fillHeight: true,
-                    ),
-                  ),
-                  const SizedBox(width: DashboardTokens.gap),
-                  Expanded(
-                    child: _DemographicsCard(
-                      demographics: _mapValue(stats['demographics']),
-                      fillHeight: true,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+        _DemographicsCard(
+          demographics: _mapValue(stats['demographics']),
         ),
       ],
     );
@@ -606,11 +588,11 @@ class _CoverageCard extends StatelessWidget {
     final total = valid + missing;
     final missingPercent =
         total == 0 ? 0.0 : (missing / total * 100).toDouble();
-    final compact = width < 560;
-    final chartSize = (width * 0.36).clamp(180.0, 220.0).toDouble();
+    final compact = width < 480;
+    // Dimensione del grafico ad anello compatta ed elegante (140px max)
+    const chartSize = 136.0;
     final chart = _chart(
-      compact: compact,
-      chartSize: chartSize,
+      size: chartSize,
       percent: percent,
       valid: valid,
       missing: missing,
@@ -621,7 +603,7 @@ class _CoverageCard extends StatelessWidget {
       value: valid,
       percent: percent,
       color: DashboardTokens.success,
-      icon: Icons.verified_rounded,
+      icon: Icons.check_circle_outline_rounded,
     );
     final missingMetric = _CoverageMetric(
       label: 'Mancanti',
@@ -632,11 +614,10 @@ class _CoverageCard extends StatelessWidget {
     );
     final details = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisAlignment:
-          fill ? MainAxisAlignment.center : MainAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         validMetric,
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         missingMetric,
       ],
     );
@@ -644,26 +625,23 @@ class _CoverageCard extends StatelessWidget {
       return Column(children: [chart, const SizedBox(height: 14), details]);
     }
     return Row(
-      crossAxisAlignment:
-          fill ? CrossAxisAlignment.stretch : CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Expanded(child: Center(child: chart)),
-        const SizedBox(width: 18),
+        chart,
+        const SizedBox(width: 24),
         Expanded(child: details),
       ],
     );
   }
 
   Widget _chart({
-    required bool compact,
-    required double chartSize,
+    required double size,
     required double percent,
     required int valid,
     required int missing,
     required int total,
   }) {
-    final size = compact ? 190.0 : chartSize;
-    final sliceRadius = compact ? 22.0 : chartSize * 0.115;
+    const sliceRadius = 16.0;
     return SizedBox(
       width: size,
       height: size,
@@ -673,8 +651,8 @@ class _CoverageCard extends StatelessWidget {
           PieChart(
             PieChartData(
               startDegreeOffset: -90,
-              centerSpaceRadius: compact ? 58 : chartSize * 0.31,
-              sectionsSpace: 3,
+              centerSpaceRadius: 46,
+              sectionsSpace: 2.5,
               sections: total == 0
                   ? [
                       PieChartSectionData(
@@ -706,18 +684,19 @@ class _CoverageCard extends StatelessWidget {
               Text(
                 '${_formatNumber(percent)}%',
                 style: const TextStyle(
-                  color: DashboardTokens.deepNavy,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
+                  color: DashboardTokens.text,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
                 ),
               ),
               const Text(
                 'COPERTURA',
                 style: TextStyle(
                   color: DashboardTokens.textMuted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.7,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
                 ),
               ),
             ],
@@ -744,13 +723,14 @@ class _CoverageCard extends StatelessWidget {
           'Copertura documentale: ${_formatNumber(percent)} percento, $valid valide e $missing mancanti',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
           const DashboardSectionHeader(
             title: 'Copertura Documentale',
-            subtitle: 'Coppie utente attivo / scala richiesta',
+            subtitle: 'Stato di conformità tra utenze attive e scale obbligatorie',
           ),
-          const SizedBox(height: 18),
-          if (fillHeight) Expanded(child: body) else body,
+          const SizedBox(height: 14),
+          body,
         ],
       ),
     );
@@ -776,37 +756,57 @@ class _CoverageMetric extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.07),
+        color: DashboardTokens.surfaceSecondary,
         borderRadius: BorderRadius.circular(DashboardTokens.compactRadius),
-        border: Border.all(color: color.withValues(alpha: 0.15)),
+        border: Border.all(color: DashboardTokens.border, width: 1.0),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 22),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 16),
+          ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: const TextStyle(
-                      color: DashboardTokens.textMuted,
-                      fontSize: 12,
-                    )),
-                Text('$value',
-                    style: const TextStyle(
-                      color: DashboardTokens.deepNavy,
-                      fontSize: 23,
-                      fontWeight: FontWeight.w900,
-                    )),
-              ],
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: DashboardTokens.text,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-          Text('${_formatNumber(percent)}%',
-              style: TextStyle(color: color, fontWeight: FontWeight.w800)),
+          Text(
+            '$value',
+            style: const TextStyle(
+              color: DashboardTokens.text,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              '${_formatNumber(percent)}%',
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -844,20 +844,31 @@ class _AlertCenterCard extends StatelessWidget {
         return _asInt(_mapValue(b)['giorni_da_ultima_valutazione'])
             .compareTo(_asInt(_mapValue(a)['giorni_da_ultima_valutazione']));
       });
-    final visible = sorted;
+
+    // Raggruppamento delle azioni per ID utente
+    final Map<String, List<Map<String, dynamic>>> groupedByUser = {};
+    for (final raw in sorted) {
+      final item = _mapValue(raw);
+      final pId = item['paziente_id']?.toString() ??
+          '${item['paziente_nome']}_${item['paziente_cognome']}';
+      groupedByUser.putIfAbsent(pId, () => []).add(item);
+    }
+
+    final userGroups = groupedByUser.values.toList();
     final totalActions = _asInt(alertStats['totale_scaduti']) +
         _asInt(alertStats['totale_in_scadenza']) +
         _asInt(alertStats['totale_mai_valutati']) +
         _asInt(alertStats['totale_incompleti']);
+    final totalUsersAffected = userGroups.length;
 
     return PremiumAlertCard(
-      semanticLabel: 'Centro alert: $totalActions azioni rilevate',
+      semanticLabel: 'Azioni da completare: $totalActions azioni per $totalUsersAffected utenti',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           DashboardSectionHeader(
             title: 'Alert Center — Azioni Richieste Urgenti',
-            subtitle: '$totalActions azioni ordinate per priorità operativa',
+            subtitle: '$totalActions attività da completare su $totalUsersAffected utenti',
             trailing: DashboardStatusPill(
               label: '$totalActions',
               color: totalActions > 0
@@ -869,29 +880,19 @@ class _AlertCenterCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          if (visible.isEmpty)
+          if (userGroups.isEmpty)
             const DashboardEmptyState(
               icon: Icons.task_alt_rounded,
               title: 'Nessun alert prioritario',
-              message: 'Le utenze risultano coperte e monitorate.',
+              message: 'Tutte le utenze risultano conformi e monitorate.',
             )
           else
-            for (var index = 0; index < visible.length; index++) ...[
+            for (var index = 0; index < userGroups.length; index++) ...[
               if (index != 0)
                 const Divider(height: 1, color: DashboardTokens.border),
-              _AlertRow(
-                alert: _mapValue(visible[index]),
-                onTap: () {
-                  final item = _mapValue(visible[index]);
-                  final surname = item['paziente_cognome']?.toString().trim();
-                  onNavigate(
-                    2,
-                    searchFilter:
-                        surname == null || surname.isEmpty ? null : surname,
-                    semanticFilter:
-                        _semanticFilterForAlert(item['stato']?.toString()),
-                  );
-                },
+              _UserActionGroupTile(
+                userAlerts: userGroups[index],
+                onNavigate: onNavigate,
               ),
             ],
           if (fillHeight) const Spacer(),
@@ -902,11 +903,14 @@ class _AlertCenterCard extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: () => onNavigate(2, semanticFilter: 'scaduti'),
                 icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                label: const Text('Gestisci priorità'),
+                label: const Text('Gestisci tutte le priorità'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: DashboardTokens.primary,
+                  backgroundColor: DashboardTokens.surface,
                   side: const BorderSide(color: DashboardTokens.border),
-                  minimumSize: const Size(44, 44),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
             ),
@@ -917,115 +921,153 @@ class _AlertCenterCard extends StatelessWidget {
   }
 }
 
-class _AlertRow extends StatelessWidget {
-  final Map<String, dynamic> alert;
-  final VoidCallback onTap;
+class _UserActionGroupTile extends StatelessWidget {
+  final List<Map<String, dynamic>> userAlerts;
+  final DashboardNavigationCallback onNavigate;
 
-  const _AlertRow({required this.alert, required this.onTap});
+  const _UserActionGroupTile({
+    required this.userAlerts,
+    required this.onNavigate,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final status = alert['stato']?.toString() ?? '';
-    final overdue = status == 'scaduto';
-    final never = status == 'mai_valutato';
-    final color = overdue
-        ? DashboardTokens.danger
-        : never
-            ? DashboardTokens.warning
-            : DashboardTokens.warning;
-    final statusLabel = overdue
-        ? 'Scaduta'
-        : never
-            ? 'Mai valutata'
-            : 'In scadenza';
-    final firstName = alert['paziente_nome']?.toString().trim() ?? '';
-    final lastName = alert['paziente_cognome']?.toString().trim() ?? '';
+    if (userAlerts.isEmpty) return const SizedBox.shrink();
+    final first = userAlerts.first;
+    final firstName = first['paziente_nome']?.toString().trim() ?? '';
+    final lastName = first['paziente_cognome']?.toString().trim() ?? '';
     final userName = '$firstName $lastName'.trim();
-    final scale = alert['scala_nome']?.toString() ?? 'Scala';
-    final days = _asInt(alert['giorni_da_ultima_valutazione']);
-    final detail = never || days >= 9999
-        ? '$scale · nessuna valutazione compilata'
-        : '$scale · $days giorni dall’ultima valutazione';
+    final effectiveName = userName.isEmpty ? 'Utenza' : userName;
 
-    return Semantics(
-      button: true,
-      label: '${userName.isEmpty ? 'Utenza' : userName}, $statusLabel, $detail',
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 54),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 2),
-            child: Row(
-              children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(9),
-                  ),
-                  child: Icon(
-                    overdue
-                        ? Icons.priority_high_rounded
-                        : Icons.schedule_rounded,
-                    color: color,
-                    size: 17,
+    // Calcola il livello massimo di urgenza per l'utente
+    final hasOverdue = userAlerts.any((a) => a['stato'] == 'scaduto');
+    final hasNever = userAlerts.any((a) => a['stato'] == 'mai_valutato');
+    final badgeColor = hasOverdue
+        ? DashboardTokens.danger
+        : (hasNever ? DashboardTokens.warning : DashboardTokens.warning);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: badgeColor.withValues(alpha: 0.12),
+                child: Text(
+                  effectiveName.isNotEmpty ? effectiveName[0].toUpperCase() : '?',
+                  style: TextStyle(
+                    color: badgeColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        userName.isEmpty ? 'Utenza senza nominativo' : userName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: DashboardTokens.text,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12.5,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        detail,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: DashboardTokens.textMuted,
-                          fontSize: 10.5,
-                        ),
-                      ),
-                    ],
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    final surname = first['paziente_cognome']?.toString().trim();
+                    onNavigate(
+                      2,
+                      searchFilter: surname == null || surname.isEmpty ? null : surname,
+                      semanticFilter: _semanticFilterForAlert(first['stato']?.toString()),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(6),
+                  child: Text(
+                    effectiveName,
+                    style: const TextStyle(
+                      color: DashboardTokens.text,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Tooltip(
-                  message: statusLabel,
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: DashboardTokens.surfaceSecondary,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: DashboardTokens.border),
+                ),
+                child: Text(
+                  '${userAlerts.length} ${userAlerts.length == 1 ? "azione" : "azioni"}',
+                  style: const TextStyle(
+                    color: DashboardTokens.textMuted,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          // Elenco compatto delle scale e dei singoli link operativi
+          Padding(
+            padding: const EdgeInsets.only(left: 38),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: userAlerts.map((alert) {
+                final scale = alert['scala_nome']?.toString() ?? 'Scala';
+                final status = alert['stato']?.toString() ?? '';
+                final isOverdue = status == 'scaduto';
+                final isNever = status == 'mai_valutato';
+                final itemColor = isOverdue
+                    ? DashboardTokens.danger
+                    : (isNever ? DashboardTokens.warning : DashboardTokens.warning);
+                final statusText = isOverdue
+                    ? 'scaduta'
+                    : (isNever ? 'mai compilata' : 'in scadenza');
+
+                return InkWell(
+                  onTap: () {
+                    final surname = alert['paziente_cognome']?.toString().trim();
+                    onNavigate(
+                      2,
+                      searchFilter: surname == null || surname.isEmpty ? null : surname,
+                      semanticFilter: _semanticFilterForAlert(status),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(6),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.09),
-                      borderRadius: BorderRadius.circular(8),
+                      color: itemColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: itemColor.withValues(alpha: 0.25)),
                     ),
-                    child: Text(
-                      statusLabel,
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isOverdue ? Icons.schedule_rounded : Icons.info_outline_rounded,
+                          size: 11,
+                          color: itemColor,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$scale ($statusText)',
+                          style: TextStyle(
+                            color: itemColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                );
+              }).toList(),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

@@ -328,7 +328,7 @@ void main() {
     expectNoLayoutErrors(tester);
   });
 
-  testWidgets('a 1440px le card affiancate condividono la stessa altezza',
+  testWidgets('a 1440px le card sono disposte con flusso operativo bilanciato',
       (tester) async {
     await pumpDashboard(tester, size: const Size(1440, 1000));
 
@@ -343,15 +343,11 @@ void main() {
 
     final coverage = cardRect('Copertura Documentale');
     final alerts = cardRect('Alert Center — Azioni Richieste Urgenti');
-    expect(coverage.height, closeTo(alerts.height, 0.5));
     expect(coverage.top, closeTo(alerts.top, 0.5));
+    expect(coverage.width, greaterThan(alerts.width));
 
     final distribution = cardRect('Distribuzione Documentazione');
-    final demographics = cardRect('Dati Socio-Demografici');
-    expect(distribution.height, closeTo(demographics.height, 0.5));
-    expect(distribution.top, closeTo(demographics.top, 0.5));
-
-    expect(coverage.width, greaterThan(alerts.width));
+    expect(distribution.top, greaterThan(coverage.bottom));
     expectNoLayoutErrors(tester);
   });
 
