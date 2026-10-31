@@ -839,7 +839,7 @@ class _CoverageCard extends StatelessWidget {
             title: 'Copertura Documentale',
             subtitle:
                 'Scale obbligatorie in corso di validità sulle utenze attive',
-            icon: Icons.pie_chart_outline,
+            icon: Icons.verified_outlined,
             accent: DashboardTokens.success,
           ),
           const SizedBox(height: 20),
@@ -1414,12 +1414,12 @@ class _DistributionCard extends StatelessWidget {
             title: 'Distribuzione Documentazione',
             subtitle:
                 'Completamento per strumento sul totale di $totalPatients utenti',
-            icon: Icons.bar_chart_rounded,
+            icon: Icons.analytics_outlined,
           ),
           const SizedBox(height: 20),
           if (sorted.isEmpty)
             const DashboardEmptyState(
-              icon: Icons.bar_chart_rounded,
+              icon: Icons.analytics_outlined,
               title: 'Nessuna scala compilata',
               message: 'La copertura per strumento comparirà qui.',
             )
