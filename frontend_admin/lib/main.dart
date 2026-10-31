@@ -731,32 +731,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
+                // Solo logo, centrato e ben visibile (il nome è già nel logo)
+                Center(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                    height: _sidebarExpanded ? 84 : 44,
+                    child: Image.asset(
                       'assets/images/logo_autify_int.png',
-                      height: _sidebarExpanded ? 48 : 36,
                       fit: BoxFit.contain,
+                      filterQuality: FilterQuality.high,
                       errorBuilder: (_, __, ___) => const Icon(
                         Icons.psychology,
                         color: AppTheme.primaryColor,
-                        size: 36,
+                        size: 40,
                       ),
                     ),
-                    if (_sidebarExpanded) ...[
-                      const SizedBox(width: 10),
-                      const Text(
-                        'AUTIFY',
-                        style: TextStyle(
-                          color: Color(0xFF172033),
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
                 const SizedBox(height: 10),
                 // Toggle compatto per espandere/comprimere

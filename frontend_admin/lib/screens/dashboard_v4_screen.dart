@@ -415,9 +415,10 @@ class _DashboardContent extends StatelessWidget {
             ? 'Nessuna azione richiesta'
             : 'Almeno una scala richiesta non valida',
         icon: toComplete == 0
-            ? Icons.task_alt_rounded
-            : Icons.pending_actions_outlined,
-        accent: toComplete == 0 ? DashboardTokens.success : DashboardTokens.danger,
+            ? Icons.check_circle_outline
+            : Icons.assignment_late_outlined,
+        accent:
+            toComplete == 0 ? DashboardTokens.success : DashboardTokens.danger,
         progress: active == 0 ? null : toComplete / active,
         onTap: () => onNavigate(2, semanticFilter: 'da_completare'),
         tooltip: 'Apri le utenze con documentazione incompleta',
@@ -660,7 +661,9 @@ class _ComplianceItemState extends State<_ComplianceItem> {
     // attenzione, riducendo il rumore visivo.
     final active = widget.value > 0;
     final color = active ? widget.color : DashboardTokens.neutral;
-    final ink = active ? DashboardTokens.inkFor(widget.color) : DashboardTokens.textSubtle;
+    final ink = active
+        ? DashboardTokens.inkFor(widget.color)
+        : DashboardTokens.textSubtle;
 
     return Semantics(
       button: true,
@@ -676,7 +679,8 @@ class _ComplianceItemState extends State<_ComplianceItem> {
             child: AnimatedContainer(
               duration: DashboardTokens.motion,
               constraints: const BoxConstraints(minHeight: 68),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: active
                     ? widget.color.withValues(alpha: _hover ? 0.09 : 0.05)
@@ -786,7 +790,6 @@ class _CoverageCard extends StatelessWidget {
           value: valid,
           percent: total == 0 ? 0.0 : percent,
           color: DashboardTokens.success,
-          icon: Icons.check_circle_outline_rounded,
         ),
         const SizedBox(height: 10),
         _CoverageMetric(
@@ -794,13 +797,12 @@ class _CoverageCard extends StatelessWidget {
           value: missing,
           percent: missingPercent,
           color: DashboardTokens.danger,
-          icon: Icons.error_outline_rounded,
         ),
         const SizedBox(height: 12),
         Row(
           children: [
             Icon(
-              missing == 0 ? Icons.verified_rounded : Icons.flag_outlined,
+              missing == 0 ? Icons.verified_outlined : Icons.flag_outlined,
               size: 15,
               color: missing == 0
                   ? DashboardTokens.successInk
@@ -837,7 +839,7 @@ class _CoverageCard extends StatelessWidget {
             title: 'Copertura Documentale',
             subtitle:
                 'Scale obbligatorie in corso di validità sulle utenze attive',
-            icon: Icons.donut_large_rounded,
+            icon: Icons.pie_chart_outline,
             accent: DashboardTokens.success,
           ),
           const SizedBox(height: 20),
@@ -956,14 +958,12 @@ class _CoverageMetric extends StatelessWidget {
   final int value;
   final double percent;
   final Color color;
-  final IconData icon;
 
   const _CoverageMetric({
     required this.label,
     required this.value,
     required this.percent,
     required this.color,
-    required this.icon,
   });
 
   @override
@@ -1044,14 +1044,14 @@ class _AlertStyle {
     return switch (status) {
       'scaduto' => const _AlertStyle(
           DashboardTokens.danger, Icons.event_busy_outlined, 'scaduta', 0),
-      'mai_valutato' => const _AlertStyle(
-          DashboardTokens.purple, Icons.visibility_outlined, 'mai compilata', 1),
+      'mai_valutato' => const _AlertStyle(DashboardTokens.purple,
+          Icons.visibility_outlined, 'mai compilata', 1),
       'in_scadenza' => const _AlertStyle(DashboardTokens.warning,
           Icons.hourglass_bottom_rounded, 'in scadenza', 2),
       'incompleto' => const _AlertStyle(DashboardTokens.primary,
           Icons.description_outlined, 'incompleta', 3),
-      _ => const _AlertStyle(
-          DashboardTokens.slate, Icons.info_outline_rounded, 'da verificare', 4),
+      _ => const _AlertStyle(DashboardTokens.slate,
+          Icons.info_outline_rounded, 'da verificare', 4),
     };
   }
 }
@@ -1131,7 +1131,7 @@ class _AlertCenterCard extends StatelessWidget {
           const SizedBox(height: 14),
           if (visibleGroups.isEmpty)
             const DashboardEmptyState(
-              icon: Icons.task_alt_rounded,
+              icon: Icons.check_circle_outline,
               title: 'Nessuna azione prioritaria',
               message: 'Tutte le utenze risultano conformi e monitorate.',
             )
@@ -1169,7 +1169,7 @@ class _AlertCenterCard extends StatelessWidget {
                 // non solo la coda "scaduti" (che poteva risultare vuota).
                 onPressed: () =>
                     onNavigate(2, semanticFilter: 'da_completare'),
-                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                icon: const Icon(Icons.arrow_forward, size: 18),
                 label: Text(
                   totalActions > previewActions
                       ? 'Visualizza tutte le $totalActions attività'
@@ -1330,7 +1330,8 @@ class _AlertChip extends StatelessWidget {
     final scale = alert['scala_nome']?.toString().trim();
     final style = _AlertStyle.of(alert['stato']?.toString());
     final ink = DashboardTokens.inkFor(style.color);
-    final label = '${scale == null || scale.isEmpty ? "Scala" : scale} · ${style.text}';
+    final label =
+        '${scale == null || scale.isEmpty ? "Scala" : scale} · ${style.text}';
 
     return Tooltip(
       message: label,
@@ -1413,12 +1414,12 @@ class _DistributionCard extends StatelessWidget {
             title: 'Distribuzione Documentazione',
             subtitle:
                 'Completamento per strumento sul totale di $totalPatients utenti',
-            icon: Icons.stacked_bar_chart_rounded,
+            icon: Icons.bar_chart_rounded,
           ),
           const SizedBox(height: 20),
           if (sorted.isEmpty)
             const DashboardEmptyState(
-              icon: Icons.stacked_bar_chart_rounded,
+              icon: Icons.bar_chart_rounded,
               title: 'Nessuna scala compilata',
               message: 'La copertura per strumento comparirà qui.',
             )
@@ -1536,8 +1537,7 @@ class _DemographicsCard extends StatelessWidget {
       MapEntry('51+', _asInt(ages['51+'])),
       MapEntry('Non specificata', _asInt(ages['Non specificata'])),
     ];
-    final total =
-        genderEntries.fold<int>(0, (sum, entry) => sum + entry.$2);
+    final total = genderEntries.fold<int>(0, (sum, entry) => sum + entry.$2);
     final maxAge = ageEntries.fold<int>(
       0,
       (current, entry) => current > entry.value ? current : entry.value,

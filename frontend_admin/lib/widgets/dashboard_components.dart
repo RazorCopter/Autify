@@ -615,7 +615,7 @@ class _DashboardKpiCardState extends State<DashboardKpiCard> {
                                     : data.accent.withValues(alpha: 0.08),
                               ),
                               child: Icon(
-                                Icons.arrow_outward_rounded,
+                                Icons.arrow_forward,
                                 size: 15,
                                 color:
                                     _highlighted ? Colors.white : data.accent,
