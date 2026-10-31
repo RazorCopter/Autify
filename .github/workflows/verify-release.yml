@@ -1,0 +1,105 @@
+name: Manual verification and release artifacts
+
+# Manual only: adding this file does not run tests, build or deploy.
+on:
+  workflow_dispatch:
+    inputs:
+      build_images:
+        description: Build and archive images after verification (no push or deploy)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+concurrency:
+  group: autify-verification-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      # Synthetic CI credentials only. Never use in an installation.
+      JWT_SECRET_KEY: ci-only-jwt-material-not-for-real-installations-123456
+      BACKUP_ENCRYPTION_KEY: ci-only-backup-material-not-for-real-installations-123456
+      AI_SETTINGS_ENCRYPTION_KEY: ci-only-ai-material-not-for-real-installations-123456
+      LICENSE_SHARED_SECRET: ci-only-license-material-not-for-real-installations-123456
+      INITIAL_ADMIN_PASSWORD: ci-only-initial-admin-123456
+      MONGODB_URL: mongodb://127.0.0.1:27091/?replicaSet=autify-ci
+      PYTHONPATH: backend
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.11.14'
+      - name: Install exact verification manifest
+        run: python -m pip install --require-hashes -r backend/requirements-test.lock
+      - name: Start isolated ephemeral replica set
+        shell: bash
+        run: |
+          MONGO_IMAGE=$(python -c "import json; print(json.load(open('BUILD_VERSIONS.json'))['images']['mongo'])")
+          docker run -d --name autify-ci-db -p 127.0.0.1:27091:27091 "$MONGO_IMAGE" mongod --replSet autify-ci --bind_ip_all --port 27091
+          for attempt in $(seq 1 30); do
+            if docker exec autify-ci-db mongosh --port 27091 --quiet --eval 'db.adminCommand({ping:1})'; then break; fi
+            sleep 2
+          done
+          docker exec autify-ci-db mongosh --port 27091 --quiet --eval 'rs.initiate({_id:"autify-ci",members:[{_id:0,host:"localhost:27091"}]})'
+          for attempt in $(seq 1 30); do
+            if docker exec autify-ci-db mongosh --port 27091 --quiet --eval 'if(!db.hello().isWritablePrimary){quit(1)}'; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - name: Backend test suite
+        run: python -m pytest backend/tests --junitxml=backend-results.xml
+      - name: Archive results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: backend-results
+          path: backend-results.xml
+          if-no-files-found: ignore
+      - name: Remove only this job's ephemeral database
+        if: always()
+        run: docker rm -f autify-ci-db
+
+  frontend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Portable Flutter tests and web compilation
+        shell: bash
+        run: |
+          FLUTTER_IMAGE=$(python3 -c "import json; print(json.load(open('BUILD_VERSIONS.json'))['images']['flutter'])")
+          docker run --rm -v "$PWD:/workspace" -w /workspace/frontend_admin "$FLUTTER_IMAGE" sh -ec '
+            flutter pub get --enforce-lockfile
+            flutter test test/dashboard_screen_test.dart test/dashboard_settings_test.dart test/license_screen_test.dart
+            flutter build web --release
+          '
+
+  images:
+    if: ${{ inputs.build_images }}
+    needs: [backend, frontend]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Build, archive and identify images
+        shell: bash
+        run: |
+          VERSION=$(cat VERSION)
+          docker build -t "autify-api:$VERSION" backend
+          docker build -t "autify-admin:$VERSION" frontend_admin
+          mkdir -p release
+          docker save "autify-api:$VERSION" "autify-admin:$VERSION" | gzip > release/autify-images.tar.gz
+          sha256sum release/autify-images.tar.gz > release/SHA256SUMS
+          git rev-parse HEAD > release/COMMIT
+          cp VERSION BUILD_VERSIONS.json release/
+          docker image inspect --format '{{.Id}}' "autify-api:$VERSION" "autify-admin:$VERSION" > release/IMAGE_IDS
+          sha256sum backend/requirements.lock backend/requirements-test.lock frontend_admin/pubspec.lock > release/DEPENDENCY_SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: autify-release-${{ github.sha }}
+          path: release/
+          retention-days: 14

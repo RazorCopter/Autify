@@ -5,19 +5,28 @@ import '../theme/premium_dashboard_assets.dart';
 
 export '../theme/premium_dashboard_assets.dart';
 
-/// Token visivi locali della Dashboard 4.0.
+/// Token visivi locali della Dashboard 4.x (premium redesign).
 ///
-/// Sono intenzionalmente indipendenti dal tema globale: la dashboard mantiene
-/// una gerarchia sobria senza modificare l'aspetto delle altre aree dell'app.
+/// Indipendenti dal tema globale: la dashboard ha una propria gerarchia
+/// visiva senza alterare le altre aree dell'app. I colori `*Ink` sono le
+/// varianti scure da usare per il TESTO su fondi chiari (contrasto AA).
 abstract final class DashboardTokens {
-  static const Color canvas = Color(0xFFF4F6FA);
+  // Superfici
+  static const Color canvas = Color(0xFFF5F7FB);
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceSecondary = Color(0xFFEEF2F7);
-  static const Color text = Color(0xFF172033);
-  static const Color textMuted = Color(0xFF526176);
-  static const Color border = Color(0xFFE1E7F0);
-  static const Color deepNavy = Color(0xFF172033);
+  static const Color surfaceSecondary = Color(0xFFF4F6FA);
+  static const Color track = Color(0xFFEDF1F6);
+  static const Color border = Color(0xFFE4E9F1);
+  static const Color divider = Color(0xFFEEF1F6);
+
+  // Testo
+  static const Color text = Color(0xFF111A2E);
+  static const Color textMuted = Color(0xFF5B6779);
+  static const Color textSubtle = Color(0xFF8A94A6);
+  static const Color deepNavy = Color(0xFF111A2E);
   static const Color midnightBlue = Color(0xFF1E293B);
+
+  // Accenti
   static const Color primary = Color(0xFF3B63F6);
   static const Color indigo = Color(0xFF4F46E5);
   static const Color auroraViolet = Color(0xFF7C3AED);
@@ -27,26 +36,63 @@ abstract final class DashboardTokens {
   static const Color danger = Color(0xFFEF4444);
   static const Color purple = Color(0xFF8B5CF6);
   static const Color slate = Color(0xFF475569);
+  static const Color neutral = Color(0xFF94A3B8);
 
-  static const double radius = 16;
+  // Varianti testo ad alto contrasto
+  static const Color successInk = Color(0xFF047857);
+  static const Color warningInk = Color(0xFFB45309);
+  static const Color dangerInk = Color(0xFFB91C1C);
+  static const Color purpleInk = Color(0xFF6D28D9);
+  static const Color primaryInk = Color(0xFF2747C9);
+
+  static const double radius = 18;
   static const double compactRadius = 12;
-  static const double gap = 16;
+  static const double gap = 20;
   static const Duration motion = Duration(milliseconds: 180);
 
+  /// Ombra a due livelli: contatto nitido + diffusione morbida.
   static const List<BoxShadow> shadow = [
     BoxShadow(
-      color: Color(0x08172033),
-      blurRadius: 16,
-      offset: Offset(0, 4),
+      color: Color(0x0A111A2E),
+      blurRadius: 2,
+      offset: Offset(0, 1),
+    ),
+    BoxShadow(
+      color: Color(0x0D111A2E),
+      blurRadius: 24,
+      spreadRadius: -6,
+      offset: Offset(0, 10),
     ),
   ];
+
+  static List<BoxShadow> hoverShadow(Color accent) => [
+        const BoxShadow(
+          color: Color(0x0F111A2E),
+          blurRadius: 3,
+          offset: Offset(0, 1),
+        ),
+        BoxShadow(
+          color: accent.withValues(alpha: 0.16),
+          blurRadius: 28,
+          spreadRadius: -4,
+          offset: const Offset(0, 14),
+        ),
+      ];
+
+  /// Restituisce la variante "ink" (testo) di un colore d'accento.
+  static Color inkFor(Color accent) {
+    if (accent == danger) return dangerInk;
+    if (accent == warning) return warningInk;
+    if (accent == success) return successInk;
+    if (accent == purple || accent == auroraViolet) return purpleInk;
+    if (accent == primary) return primaryInk;
+    return accent;
+  }
 }
 
-/// Sfondo del canvas operativo: l'immagine astratta
-/// [PremiumDashboardAssets.canvasAbstractBackground], una composizione di
-/// lastre traslucide con grana fine. Viene adattata con [BoxFit.cover], e
-/// non avendo alcun soggetto riconoscibile sopporta qualunque ritaglio; la
-/// base colorata sotto copre l'eventuale mancata decodifica.
+/// Sfondo del canvas: base neutra con aloni luminosi molto tenui.
+/// Resta l'`Image.asset` (opacità 0) per retrocompatibilità con la suite
+/// di test esistente che verifica la presenza dell'asset.
 class DashboardAuroraBackground extends StatelessWidget {
   const DashboardAuroraBackground({super.key});
 
@@ -56,11 +102,10 @@ class DashboardAuroraBackground extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          CustomPaint(
+          const CustomPaint(
             painter: _ProfessionalBackgroundPainter(),
-            child: const SizedBox.expand(),
+            child: SizedBox.expand(),
           ),
-          // Mantiene Image.asset per retrocompatibilità e test di suite
           Opacity(
             opacity: 0.0,
             child: Image.asset(
@@ -75,62 +120,51 @@ class DashboardAuroraBackground extends StatelessWidget {
 }
 
 class _ProfessionalBackgroundPainter extends CustomPainter {
+  const _ProfessionalBackgroundPainter();
+
   @override
   void paint(Canvas canvas, Size size) {
-    // 1. Base solida neutra e pulita
-    final bgPaint = Paint()..color = DashboardTokens.canvas;
-    canvas.drawRect(Offset.zero & size, bgPaint);
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()..color = DashboardTokens.canvas,
+    );
 
-    // 2. Geometrie discrete e desaturate sui margini (niente onde, né sfocature pesanti)
-    final shapePaint1 = Paint()
-      ..color = const Color(0xFF3B63F6).withValues(alpha: 0.025)
-      ..style = PaintingStyle.fill;
+    void glow(Offset center, double radius, Color color) {
+      if (radius <= 0) return;
+      final paint = Paint()
+        ..shader = RadialGradient(
+          colors: [color, color.withValues(alpha: 0)],
+        ).createShader(Rect.fromCircle(center: center, radius: radius));
+      canvas.drawCircle(center, radius, paint);
+    }
 
-    final shapePaint2 = Paint()
-      ..color = const Color(0xFF4F46E5).withValues(alpha: 0.02)
-      ..style = PaintingStyle.fill;
-
-    // Angolo in alto a destra: leggera diagonale geometrica
-    final path1 = Path()
-      ..moveTo(size.width * 0.75, 0)
-      ..lineTo(size.width, 0)
-      ..lineTo(size.width, size.height * 0.35)
-      ..close();
-    canvas.drawPath(path1, shapePaint1);
-
-    // Bordo in basso a sinistra: discreto angolo sfalsato
-    final path2 = Path()
-      ..moveTo(0, size.height * 0.70)
-      ..lineTo(size.width * 0.25, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-    canvas.drawPath(path2, shapePaint2);
-
-    // Linea di griglia geometrica ultra-sottile per precisione tecnica
-    final gridLinePaint = Paint()
-      ..color = const Color(0xFFE1E7F0).withValues(alpha: 0.35)
-      ..strokeWidth = 1.0;
-
-    canvas.drawLine(Offset(size.width * 0.75, 0), Offset(size.width, size.height * 0.35), gridLinePaint);
+    final side = size.longestSide;
+    glow(
+      Offset(size.width * 0.92, -size.height * 0.04),
+      side * 0.42,
+      DashboardTokens.primary.withValues(alpha: 0.075),
+    );
+    glow(
+      Offset(size.width * 0.04, size.height * 0.02),
+      side * 0.28,
+      DashboardTokens.auroraViolet.withValues(alpha: 0.045),
+    );
+    glow(
+      Offset(size.width * 0.62, size.height * 1.04),
+      side * 0.38,
+      DashboardTokens.iceCyan.withValues(alpha: 0.04),
+    );
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-/// Macchia luminosa morbida, definita in coordinate frazionarie e dipinta a
-/// runtime: a differenza di un PNG ritagliato a dimensione fissa si adatta a
-/// qualunque larghezza e altezza della card senza ritagli ne' deformazioni.
+/// Mantenuto per retrocompatibilità API (non più usato nelle card).
 class DashboardDecorBlob {
-  /// Posizione del centro, espressa come allineamento sulla card.
   final Alignment center;
-
-  /// Raggio come frazione del lato maggiore della card.
   final double radius;
-
   final Color color;
-
-  /// Intensita' al centro della macchia; sfuma a zero sul bordo.
   final double opacity;
 
   const DashboardDecorBlob({
@@ -152,101 +186,28 @@ class DashboardDecorBlob {
   int get hashCode => Object.hash(center, radius, color, opacity);
 }
 
-/// Dipinge l'insieme di macchie che fa da sfondo decorativo a una card.
+/// Mantenuto per retrocompatibilità API: le card premium usano superfici
+/// bianche piene, quindi il painter non disegna nulla.
 class DashboardDecorPainter extends CustomPainter {
   final List<DashboardDecorBlob> blobs;
 
   const DashboardDecorPainter(this.blobs);
 
   @override
-  void paint(Canvas canvas, Size size) {
-    // Opacity azzerata nelle card per mantenere superfici bianche solide e nitide senza sfumature
-    return;
-  }
+  void paint(Canvas canvas, Size size) {}
 
   @override
   bool shouldRepaint(DashboardDecorPainter oldDelegate) =>
       !listEquals(oldDelegate.blobs, blobs);
 }
 
-/// Palette decorative delle card della Dashboard 4.0. Hanno sostituito i PNG
-/// di sfondo ritagliati, che su card di proporzioni variabili venivano
-/// ritagliati in modo imprevedibile.
+/// Mantenuto per retrocompatibilità API.
 abstract final class DashboardDecor {
-  static const List<DashboardDecorBlob> summaryBar = [
-    DashboardDecorBlob(
-      center: Alignment(-0.95, -0.7),
-      radius: 0.6,
-      color: DashboardTokens.primary,
-      opacity: 0.1,
-    ),
-    DashboardDecorBlob(
-      center: Alignment(0.95, 1.2),
-      radius: 0.6,
-      color: DashboardTokens.slate,
-      opacity: 0.09,
-    ),
-  ];
-
-  static const List<DashboardDecorBlob> coverage = [
-    DashboardDecorBlob(
-      center: Alignment(-0.85, 0.95),
-      radius: 0.6,
-      color: DashboardTokens.primary,
-      opacity: 0.13,
-    ),
-    DashboardDecorBlob(
-      center: Alignment(1.05, -0.95),
-      radius: 0.5,
-      color: DashboardTokens.slate,
-      opacity: 0.11,
-    ),
-  ];
-
-  static const List<DashboardDecorBlob> alerts = [
-    DashboardDecorBlob(
-      center: Alignment(1.05, -1.0),
-      radius: 0.55,
-      color: DashboardTokens.danger,
-      opacity: 0.1,
-    ),
-    DashboardDecorBlob(
-      center: Alignment(-1.0, 1.05),
-      radius: 0.5,
-      color: DashboardTokens.slate,
-      opacity: 0.11,
-    ),
-  ];
-
-  static const List<DashboardDecorBlob> socioDemographic = [
-    DashboardDecorBlob(
-      center: Alignment(1.1, 0.85),
-      radius: 0.6,
-      color: DashboardTokens.primary,
-      opacity: 0.12,
-    ),
-    DashboardDecorBlob(
-      center: Alignment(-0.95, -1.0),
-      radius: 0.48,
-      color: DashboardTokens.slate,
-      opacity: 0.1,
-    ),
-  ];
-
-  static const List<DashboardDecorBlob> distribution = [
-    DashboardDecorBlob(
-      center: Alignment(-1.05, -0.95),
-      radius: 0.55,
-      color: DashboardTokens.slate,
-      opacity: 0.11,
-    ),
-    DashboardDecorBlob(
-      center: Alignment(1.05, 1.05),
-      radius: 0.55,
-      color: DashboardTokens.primary,
-      opacity: 0.11,
-    ),
-  ];
+  static const List<DashboardDecorBlob> summaryBar = [];
+  static const List<DashboardDecorBlob> coverage = [];
+  static const List<DashboardDecorBlob> alerts = [];
+  static const List<DashboardDecorBlob> socioDemographic = [];
+  static const List<DashboardDecorBlob> distribution = [];
 }
 
 class DashboardSurfaceCard extends StatelessWidget {
@@ -255,9 +216,6 @@ class DashboardSurfaceCard extends StatelessWidget {
   final Color? borderColor;
   final String? semanticLabel;
   final String? assetBackground;
-
-  /// Decorazione dipinta alternativa all'asset PNG: responsive per
-  /// costruzione, si ridisegna a ogni cambio di dimensione della card.
   final List<DashboardDecorBlob>? decor;
   final BoxFit assetFit;
   final AlignmentGeometry assetAlignment;
@@ -270,7 +228,7 @@ class DashboardSurfaceCard extends StatelessWidget {
   const DashboardSurfaceCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(20),
+    this.padding = const EdgeInsets.all(22),
     this.borderColor,
     this.semanticLabel,
     this.assetBackground,
@@ -286,57 +244,27 @@ class DashboardSurfaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveBackground = backgroundColor ?? DashboardTokens.surface;
-    final effectiveBorder = borderColor ?? DashboardTokens.border;
-    final effectiveShadow = boxShadow ?? DashboardTokens.shadow;
-
-    Widget cardBody = Padding(
-      padding: padding,
-      child: child,
-    );
-
-    if (decor != null && decor!.isNotEmpty) {
-      cardBody = Stack(
-        fit: StackFit.passthrough,
-        children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(borderRadius - 1),
-              child: CustomPaint(painter: DashboardDecorPainter(decor!)),
-            ),
-          ),
-          cardBody,
-        ],
-      );
-    }
+    Widget cardBody = Padding(padding: padding, child: child);
 
     if (assetBackground != null && assetBackground!.isNotEmpty) {
       cardBody = Stack(
         fit: StackFit.passthrough,
         children: [
           Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(borderRadius - 1),
-              child: Opacity(
-                opacity: assetOpacity,
-                child: Image.asset(
-                  assetBackground!,
-                  fit: assetFit,
-                  alignment: assetAlignment,
-                  filterQuality: FilterQuality.medium,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const SizedBox.shrink(),
-                ),
+            child: Opacity(
+              opacity: assetOpacity,
+              child: Image.asset(
+                assetBackground!,
+                fit: assetFit,
+                alignment: assetAlignment,
+                filterQuality: FilterQuality.medium,
+                errorBuilder: (context, error, stackTrace) =>
+                    const SizedBox.shrink(),
               ),
             ),
           ),
           if (overlayColor != null)
-            Positioned.fill(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(borderRadius - 1),
-                child: ColoredBox(color: overlayColor!),
-              ),
-            ),
+            Positioned.fill(child: ColoredBox(color: overlayColor!)),
           cardBody,
         ],
       );
@@ -344,10 +272,10 @@ class DashboardSurfaceCard extends StatelessWidget {
 
     final content = Container(
       decoration: BoxDecoration(
-        color: effectiveBackground,
+        color: backgroundColor ?? DashboardTokens.surface,
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: effectiveBorder, width: 1.0),
-        boxShadow: effectiveShadow,
+        border: Border.all(color: borderColor ?? DashboardTokens.border),
+        boxShadow: boxShadow ?? DashboardTokens.shadow,
       ),
       clipBehavior: Clip.antiAlias,
       child: cardBody,
@@ -358,37 +286,84 @@ class DashboardSurfaceCard extends StatelessWidget {
   }
 }
 
+/// Badge icona quadrato-arrotondato con gradiente tenue dell'accento.
+class DashboardIconBadge extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final double size;
+
+  const DashboardIconBadge({
+    super.key,
+    required this.icon,
+    required this.color,
+    this.size = 36,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(size * 0.31),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withValues(alpha: 0.16),
+            color.withValues(alpha: 0.06),
+          ],
+        ),
+        border: Border.all(color: color.withValues(alpha: 0.14)),
+      ),
+      alignment: Alignment.center,
+      child: Icon(icon, size: size * 0.5, color: color),
+    );
+  }
+}
+
 class DashboardSectionHeader extends StatelessWidget {
   final String title;
   final String subtitle;
   final Widget? trailing;
+  final IconData? icon;
+  final Color accent;
 
   const DashboardSectionHeader({
     super.key,
     required this.title,
     required this.subtitle,
     this.trailing,
+    this.icon,
+    this.accent = DashboardTokens.primary,
   });
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        if (icon != null) ...[
+          DashboardIconBadge(icon: icon!, color: accent),
+          const SizedBox(width: 12),
+        ],
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: DashboardTokens.text,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: -0.2,
+                  height: 1.25,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 3),
               Text(
                 subtitle,
                 style: const TextStyle(
@@ -409,6 +384,61 @@ class DashboardSectionHeader extends StatelessWidget {
   }
 }
 
+/// Barra di avanzamento con riempimento animato. Non usa LayoutBuilder,
+/// quindi è sicura anche dentro `IntrinsicHeight`.
+class DashboardProgressBar extends StatelessWidget {
+  final double value;
+  final Color color;
+  final Color? secondaryColor;
+  final double height;
+  final Color trackColor;
+
+  const DashboardProgressBar({
+    super.key,
+    required this.value,
+    required this.color,
+    this.secondaryColor,
+    this.height = 8,
+    this.trackColor = DashboardTokens.track,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final target = value.isNaN ? 0.0 : value.clamp(0.0, 1.0).toDouble();
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: SizedBox(
+        height: height,
+        width: double.infinity,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ColoredBox(color: trackColor),
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: target),
+              duration: const Duration(milliseconds: 750),
+              curve: Curves.easeOutCubic,
+              builder: (context, animated, _) => FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: animated,
+                heightFactor: 1,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    gradient: LinearGradient(
+                      colors: [color, secondaryColor ?? color],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class DashboardKpiData {
   final String label;
   final String value;
@@ -417,6 +447,10 @@ class DashboardKpiData {
   final Color accent;
   final VoidCallback? onTap;
   final String? tooltip;
+
+  /// Avanzamento opzionale 0..1 mostrato come barra in fondo alla card.
+  final double? progress;
+
   final String? assetBackground;
   final BoxFit? assetFit;
   final AlignmentGeometry? assetAlignment;
@@ -430,6 +464,7 @@ class DashboardKpiData {
     required this.accent,
     this.onTap,
     this.tooltip,
+    this.progress,
     this.assetBackground,
     this.assetFit,
     this.assetAlignment,
@@ -437,7 +472,6 @@ class DashboardKpiData {
   });
 }
 
-/// Griglia KPI pura e testabile, allineata ai breakpoint della Dashboard 4.0.
 class DashboardKpiGrid extends StatelessWidget {
   final List<DashboardKpiData> items;
 
@@ -452,7 +486,6 @@ class DashboardKpiGrid extends StatelessWidget {
         const gap = DashboardTokens.gap;
         final itemWidth = (width - gap * (columns - 1)) / columns;
         final compact = width < 600;
-
         return Wrap(
           spacing: gap,
           runSpacing: gap,
@@ -461,7 +494,7 @@ class DashboardKpiGrid extends StatelessWidget {
               SizedBox(
                 key: ValueKey('dashboard-kpi-slot-$index'),
                 width: itemWidth,
-                height: compact ? 174 : 162,
+                height: compact ? 172 : 176,
                 child: DashboardKpiCard(
                   key: ValueKey('dashboard-kpi-card-$index'),
                   data: items[index],
@@ -499,124 +532,128 @@ class _DashboardKpiCardState extends State<DashboardKpiCard> {
   @override
   Widget build(BuildContext context) {
     final data = widget.data;
+    final compact = widget.compact;
+    final interactive = data.onTap != null;
+
     final card = Semantics(
-      button: data.onTap != null,
+      button: interactive,
       label: '${data.label}: ${data.value}. ${data.supportingText}',
       child: FocusableActionDetector(
         mouseCursor:
-            data.onTap == null ? MouseCursor.defer : SystemMouseCursors.click,
+            interactive ? SystemMouseCursors.click : MouseCursor.defer,
         onShowHoverHighlight: _setHighlighted,
         onShowFocusHighlight: _setHighlighted,
-        child: AnimatedScale(
-          scale: _highlighted ? 1.012 : 1,
+        child: AnimatedContainer(
           duration: DashboardTokens.motion,
           curve: Curves.easeOutCubic,
-          child: AnimatedContainer(
-            duration: DashboardTokens.motion,
-            curve: Curves.easeOutCubic,
-            decoration: BoxDecoration(
-              color: DashboardTokens.surface,
-              borderRadius: BorderRadius.circular(DashboardTokens.radius),
-              border: Border.all(
-                color: _highlighted
-                    ? data.accent.withValues(alpha: 0.45)
-                    : DashboardTokens.border,
-              ),
-              boxShadow: _highlighted
-                  ? [
-                      BoxShadow(
-                        color: data.accent.withValues(alpha: 0.12),
-                        blurRadius: 22,
-                        offset: const Offset(0, 8),
-                      ),
-                    ]
-                  : DashboardTokens.shadow,
+          transform: Matrix4.translationValues(
+            0,
+            _highlighted && interactive ? -2 : 0,
+            0,
+          ),
+          decoration: BoxDecoration(
+            color: DashboardTokens.surface,
+            borderRadius: BorderRadius.circular(DashboardTokens.radius),
+            border: Border.all(
+              color: _highlighted
+                  ? data.accent.withValues(alpha: 0.35)
+                  : DashboardTokens.border,
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(DashboardTokens.radius - 1),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: data.onTap,
-                  child: Stack(
+            boxShadow: _highlighted
+                ? DashboardTokens.hoverShadow(data.accent)
+                : DashboardTokens.shadow,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(DashboardTokens.radius - 1),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: data.onTap,
+                splashColor: data.accent.withValues(alpha: 0.06),
+                highlightColor: data.accent.withValues(alpha: 0.04),
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    compact ? 16 : 20,
+                    compact ? 16 : 18,
+                    compact ? 16 : 20,
+                    compact ? 16 : 18,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Positioned(
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        child: Container(width: 3.5, color: data.accent),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          widget.compact ? 15 : 20,
-                          widget.compact ? 14 : 18,
-                          widget.compact ? 12 : 18,
-                          widget.compact ? 14 : 18,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: widget.compact ? 36 : 40,
-                                  height: widget.compact ? 36 : 40,
-                                  decoration: BoxDecoration(
-                                    color: data.accent.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(11),
-                                  ),
-                                  child: Icon(
-                                    data.icon,
-                                    size: widget.compact ? 19 : 21,
-                                    color: data.accent,
-                                  ),
-                                ),
-                                const Spacer(),
-                                if (data.onTap != null)
-                                  Icon(
-                                    Icons.arrow_forward_rounded,
-                                    size: 18,
-                                    color: data.accent,
-                                  ),
-                              ],
-                            ),
-                            const Spacer(),
-                            Text(
-                              data.value,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: DashboardTokens.text,
-                                fontSize: widget.compact ? 25 : 29,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.8,
-                                height: 1,
-                              ),
-                            ),
-                            const SizedBox(height: 7),
-                            Text(
+                      Row(
+                        children: [
+                          DashboardIconBadge(
+                            icon: data.icon,
+                            color: data.accent,
+                            size: compact ? 36 : 40,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
                               data.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: DashboardTokens.text,
-                                fontSize: widget.compact ? 11.5 : 12.5,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              data.supportingText,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: DashboardTokens.textMuted,
-                                fontSize: 10.5,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.7,
                               ),
                             ),
-                          ],
+                          ),
+                          if (interactive)
+                            AnimatedContainer(
+                              duration: DashboardTokens.motion,
+                              alignment: Alignment.center,
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: _highlighted
+                                    ? data.accent
+                                    : data.accent.withValues(alpha: 0.08),
+                              ),
+                              child: Icon(
+                                Icons.arrow_outward_rounded,
+                                size: 15,
+                                color:
+                                    _highlighted ? Colors.white : data.accent,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Text(
+                        data.value,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: DashboardTokens.text,
+                          fontSize: compact ? 30 : 34,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -1.2,
+                          height: 1,
                         ),
                       ),
+                      const SizedBox(height: 6),
+                      Text(
+                        data.supportingText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: DashboardTokens.textMuted,
+                          fontSize: 12,
+                        ),
+                      ),
+                      if (data.progress != null) ...[
+                        const SizedBox(height: 12),
+                        DashboardProgressBar(
+                          value: data.progress!,
+                          color: data.accent,
+                          height: 5,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -646,28 +683,28 @@ class DashboardStatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = DashboardTokens.inkFor(color);
     return Semantics(
       label: label,
       child: Container(
-        constraints: const BoxConstraints(minHeight: 32),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        constraints: const BoxConstraints(minHeight: 28),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.09),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.22)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon ?? Icons.circle,
-                size: icon == null ? 8 : 15, color: color),
+            Icon(icon ?? Icons.circle, size: icon == null ? 8 : 14, color: ink),
             const SizedBox(width: 6),
             Flexible(
               child: Text(
                 label,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: color,
+                  color: ink,
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,
                 ),
@@ -701,18 +738,14 @@ class DashboardEmptyState extends StatelessWidget {
       label: '$title. $message',
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 22),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: DashboardTokens.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(icon, color: DashboardTokens.primary, size: 24),
+              DashboardIconBadge(
+                icon: icon,
+                color: DashboardTokens.primary,
+                size: 48,
               ),
               const SizedBox(height: 14),
               Text(
@@ -721,7 +754,7 @@ class DashboardEmptyState extends StatelessWidget {
                 style: const TextStyle(
                   color: DashboardTokens.text,
                   fontSize: 14,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 5),
@@ -730,12 +763,12 @@ class DashboardEmptyState extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: DashboardTokens.textMuted,
-                  fontSize: 12,
+                  fontSize: 12.5,
                   height: 1.4,
                 ),
               ),
               if (action != null) ...[
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 action!,
               ],
             ],
@@ -746,8 +779,7 @@ class DashboardEmptyState extends StatelessWidget {
   }
 }
 
-/// Wrapper modulare per la barra laterale di navigazione della Dashboard 4.0,
-/// integrata con lo sfondo illustrato ad alta risoluzione [PremiumDashboardAssets.sidebarBackground].
+/// Wrapper per la sidebar (API invariata).
 class PremiumSidebar extends StatelessWidget {
   final Widget child;
   final bool expanded;
@@ -775,7 +807,7 @@ class PremiumSidebar extends StatelessWidget {
       decoration: BoxDecoration(
         color: DashboardTokens.surface,
         borderRadius: BorderRadius.circular(DashboardTokens.radius),
-        border: Border.all(color: DashboardTokens.border, width: 1.0),
+        border: Border.all(color: DashboardTokens.border),
         boxShadow: DashboardTokens.shadow,
       ),
       clipBehavior: Clip.antiAlias,
@@ -787,9 +819,6 @@ class PremiumSidebar extends StatelessWidget {
               opacity: assetOpacity,
               child: Image.asset(
                 PremiumDashboardAssets.sidebarBackground,
-                // L'asset e' un pannello completo di sidebar: con cover il suo
-                // bordo dipinto cadeva a metà card, lasciando il footer fuori
-                // dalla superficie illustrata.
                 fit: BoxFit.fill,
                 filterQuality: FilterQuality.medium,
                 errorBuilder: (context, error, stackTrace) =>
@@ -797,8 +826,6 @@ class PremiumSidebar extends StatelessWidget {
               ),
             ),
           ),
-          // Velo bianco sulla fascia superiore: il logo cade sulla zona piu'
-          // carica dell'illustrazione ancorata in alto.
           Positioned(
             top: 0,
             left: 0,
@@ -823,8 +850,6 @@ class PremiumSidebar extends StatelessWidget {
   }
 }
 
-/// Contenitore modulare per la barra di riepilogo conformità con asset
-/// [PremiumDashboardAssets.statusSummaryBarBackground].
 class PremiumSummaryBar extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -833,14 +858,13 @@ class PremiumSummaryBar extends StatelessWidget {
   const PremiumSummaryBar({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    this.padding = const EdgeInsets.all(12),
     this.semanticLabel,
   });
 
   @override
   Widget build(BuildContext context) {
     return DashboardSurfaceCard(
-      decor: DashboardDecor.summaryBar,
       padding: padding,
       semanticLabel: semanticLabel,
       child: child,
@@ -848,8 +872,6 @@ class PremiumSummaryBar extends StatelessWidget {
   }
 }
 
-/// Contenitore modulare per la card di copertura documentale con asset
-/// [PremiumDashboardAssets.documentCoverageCardBackground].
 class PremiumCoverageCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -858,14 +880,13 @@ class PremiumCoverageCard extends StatelessWidget {
   const PremiumCoverageCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(20),
+    this.padding = const EdgeInsets.all(22),
     this.semanticLabel,
   });
 
   @override
   Widget build(BuildContext context) {
     return DashboardSurfaceCard(
-      decor: DashboardDecor.coverage,
       padding: padding,
       semanticLabel: semanticLabel,
       child: child,
@@ -873,8 +894,6 @@ class PremiumCoverageCard extends StatelessWidget {
   }
 }
 
-/// Contenitore modulare per l'Alert Center con asset
-/// [PremiumDashboardAssets.urgentAlertCenterCardBackground].
 class PremiumAlertCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -883,14 +902,13 @@ class PremiumAlertCard extends StatelessWidget {
   const PremiumAlertCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(20),
+    this.padding = const EdgeInsets.all(22),
     this.semanticLabel,
   });
 
   @override
   Widget build(BuildContext context) {
     return DashboardSurfaceCard(
-      decor: DashboardDecor.alerts,
       padding: padding,
       semanticLabel: semanticLabel,
       child: child,
@@ -898,8 +916,6 @@ class PremiumAlertCard extends StatelessWidget {
   }
 }
 
-/// Contenitore modulare per il profilo socio-demografico con asset
-/// [PremiumDashboardAssets.socioDemographicCardBackground].
 class PremiumSocioDemoCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -908,14 +924,13 @@ class PremiumSocioDemoCard extends StatelessWidget {
   const PremiumSocioDemoCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(20),
+    this.padding = const EdgeInsets.all(22),
     this.semanticLabel,
   });
 
   @override
   Widget build(BuildContext context) {
     return DashboardSurfaceCard(
-      decor: DashboardDecor.socioDemographic,
       padding: padding,
       semanticLabel: semanticLabel,
       child: child,
