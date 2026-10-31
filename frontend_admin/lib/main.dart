@@ -749,45 +749,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
-                // Toggle compatto per espandere/comprimere
-                Align(
-                  alignment: Alignment.center,
-                  child: InkWell(
-                    onTap: () => setState(() => _sidebarExpanded = !_sidebarExpanded),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _sidebarExpanded
-                                ? Icons.keyboard_double_arrow_left_rounded
-                                : Icons.keyboard_double_arrow_right_rounded,
-                            size: 18,
-                            color: const Color(0xFF526176),
-                          ),
-                          if (_sidebarExpanded) ...[
-                            const SizedBox(width: 4),
-                            const Text(
-                              'Riduci',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Color(0xFF526176),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           const Divider(indent: 12, endIndent: 12, color: Color(0xFFE8EEF8), height: 1),
           const SizedBox(height: 12),
           // Voci menu
@@ -796,6 +761,39 @@ class _AdminDashboardState extends State<AdminDashboard> {
               itemCount: _navItems.length,
               padding: const EdgeInsets.symmetric(horizontal: 8),
               itemBuilder: (context, index) => _buildNavItem(index),
+            ),
+          ),
+          // Freccina discreta per ridurre/espandere la sidebar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: Align(
+              alignment: _sidebarExpanded
+                  ? Alignment.centerRight
+                  : Alignment.center,
+              child: Tooltip(
+                message: _sidebarExpanded ? 'Riduci menu' : 'Espandi menu',
+                child: InkWell(
+                  onTap: () =>
+                      setState(() => _sidebarExpanded = !_sidebarExpanded),
+                  customBorder: const CircleBorder(),
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFE8EEF8)),
+                    ),
+                    child: Icon(
+                      _sidebarExpanded
+                          ? Icons.chevron_left
+                          : Icons.chevron_right,
+                      size: 18,
+                      color: const Color(0xFF8A94A6),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
           const Divider(indent: 12, endIndent: 12, color: Color(0xFFE8EEF8), height: 1),
