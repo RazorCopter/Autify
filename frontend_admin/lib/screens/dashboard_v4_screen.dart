@@ -352,27 +352,42 @@ class _DashboardContent extends StatelessWidget {
             );
 
             if (desktop) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    flex: 7,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        trendCard,
-                        const SizedBox(height: DashboardTokens.gap),
-                        _DistributionCard(
-                          distributions: _listValue(stats['distribuzione_scale']),
-                          totalPatients: total,
+                  // Layout Desktop: Colonna principale con Copertura (flex 6) e Alert Center (flex 4)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 6,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            trendCard,
+                            const SizedBox(height: DashboardTokens.gap),
+                            _DistributionCard(
+                              distributions: _listValue(stats['distribuzione_scale']),
+                              totalPatients: total,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: DashboardTokens.gap),
-                  Expanded(
-                    flex: 5,
-                    child: alertCard,
+                      ),
+                      const SizedBox(width: DashboardTokens.gap),
+                      Expanded(
+                        flex: 4,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            alertCard,
+                            const SizedBox(height: DashboardTokens.gap),
+                            _DemographicsCard(
+                              demographics: _mapValue(stats['demographics']),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               );
@@ -392,9 +407,19 @@ class _DashboardContent extends StatelessWidget {
             );
           },
         ),
-        const SizedBox(height: DashboardTokens.gap),
-        _DemographicsCard(
-          demographics: _mapValue(stats['demographics']),
+        // Se non è desktop, i Dati Socio-Demografici sono impilati in fondo
+        LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth >= 1200) return const SizedBox.shrink();
+            return Column(
+              children: [
+                const SizedBox(height: DashboardTokens.gap),
+                _DemographicsCard(
+                  demographics: _mapValue(stats['demographics']),
+                ),
+              ],
+            );
+          },
         ),
       ],
     );
