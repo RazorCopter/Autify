@@ -75,41 +75,41 @@ class _DashboardV4ScreenState extends State<DashboardV4Screen> {
           RefreshIndicator(
             onRefresh: _loadStats,
             color: DashboardTokens.primary,
-            child: SingleChildScrollView(
-              key: const ValueKey('dashboard-scroll-view'),
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.fromLTRB(
-                _horizontalPadding(context),
-                20,
-                _horizontalPadding(context),
-                36,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1520),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildHeader(),
-                      const SizedBox(height: 22),
-                      AnimatedSwitcher(
-                        duration: DashboardTokens.motion,
-                        child: _isLoading
-                            ? const _DashboardLoadingState(
-                                key: ValueKey('dashboard-loading'),
-                              )
-                            : _stats == null
-                                ? _buildErrorState()
-                                : _DashboardContent(
-                                    key: const ValueKey('dashboard-content'),
-                                    stats: _stats!,
-                                    onNavigate: widget.onNavigate,
-                                  ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final hPadding = _horizontalPadding(constraints.maxWidth);
+                return SingleChildScrollView(
+                  key: const ValueKey('dashboard-scroll-view'),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(hPadding, 20, hPadding, 36),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1560),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildHeader(constraints.maxWidth),
+                          const SizedBox(height: 20),
+                          AnimatedSwitcher(
+                            duration: DashboardTokens.motion,
+                            child: _isLoading
+                                ? const _DashboardLoadingState(
+                                    key: ValueKey('dashboard-loading'),
+                                  )
+                                : _stats == null
+                                    ? _buildErrorState()
+                                    : _DashboardContent(
+                                        key: const ValueKey('dashboard-content'),
+                                        stats: _stats!,
+                                        onNavigate: widget.onNavigate,
+                                      ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ),
         ],
@@ -117,16 +117,14 @@ class _DashboardV4ScreenState extends State<DashboardV4Screen> {
     );
   }
 
-  double _horizontalPadding(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    if (width < 600) return 12;
-    if (width < 1200) return 24;
+  double _horizontalPadding(double availableWidth) {
+    if (availableWidth < 600) return 16;
+    if (availableWidth < 1200) return 24;
     return 32;
   }
 
-  Widget _buildHeader() {
-    final width = MediaQuery.sizeOf(context).width;
-    final compact = width < 600;
+  Widget _buildHeader(double availableWidth) {
+    final compact = availableWidth < 600;
     final now = DateTime.now();
     final text = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -765,12 +763,14 @@ class _CoverageMetric extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
+              color: color,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: color, size: 16),
+            child: Icon(icon, color: Colors.white, size: 16),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -859,16 +859,23 @@ class _AlertCenterCard extends StatelessWidget {
         _asInt(alertStats['totale_in_scadenza']) +
         _asInt(alertStats['totale_mai_valutati']) +
         _asInt(alertStats['totale_incompleti']);
-    final totalUsersAffected = userGroups.length;
+
+    // Calcola il conteggio effettivo delle azioni presenti nell'anteprima corrente
+    final previewActionsCount = sorted.length;
+    final previewUsersCount = userGroups.length;
+
+    final subtitleText = totalActions > previewActionsCount
+        ? 'Anteprima: $previewActionsCount attività prioritarie su $previewUsersCount utenti ($totalActions totali nel registro)'
+        : '$totalActions attività operative su $previewUsersCount utenti';
 
     return PremiumAlertCard(
-      semanticLabel: 'Azioni da completare: $totalActions azioni per $totalUsersAffected utenti',
+      semanticLabel: 'Azioni da completare: $totalActions azioni totali, $previewActionsCount in anteprima',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           DashboardSectionHeader(
             title: 'Alert Center — Azioni Richieste Urgenti',
-            subtitle: '$totalActions attività da completare su $totalUsersAffected utenti',
+            subtitle: subtitleText,
             trailing: DashboardStatusPill(
               label: '$totalActions',
               color: totalActions > 0
@@ -903,7 +910,9 @@ class _AlertCenterCard extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: () => onNavigate(2, semanticFilter: 'scaduti'),
                 icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                label: const Text('Gestisci tutte le priorità'),
+                label: Text(totalActions > previewActionsCount
+                    ? 'Visualizza tutte le $totalActions attività'
+                    : 'Gestisci priorità nel registro'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: DashboardTokens.primary,
                   backgroundColor: DashboardTokens.surface,

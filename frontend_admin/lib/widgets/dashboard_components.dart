@@ -160,26 +160,8 @@ class DashboardDecorPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (size.isEmpty) return;
-    final side = size.longestSide;
-    for (final blob in blobs) {
-      final radius = blob.radius * side;
-      if (radius <= 0) continue;
-      final rect = Rect.fromCircle(
-        center: blob.center.alongSize(size),
-        radius: radius,
-      );
-      canvas.drawRect(
-        rect,
-        Paint()
-          ..shader = RadialGradient(
-            colors: [
-              blob.color.withValues(alpha: blob.opacity),
-              blob.color.withValues(alpha: 0),
-            ],
-          ).createShader(rect),
-      );
-    }
+    // Opacity azzerata nelle card per mantenere superfici bianche solide e nitide senza sfumature
+    return;
   }
 
   @override

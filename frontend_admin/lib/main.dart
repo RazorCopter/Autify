@@ -725,44 +725,78 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
       child: Column(
         children: [
-          const SizedBox(height: 18),
-          // Header Sidebar con Logo e Toggle compatta/estesa
+          const SizedBox(height: 14),
+          // Header Sidebar con Logo valorizzato e pulsante di collasso
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: _sidebarExpanded ? 16 : 8),
-            child: Row(
-              mainAxisAlignment: _sidebarExpanded
-                  ? MainAxisAlignment.spaceBetween
-                  : MainAxisAlignment.center,
-              children: [
-                if (_sidebarExpanded)
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Image.asset(
+            padding: EdgeInsets.symmetric(horizontal: _sidebarExpanded ? 14 : 8),
+            child: _sidebarExpanded
+                ? Row(
+                    children: [
+                      Image.asset(
                         'assets/images/logo_autify_int.png',
-                        height: 40,
+                        height: 38,
                         fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.psychology,
-                            color: AppTheme.primaryColor, size: 28),
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.psychology,
+                          color: AppTheme.primaryColor,
+                          size: 32,
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'AUTIFY',
+                          style: TextStyle(
+                            color: Color(0xFF172033),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.keyboard_double_arrow_left_rounded,
+                          size: 19,
+                          color: Color(0xFF526176),
+                        ),
+                        tooltip: 'Comprimi barra',
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () =>
+                            setState(() => _sidebarExpanded = false),
+                      ),
+                    ],
+                  )
+                : Column(
+                    children: [
+                      Image.asset(
+                        'assets/images/logo_autify_int.png',
+                        height: 34,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.psychology,
+                          color: AppTheme.primaryColor,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.keyboard_double_arrow_right_rounded,
+                          size: 19,
+                          color: Color(0xFF526176),
+                        ),
+                        tooltip: 'Espandi barra',
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () =>
+                            setState(() => _sidebarExpanded = true),
+                      ),
+                    ],
                   ),
-                IconButton(
-                  icon: Icon(
-                    _sidebarExpanded
-                        ? Icons.keyboard_double_arrow_left_rounded
-                        : Icons.keyboard_double_arrow_right_rounded,
-                    size: 20,
-                    color: AppTheme.textSecondary,
-                  ),
-                  tooltip: _sidebarExpanded ? 'Comprimi barra' : 'Espandi barra',
-                  onPressed: () =>
-                      setState(() => _sidebarExpanded = !_sidebarExpanded),
-                ),
-              ],
-            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           const Divider(indent: 12, endIndent: 12, color: Color(0xFFE8EEF8), height: 1),
           const SizedBox(height: 12),
           // Voci menu
